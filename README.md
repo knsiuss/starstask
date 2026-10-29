@@ -40,13 +40,18 @@ StarsTask is built around three principles:
 | Saved assignments       | Follow an assignment you do not own to receive its reminders.            |
 | PWA                     | Installable manifest and a push-only service worker.                     |
 | Access control          | Server-side authorization plus RLS and private storage.                  |
-| Classes and roles       | Planned — not implemented in this repository yet.                        |
+| Classes and roles       | Approved classes, separate class and platform admin scopes.              |
+| Class applications      | Any signed-in user may apply; a platform admin approves or rejects.      |
+| Invitations             | Hashed, expiring, usage-limited, optionally email-restricted links.      |
+| Assignment review       | Class admins approve or reject; approval publishes the assignment.       |
+| Public moderation       | Unpublish, archive, restore, and remove sensitive attachments.           |
 | Leave requests          | Planned — not implemented.                                               |
 | OCR document extraction | Planned — not implemented.                                               |
 | CSV / PDF exports       | Planned — not implemented.                                               |
 
 > This table reflects the code in this repository. Planned rows are intentionally not
-> described as working features.
+> described as working features. The class workflow is documented in
+> [docs/CLASSES.md](./docs/CLASSES.md).
 
 ## Tech Stack
 
@@ -198,6 +203,13 @@ Security is part of the application's foundation:
 - Secrets and privileged credentials stay out of client-side code.
 - Push endpoints and subscription keys are never returned to the browser; only the public
   VAPID key is exposed.
+- Invitation tokens are stored as SHA-256 hashes and never logged; class admins and
+  platform admins are separate roles that cannot be self-assigned.
+- Approved class assignments are public by design. Pending and rejected attachments stay
+  behind RLS and private storage.
+
+See [docs/CLASSES.md](./docs/CLASSES.md) for the class workflow and role boundaries.
+
 - The service-role key is read only by the cron scheduler, and its RPCs are granted only to
   `service_role`.
 - The scheduler rejects requests without a timing-safe bearer token check.
@@ -233,13 +245,17 @@ The application is deployed on Vercel. The full runbook is
 ## Project Status
 
 StarsTask is under active development. Assignment browsing, Google sign-in, assignment
-management with attachments, saved assignments, Web Push deadline reminders, and the PWA
-shell are implemented. Classes/roles, leave requests, OCR, and CSV/PDF exports are not
-implemented yet. Features, interfaces, and internal details may change.
+management with attachments, saved assignments, Web Push deadline reminders, the PWA
+shell, and the class workflow are implemented. The class workflow covers applications,
+platform review, class admin assignment, invitations, submission review with automatic
+public publication, moderation, audit logging, and the member, class admin, and platform
+admin dashboards. Leave requests, OCR, CSV/PDF exports, content reports, and account
+suspension are not implemented. Features, interfaces, and internal details may change.
 
 No Supabase project, Vercel deployment, VAPID key pair, or physical device was available
 while this repository was built, so database, OAuth, push delivery, and cron behavior are
-documented but not verified end to end.
+documented but not verified end to end. Platform admin access must be seeded manually;
+see [docs/CLASSES.md](./docs/CLASSES.md).
 
 ## Contributing
 

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Scan every commit, not only the tip of the branch.
+          fetch-depth: 0
+
+      - name: Detect leaked credentials
+        # GITLEAKS_LICENSE is only required for Organization-owned repositories.
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r --if-present typecheck
+
+      - name: Lint
+        run: pnpm -r --if-present lint
+
+      - name: Unit tests
+        run: pnpm -r --if-present test
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Production build
+        run: pnpm build
+        env:
+          # Build-time placeholders only. No secret is required to compile, and
+          # none of these values reach a browser bundle as anything but a URL.
+          NEXT_PUBLIC_SITE_URL: https://starstask.example
+
+  e2e:
+    name: Playwright (public pages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: verify
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm --filter @starstask/web exec playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: pnpm --filter @starstask/web test:e2e
+        env:
+          CI: "true"
+          # Tests that need a live Supabase project skip themselves when unset.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000

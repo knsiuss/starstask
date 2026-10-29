@@ -1,0 +1,32 @@
+{
+  "name": "starstask",
+  "version": "0.1.0",
+  "private": true,
+  "description": "StarsTask - academic assignment discovery and contribution platform",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @starstask/web dev",
+    "build": "pnpm --filter @starstask/web build",
+    "start": "pnpm --filter @starstask/web start",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "test:integration": "pnpm --filter @starstask/web test:integration",
+    "test:e2e": "pnpm --filter @starstask/web test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:env": "node scripts/check-env.mjs",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > apps/web/src/types/database.ts"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "prettier-plugin-sql": "0.20.0",
+    "prettier-plugin-tailwindcss": "0.8.1",
+    "typescript": "5.9.3"
+  }
+}

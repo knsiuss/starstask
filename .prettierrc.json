@@ -1,0 +1,35 @@
+{
+  "plugins": ["prettier-plugin-sql"],
+  "semi": true,
+  "singleQuote": false,
+  "jsxSingleQuote": false,
+  "quoteProps": "as-needed",
+  "trailingComma": "all",
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "singleAttributePerLine": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "proseWrap": "preserve",
+  "htmlWhitespaceSensitivity": "css",
+  "embeddedLanguageFormatting": "auto",
+  "overrides": [
+    {
+      "files": "*.sql",
+      "options": {
+        "language": "postgresql",
+        "keywordCase": "upper",
+        "dataTypeCase": "lower",
+        "functionCase": "lower",
+        "identifierCase": "preserve",
+        "indentStyle": "standard",
+        "logicalOperatorNewline": "before",
+        "expressionWidth": 60,
+        "linesBetweenQueries": 2
+      }
+    }
+  ]
+}
