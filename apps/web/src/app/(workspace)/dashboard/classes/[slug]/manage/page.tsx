@@ -1,10 +1,12 @@
 import {
   ArrowLeft,
+  CalendarDays,
   ClipboardCheck,
   FileWarning,
   History,
   Mail,
   Settings,
+  Trash2,
   Users,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -13,6 +15,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { ClassSettingsForm } from "@/components/classes/class-settings-form";
 import { ClassStatusControl } from "@/components/classes/class-status-control";
+import { DeleteClassButton } from "@/components/classes/delete-class-button";
 import { InvitationManager } from "@/components/classes/invitation-manager";
 import { MemberManager } from "@/components/classes/member-manager";
 import { StatusBadge } from "@/components/classes/status-badge";
@@ -143,12 +146,26 @@ export default async function ManageClassPage({
             accurate. Approving a submission publishes it without login.
           </p>
         </div>
-        <Button
-          asChild
-          variant="secondary"
-        >
-          <Link href={`/classes/${found.slug}`}>Public class page</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            asChild
+            variant="secondary"
+          >
+            <Link href={`/dashboard/classes/${found.slug}/sessions`}>
+              <CalendarDays
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Sessions
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="secondary"
+          >
+            <Link href={`/classes/${found.slug}`}>Public class page</Link>
+          </Button>
+        </div>
       </header>
 
       <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -191,8 +208,9 @@ export default async function ManageClassPage({
               Pending review
             </h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              You cannot review your own submission. Approving publishes it and
-              its attachments.
+              You cannot review your own submission. Your own posts publish
+              immediately and never appear here. Approving a member submission
+              publishes it and its attachments.
             </p>
           </div>
           <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
@@ -435,6 +453,32 @@ export default async function ManageClassPage({
           </section>
         ) : null}
       </div>
+
+      <section
+        aria-labelledby="danger-zone"
+        className="mt-10"
+      >
+        <h2
+          id="danger-zone"
+          className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
+        >
+          <Trash2
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+          Danger zone
+        </h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Deleting removes the class and its whole history for everyone. Archive
+          it instead when the roster should stay readable.
+        </p>
+        <div className="border-danger/30 bg-danger-soft/40 mt-3 rounded-lg border p-4">
+          <DeleteClassButton
+            classSlug={found.slug}
+            name={found.name}
+          />
+        </div>
+      </section>
     </div>
   );
 }

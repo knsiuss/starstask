@@ -1,4 +1,8 @@
-import { classMetadataUpdateSchema, toFieldErrors } from "@starstask/contracts";
+import {
+  classDeleteSchema,
+  classMetadataUpdateSchema,
+  toFieldErrors,
+} from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
@@ -11,7 +15,10 @@ import {
   getClientIdentifier,
 } from "@/lib/security/rate-limit";
 import { requireClassManager } from "@/features/classes/class-access";
-import { updateClassMetadata } from "@/features/classes/class-management-service";
+import {
+  deleteClass,
+  updateClassMetadata,
+} from "@/features/classes/class-management-service";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +97,65 @@ export async function PATCH(
     await updateClassMetadata(found.id, parsed.data);
 
     return apiSuccess({ id: found.id, slug: found.slug, role: role.canManage });
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+
+/**
+ * Deletes a class for good.
+ *
+ * Only a class manager may call it, and the body must repeat the class name:
+ * the typed confirmation guards against deleting the wrong class, while the
+ * database function re-checks the role. Published assignments are archived in
+ * the same transaction so the content does not stay public without its class.
+ */
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ slug: string }> },
+) {
+  try {
+    if (!isSupabaseConfigured()) {
+      throw serviceUnavailable();
+    }
+
+    const { slug } = await context.params;
+    const { session, class: found } = await requireClassManager(slug);
+
+    await enforceRateLimit({
+      action: "classes:delete",
+      identifier: session.user.id,
+      limit: 5,
+      windowSeconds: 3600,
+    });
+
+    const parsed = classDeleteSchema.safeParse(
+      await request.json().catch(() => null),
+    );
+
+    if (!parsed.success) {
+      throw new ApiError(
+        422,
+        "validation_error",
+        "Type the class name to confirm the deletion.",
+        toFieldErrors(parsed.error),
+      );
+    }
+
+    if (
+      parsed.data.confirmName.toLowerCase() !== found.name.trim().toLowerCase()
+    ) {
+      throw new ApiError(
+        422,
+        "confirmation_mismatch",
+        "The typed name does not match this class.",
+        { confirmName: "Type the class name exactly as shown" },
+      );
+    }
+
+    await deleteClass(found.id);
+
+    return apiSuccess({ id: found.id, deleted: true });
   } catch (error) {
     return handleRouteError(error);
   }

@@ -2,7 +2,7 @@
 
 **A collaborative academic platform for sharing and managing assignments, classes, and student administration.**
 
-StarsTask helps students and lecturers discover, contribute, and organize academic assignments in one place. Anyone can browse content openly, while actions that create or modify data require authentication and are protected by role-based access control.
+StarsTask helps students and lecturers discover, contribute, and organize academic assignments in one place. Reading and modifying assignment content requires authentication and is protected by role-based access control.
 
 ## Table of Contents
 
@@ -13,6 +13,7 @@ StarsTask helps students and lecturers discover, contribute, and organize academ
 - [Available Scripts](#available-scripts)
 - [Authentication Setup](#authentication-setup)
 - [Push Notifications and PWA](#push-notifications-and-pwa)
+- [Discussion Sessions and Google Calendar](#discussion-sessions-and-google-calendar)
 - [Security](#security)
 - [Development Guidelines](#development-guidelines)
 - [Deployment](#deployment)
@@ -24,34 +25,45 @@ StarsTask helps students and lecturers discover, contribute, and organize academ
 
 StarsTask is built around three principles:
 
-- **Open access:** browse available assignments without creating an account.
+- **Member access:** browse available assignments after signing in.
 - **Accountability:** authenticate before submitting or managing contributed content.
 - **Structured collaboration:** organize academic resources and class workflows with clear permissions.
 
 ## Features
 
-| Area                    | Description                                                              |
-| ----------------------- | ------------------------------------------------------------------------ |
-| Public browsing         | Explore published assignments without signing in.                        |
-| Authentication          | Sign in with Google through Supabase Auth.                               |
-| Assignment management   | Submit, edit, and delete your own assignments; attach up to three files. |
-| Search and filters      | Filter by course, semester, type, tag, and deadline; full-text search.   |
-| Deadline reminders      | Opt-in Web Push reminders 24 hours and 3 hours before a deadline.        |
-| Saved assignments       | Follow an assignment you do not own to receive its reminders.            |
-| PWA                     | Installable manifest and a push-only service worker.                     |
-| Access control          | Server-side authorization plus RLS and private storage.                  |
-| Classes and roles       | Approved classes, separate class and platform admin scopes.              |
-| Class applications      | Any signed-in user may apply; a platform admin approves or rejects.      |
-| Invitations             | Hashed, expiring, usage-limited, optionally email-restricted links.      |
-| Assignment review       | Class admins approve or reject; approval publishes the assignment.       |
-| Public moderation       | Unpublish, archive, restore, and remove sensitive attachments.           |
-| Leave requests          | Planned — not implemented.                                               |
-| OCR document extraction | Planned — not implemented.                                               |
-| CSV / PDF exports       | Planned — not implemented.                                               |
+| Area                    | Description                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| Assignment browsing     | Sign in to explore published assignments.                                                           |
+| Authentication          | Sign in with Google through Supabase Auth.                                                          |
+| Assignment management   | Submit, edit, and delete your own assignments; attach up to three files.                            |
+| Search and filters      | Filter by course, semester, type, tag, and deadline; full-text search.                              |
+| Deadline reminders      | Opt-in Web Push reminders 24 hours and 3 hours before a deadline.                                   |
+| Saved assignments       | Follow an assignment you do not own to receive its reminders.                                       |
+| PWA                     | Installable manifest and a push-only service worker.                                                |
+| Access control          | Server-side authorization plus RLS and private storage.                                             |
+| Classes and roles       | Approved classes, separate class and platform admin scopes.                                         |
+| Class applications      | Any signed-in user may apply; a platform admin approves or rejects.                                 |
+| Invitations             | Hashed, expiring, usage-limited, optionally email-restricted links.                                 |
+| Assignment review       | Class admins approve or reject; approval publishes the assignment.                                  |
+| Public moderation       | Unpublish, archive, restore, and remove sensitive attachments.                                      |
+| Discussion sessions     | Class admins schedule tutorials and reviews with RSVP and capacity.                                 |
+| Add to Google Calendar  | One link, no account needed; never exposes participant data.                                        |
+| Calendar sync           | Optional OAuth connection that copies sessions into your own calendar.                              |
+| Session reminders       | Opt-in Web Push 24 hours and 3 hours before a session you are going to.                             |
+| Absence requests        | Students record dates and evidence; class admins forward, never approve.                            |
+| Class rep verification  | A declared position plus evidence; a platform admin approval grants class admin for that one class. |
+| Developer monitoring    | Internal, allowlisted `/developer` view of real accounts, sign-ins, activity, errors, and health.   |
+| OCR document extraction | Optional reader suggests dates from a PDF; the student confirms each one.                           |
+| CSV / PDF exports       | Summary PDF, complete PDF with evidence, ZIP, and injection-safe CSV.                               |
 
 > This table reflects the code in this repository. Planned rows are intentionally not
 > described as working features. The class workflow is documented in
-> [docs/CLASSES.md](./docs/CLASSES.md).
+> [docs/CLASSES.md](./docs/CLASSES.md); discussion sessions and the calendar integration
+> in [docs/SESSIONS.md](./docs/SESSIONS.md); student absence requests in
+> [docs/LEAVE_REQUESTS.md](./docs/LEAVE_REQUESTS.md); class representative
+> verification in [docs/CLASS_VERIFICATION.md](./docs/CLASS_VERIFICATION.md); and the
+> internal, allowlisted monitoring dashboard in
+> [docs/DEVELOPER_MONITORING.md](./docs/DEVELOPER_MONITORING.md).
 
 ## Tech Stack
 
@@ -115,11 +127,18 @@ VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:you@example.com
 SUPABASE_SERVICE_ROLE_KEY=
 CRON_SECRET=
+DEVELOPER_EMAILS=
+GOOGLE_CALENDAR_CLIENT_ID=
+GOOGLE_CALENDAR_CLIENT_SECRET=
+GOOGLE_CALENDAR_REDIRECT_URI=
+GOOGLE_TOKEN_ENCRYPTION_KEY=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is used only by the cron reminder endpoint.
-`scripts/check-env.mjs` fails when the push group is partially configured or when a secret
-is exposed through a `NEXT_PUBLIC_` variable.
+`SUPABASE_SERVICE_ROLE_KEY` is used only by the cron routes. The four `GOOGLE_CALENDAR_*`
+values are optional and all-or-none: without them the app still works and "Add to Google
+Calendar" still opens Google with the event pre-filled. `scripts/check-env.mjs` fails when
+either group is partially configured, when the encryption key is not 32 bytes, or when a
+secret is exposed through a `NEXT_PUBLIC_` variable.
 
 > **Warning:** never commit `.env.local`, and never expose service-role keys, OAuth client
 > secrets, or VAPID private keys in client-side code.
@@ -191,6 +210,31 @@ source is configured. On Vercel Hobby the 10-minute schedule requires Pro; see
 [docs/PUSH_NOTIFICATIONS.md](./docs/PUSH_NOTIFICATIONS.md) for alternatives and the full
 runbook.
 
+## Discussion Sessions and Google Calendar
+
+Class admins and lecturers can schedule discussion sessions — tutorials, review meetings,
+Q&A — and members RSVP with `going`, `maybe`, or `not_going`. Platform admins and class
+admins are the only roles that can create or edit them; students can participate but never
+schedule. Capacity is enforced inside the database with a row lock, so two people cannot
+take the last seat.
+
+Every session offers **"Add to Google Calendar"**: a plain link that opens Google with the
+title, time, location, and join link pre-filled. It needs no account connection and no
+calendar permission, and it deliberately contains no participant information. Cancelled
+sessions render no link at all.
+
+Optionally, a user can connect their own Google Calendar from `/settings/calendar`. That
+uses a separate OAuth client with the single scope `calendar.events`, stores the tokens
+encrypted on the server, and copies sessions into the user's calendar. StarsTask stays the
+source of truth: edits flow one way, and deleting the connection deletes the tokens without
+signing anyone out.
+
+Session reminders are Web Push, opt-in per user, 24 hours and 3 hours before a session the
+user is going to. They never fire for a cancelled or completed session.
+
+The full runbook — schema, permissions, RSVP rules, OAuth flow, sync behaviour, and
+troubleshooting — is [docs/SESSIONS.md](./docs/SESSIONS.md).
+
 ## Security
 
 Security is part of the application's foundation:
@@ -205,10 +249,12 @@ Security is part of the application's foundation:
   VAPID key is exposed.
 - Invitation tokens are stored as SHA-256 hashes and never logged; class admins and
   platform admins are separate roles that cannot be self-assigned.
-- Approved class assignments are public by design. Pending and rejected attachments stay
-  behind RLS and private storage.
+- Approved class assignments require a verified session. Pending and rejected attachments
+  stay behind RLS and private storage.
 
-See [docs/CLASSES.md](./docs/CLASSES.md) for the class workflow and role boundaries.
+See [docs/CLASSES.md](./docs/CLASSES.md) for the class workflow and role boundaries,
+and [docs/ADMIN_CONSOLE.md](./docs/ADMIN_CONSOLE.md) for the platform admin console,
+its counters, and its read-only data access.
 
 - The service-role key is read only by the cron scheduler, and its RPCs are granted only to
   `service_role`.
@@ -238,18 +284,21 @@ The application is deployed on Vercel. The full runbook is
 2. Add the required environment variables for each environment.
 3. Add the production domain to the allowed redirect URLs in Supabase Auth.
 4. Apply all migrations to the target Supabase project before releasing.
-5. Configure a cron source for `/api/cron/deadline-reminders` if reminders are enabled.
-   Vercel Hobby only supports daily cron; a 10-minute schedule needs Pro or an external
-   scheduler.
+5. Configure a cron source for `/api/cron/deadline-reminders`, `/api/cron/notification-events`,
+   and `/api/cron/session-jobs` if reminders are enabled. Vercel Hobby only supports daily
+   cron; a 10-minute schedule needs Pro or an external scheduler.
 
 ## Project Status
 
 StarsTask is under active development. Assignment browsing, Google sign-in, assignment
 management with attachments, saved assignments, Web Push deadline reminders, the PWA
-shell, and the class workflow are implemented. The class workflow covers applications,
+shell, the class workflow, and discussion sessions with optional Google Calendar sync are
+implemented. The class workflow covers applications,
 platform review, class admin assignment, invitations, submission review with automatic
 public publication, moderation, audit logging, and the member, class admin, and platform
-admin dashboards. Leave requests, OCR, CSV/PDF exports, content reports, and account
+admin dashboards. Student absence requests with evidence, optional OCR field
+extraction, and CSV/PDF/ZIP report exports are also implemented; see
+[docs/LEAVE_REQUESTS.md](./docs/LEAVE_REQUESTS.md). Content reports and account
 suspension are not implemented. Features, interfaces, and internal details may change.
 
 No Supabase project, Vercel deployment, VAPID key pair, or physical device was available

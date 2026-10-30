@@ -9,7 +9,17 @@
 const ASSIGNMENT_PATH =
   /^\/assignments\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CLASS_PATH = /^\/classes\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const STATIC_PATHS = ["/dashboard", "/dashboard/review", "/my-assignments"];
+const SESSION_PATH =
+  /^\/sessions\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STATIC_PATHS = [
+  "/dashboard",
+  "/dashboard/review",
+  "/my-assignments",
+  "/sessions",
+  "/settings/calendar",
+  "/settings/profile",
+  "/admin/verifications",
+];
 const DEFAULT_ICON = "/icons/icon-192.png";
 const DEFAULT_BADGE = "/icons/badge-96.png";
 const FALLBACK_URL = "/";
@@ -85,7 +95,8 @@ function isSafePath(value) {
     !value.startsWith("//") &&
     (STATIC_PATHS.includes(value) ||
       CLASS_PATH.test(value) ||
-      ASSIGNMENT_PATH.test(value))
+      ASSIGNMENT_PATH.test(value) ||
+      SESSION_PATH.test(value))
   );
 }
 

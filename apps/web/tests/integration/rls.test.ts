@@ -184,8 +184,20 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
     expect(after).toHaveLength(1);
   });
 
-  it("lets anonymous visitors read published assignments", async () => {
+  it("hides published assignments from anonymous visitors", async () => {
     const { data, error } = await anon
+      .from("assignments")
+      .select("id")
+      .eq("id", publishedId);
+
+    expect(data ?? []).toHaveLength(0);
+    if (error) {
+      expect(error.code).toBe("42501");
+    }
+  });
+
+  it("lets signed-in students read published assignments", async () => {
+    const { data, error } = await userB.client
       .from("assignments")
       .select("id")
       .eq("id", publishedId);
@@ -363,6 +375,19 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
       expect(data).toEqual([
         { id: subscriptionId, device_label: "Test browser" },
       ]);
+    });
+
+    it("lists the caller's devices with the owner filter the settings page uses", async () => {
+      // The settings page filters by user_id. A column-level grant that omits
+      // user_id makes this fail with 42501 even though RLS would allow the row.
+      const { data, error } = await userA.client
+        .from("push_subscriptions")
+        .select("id, device_label, created_at, last_success_at")
+        .eq("user_id", userA.id)
+        .is("disabled_at", null);
+
+      expect(error).toBeNull();
+      expect(data?.map((row) => row.id)).toContain(subscriptionId);
     });
 
     it("never exposes the endpoint or key material to the browser", async () => {
@@ -569,6 +594,36 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
       );
 
       expect(completeError).not.toBeNull();
+    });
+
+    it("deletes a subscription by endpoint only for its owner", async () => {
+      const endpoint = `${PUSH_ENDPOINT}-by-endpoint`;
+      const { error: registerError } = await userA.client.rpc(
+        "register_push_subscription",
+        {
+          p_endpoint: endpoint,
+          p_p256dh: PUSH_P256DH,
+          p_auth: PUSH_AUTH,
+          p_device_label: "Endpoint test",
+        },
+      );
+
+      expect(registerError).toBeNull();
+
+      const { data: deletedByOther } = await userB.client.rpc(
+        "delete_push_subscription",
+        { p_endpoint: endpoint },
+      );
+
+      expect(deletedByOther).toBe(false);
+
+      const { data: deletedByOwner, error } = await userA.client.rpc(
+        "delete_push_subscription",
+        { p_endpoint: endpoint },
+      );
+
+      expect(error).toBeNull();
+      expect(deletedByOwner).toBe(true);
     });
 
     it("removes a subscription only for its owner", async () => {

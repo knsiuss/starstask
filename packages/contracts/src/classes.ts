@@ -190,6 +190,22 @@ export const classStatusUpdateSchema = z
 
 export type ClassStatusUpdateInput = z.infer<typeof classStatusUpdateSchema>;
 
+/**
+ * Deleting a class needs the caller to retype its name. The API compares it with
+ * the stored name, so a stray request cannot delete the wrong class.
+ */
+export const classDeleteSchema = z
+  .object({
+    confirmName: z
+      .string()
+      .trim()
+      .min(1, "Type the class name to confirm")
+      .max(CLASS_NAME_MAX),
+  })
+  .strict();
+
+export type ClassDeleteInput = z.infer<typeof classDeleteSchema>;
+
 export const classAdminAssignSchema = z
   .object({ userId: memberUserIdSchema })
   .strict();
@@ -367,6 +383,38 @@ export const classDiscoveryQuerySchema = z.object({
 
 export type ClassDiscoveryQuery = z.infer<typeof classDiscoveryQuerySchema>;
 
+/** Ordering options for the member's own class directory. */
+export const CLASS_DIRECTORY_SORTS = ["newest", "alphabetical"] as const;
+
+export type ClassDirectorySort = (typeof CLASS_DIRECTORY_SORTS)[number];
+
+export const CLASS_DIRECTORY_VIEWS = ["grid", "list"] as const;
+
+export type ClassDirectoryView = (typeof CLASS_DIRECTORY_VIEWS)[number];
+
+/**
+ * Filters for "My classes". The directory only ever contains the caller's own
+ * memberships, so these narrow a list the reader is already allowed to see.
+ */
+export const classDirectoryQuerySchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(100, "Search must be 100 characters or fewer")
+    .optional()
+    .transform((value) => (value === "" ? undefined : value)),
+  semester: z
+    .string()
+    .trim()
+    .max(CLASS_SEMESTER_MAX)
+    .optional()
+    .transform((value) => (value === "" ? undefined : value)),
+  sort: z.enum(CLASS_DIRECTORY_SORTS).default("newest"),
+  view: z.enum(CLASS_DIRECTORY_VIEWS).default("grid"),
+});
+
+export type ClassDirectoryQuery = z.infer<typeof classDirectoryQuerySchema>;
+
 export const reviewQueueQuerySchema = z.object({
   status: z
     .enum([
@@ -389,3 +437,77 @@ export const classAuditQuerySchema = z.object({
 });
 
 export type ClassAuditQuery = z.infer<typeof classAuditQuerySchema>;
+
+export const subjectIdSchema = z.string().uuid("Invalid subject id");
+
+export const classSubjectCreateSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Subject name must be at least 2 characters")
+      .max(120, "Subject name must be 120 characters or fewer"),
+    code: optionalText(20),
+    description: optionalText(2000),
+    lecturerName: optionalText(120),
+  })
+  .strict();
+
+export type ClassSubjectCreateInput = z.infer<typeof classSubjectCreateSchema>;
+
+export const classSubjectUpdateSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Subject name must be at least 2 characters")
+      .max(120, "Subject name must be 120 characters or fewer")
+      .optional(),
+    code: optionalText(20),
+    description: optionalText(2000),
+    lecturerName: optionalText(120),
+    status: z.enum(CLASS_STATUSES).optional(),
+  })
+  .strict();
+
+export type ClassSubjectUpdateInput = z.infer<typeof classSubjectUpdateSchema>;
+
+export type ClassSubjectView = {
+  id: string;
+  class_id: string;
+  course_id: string | null;
+  name: string;
+  code: string | null;
+  description: string | null;
+  lecturer_name: string | null;
+  status: ClassStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClassSubjectWithTaskCount = ClassSubjectView & {
+  task_count: number;
+};
+
+export const classMembersQuerySchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((value) => (value === "" ? undefined : value)),
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export type ClassMembersQuery = z.infer<typeof classMembersQuerySchema>;
+
+export const classInvitationDeclineSchema = z
+  .object({
+    invitationId: invitationIdSchema,
+  })
+  .strict();
+
+export type ClassInvitationDeclineInput = z.infer<
+  typeof classInvitationDeclineSchema
+>;

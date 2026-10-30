@@ -1,52 +1,65 @@
-import {
-  ArrowDownUp,
-  BookOpen,
-  CalendarDays,
-  FileText,
-  Search,
-  Tag,
-} from "lucide-react";
+import { Search, X } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import type { CourseOption } from "@/lib/db/assignments";
-import type { ClassOption } from "@/lib/db/classes";
 import {
-  ASSIGNMENT_TYPES,
-  type ListAssignmentsQuery,
-} from "@starstask/contracts";
+  buildAssignmentsHref,
+  type AssignmentView,
+} from "@/lib/assignments/urls";
+import { cn } from "@/lib/utils/cn";
+import type { ListAssignmentsQuery } from "@starstask/contracts";
 
 type AssignmentFiltersProps = {
   query: ListAssignmentsQuery;
-  courses: CourseOption[];
-  semesters: string[];
-  classes: ClassOption[];
+  view: AssignmentView;
 };
 
-/** Shared padding so every filter control lines up on the icon gutter. */
-const controlClass = "h-11 pl-9";
+/** Shared padding so the input lines up with the search icon. */
+const controlClass = "h-10 pl-8 pr-2.5";
 
-export function AssignmentFilters({
-  query,
-  courses,
-  semesters,
-  classes,
-}: AssignmentFiltersProps) {
+/**
+ * Search box for the assignment list.
+ *
+ * Course, class, semester, type, tag, and sort are no longer shown, but their
+ * query parameters still work: links from the landing page and the global search
+ * arrive with them. The active ones ride along as hidden fields so searching
+ * does not silently drop the link's filter.
+ */
+export function AssignmentFilters({ query, view }: AssignmentFiltersProps) {
+  const carriedFilters = [
+    { name: "course", value: query.course },
+    { name: "class", value: query.class },
+    { name: "semester", value: query.semester },
+    { name: "type", value: query.type },
+    { name: "tag", value: query.tag },
+    { name: "sort", value: query.sort === "newest" ? undefined : query.sort },
+  ];
+
+  const clearSearchHref = buildAssignmentsHref({
+    course: query.course,
+    class: query.class,
+    semester: query.semester,
+    type: query.type,
+    tag: query.tag,
+    sort: query.sort,
+    pageSize: String(query.pageSize),
+  });
+
   return (
     <form
       method="get"
       action="/assignments"
       role="search"
-      aria-label="Filter assignments"
-      className="border-border bg-surface rounded-xl border p-4 shadow-[0_1px_2px_rgba(23,33,29,0.04)] sm:p-5"
+      aria-label="Search assignments"
+      className="border-border bg-surface rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.04)]"
     >
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search
             aria-hidden="true"
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2"
           />
           <Label
             htmlFor="filter-search"
@@ -59,164 +72,57 @@ export function AssignmentFilters({
             name="search"
             type="search"
             defaultValue={query.search ?? ""}
-            placeholder="Search assignments..."
+            placeholder="Search by title, course, or tag..."
             maxLength={100}
-            className={controlClass}
+            className={cn(
+              controlClass,
+              "pr-10 [&::-webkit-search-cancel-button]:appearance-none",
+            )}
           />
+          {query.search ? (
+            <Link
+              href={clearSearchHref}
+              aria-label="Clear search"
+              className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
+            >
+              <X
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            </Link>
+          ) : null}
         </div>
         <Button
           type="submit"
-          className="h-11 px-6 sm:w-auto"
+          className="h-10 px-5 sm:w-auto"
         >
           Search
         </Button>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        <div className="space-y-1.5">
-          <Label htmlFor="filter-course">Course</Label>
-          <div className="relative">
-            <BookOpen
-              aria-hidden="true"
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-            />
-            <Select
-              id="filter-course"
-              name="course"
-              defaultValue={query.course ?? ""}
-              className={controlClass}
-            >
-              <option value="">All courses</option>
-              {courses.map((course) => (
-                <option
-                  key={course.id}
-                  value={course.id}
-                >
-                  {course.code
-                    ? `${course.code} · ${course.name}`
-                    : course.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="filter-class">Class</Label>
-          <Select
-            id="filter-class"
-            name="class"
-            defaultValue={query.class ?? ""}
-            className="h-11"
-          >
-            <option value="">All classes</option>
-            {classes.map((classItem) => (
-              <option
-                key={classItem.id}
-                value={classItem.id}
-              >
-                {classItem.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="filter-semester">Semester</Label>
-          <div className="relative">
-            <CalendarDays
-              aria-hidden="true"
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-            />
-            <Select
-              id="filter-semester"
-              name="semester"
-              defaultValue={query.semester ?? ""}
-              className={controlClass}
-            >
-              <option value="">All semesters</option>
-              {semesters.map((semester) => (
-                <option
-                  key={semester}
-                  value={semester}
-                >
-                  {semester}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="filter-type">Type</Label>
-          <div className="relative">
-            <FileText
-              aria-hidden="true"
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-            />
-            <Select
-              id="filter-type"
-              name="type"
-              defaultValue={query.type ?? ""}
-              className={controlClass}
-            >
-              <option value="">All types</option>
-              {ASSIGNMENT_TYPES.map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="filter-tag">Tag</Label>
-          <div className="relative">
-            <Tag
-              aria-hidden="true"
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-            />
-            <Input
-              id="filter-tag"
-              name="tag"
-              defaultValue={query.tag ?? ""}
-              placeholder="e.g. database, pdf"
-              maxLength={32}
-              className={controlClass}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="filter-sort">Sort by</Label>
-          <div className="relative">
-            <ArrowDownUp
-              aria-hidden="true"
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-            />
-            <Select
-              id="filter-sort"
-              name="sort"
-              defaultValue={query.sort}
-              className={controlClass}
-            >
-              <option value="newest">Newest first</option>
-              <option value="deadline">Deadline soonest</option>
-              <option value="oldest">Oldest first</option>
-            </Select>
-          </div>
-        </div>
-      </div>
+      {carriedFilters.map((filter) =>
+        filter.value ? (
+          <input
+            key={filter.name}
+            type="hidden"
+            name={filter.name}
+            value={filter.value}
+          />
+        ) : null,
+      )}
 
       <input
         type="hidden"
         name="pageSize"
         value={query.pageSize}
       />
+      {view === "grid" ? (
+        <input
+          type="hidden"
+          name="view"
+          value="grid"
+        />
+      ) : null}
     </form>
   );
 }

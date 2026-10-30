@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/deadline-reminders",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/notification-events",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/session-jobs",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

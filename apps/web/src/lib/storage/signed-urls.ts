@@ -12,8 +12,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * Creates short-lived download URLs for attachments.
  *
  * The bucket is private. The signed URL only succeeds when the storage policy
- * lets the current role read the object: published assignments for anonymous
- * visitors, plus owned pending assignments for their owner.
+ * lets the signed-in user read the assignment or its attachments for review.
  */
 export async function getAttachmentViews(
   attachments: AssignmentAttachment[],

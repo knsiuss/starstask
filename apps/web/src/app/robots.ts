@@ -10,7 +10,13 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/auth/", "/my-assignments", "/submit"],
+        disallow: [
+          "/api/",
+          "/auth/",
+          "/assignments/",
+          "/my-assignments",
+          "/submit",
+        ],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,

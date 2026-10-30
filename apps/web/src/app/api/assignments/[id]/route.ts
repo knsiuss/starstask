@@ -19,10 +19,8 @@ import {
   updateAssignmentRecord,
 } from "@/lib/db/assignments";
 import { isSupabaseConfigured } from "@/lib/env/public";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { recordAppActivity } from "@/lib/observability/events";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { deleteAssignmentForUser } from "@/features/assignments/assignment-service";
 
 const MAX_JSON_BYTES = 64 * 1024;
@@ -35,9 +33,15 @@ export async function GET(request: Request, context: RouteContext) {
       throw serviceUnavailable();
     }
 
+    const session = await getSessionUser();
+
+    if (!session) {
+      throw unauthorized();
+    }
+
     await enforceRateLimit({
       action: "assignments:detail",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 180,
       windowSeconds: 60,
     });
@@ -131,6 +135,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       throw notFound();
     }
 
+    await recordAppActivity({
+      actorId: session.user.id,
+      eventType: "assignment_updated",
+      resourceType: "assignment",
+      resourceId: id,
+    });
+
     return apiSuccess({ id });
   } catch (error) {
     return handleRouteError(error);
@@ -162,6 +173,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!deleted) {
       throw notFound();
     }
+
+    await recordAppActivity({
+      actorId: session.user.id,
+      eventType: "assignment_deleted",
+      resourceType: "assignment",
+      resourceId: id,
+    });
 
     return new Response(null, {
       status: 204,

@@ -3,22 +3,31 @@
 @theme {
   --color-background: #fafaf8;
   --color-surface: #ffffff;
-  --color-foreground: #17211d;
-  --color-muted: #f1f4f1;
-  --color-muted-foreground: #64706a;
-  --color-subtle: #f7f8f6;
-  --color-border: #e5e9e6;
-  --color-input: #dbe2dc;
-  --color-accent: #17352b;
-  --color-accent-hover: #24483a;
+  --color-foreground: #292d34;
+  --color-muted: #f0f1f3;
+  --color-muted-foreground: #646b76;
+  --color-subtle: #f7f7f5;
+  --color-border: #e7e7e3;
+  --color-input: #dcdde2;
+  --color-accent: #45639e;
+  --color-accent-hover: #3a5588;
   --color-accent-foreground: #ffffff;
-  --color-accent-soft: #eef2ee;
-  --color-danger: #b91c1c;
-  --color-danger-soft: #fef2f2;
+  --color-accent-soft: #e8edfa;
+  --color-hover: #f3f5f9;
+  /* Pale blue band behind the product-value section. */
+  --color-band: #eef3fc;
+  /* Dark navy surface for the mission section. Text pairs below are the only
+     foregrounds verified against it (14.3:1 and 7.7:1). */
+  --color-navy: #16203a;
+  --color-navy-foreground: #eef2fb;
+  --color-navy-muted: #a8b4cc;
+  --color-navy-border: #2a3752;
+  --color-danger: #a94a4a;
+  --color-danger-soft: #fbeded;
   --color-success: #15803d;
   --color-success-soft: #ecfdf5;
-  --color-warning: #b45309;
-  --color-warning-soft: #fffbeb;
+  --color-warning: #8a5a1e;
+  --color-warning-soft: #fbf3e4;
 
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,

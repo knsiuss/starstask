@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { resolveSignedInHomePath } from "@/lib/auth/developer";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { recordAuthActivity } from "@/lib/observability/events";
 import {
   enforceRateLimit,
   getClientIdentifier,
@@ -45,6 +47,11 @@ export async function GET(request: NextRequest) {
       windowSeconds: 300,
     });
   } catch {
+    await recordAuthActivity({
+      eventType: "sign_in_failed",
+      userId: null,
+      reason: "rate_limited",
+    });
     return redirectToLogin("rate_limited");
   }
 
@@ -52,12 +59,25 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
 
   if (providerError) {
+    await recordAuthActivity({
+      eventType: "sign_in_failed",
+      userId: null,
+      reason:
+        providerError === "access_denied"
+          ? "oauth_cancelled"
+          : "provider_error",
+    });
     return redirectToLogin(
       providerError === "access_denied" ? "oauth_cancelled" : "callback_failed",
     );
   }
 
   if (!code) {
+    await recordAuthActivity({
+      eventType: "sign_in_failed",
+      userId: null,
+      reason: "missing_code",
+    });
     return redirectToLogin("callback_failed");
   }
 
@@ -67,6 +87,11 @@ export async function GET(request: NextRequest) {
 
   if (exchangeError) {
     console.error("[auth] code exchange failed", { code: exchangeError.code });
+    await recordAuthActivity({
+      eventType: "sign_in_failed",
+      userId: null,
+      reason: "exchange_failed",
+    });
     return redirectToLogin("callback_failed");
   }
 
@@ -77,19 +102,48 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // A `next` the caller supplied explicitly decides the destination. When the
+  // sign-in had no usable `next`, each account kind lands in its own home area
+  // (console for developers, workspace for members).
+  const destination =
+    requestUrl.searchParams.get("next") !== null
+      ? nextPath
+      : resolveSignedInHomePath(user?.email);
+
   if (user) {
+    const provider =
+      typeof user.app_metadata.provider === "string"
+        ? user.app_metadata.provider
+        : null;
+
+    await recordAuthActivity({
+      eventType: "sign_in_succeeded",
+      userId: user.id,
+      provider,
+    });
+
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, onboarded_at")
       .eq("id", user.id)
       .maybeSingle();
 
     if (!profile) {
       console.error("[auth] profile missing after sign-in");
+    } else if (!profile.onboarded_at) {
+      // The session is already valid; the only thing left is the profile form.
+      // The destination is preserved so the user lands where they aimed after
+      // onboarding, and `/onboarding` is never a login target (no loop).
+      const onboardingPath = `/onboarding?next=${encodeURIComponent(destination)}`;
+
+      return NextResponse.redirect(new URL(onboardingPath, requestUrl.origin), {
+        status: 303,
+        headers: { "Cache-Control": "no-store" },
+      });
     }
   }
 
-  return NextResponse.redirect(new URL(nextPath, requestUrl.origin), {
+  return NextResponse.redirect(new URL(destination, requestUrl.origin), {
     status: 303,
     headers: { "Cache-Control": "no-store" },
   });

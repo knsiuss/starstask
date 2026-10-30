@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 export type ManagedMember = {
   user_id: string;
   display_name: string;
+  bio?: string | null;
   joined_via: string;
   joined_at: string;
   is_admin: boolean;
@@ -128,6 +129,11 @@ export function MemberManager({
                   </span>
                 ) : null}
               </p>
+              {member.bio ? (
+                <p className="text-muted-foreground mt-1 line-clamp-3 text-xs leading-relaxed whitespace-pre-line">
+                  {member.bio}
+                </p>
+              ) : null}
               <p className="text-muted-foreground mt-0.5 text-xs">
                 Joined {formatDate(member.joined_at)} ·{" "}
                 {member.joined_via.replace("_", " ")}

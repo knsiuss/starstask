@@ -10,6 +10,7 @@ export type SessionProfile = {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  onboarded_at: string | null;
 };
 
 export type SessionUser = {
@@ -40,7 +41,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, avatar_url")
+    .select("id, display_name, avatar_url, onboarded_at")
     .eq("id", user.id)
     .maybeSingle();
 

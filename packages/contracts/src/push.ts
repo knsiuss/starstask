@@ -132,6 +132,9 @@ export const notificationPreferencesSchema = z
     pushEnabled: z.boolean().optional(),
     reminder24h: z.boolean().optional(),
     reminder3h: z.boolean().optional(),
+    /** Discussion session reminders are configured independently of deadlines. */
+    sessionReminder24h: z.boolean().optional(),
+    sessionReminder3h: z.boolean().optional(),
     timezone: timeZoneSchema.optional(),
   })
   .strict()
@@ -148,3 +151,19 @@ export const savedAssignmentSchema = z
   .strict();
 
 export type SavedAssignmentInput = z.infer<typeof savedAssignmentSchema>;
+
+/**
+ * The sanitized payload stored on a notification event.
+ *
+ * Database functions build only these fields, so parsing keeps a malformed or
+ * unexpected row from rendering as an in-app notification.
+ */
+export const notificationEventPayloadSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  body: z.string().trim().max(500),
+  url: z.string().trim().max(2048),
+});
+
+export type NotificationEventPayload = z.infer<
+  typeof notificationEventPayloadSchema
+>;

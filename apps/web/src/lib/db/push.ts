@@ -13,6 +13,8 @@ export type NotificationPreferences = {
   pushEnabled: boolean;
   reminder24h: boolean;
   reminder3h: boolean;
+  sessionReminder24h: boolean;
+  sessionReminder3h: boolean;
   timezone: string;
 };
 
@@ -20,6 +22,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   pushEnabled: false,
   reminder24h: true,
   reminder3h: true,
+  sessionReminder24h: true,
+  sessionReminder3h: true,
   timezone: DEFAULT_NOTIFICATION_TIMEZONE,
 };
 
@@ -53,7 +57,9 @@ export async function getNotificationPreferences(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("notification_preferences")
-    .select("push_enabled, reminder_24h, reminder_3h, timezone")
+    .select(
+      "push_enabled, reminder_24h, reminder_3h, session_reminder_24h, session_reminder_3h, timezone",
+    )
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -72,6 +78,8 @@ export async function getNotificationPreferences(
     pushEnabled: data.push_enabled,
     reminder24h: data.reminder_24h,
     reminder3h: data.reminder_3h,
+    sessionReminder24h: data.session_reminder_24h,
+    sessionReminder3h: data.session_reminder_3h,
     timezone: data.timezone,
   };
 }
@@ -86,6 +94,8 @@ export async function updateNotificationPreferences(
     pushEnabled: patch.pushEnabled ?? current.pushEnabled,
     reminder24h: patch.reminder24h ?? current.reminder24h,
     reminder3h: patch.reminder3h ?? current.reminder3h,
+    sessionReminder24h: patch.sessionReminder24h ?? current.sessionReminder24h,
+    sessionReminder3h: patch.sessionReminder3h ?? current.sessionReminder3h,
     timezone: patch.timezone ?? current.timezone,
   };
 
@@ -93,12 +103,14 @@ export async function updateNotificationPreferences(
     push_enabled: merged.pushEnabled,
     reminder_24h: merged.reminder24h,
     reminder_3h: merged.reminder3h,
+    session_reminder_24h: merged.sessionReminder24h,
+    session_reminder_3h: merged.sessionReminder3h,
     timezone: merged.timezone,
   };
   const supabase = await createSupabaseServerClient();
 
   // A plain UPDATE keeps `user_id` out of the statement. The table grants
-  // UPDATE only on the four preference columns, so an upsert (whose
+  // UPDATE only on the preference columns, so an upsert (whose
   // `ON CONFLICT DO UPDATE` also assigns `user_id`) is rejected with 42501.
   const { data, error } = await supabase
     .from("notification_preferences")
@@ -215,25 +227,22 @@ export async function deletePushDevice(
  * Removes the subscription for an endpoint owned by the caller.
  *
  * Used when the browser unsubscribes itself: the client knows its endpoint but
- * not the database id, and endpoints are never exposed back to clients.
+ * not the database id. Endpoints are not readable by clients, so the delete
+ * runs through a caller-scoped definer function instead of a table filter.
  */
 export async function deletePushDeviceByEndpoint(
-  userId: string,
   endpoint: string,
 ): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("push_subscriptions")
-    .delete()
-    .eq("endpoint", endpoint)
-    .eq("user_id", userId)
-    .select("id");
+  const { data, error } = await supabase.rpc("delete_push_subscription", {
+    p_endpoint: endpoint,
+  });
 
   if (error) {
     throw new DataAccessError("Could not remove this device", error.code);
   }
 
-  return (data ?? []).length > 0;
+  return data ?? false;
 }
 
 export async function listSavedAssignments(

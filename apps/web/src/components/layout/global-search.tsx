@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 /**
  * Top-bar assignment search. Submits through the same GET query as the
- * Explore filters, so no extra client state or API is involved.
+ * assignments page, so no extra client state or API is involved.
  */
 export function GlobalSearch() {
   const inputRef = useRef<HTMLInputElement>(null);

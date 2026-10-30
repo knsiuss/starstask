@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
+import { resolveSignedInHomePath } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { safeRedirectPath } from "@/lib/security/redirect";
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in with Google to contribute assignments to StarsTask.",
+  description: "Sign in with Google to browse and contribute assignments.",
   robots: { index: false, follow: false },
 };
 
@@ -33,11 +34,21 @@ type LoginPageProps = {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  const nextPath = safeRedirectPath(params.next, "/assignments");
   const configured = isSupabaseConfigured();
   const session = configured ? await getSessionUser() : null;
+  // Without an explicit `next`, each account kind lands in its own home area.
+  const nextPath = safeRedirectPath(
+    params.next,
+    resolveSignedInHomePath(session?.user.email),
+  );
 
   if (session) {
+    // A signed-in user with an unfinished profile goes to onboarding once here,
+    // rather than being bounced by the workspace layout.
+    if (session.profile && !session.profile.onboarded_at) {
+      redirect(`/onboarding?next=${encodeURIComponent(nextPath)}`);
+    }
+
     redirect(nextPath);
   }
 
@@ -68,9 +79,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Sign in to StarsTask
         </h1>
         <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-          Google is the only sign-in method. You need an account to submit
-          assignments and manage the ones you contributed. Browsing stays open
-          to everyone.
+          Google is the only sign-in method. You need an account to browse,
+          submit, and manage assignments.
         </p>
 
         {errorMessage ? (
@@ -96,16 +106,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           never see your Google password.
         </p>
       </div>
-
-      <p className="text-muted-foreground mt-6 text-center text-sm">
-        Just looking for an assignment?{" "}
-        <Link
-          href="/assignments"
-          className="text-accent font-medium hover:underline"
-        >
-          Browse without an account
-        </Link>
-      </p>
     </div>
   );
 }

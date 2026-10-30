@@ -4,6 +4,7 @@ import {
   DEFAULT_NOTIFICATION_TIMEZONE,
   isAcceptablePushEndpoint,
   isValidTimeZone,
+  notificationEventPayloadSchema,
   notificationPreferencesSchema,
   pushEndpointSchema,
   pushSubscriptionSchema,
@@ -165,6 +166,49 @@ describe("notificationPreferencesSchema", () => {
     expect(
       notificationPreferencesSchema.safeParse({ timezone: "Mars/Olympus" })
         .success,
+    ).toBe(false);
+  });
+});
+
+describe("notificationEventPayloadSchema", () => {
+  it("accepts a payload built by the database", () => {
+    const parsed = notificationEventPayloadSchema.safeParse({
+      title: "Class invitation",
+      body: "You were invited to IF-24-01.",
+      url: "/dashboard",
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
+  it("ignores extra fields instead of passing them to the UI", () => {
+    const parsed = notificationEventPayloadSchema.safeParse({
+      title: "Assignment approved",
+      body: "Your submission was published.",
+      url: "/my-assignments",
+      ownerId: "should-not-render",
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.success ? parsed.data : {}).not.toHaveProperty("ownerId");
+  });
+
+  it("rejects a payload without a title", () => {
+    expect(
+      notificationEventPayloadSchema.safeParse({
+        body: "Missing title",
+        url: "/dashboard",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a payload with a non-string body", () => {
+    expect(
+      notificationEventPayloadSchema.safeParse({
+        title: "Invalid body",
+        body: 42,
+        url: "/dashboard",
+      }).success,
     ).toBe(false);
   });
 });

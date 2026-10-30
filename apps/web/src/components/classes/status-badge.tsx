@@ -14,6 +14,8 @@ const STATUS_LABELS: Record<string, string> = {
   withdrawn: "Withdrawn",
   draft: "Draft",
   pending_review: "Pending review",
+  needs_revision: "Needs revision",
+  verified: "Verified",
   published: "Published",
   unpublished: "Unpublished",
 };
@@ -24,6 +26,8 @@ const STATUS_VARIANTS: Record<string, BadgeProps["variant"]> = {
   published: "success",
   pending: "warning",
   pending_review: "warning",
+  needs_revision: "warning",
+  verified: "success",
   draft: "neutral",
   rejected: "danger",
   withdrawn: "neutral",

@@ -1,6 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import {
+  DEVELOPER_HOME_PATH,
+  isAllowlistedDeveloperEmail,
+  isStudentWorkspacePath,
+  parseDeveloperEmails,
+} from "@starstask/shared";
+
 import { getSupabaseConfig, isSupabaseConfigured } from "@/lib/env/public";
 import type { Database } from "@/types/database";
 
@@ -10,6 +17,9 @@ import type { Database } from "@/types/database";
  *
  * This runs in the Next.js proxy (formerly middleware). Authorization is never
  * decided here; protected pages and API routes verify the user independently.
+ * The single exception below is a routing rule, not an authorization check: a
+ * developer account is bounced from student-only pages to the console, which
+ * re-verifies the allowlist on every request itself.
  */
 export async function updateSession(
   request: NextRequest,
@@ -47,7 +57,18 @@ export async function updateSession(
 
   // getUser() validates the access token with Supabase Auth and triggers a
   // refresh when needed. getSession() alone is not a trust boundary.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const allowlist = parseDeveloperEmails(process.env.DEVELOPER_EMAILS);
+
+  if (
+    isAllowlistedDeveloperEmail(user?.email, allowlist) &&
+    isStudentWorkspacePath(request.nextUrl.pathname)
+  ) {
+    return NextResponse.redirect(new URL(DEVELOPER_HOME_PATH, request.url));
+  }
 
   return response;
 }

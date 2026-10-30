@@ -4,14 +4,29 @@ import { Loader2 } from "lucide-react";
 import * as React from "react";
 
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils/cn";
 
 type GoogleSignInButtonProps = {
   nextPath: string;
+  /**
+   * Presentation only. The defaults reproduce the original full-width button
+   * on the sign-in page, so every other placement opts in explicitly.
+   */
+  size?: ButtonProps["size"];
+  variant?: ButtonProps["variant"];
+  className?: string;
+  wrapperClassName?: string;
 };
 
-export function GoogleSignInButton({ nextPath }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({
+  nextPath,
+  size = "lg",
+  variant = "primary",
+  className,
+  wrapperClassName,
+}: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -47,11 +62,12 @@ export function GoogleSignInButton({ nextPath }: GoogleSignInButtonProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className={cn("space-y-3", wrapperClassName)}>
       <Button
         type="button"
-        size="lg"
-        className="w-full"
+        size={size}
+        variant={variant}
+        className={cn("w-full", className)}
         onClick={handleClick}
         disabled={isLoading}
         aria-busy={isLoading}

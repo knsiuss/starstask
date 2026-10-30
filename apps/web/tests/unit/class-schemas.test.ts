@@ -6,6 +6,8 @@ import {
   attachmentIdSchema,
   classApplicationCreateSchema,
   classApplicationDecisionSchema,
+  classDeleteSchema,
+  classDirectoryQuerySchema,
   classDiscoveryQuerySchema,
   classInvitationAcceptSchema,
   classInvitationCreateSchema,
@@ -137,6 +139,40 @@ describe("class metadata and status", () => {
     ).toBe(true);
     expect(
       classStatusUpdateSchema.safeParse({ status: "deleted" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("class deletion", () => {
+  it("requires the typed class name and trims it", () => {
+    const parsed = classDeleteSchema.safeParse({
+      confirmName: "  Database Systems — Class B  ",
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.confirmName).toBe(
+      "Database Systems — Class B",
+    );
+  });
+
+  it("rejects an empty confirmation", () => {
+    expect(classDeleteSchema.safeParse({ confirmName: "   " }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects unknown fields instead of ignoring them", () => {
+    expect(
+      classDeleteSchema.safeParse({
+        confirmName: "Database Systems — Class B",
+        force: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a name longer than the class name limit", () => {
+    expect(
+      classDeleteSchema.safeParse({ confirmName: "x".repeat(121) }).success,
     ).toBe(false);
   });
 });
@@ -281,6 +317,35 @@ describe("class discovery query", () => {
   it("bounds the page size", () => {
     expect(
       classDiscoveryQuerySchema.safeParse({ pageSize: "25" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("class directory query", () => {
+  it("defaults the ordering and view, and drops blank filters", () => {
+    const parsed = classDirectoryQuerySchema.parse({
+      search: "",
+      semester: "",
+    });
+
+    expect(parsed.sort).toBe("newest");
+    expect(parsed.view).toBe("grid");
+    expect(parsed.search).toBeUndefined();
+    expect(parsed.semester).toBeUndefined();
+  });
+
+  it("accepts both views and rejects an unknown value", () => {
+    expect(classDirectoryQuerySchema.safeParse({ view: "list" }).success).toBe(
+      true,
+    );
+    expect(
+      classDirectoryQuerySchema.safeParse({ view: "kanban" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an unknown sort", () => {
+    expect(
+      classDirectoryQuerySchema.safeParse({ sort: "deadline" }).success,
     ).toBe(false);
   });
 });

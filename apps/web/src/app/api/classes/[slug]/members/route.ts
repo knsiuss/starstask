@@ -13,7 +13,12 @@ export const dynamic = "force-dynamic";
 
 const removeMemberSchema = z.object({ userId: memberUserIdSchema }).strict();
 
-/** Member roster for a class admin. Display names only, no private profile data. */
+/**
+ * Member roster for a class manager.
+ *
+ * The response carries display names, avatars, and bios, never private profile
+ * fields such as NIM or full name.
+ */
 export async function GET(
   _request: Request,
   context: { params: Promise<{ slug: string }> },
@@ -40,9 +45,9 @@ export async function GET(
 }
 
 /**
- * Removes a member. Removing a class admin also removes their admin row (the
- * foreign key cascades), and the function refuses to leave a class with no
- * admin.
+ * Removes a member. Only a class manager may do this. Removing a class admin
+ * also removes their admin row (the foreign key cascades), and the function
+ * refuses to leave a class with no admin.
  */
 export async function DELETE(
   request: Request,

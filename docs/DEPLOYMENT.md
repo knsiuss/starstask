@@ -177,24 +177,66 @@ supabase start
 
 `supabase/config.toml` already wires this via `env(...)` substitution.
 
+### 3.1 Calendar OAuth client (optional)
+
+Calendar sync needs its **own** OAuth client. Reusing the Supabase sign-in client would
+add `calendar.events` to the consent screen of every login, and would couple an optional
+feature to authentication.
+
+1. Same Google Cloud project (or a new one) → **APIs & Services → Library** →
+   enable **Google Calendar API**.
+2. **APIs & Services → OAuth consent screen → Data access**: add the scope
+   `https://www.googleapis.com/auth/calendar.events`. Nothing else is required; do not add
+   `.../auth/calendar` (full read/write) or any read scope.
+3. **Credentials → Create credentials → OAuth client ID → Web application** (a second
+   client, separate from the sign-in one).
+4. Authorized redirect URI — this is the **app route**, not Supabase:
+
+   ```
+   http://localhost:3000/api/integrations/google-calendar/callback
+   https://<your-domain>/api/integrations/google-calendar/callback
+   ```
+
+   Register one entry per environment you use. Google compares the value
+   character-for-character, including the scheme and any port.
+
+5. Copy the client ID and secret into the deployment as `GOOGLE_CALENDAR_CLIENT_ID` and
+   `GOOGLE_CALENDAR_CLIENT_SECRET`, set `GOOGLE_CALENDAR_REDIRECT_URI` to the matching
+   URL, and generate the token key:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+
+   Put the result in `GOOGLE_TOKEN_ENCRYPTION_KEY`.
+
+If you skip all of this, Stage A ("Add to Google Calendar") still works and
+`/settings/calendar` explains that sync is not configured. Details:
+`docs/SESSIONS.md` §6.
+
 ---
 
 ## 4. Environment variables
 
-| Variable                               | Scope  | Needed at             | Notes                                          |
-| -------------------------------------- | ------ | --------------------- | ---------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Public | Build **and** runtime | Inlined into the client bundle                 |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public | Build **and** runtime | Inlined; safe because RLS is the guard         |
-| `NEXT_PUBLIC_SITE_URL`                 | Public | Build                 | Canonical URLs, OG tags, `robots.txt`, sitemap |
-| `RATE_LIMIT_SALT`                      | Server | Runtime               | ≥32 chars; rotating it resets all counters     |
-| `UPSTASH_REDIS_REST_URL`               | Server | Runtime               | Optional                                       |
-| `UPSTASH_REDIS_REST_TOKEN`             | Server | Runtime               | Optional, set together with the URL            |
-| `VAPID_PUBLIC_KEY`                     | Server | Runtime               | Push group; passed to the browser as a prop    |
-| `VAPID_PRIVATE_KEY`                    | Server | Runtime               | Push group; never log or expose                |
-| `VAPID_SUBJECT`                        | Server | Runtime               | Push group; `mailto:` or `https:` URI          |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Server | Runtime               | Push group; cron scheduler only, bypasses RLS  |
-| `CRON_SECRET`                          | Server | Runtime               | Push group; ≥32 chars, bearer token            |
-| `SUPABASE_TEST_*`                      | Server | Tests only            | Never set in Vercel                            |
+| Variable                               | Scope  | Needed at             | Notes                                           |
+| -------------------------------------- | ------ | --------------------- | ----------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Public | Build **and** runtime | Inlined into the client bundle                  |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public | Build **and** runtime | Inlined; safe because RLS is the guard          |
+| `NEXT_PUBLIC_SITE_URL`                 | Public | Build                 | Canonical URLs, OG tags, `robots.txt`, sitemap  |
+| `RATE_LIMIT_SALT`                      | Server | Runtime               | ≥32 chars; rotating it resets all counters      |
+| `UPSTASH_REDIS_REST_URL`               | Server | Runtime               | Optional                                        |
+| `UPSTASH_REDIS_REST_TOKEN`             | Server | Runtime               | Optional, set together with the URL             |
+| `VAPID_PUBLIC_KEY`                     | Server | Runtime               | Push group; passed to the browser as a prop     |
+| `VAPID_PRIVATE_KEY`                    | Server | Runtime               | Push group; never log or expose                 |
+| `VAPID_SUBJECT`                        | Server | Runtime               | Push group; `mailto:` or `https:` URI           |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Server | Runtime               | Push group; cron scheduler only, bypasses RLS   |
+| `CRON_SECRET`                          | Server | Runtime               | Push group; ≥32 chars, bearer token             |
+| `GOOGLE_CALENDAR_CLIENT_ID`            | Server | Runtime               | Calendar group; separate from sign-in           |
+| `GOOGLE_CALENDAR_CLIENT_SECRET`        | Server | Runtime               | Calendar group; never log or expose             |
+| `GOOGLE_CALENDAR_REDIRECT_URI`         | Server | Runtime               | Calendar group; must match the console entry    |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY`          | Server | Runtime               | Calendar group; 32 bytes, base64                |
+| `OCR_PROVIDER`                         | Server | Runtime               | Leave group; `disabled` (default) or `pdf-text` |
+| `SUPABASE_TEST_*`                      | Server | Tests only            | Never set in Vercel                             |
 
 The five push variables are all-or-none. When any is missing, the app still builds and
 serves; `/settings/notifications` shows "not configured" and the cron route answers `503`.
@@ -205,9 +247,22 @@ pnpm --filter @starstask/web exec web-push generate-vapid-keys
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   # CRON_SECRET
 ```
 
+The four calendar variables are also all-or-none. When any is missing, the app still
+builds and serves; `/settings/calendar` shows "not configured", the sync endpoint answers
+`503 calendar_not_configured`, and the "Add to Google Calendar" link keeps working.
+
 Rotating VAPID keys invalidates every stored subscription, so users must re-enable
 notifications. Rotating `CRON_SECRET` only requires updating the scheduler's header.
-Full push runbook: `docs/PUSH_NOTIFICATIONS.md`.
+Rotating `GOOGLE_TOKEN_ENCRYPTION_KEY` makes stored tokens unreadable, so every user
+reconnects once; nothing else breaks. Full push runbook:
+`docs/PUSH_NOTIFICATIONS.md`; calendar runbook: `docs/SESSIONS.md`.
+
+OCR needs no credentials: `OCR_PROVIDER` selects between `disabled` (the default —
+the field-extraction UI simply never appears) and `pdf-text` (reads the text layer
+of uploaded PDFs locally; no external service, no key). Scanned-image OCR would
+need an external provider wired into `apps/web/src/lib/ocr`, which is not
+configured by default. Evidence uploads work either way; OCR failing or being
+disabled never blocks a request.
 
 Two behaviours worth knowing:
 
@@ -297,14 +352,20 @@ build time.
 ```json
 {
   "crons": [
-    { "path": "/api/cron/deadline-reminders", "schedule": "*/10 * * * *" }
+    { "path": "/api/cron/deadline-reminders", "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/notification-events", "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/session-jobs", "schedule": "*/10 * * * *" }
   ]
 }
 ```
 
 Vercel adds `Authorization: Bearer $CRON_SECRET` automatically when that variable is set
-for the environment. The route rejects anything else with `401` and returns `503` when the
-push group is incomplete.
+for the environment. The routes reject anything else with `401` and return `503` when the
+relevant configuration is incomplete.
+
+`/api/cron/session-jobs` runs two phases in one invocation: session reminders (24h and 3h)
+and up to 20 due Google Calendar syncs. A failure in the reminder phase is logged and the
+calendar phase still runs, so one broken queue does not stall the other.
 
 **Plan limitation:** Vercel Hobby only offers daily cron jobs, so a 10-minute schedule is
 not available there. Either upgrade to Pro, or do not rely on the Vercel cron:
@@ -319,6 +380,7 @@ Verify the deployed schedule rather than assuming it:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/deadline-reminders
+curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/session-jobs
 # expect 401 without the header; 200 with it
 ```
 
@@ -451,8 +513,9 @@ select
 
 ## 7. Acceptance checklist
 
-- [ ] `supabase db push` applied eight migrations, no drift
+- [ ] `supabase db push` applied every migration in `supabase/migrations/`, no drift
 - [ ] Bucket `assignment-attachments` exists, `public = false`, 10 MiB limit
+- [ ] Bucket `leave-evidence` exists, `public = false`, 10 MiB limit, `pdf/jpeg/png` only
 - [ ] Google is the only enabled provider
 - [ ] Site URL + `…/auth/callback**` allow-listed for every origin you serve
 - [ ] `pnpm check:env` passes with the production values
@@ -466,6 +529,11 @@ select
 - [ ] A device can be enabled, listed, and removed
 - [ ] The cron route returns `401` without a token and `200` with it
 - [ ] A cron source is actually observed running on the intended schedule
+- [ ] A student can create a leave request, upload evidence, and confirm OCR fields
+- [ ] A class admin can review, return for correction, and forward a package; the
+      downloaded PDF opens and every request in it carries its `LR-…` reference
+- [ ] A second class admin cannot list, review, or export another class's requests
+- [ ] The CSV export opens in a spreadsheet and formula-injection cells are neutralised
 - [ ] One test reminder is delivered and clicking it opens the assignment
 - [ ] A second cron run does not duplicate the reminder
 

@@ -72,6 +72,12 @@ export default async function NotificationSettingsPage() {
           initialSaved={saved}
         />
       </div>
+
+      <p className="text-muted-foreground mt-6 text-xs">
+        Deadline reminders follow the timezone and lead time saved above. They
+        are delivered to your saved push devices whether or not a calendar is
+        connected.
+      </p>
     </div>
   );
 }

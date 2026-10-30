@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
 
-import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
+/**
+ * Public task pages (invite, login, class detail) get the header but no
+ * footer: the footer's landing-page link groups are noise on a page whose
+ * single job is one action. The footer now lives only in the `(home)` group.
+ */
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
@@ -13,7 +17,6 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       >
         {children}
       </main>
-      <SiteFooter />
     </div>
   );
 }

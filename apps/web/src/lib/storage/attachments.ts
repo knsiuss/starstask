@@ -139,7 +139,8 @@ export function buildStoragePath(
   return `${userId}/${assignmentId}/${objectName}`;
 }
 
-function sanitizeFilename(rawName: string): string {
+/** Reduces any filename to a safe basename for display and storage keys. */
+export function sanitizeFilename(rawName: string): string {
   const basename = rawName.split(/[\\/]/).pop() ?? "attachment";
   const cleaned = basename
     .replace(/[^\w.\- ]+/g, "_")
@@ -150,7 +151,8 @@ function sanitizeFilename(rawName: string): string {
   return cleaned.length > 0 ? cleaned : "attachment";
 }
 
-function matchesSignature(bytes: Uint8Array, signature: number[]): boolean {
+/** Compares a file's leading bytes against a known signature. */
+export function matchesSignature(bytes: Uint8Array, signature: number[]): boolean {
   if (bytes.length < signature.length) {
     return false;
   }

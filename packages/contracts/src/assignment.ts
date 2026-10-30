@@ -220,6 +220,22 @@ export const myAssignmentsQuerySchema = z.object({
 
 export type MyAssignmentsQuery = z.infer<typeof myAssignmentsQuerySchema>;
 
+/** Due-date windows for the member's class-scoped task list. */
+export const MEMBER_ASSIGNMENT_DUE_FILTERS = ["soon", "overdue"] as const;
+
+export type MemberAssignmentDueFilter =
+  (typeof MEMBER_ASSIGNMENT_DUE_FILTERS)[number];
+
+export const memberAssignmentsQuerySchema = z.object({
+  due: z.enum(MEMBER_ASSIGNMENT_DUE_FILTERS).optional(),
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  pageSize: z.coerce.number().int().min(1).max(24).default(12),
+});
+
+export type MemberAssignmentsQuery = z.infer<
+  typeof memberAssignmentsQuerySchema
+>;
+
 /** Normalizes tags: trims, drops empties, de-duplicates case-insensitively. */
 export function normalizeTags(tags: readonly string[]): string[] {
   const seen = new Set<string>();

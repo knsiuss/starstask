@@ -16,13 +16,9 @@ import {
 
 type MobileNavProps = {
   isAuthenticated: boolean;
-  isPlatformAdmin: boolean;
 };
 
-export function MobileNav({
-  isAuthenticated,
-  isPlatformAdmin,
-}: MobileNavProps) {
+export function MobileNav({ isAuthenticated }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const close = () => setIsOpen(false);
@@ -57,7 +53,6 @@ export function MobileNav({
           >
             <WorkspaceNav
               isAuthenticated={isAuthenticated}
-              isPlatformAdmin={isPlatformAdmin}
               onNavigate={close}
             />
           </nav>

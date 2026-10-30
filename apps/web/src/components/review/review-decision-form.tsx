@@ -20,7 +20,7 @@ type ReviewDecisionFormProps = {
  * Approve or reject one submission.
  *
  * Approval requires an explicit confirmation because it publishes the
- * assignment and its attachments to anonymous visitors. Rejection requires a
+ * assignment and its attachments to signed-in students. Rejection requires a
  * reason that the submitter can act on.
  */
 export function ReviewDecisionForm({
@@ -109,8 +109,8 @@ export function ReviewDecisionForm({
       <Alert variant="warning">
         <p className="font-medium">Approval publishes this assignment.</p>
         <p className="mt-1">
-          It will appear in public StarsTask search and be readable without
-          login. Approved attachments can also be downloaded publicly. Remove
+          It will appear in StarsTask search and be readable by signed-in
+          students. Approved attachments can also be downloaded by them. Remove
           any sensitive personal data or restricted document before approving.
         </p>
       </Alert>

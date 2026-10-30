@@ -1,13 +1,14 @@
 "use client";
 
 import {
+  CalendarDays,
+  ClipboardList,
   Compass,
   FileText,
   GraduationCap,
   LayoutDashboard,
   Settings,
-  ShieldCheck,
-  Upload,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -29,9 +30,15 @@ const MAIN_ITEMS: NavItem[] = [
     icon: LayoutDashboard,
     requiresAuth: true,
   },
-  { href: "/assignments", label: "Explore", icon: Compass },
+  { href: "/assignments", label: "Assignments", icon: Compass },
   { href: "/classes", label: "Classes", icon: GraduationCap },
-  { href: "/submit", label: "Submit", icon: Upload, requiresAuth: true },
+  {
+    href: "/leave-requests",
+    label: "Absence requests",
+    icon: ClipboardList,
+    requiresAuth: true,
+  },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
   {
     href: "/my-assignments",
     label: "My submissions",
@@ -40,40 +47,63 @@ const MAIN_ITEMS: NavItem[] = [
   },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Platform admin", icon: ShieldCheck },
-];
-
 const ACCOUNT_ITEMS: NavItem[] = [
+  {
+    href: "/settings/profile",
+    label: "Profile",
+    icon: UserRound,
+    requiresAuth: true,
+  },
   {
     href: "/settings/notifications",
     label: "Settings",
     icon: Settings,
     requiresAuth: true,
   },
+  {
+    href: "/settings/calendar",
+    label: "Google Calendar",
+    icon: CalendarDays,
+    requiresAuth: true,
+  },
 ];
 
 type WorkspaceNavProps = {
   isAuthenticated: boolean;
-  isPlatformAdmin?: boolean;
   /** Closes the mobile drawer after a link is followed. */
   onNavigate?: () => void;
 };
 
+/**
+ * Student navigation.
+ *
+ * Platform and developer consoles deliberately have their own shells and
+ * navigation. Keeping operator links out of this list is the visible half of
+ * the separation; access is still enforced server-side on every console route.
+ */
 export function WorkspaceNav({
   isAuthenticated,
-  isPlatformAdmin = false,
   onNavigate,
 }: WorkspaceNavProps) {
   const pathname = usePathname();
+
+  const items = [
+    ...MAIN_ITEMS,
+    ...(isAuthenticated ? ACCOUNT_ITEMS : []),
+  ].filter((item) => !item.requiresAuth || isAuthenticated);
+
+  // Pick the most specific match so a nested page keeps its section active.
+  const activeHref = items
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((left, right) => right.length - left.length)[0];
 
   const renderItem = (item: NavItem) => {
     if (item.requiresAuth && !isAuthenticated) {
       return null;
     }
 
-    const isActive =
-      pathname === item.href || pathname.startsWith(`${item.href}/`);
+    const isActive = item.href === activeHref;
 
     return (
       <li key={item.href}>
@@ -100,10 +130,7 @@ export function WorkspaceNav({
 
   return (
     <div className="flex flex-col gap-6">
-      <NavSection label="Main">{MAIN_ITEMS.map(renderItem)}</NavSection>
-      {isPlatformAdmin ? (
-        <NavSection label="Platform">{ADMIN_ITEMS.map(renderItem)}</NavSection>
-      ) : null}
+      <NavSection label="Student">{MAIN_ITEMS.map(renderItem)}</NavSection>
       {isAuthenticated ? (
         <NavSection label="Account">{ACCOUNT_ITEMS.map(renderItem)}</NavSection>
       ) : null}

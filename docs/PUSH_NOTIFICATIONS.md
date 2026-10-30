@@ -3,8 +3,13 @@
 ## 1. Scope
 
 StarsTask sends **deadline reminders** for assignments a signed-in user owns or
-explicitly saved. It is opt-in per user and per device. Nothing is sent to anonymous
-visitors, and a save never changes the public assignment.
+explicitly saved, and **session reminders** for discussion sessions the user RSVP'd
+`going` to. Both are opt-in per user and per device. Nothing is sent to anonymous
+visitors, and a save or an RSVP never changes what is public.
+
+Session-specific behaviour (audience, cancellation, rescheduling, calendar interplay)
+is documented in [SESSIONS.md](SESSIONS.md) §8; this document covers the shared
+machinery.
 
 | Piece           | Location                                                             |
 | --------------- | -------------------------------------------------------------------- |
@@ -50,12 +55,13 @@ Cron every 10 minutes
 
 ## 3. Data model
 
-| Table                      | Purpose                                 | Client access                                      |
-| -------------------------- | --------------------------------------- | -------------------------------------------------- |
-| `push_subscriptions`       | One row per browser push endpoint       | Own rows; endpoint and keys are **not** selectable |
-| `notification_preferences` | Opt-in, reminder windows, time zone     | Own row only                                       |
-| `saved_assignments`        | Assignments a user follows              | Own rows only                                      |
-| `notification_deliveries`  | Durable reminder ledger and retry state | Own rows, **read-only**                            |
+| Table                          | Purpose                                 | Client access                                      |
+| ------------------------------ | --------------------------------------- | -------------------------------------------------- |
+| `push_subscriptions`           | One row per browser push endpoint       | Own rows; endpoint and keys are **not** selectable |
+| `notification_preferences`     | Opt-in, reminder windows, time zone     | Own row only                                       |
+| `saved_assignments`            | Assignments a user follows              | Own rows only                                      |
+| `notification_deliveries`      | Durable reminder ledger and retry state | Own rows, **read-only**                            |
+| `discussion_session_reminders` | Session reminder ledger and retry state | No client grants (scheduler only)                  |
 
 Key constraints:
 
@@ -119,6 +125,24 @@ disjoint batches; the unique ledger key prevents a second logical row for the sa
 deadline. The service worker also uses a deterministic `tag`
 (`starstask:<assignment>:<type>:<deadline>`) so a redelivered push replaces the previous
 notification instead of stacking.
+
+### Discussion session reminders
+
+The same rules apply with three differences:
+
+| Aspect   | Assignment reminders                 | Session reminders                                        |
+| -------- | ------------------------------------ | -------------------------------------------------------- |
+| Audience | Owner + users who saved it           | Users with an RSVP of `going` on a `scheduled` session   |
+| Key      | `(user, assignment, type, deadline)` | `(user, session, type, starts_at)` — a reschedule is new |
+| Cron     | `/api/cron/deadline-reminders`       | `/api/cron/session-jobs` (also drains calendar syncs)    |
+
+- A cancelled or completed session marks its pending rows `skipped` immediately, and the
+  claim query joins `status = 'scheduled'` as a second guard.
+- The claim returns the **current** start time, so a session moved after the reminder was
+  queued is skipped as `schedule_changed` rather than announced at the old time.
+- The body renders in the reader's saved zone, falling back to the session's own zone.
+- Both windows are separate preferences (`session_reminder_24h`, `session_reminder_3h`)
+  and both default to on.
 
 ---
 

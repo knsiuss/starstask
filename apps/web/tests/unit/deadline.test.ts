@@ -33,8 +33,12 @@ describe("getDeadlineState", () => {
     expect(getDeadlineState("2026-10-29T16:59:00.000Z", NOW)).toBe("due_today");
   });
 
-  it("marks an earlier instant on the same Jakarta day as due today, not overdue", () => {
-    expect(getDeadlineState("2026-10-29T02:00:00.000Z", NOW)).toBe("due_today");
+  it("marks a deadline that already passed today as overdue", () => {
+    expect(getDeadlineState("2026-10-29T02:00:00.000Z", NOW)).toBe("overdue");
+  });
+
+  it("marks the exact deadline instant as overdue", () => {
+    expect(getDeadlineState("2026-10-29T03:00:00.000Z", NOW)).toBe("overdue");
   });
 
   it("marks the previous Jakarta day as overdue", () => {

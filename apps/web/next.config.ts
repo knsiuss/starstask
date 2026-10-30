@@ -45,6 +45,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: ["@starstask/contracts", "@starstask/shared"],
+  // A running dev server locks `.next`, and the sandboxed environment blocks
+  // bulk deletes, so a verification build can be pointed at a scratch dir via
+  // NEXT_DIST_DIR without touching the dev server. Unset in every other case.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.googleusercontent.com" },

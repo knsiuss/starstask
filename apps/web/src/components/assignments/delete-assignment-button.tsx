@@ -4,7 +4,6 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
+import {
+  cancelScheduledDelete,
+  scheduleDelete,
+} from "@/lib/utils/delayed-delete";
+
+/** Long enough to read the toast and change your mind. */
+const UNDO_WINDOW_MS = 6_000;
 
 type DeleteAssignmentButtonProps = {
   assignmentId: string;
@@ -20,45 +27,88 @@ type DeleteAssignmentButtonProps = {
   variant?: "inline" | "full";
 };
 
+/**
+ * Deletes an assignment after a short undo window.
+ *
+ * The request is not sent until the window closes, so "Undo" is real and not a
+ * cosmetic message. Leaving the page flushes the request with `keepalive`, so
+ * navigating away cannot silently keep a deleted assignment alive.
+ */
 export function DeleteAssignmentButton({
   assignmentId,
   title,
   variant = "inline",
 }: DeleteAssignmentButtonProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
-  const [isDeleting, setIsDeleting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [isScheduled, setIsScheduled] = React.useState(false);
+  const isMounted = React.useRef(true);
+  const undoKey = `assignment-delete:${assignmentId}`;
 
-  const handleDelete = async () => {
-    if (isDeleting) {
+  React.useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const handleDelete = () => {
+    if (isScheduled) {
       return;
     }
 
-    setIsDeleting(true);
-    setError(null);
+    setOpen(false);
+    setIsScheduled(true);
 
-    try {
-      const response = await fetch(`/api/assignments/${assignmentId}`, {
-        method: "DELETE",
-      });
+    toast({
+      variant: "info",
+      title: "Assignment deleted",
+      description: "Removing it in a few seconds. You can still undo.",
+      duration: UNDO_WINDOW_MS,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          if (!cancelScheduledDelete(undoKey)) {
+            return;
+          }
 
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setError(body?.error?.message ?? "Could not delete the assignment.");
-        return;
-      }
+          if (isMounted.current) {
+            setIsScheduled(false);
+          }
 
-      setOpen(false);
-      router.push("/my-assignments");
-      router.refresh();
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsDeleting(false);
-    }
+          toast({ variant: "success", title: "Assignment restored" });
+        },
+      },
+    });
+
+    scheduleDelete(
+      undoKey,
+      () => {
+        void fetch(`/api/assignments/${assignmentId}`, {
+          method: "DELETE",
+          // Lets a pagehide flush finish even if the tab closes immediately.
+          keepalive: true,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              console.error(
+                "Deferred assignment delete failed",
+                response.status,
+              );
+              return;
+            }
+
+            if (isMounted.current) {
+              router.push("/my-assignments");
+              router.refresh();
+            }
+          })
+          .catch(() => {
+            console.error("Deferred assignment delete failed");
+          });
+      },
+      UNDO_WINDOW_MS,
+    );
   };
 
   return (
@@ -70,36 +120,34 @@ export function DeleteAssignmentButton({
         <Button
           variant="danger"
           size={variant === "inline" ? "sm" : "md"}
+          disabled={isScheduled}
         >
-          <Trash2
-            aria-hidden="true"
-            className="h-3.5 w-3.5"
-          />
-          Delete
+          {isScheduled ? (
+            <Loader2
+              aria-hidden="true"
+              className="h-3.5 w-3.5 animate-spin"
+            />
+          ) : (
+            <Trash2
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+          )}
+          {isScheduled ? "Deleting..." : "Delete"}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogTitle>Delete this assignment?</DialogTitle>
         <DialogDescription>
-          “{title}” and its attachments will be permanently removed. This cannot
-          be undone.
+          “{title}” and its attachments will be removed permanently. You get a
+          few seconds to undo after confirming.
         </DialogDescription>
-
-        {error ? (
-          <Alert
-            variant="error"
-            className="mt-4"
-          >
-            {error}
-          </Alert>
-        ) : null}
 
         <div className="mt-6 flex justify-end gap-2">
           <Button
             type="button"
             variant="secondary"
             onClick={() => setOpen(false)}
-            disabled={isDeleting}
           >
             Cancel
           </Button>
@@ -107,20 +155,8 @@ export function DeleteAssignmentButton({
             type="button"
             variant="danger"
             onClick={handleDelete}
-            disabled={isDeleting}
-            aria-busy={isDeleting}
           >
-            {isDeleting ? (
-              <>
-                <Loader2
-                  aria-hidden="true"
-                  className="h-4 w-4 animate-spin"
-                />
-                Deleting...
-              </>
-            ) : (
-              "Delete permanently"
-            )}
+            Delete assignment
           </Button>
         </div>
       </DialogContent>

@@ -15,7 +15,7 @@ import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 
 export const metadata: Metadata = {
-  title: "Submit a class assignment",
+  title: "Add a class assignment",
   robots: { index: false, follow: false },
 };
 
@@ -69,7 +69,7 @@ export default async function SubmitClassAssignmentPage({
       </Link>
 
       <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-        Submit an assignment
+        {role.canManage ? "Post a class assignment" : "Submit an assignment"}
       </h1>
       <p className="text-muted-foreground mt-1.5 text-sm">
         {found.name} · {found.course_name} · {found.semester}{" "}
@@ -89,6 +89,7 @@ export default async function SubmitClassAssignmentPage({
             classSlug={found.slug}
             mode="create"
             initialValues={submissionInitialValues()}
+            publishImmediately={role.canManage}
           />
         </div>
       )}

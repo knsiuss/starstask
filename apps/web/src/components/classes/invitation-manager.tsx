@@ -16,6 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import {
+  getInvitationStatus,
+  type InvitationStatus,
+} from "@/lib/classes/invitation-status";
 
 export type InvitationListItem = {
   id: string;
@@ -25,6 +29,13 @@ export type InvitationListItem = {
   used_count: number;
   revoked_at: string | null;
   created_at: string;
+};
+
+const INVITATION_STATUS_LABELS: Record<InvitationStatus, string> = {
+  active: "Active",
+  revoked: "Revoked",
+  expired: "Expired",
+  exhausted: "Used up",
 };
 
 type InvitationManagerProps = {
@@ -298,17 +309,10 @@ export function InvitationManager({
       ) : (
         <ul className="divide-border border-border divide-y rounded-lg border">
           {invitations.map((invitation) => {
-            const isExpired = new Date(invitation.expires_at) <= new Date();
-            const isRevoked = invitation.revoked_at !== null;
-            const isUsedUp = invitation.used_count >= invitation.max_uses;
-            const status = isRevoked
-              ? "Revoked"
-              : isExpired
-                ? "Expired"
-                : isUsedUp
-                  ? "Used up"
-                  : "Active";
-            const variant = status === "Active" ? "success" : "neutral";
+            const invitationStatus = getInvitationStatus(invitation);
+            const status = INVITATION_STATUS_LABELS[invitationStatus];
+            const variant =
+              invitationStatus === "active" ? "success" : "neutral";
 
             return (
               <li
@@ -327,7 +331,7 @@ export function InvitationManager({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Badge variant={variant}>{status}</Badge>
-                  {!isRevoked ? (
+                  {invitationStatus !== "revoked" ? (
                     <Button
                       type="button"
                       size="sm"

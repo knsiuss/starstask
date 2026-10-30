@@ -40,6 +40,8 @@ type ClassSubmissionFormProps = {
   assignmentId?: string;
   initialValues: ClassSubmissionFormValues;
   initialDeadline?: string | null;
+  /** True when the author manages the class, so their post needs no review. */
+  publishImmediately?: boolean;
 };
 
 const FIELD_IDS: Record<string, string> = {
@@ -62,18 +64,31 @@ export function submissionInitialValues(deadline?: string | null) {
   } satisfies ClassSubmissionFormValues;
 }
 
+/** Which banner the class page shows after a save. */
+function buildResultSuffix(
+  mode: "create" | "revise",
+  isPublished: boolean,
+): string {
+  if (mode === "revise") {
+    return "revised=1";
+  }
+
+  return isPublished ? "posted=1" : "submitted=1";
+}
+
 /**
  * Submits or revises a class assignment.
  *
- * The form never chooses the review status: the server function puts every
- * submission in `pending_review`. Attachments are uploaded with the request and
- * become public only if a class admin approves the submission.
+ * The form never chooses the review status. A class member's submission waits in
+ * `pending_review`; a class admin's own post is published by the server once its
+ * attachments are attached, because nobody else could review it.
  */
 export function ClassSubmissionForm({
   classSlug,
   mode,
   assignmentId,
   initialValues,
+  publishImmediately = false,
 }: ClassSubmissionFormProps) {
   const router = useRouter();
   const [values, setValues] = React.useState(initialValues);
@@ -183,7 +198,7 @@ export function ClassSubmissionForm({
       );
 
       const body = (await response.json().catch(() => null)) as {
-        data?: { id?: string };
+        data?: { id?: string; status?: "published" | "pending_review" };
         error?: { message?: string; fieldErrors?: Record<string, string> };
       } | null;
 
@@ -197,7 +212,9 @@ export function ClassSubmissionForm({
         return;
       }
 
-      const suffix = mode === "create" ? "submitted=1" : "revised=1";
+      const published = body?.data?.status === "published";
+      const suffix = buildResultSuffix(mode, published);
+
       router.push(`/dashboard/classes/${classSlug}?${suffix}`);
       router.refresh();
     } catch {
@@ -214,13 +231,27 @@ export function ClassSubmissionForm({
       className="space-y-6"
     >
       <Alert variant="info">
-        <p className="font-medium">Every submission is reviewed first.</p>
-        <p className="mt-1">
-          A class admin must approve this assignment before it appears in public
-          search. If approved, the title, description, links, and attachments
-          become visible without login. Do not upload private or sensitive
-          documents.
-        </p>
+        {publishImmediately && mode === "create" ? (
+          <>
+            <p className="font-medium">Your post goes live immediately.</p>
+            <p className="mt-1">
+              You are a class admin, so nobody reviews your post. Members with
+              notifications enabled are alerted as soon as it is published, and
+              the title, description, links, and attachments become visible to
+              signed-in students. Do not upload private or sensitive documents.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-medium">Every submission is reviewed first.</p>
+            <p className="mt-1">
+              A class admin must approve this assignment before it appears in
+              search. If approved, the title, description, links, and
+              attachments become visible to signed-in students. Do not upload
+              private or sensitive documents.
+            </p>
+          </>
+        )}
       </Alert>
 
       {formMessage ? <Alert variant="error">{formMessage}</Alert> : null}

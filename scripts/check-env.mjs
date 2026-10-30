@@ -52,6 +52,16 @@ const PUSH_GROUP = [
   "CRON_SECRET",
 ];
 
+// Calendar sync is optional. When it is configured, all four values are needed:
+// a missing encryption key would only surface after a user had already granted
+// access, which is the worst possible moment to fail.
+const CALENDAR_GROUP = [
+  "GOOGLE_CALENDAR_CLIENT_ID",
+  "GOOGLE_CALENDAR_CLIENT_SECRET",
+  "GOOGLE_CALENDAR_REDIRECT_URI",
+  "GOOGLE_TOKEN_ENCRYPTION_KEY",
+];
+
 function isHttpUrl(value) {
   try {
     const url = new URL(value);
@@ -122,6 +132,45 @@ if (
 
 if (process.env.CRON_SECRET && process.env.CRON_SECRET.trim().length < 32) {
   failures.push("CRON_SECRET must be at least 32 characters.");
+}
+
+const calendarPresent = CALENDAR_GROUP.filter((name) =>
+  Boolean(process.env[name]?.trim()),
+);
+
+if (
+  calendarPresent.length > 0 &&
+  calendarPresent.length !== CALENDAR_GROUP.length
+) {
+  failures.push(
+    `Partially configured Google Calendar sync: ${CALENDAR_GROUP.join(", ")}. Set all of them or none (missing: ${CALENDAR_GROUP.filter(
+      (name) => !calendarPresent.includes(name),
+    ).join(", ")}).`,
+  );
+}
+
+if (
+  process.env.GOOGLE_CALENDAR_REDIRECT_URI &&
+  !isHttpUrl(process.env.GOOGLE_CALENDAR_REDIRECT_URI)
+) {
+  failures.push(
+    "GOOGLE_CALENDAR_REDIRECT_URI must be an absolute http(s) URL, e.g. https://starstask.app/api/integrations/google-calendar/callback",
+  );
+}
+
+if (process.env.GOOGLE_TOKEN_ENCRYPTION_KEY) {
+  // AES-256 needs exactly 32 bytes; a short key would throw at the first save,
+  // long after the OAuth consent screen has been completed.
+  const bytes = Buffer.from(
+    process.env.GOOGLE_TOKEN_ENCRYPTION_KEY.trim(),
+    "base64",
+  );
+
+  if (bytes.length !== 32) {
+    failures.push(
+      `GOOGLE_TOKEN_ENCRYPTION_KEY must be 32 bytes of base64 (got ${bytes.length}). Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`,
+    );
+  }
 }
 
 if (failures.length > 0) {

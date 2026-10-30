@@ -308,7 +308,8 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
       .select("user_id")
       .eq("class_id", classId);
 
-    expect(members).toEqual([{ user_id: member.id }]);
+    const memberIds = (members ?? []).map((row) => row.user_id).sort();
+    expect(memberIds).toEqual([applicant.id, member.id].sort());
   });
 
   it("treats a repeat acceptance as idempotent and does not consume a use", async () => {
@@ -381,7 +382,7 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
       p_class_id: classId,
       p_title: "RLS class submission",
       p_description: "A complete submission used to verify the review flow.",
-      p_assignment_type: "essay",
+      p_assignment_type: "individual",
       p_tags: ["rls"],
     });
 
@@ -442,7 +443,7 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(error).not.toBeNull();
   });
 
-  it("publishes an approved submission for anonymous discovery", async () => {
+  it("publishes an approved submission for signed-in discovery only", async () => {
     const { data, error } = await applicant.client.rpc(
       "review_class_assignment",
       {
@@ -454,14 +455,21 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(error).toBeNull();
     expect(data).toBe("published");
 
-    const { data: publicRows } = await anon
+    const { data: anonymousRows } = await anon
       .from("assignments")
       .select("id, status")
       .eq("id", submissionId);
 
-    expect(publicRows).toEqual([{ id: submissionId, status: "published" }]);
+    expect(anonymousRows ?? []).toEqual([]);
 
-    const { data: listed, error: listError } = await anon.rpc(
+    const { data: signedInRows } = await member.client
+      .from("assignments")
+      .select("id, status")
+      .eq("id", submissionId);
+
+    expect(signedInRows).toEqual([{ id: submissionId, status: "published" }]);
+
+    const { data: listed, error: listError } = await member.client.rpc(
       "list_assignments",
       { p_class_id: classId },
     );
@@ -583,5 +591,82 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
       .select("id")
       .eq("id", submissionId);
     expect(publicRows).toEqual([]);
+  });
+
+  describe("platform admin read models", () => {
+    const directoryArgs = {
+      p_search: null,
+      p_role: "all",
+      p_onboarding: "all",
+      p_limit: 20,
+      p_offset: 0,
+    };
+
+    it("refuses the user directory to an ordinary member", async () => {
+      const { error } = await member.client.rpc(
+        "list_platform_users",
+        directoryArgs,
+      );
+
+      expect(error?.code).toBe("42501");
+    });
+
+    it("returns safe profile fields and class counts to an admin", async () => {
+      const { data, error } = await platformAdmin.client.rpc(
+        "list_platform_users",
+        directoryArgs,
+      );
+
+      expect(error).toBeNull();
+
+      const row = data?.find(
+        (item: { id: string }) => item.id === applicant.id,
+      );
+
+      expect(row).toBeTruthy();
+      expect(row).not.toHaveProperty("full_name");
+      expect(row).not.toHaveProperty("nim");
+      expect(Number(row?.class_count)).toBeGreaterThanOrEqual(1);
+      expect(Number(row?.total_count)).toBeGreaterThanOrEqual(3);
+    });
+
+    it("lists classes with aggregates for an admin only", async () => {
+      const { error: memberError } = await member.client.rpc(
+        "list_platform_classes",
+        { p_search: classSlug, p_status: "all", p_limit: 20, p_offset: 0 },
+      );
+
+      expect(memberError?.code).toBe("42501");
+
+      const { data, error } = await platformAdmin.client.rpc(
+        "list_platform_classes",
+        { p_search: classSlug, p_status: "active", p_limit: 20, p_offset: 0 },
+      );
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.slug).toBe(classSlug);
+      expect(Number(data?.[0]?.member_count)).toBeGreaterThanOrEqual(1);
+      expect(Number(data?.[0]?.admin_count)).toBeGreaterThanOrEqual(1);
+    });
+
+    it("computes overview counters from real rows", async () => {
+      const { error: memberError } = await member.client.rpc(
+        "get_platform_admin_overview",
+      );
+
+      expect(memberError?.code).toBe("42501");
+
+      const { data, error } = await platformAdmin.client.rpc(
+        "get_platform_admin_overview",
+      );
+
+      expect(error).toBeNull();
+
+      const row = data?.[0];
+
+      expect(Number(row?.total_users)).toBeGreaterThanOrEqual(3);
+      expect(Number(row?.active_classes)).toBeGreaterThanOrEqual(1);
+      expect(Number(row?.pending_verifications)).toBeGreaterThanOrEqual(0);
+    });
   });
 });

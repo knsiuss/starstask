@@ -10,14 +10,12 @@ import {
   parseAssignmentForm,
 } from "@/lib/api/assignment-payload";
 import { ApiError, serviceUnavailable, unauthorized } from "@/lib/api/errors";
-import { apiSuccess, handleRouteError, publicJson } from "@/lib/api/responses";
+import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
 import { listAssignments } from "@/lib/db/assignments";
 import { isSupabaseConfigured } from "@/lib/env/public";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { recordAppActivity } from "@/lib/observability/events";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { createAssignmentForUser } from "@/features/assignments/assignment-service";
 import { assertAttachmentCount } from "@/lib/storage/attachments";
 
@@ -29,9 +27,15 @@ export async function GET(request: Request) {
       throw serviceUnavailable();
     }
 
+    const session = await getSessionUser();
+
+    if (!session) {
+      throw unauthorized();
+    }
+
     await enforceRateLimit({
       action: "assignments:list",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 120,
       windowSeconds: 60,
     });
@@ -52,7 +56,7 @@ export async function GET(request: Request) {
 
     const result = await listAssignments(parsed.data);
 
-    return publicJson(result, 60);
+    return apiSuccess(result);
   } catch (error) {
     return handleRouteError(error);
   }
@@ -127,6 +131,13 @@ export async function POST(request: Request) {
       userId: session.user.id,
       input: parsed.data,
       files,
+    });
+
+    await recordAppActivity({
+      actorId: session.user.id,
+      eventType: "assignment_created",
+      resourceType: "assignment",
+      resourceId: result.id,
     });
 
     return apiSuccess(result, 201);

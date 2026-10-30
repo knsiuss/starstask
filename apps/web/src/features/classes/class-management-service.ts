@@ -47,6 +47,25 @@ export async function setClassStatus(
   }
 }
 
+/**
+ * Deletes a class and everything that belongs to it.
+ *
+ * `delete_class` archives the class's published assignments first, because the
+ * foreign key only nulls their `class_id`; leaving them published would keep the
+ * content public with no class to moderate it.
+ */
+export async function deleteClass(classId: string): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase.rpc("delete_class", {
+    p_class_id: classId,
+  });
+
+  if (error) {
+    throw toClassApiError(error, "Could not delete the class.");
+  }
+}
+
 export async function assignClassAdmin(
   classId: string,
   input: ClassAdminAssignInput,

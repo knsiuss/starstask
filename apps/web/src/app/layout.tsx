@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import { ToastProvider } from "@/components/ui/toast";
 import { getSiteUrl } from "@/lib/env/public";
 
 import "./globals.css";
@@ -73,8 +74,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        {children}
-        <ServiceWorkerRegistration />
+        <ToastProvider>
+          {children}
+          <ServiceWorkerRegistration />
+        </ToastProvider>
       </body>
     </html>
   );

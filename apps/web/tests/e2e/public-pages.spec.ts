@@ -12,32 +12,76 @@ test.describe("public pages", () => {
     await page.goto("/");
 
     await expect(
-      page.getByRole("heading", { level: 1, name: /every assignment/i }),
+      page.getByRole("heading", {
+        level: 1,
+        name: /find\. understand\. contribute\./i,
+      }),
     ).toBeVisible();
     const banner = page.getByRole("banner");
     await expect(
-      banner.getByRole("link", { name: "Explore", exact: true }),
+      banner.getByRole("link", { name: "Assignments", exact: true }),
     ).toBeVisible();
     await expect(banner.getByRole("link", { name: "Sign in" })).toBeVisible();
     await expect(page.getByRole("contentinfo")).toBeVisible();
   });
 
-  test("explore page renders without a session", async ({ page }) => {
-    await page.goto("/assignments");
+  test("the header search link reaches assignment search", async ({ page }) => {
+    await page.goto("/");
+
+    await page
+      .getByRole("banner")
+      .getByRole("link", { name: "Search assignments" })
+      .click();
+
+    await expect(page).toHaveURL(
+      isConfigured ? /\/login\?next=%2Fassignments/ : /\/assignments/,
+    );
+  });
+
+  test("subject cards link to assignment search", async ({ page }) => {
+    await page.goto("/");
 
     await expect(
-      page.getByRole("heading", { level: 1, name: "Explore assignments" }),
+      page.getByRole("link", { name: "Computer Science" }),
+    ).toHaveAttribute("href", "/assignments?search=computer");
+  });
+
+  test("the FAQ accordion expands", async ({ page }) => {
+    await page.goto("/");
+
+    const question = page.getByText("Do I need an account to browse?");
+    await expect(question).toBeVisible();
+    await question.click();
+
+    await expect(
+      page.getByText(/Sign in with Google to search and read assignments/),
     ).toBeVisible();
   });
 
-  test("an unknown assignment id returns the not-found page", async ({
-    page,
-  }) => {
-    await page.goto("/assignments/not-a-valid-uuid");
+  test("assignment search requires a session", async ({ page }) => {
+    await page.goto("/assignments?search=database");
 
-    await expect(
-      page.getByRole("heading", { name: "Page not found" }),
-    ).toBeVisible();
+    if (isConfigured) {
+      await expect(page).toHaveURL(
+        /\/login\?next=%2Fassignments%3Fsearch%3Ddatabase/,
+      );
+    } else {
+      await expect(page.getByText("Those filters are not valid.")).toHaveCount(
+        0,
+      );
+    }
+  });
+
+  test("assignment details require a session", async ({ page }) => {
+    await page.goto("/assignments/00000000-0000-4000-8000-000000000000");
+
+    if (isConfigured) {
+      await expect(page).toHaveURL(/\/login\?next=%2Fassignments%2F/);
+    } else {
+      await expect(
+        page.getByText("Supabase is not configured yet."),
+      ).toBeVisible();
+    }
   });
 
   test("robots.txt advertises the sitemap", async ({ request }) => {
@@ -47,11 +91,27 @@ test.describe("public pages", () => {
     expect(await response.text()).toContain("Sitemap:");
   });
 
-  test("sitemap.xml lists the explore page", async ({ request }) => {
+  test("sitemap.xml does not expose private assignment routes", async ({
+    request,
+  }) => {
     const response = await request.get("/sitemap.xml");
 
     expect(response.status()).toBe(200);
-    expect(await response.text()).toContain("/assignments");
+    expect(await response.text()).not.toContain("/assignments");
+  });
+
+  test("assignment APIs reject anonymous reads", async ({ request }) => {
+    for (const path of [
+      "/api/assignments",
+      "/api/assignments/00000000-0000-4000-8000-000000000000",
+    ]) {
+      const response = await request.get(path);
+      expect(response.status()).toBe(401);
+      expect(response.headers()["cache-control"]).toBe("no-store");
+      await expect(response.json()).resolves.toEqual({
+        error: { code: "unauthorized", message: "Sign in to continue." },
+      });
+    }
   });
 
   test("the skip link is the first focusable element", async ({ page }) => {
@@ -91,33 +151,44 @@ test.describe("protected actions", () => {
       ).toBeVisible();
     }
   });
-});
 
-test.describe("authenticated browsing", () => {
-  test.skip(!isConfigured, "Requires NEXT_PUBLIC_SUPABASE_* configuration.");
+  test("the personal class directory requires a session", async ({ page }) => {
+    await page.goto("/classes");
 
-  test("filters submit through the URL and tolerate empty selects", async ({
-    page,
-  }) => {
-    await page.goto("/assignments");
+    if (isConfigured) {
+      await expect(page).toHaveURL(/\/login\?next=%2Fclasses/);
+    } else {
+      await expect(
+        page.getByRole("heading", { level: 1, name: "My Classes" }),
+      ).toBeVisible();
+    }
+  });
 
-    const filters = page.getByRole("search", { name: "Filter assignments" });
-    await expect(filters.getByLabel("Search")).toBeVisible();
-    await filters.getByLabel("Search").fill("database");
-    await filters.getByRole("button", { name: "Search" }).click();
+  test("browsing approved classes stays public", async ({ page }) => {
+    await page.goto("/classes/discover");
 
-    await expect(page).toHaveURL(/search=database/);
-    // Untouched selects submit empty values; the page must still render the
-    // results instead of rejecting the query as invalid.
-    await expect(page.getByText("Those filters are not valid.")).toHaveCount(0);
+    // The heading differs only because an unconfigured build shows a setup notice.
     await expect(
       page.getByRole("heading", {
-        name: "Assignments",
-        level: 2,
-        exact: true,
+        level: 1,
+        name: isConfigured ? "Browse classes" : "Classes",
       }),
     ).toBeVisible();
   });
+
+  test("onboarding requires a session and keeps the destination", async ({
+    page,
+  }) => {
+    await page.goto("/onboarding");
+
+    // The form is never shown to an anonymous visitor, and the login page is
+    // asked to return them to onboarding with the original target preserved.
+    await expect(page).toHaveURL(/\/login\?next=%2Fonboarding/);
+  });
+});
+
+test.describe("configured authentication", () => {
+  test.skip(!isConfigured, "Requires NEXT_PUBLIC_SUPABASE_* configuration.");
 
   test("signing in starts the Google OAuth redirect", async ({ page }) => {
     await page.goto("/login");

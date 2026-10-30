@@ -62,6 +62,7 @@ export function InviteAcceptButton({ token }: InviteAcceptButtonProps) {
         onClick={() => void accept()}
         disabled={isBusy}
         aria-busy={isBusy}
+        className="w-full sm:w-auto"
       >
         {isBusy ? (
           <Loader2

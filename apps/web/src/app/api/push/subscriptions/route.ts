@@ -137,10 +137,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deleted = await deletePushDeviceByEndpoint(
-      session.user.id,
-      parsed.data.endpoint,
-    );
+    const deleted = await deletePushDeviceByEndpoint(parsed.data.endpoint);
 
     // Idempotent: the browser may have already dropped the subscription, and
     // a repeated unsubscribe must not look like a failure.

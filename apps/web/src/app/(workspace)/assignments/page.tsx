@@ -2,31 +2,37 @@ import { PlusCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AssignmentCard } from "@/components/assignments/assignment-card";
 import { AssignmentFilters } from "@/components/assignments/assignment-filters";
-import { AssignmentList } from "@/components/assignments/assignment-list";
+import { ExploreAssignmentRow } from "@/components/assignments/explore-assignment-row";
+import { ExploreEmptyState } from "@/components/assignments/explore-empty-state";
 import { Pagination } from "@/components/assignments/pagination";
+import { ResultViewToggle } from "@/components/assignments/result-view-toggle";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
-  listAssignments,
-  getCourseOptions,
-  getSemesterOptions,
-} from "@/lib/db/assignments";
-import { getClassOptions } from "@/lib/db/classes";
+  buildAssignmentsHref,
+  parseAssignmentView,
+} from "@/lib/assignments/urls";
+import { requireAssignmentPageSession } from "@/lib/auth/assignment-access";
+import { listAssignments } from "@/lib/db/assignments";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { formatCount, pluralize } from "@starstask/shared";
 import { listAssignmentsQuerySchema } from "@starstask/contracts";
 
 export const metadata: Metadata = {
-  title: "Explore assignments",
+  title: "Assignments",
   description:
-    "Search and filter university assignments by course, semester, type, tag, and deadline.",
+    "Search university assignments shared by students, by title, course, or tag.",
   alternates: { canonical: "/assignments" },
+  robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-const pageContainer = "mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 lg:px-10";
+const pageContainer =
+  "mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10";
 
 type AssignmentsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -36,7 +42,12 @@ export default async function AssignmentsPage({
   searchParams,
 }: AssignmentsPageProps) {
   const rawParams = await searchParams;
-  const parsed = listAssignmentsQuerySchema.safeParse(flattenParams(rawParams));
+  const view = parseAssignmentView(rawParams.view);
+  const flatParams = flattenParams(rawParams);
+  const loginPath = buildAssignmentsHref(flatParams, { view });
+  await requireAssignmentPageSession(loginPath);
+
+  const parsed = listAssignmentsQuerySchema.safeParse(flatParams);
 
   if (!parsed.success) {
     return (
@@ -60,9 +71,7 @@ export default async function AssignmentsPage({
   if (!isSupabaseConfigured()) {
     return (
       <div className={pageContainer}>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Explore assignments
-        </h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Assignments</h1>
         <div className="mt-6">
           <SetupNotice />
         </div>
@@ -71,17 +80,18 @@ export default async function AssignmentsPage({
   }
 
   const query = parsed.data;
-  const [result, courses, semesters, classes] = await Promise.all([
-    listAssignments(query),
-    getCourseOptions(),
-    getSemesterOptions(),
-    getClassOptions(),
-  ]);
+  const filterParams = {
+    search: query.search,
+    course: query.course,
+    class: query.class,
+    semester: query.semester,
+    type: query.type,
+    tag: query.tag,
+    sort: query.sort,
+    pageSize: String(query.pageSize),
+  };
 
-  const semesterOptions =
-    query.semester && !semesters.includes(query.semester)
-      ? [query.semester, ...semesters]
-      : semesters;
+  const result = await listAssignments(query);
 
   const hasActiveFilters = Boolean(
     query.search ||
@@ -93,12 +103,18 @@ export default async function AssignmentsPage({
     query.sort !== "newest",
   );
 
+  const resetHref = buildAssignmentsHref({ view });
+  const listHref = buildAssignmentsHref(filterParams, { view: "list" });
+  const gridHref = buildAssignmentsHref(filterParams, { view: "grid" });
+  const nowIso = new Date().toISOString();
+  const hasResults = result.items.length > 0;
+
   return (
     <div className={pageContainer}>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
-            Explore assignments
+            Assignments
           </h1>
           <p className="text-muted-foreground mt-1.5 text-sm">
             Browse university assignments shared by students.
@@ -121,31 +137,66 @@ export default async function AssignmentsPage({
       <div className="mt-6">
         <AssignmentFilters
           query={query}
-          courses={courses}
-          semesters={semesterOptions}
-          classes={classes}
+          view={view}
         />
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-lg font-semibold tracking-tight">Assignments</h2>
-          <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
-            {result.total} {result.total === 1 ? "result" : "results"}
+        <h2 className="text-lg font-semibold tracking-tight">
+          Results{" "}
+          <span className="text-muted-foreground font-normal">
+            ({formatCount(result.total)} {pluralize(result.total, "result")})
           </span>
+        </h2>
+        <div className="flex flex-wrap items-center gap-3">
+          {hasResults && hasActiveFilters ? (
+            <Link
+              href={resetHref}
+              className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+            >
+              Reset filters
+            </Link>
+          ) : null}
+          <ResultViewToggle
+            current={view}
+            listHref={listHref}
+            gridHref={gridHref}
+          />
         </div>
-        {hasActiveFilters ? (
-          <Link
-            href="/assignments"
-            className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
-          >
-            Reset filters
-          </Link>
-        ) : null}
       </div>
 
       <div className="mt-4">
-        <AssignmentList assignments={result.items} />
+        {hasResults ? (
+          view === "grid" ? (
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {result.items.map((assignment) => (
+                <li
+                  key={assignment.id}
+                  className="h-full"
+                >
+                  <AssignmentCard assignment={assignment} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="border-border bg-surface overflow-hidden rounded-xl border shadow-[0_1px_2px_rgba(9,9,11,0.03)]">
+              <ul className="divide-border divide-y">
+                {result.items.map((assignment) => (
+                  <ExploreAssignmentRow
+                    key={assignment.id}
+                    assignment={assignment}
+                    nowIso={nowIso}
+                  />
+                ))}
+              </ul>
+            </div>
+          )
+        ) : (
+          <ExploreEmptyState
+            hasActiveFilters={hasActiveFilters}
+            resetHref={resetHref}
+          />
+        )}
       </div>
 
       <Pagination
@@ -153,14 +204,8 @@ export default async function AssignmentsPage({
         page={result.page}
         totalPages={result.totalPages}
         params={{
-          search: query.search,
-          course: query.course,
-          class: query.class,
-          semester: query.semester,
-          type: query.type,
-          tag: query.tag,
-          sort: query.sort,
-          pageSize: String(query.pageSize),
+          ...filterParams,
+          view: view === "grid" ? "grid" : undefined,
         }}
       />
     </div>
@@ -180,8 +225,8 @@ function flattenParams(
           ? value[0]
           : undefined;
 
-    // A native select submits its empty "all" option as `?course=`. Dropping
-    // blank values keeps those controls optional without a schema change.
+    // Links can carry an empty value (for example `?tag=`); dropping those keeps
+    // the schema treating them as absent.
     if (candidate) {
       flat[key] = candidate;
     }

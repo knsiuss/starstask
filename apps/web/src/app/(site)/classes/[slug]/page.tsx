@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   BookOpen,
+  CalendarDays,
   GraduationCap,
   LayoutDashboard,
   ShieldCheck,
@@ -8,7 +9,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AssignmentList } from "@/components/assignments/assignment-list";
 import { Pagination } from "@/components/assignments/pagination";
@@ -20,6 +21,7 @@ import { listAssignments } from "@/lib/db/assignments";
 import { getClassBySlug, getClassRole } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
+import { flattenSearchParams } from "@/lib/utils/search-params";
 import { listAssignmentsQuerySchema } from "@starstask/contracts";
 
 export const dynamic = "force-dynamic";
@@ -78,9 +80,15 @@ export default async function ClassPage({
     notFound();
   }
 
+  const session = await getSessionUser();
+
+  if (!session) {
+    redirect(buildLoginPath(`/classes/${found.slug}`));
+  }
+
   const rawParams = await searchParams;
   const parsed = listAssignmentsQuerySchema.safeParse({
-    ...flattenParams(rawParams),
+    ...flattenSearchParams(rawParams),
     class: found.id,
     pageSize: "12",
   });
@@ -89,12 +97,11 @@ export default async function ClassPage({
     notFound();
   }
 
-  const [session, assignments] = await Promise.all([
-    getSessionUser(),
+  const [role, assignments] = await Promise.all([
+    getClassRole(found.id),
     listAssignments(parsed.data),
   ]);
 
-  const role = session ? await getClassRole(found.id) : null;
   const joined = role?.isMember ?? false;
 
   return (
@@ -107,7 +114,7 @@ export default async function ClassPage({
           aria-hidden="true"
           className="h-4 w-4"
         />
-        All classes
+        Classes
       </Link>
 
       <header className="border-border bg-surface mt-4 rounded-xl border p-6 sm:p-8">
@@ -160,6 +167,22 @@ export default async function ClassPage({
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2">
+          <Button
+            asChild
+            variant="secondary"
+          >
+            <a
+              href={`/api/classes/${found.slug}/calendar`}
+              download={`starstask-${found.slug}.ics`}
+            >
+              <CalendarDays
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Subscribe to calendar
+            </a>
+          </Button>
+
           {joined ? (
             <Button asChild>
               <Link href={`/dashboard/classes/${found.slug}`}>
@@ -170,21 +193,15 @@ export default async function ClassPage({
                 Open class dashboard
               </Link>
             </Button>
-          ) : session ? (
+          ) : (
             <p className="text-muted-foreground inline-flex items-center gap-2 text-sm">
               <ShieldCheck
                 aria-hidden="true"
                 className="h-4 w-4"
               />
-              Membership is by invitation from a class admin. Ask your lecturer
-              or class admin for the invitation link.
+              Membership is by invitation from a class admin. Ask the class
+              admin (ketua kelas) for the invitation link.
             </p>
-          ) : (
-            <Button asChild>
-              <Link href={buildLoginPath(`/classes/${found.slug}`)}>
-                Sign in to join this class
-              </Link>
-            </Button>
           )}
 
           {role?.canManage ? (
@@ -198,6 +215,11 @@ export default async function ClassPage({
             </Button>
           ) : null}
         </div>
+
+        <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+          The calendar feed contains published deadlines and public sessions.
+          Download it while signed in to keep deadlines in sync.
+        </p>
       </header>
 
       <section
@@ -227,7 +249,7 @@ export default async function ClassPage({
           <AssignmentList
             assignments={assignments.items}
             emptyTitle="No published assignments yet"
-            emptyDescription="Class members can submit assignments; once a class admin approves one, it is published here for everyone."
+            emptyDescription="Class members submit assignments for a class admin to review, and a class admin's own post is published here immediately."
           />
         </div>
 
@@ -240,25 +262,4 @@ export default async function ClassPage({
       </section>
     </div>
   );
-}
-
-function flattenParams(
-  params: Record<string, string | string[] | undefined>,
-): Record<string, string> {
-  const flat: Record<string, string> = {};
-
-  for (const [key, value] of Object.entries(params)) {
-    const candidate =
-      typeof value === "string"
-        ? value
-        : Array.isArray(value) && typeof value[0] === "string"
-          ? value[0]
-          : undefined;
-
-    if (candidate) {
-      flat[key] = candidate;
-    }
-  }
-
-  return flat;
 }

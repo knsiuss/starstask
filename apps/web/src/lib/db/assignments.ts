@@ -133,8 +133,7 @@ export async function listAssignments(
 > {
   const supabase = await createSupabaseServerClient();
   const offset = (query.page - 1) * query.pageSize;
-
-  const { data, error } = await supabase.rpc("list_assignments", {
+  const args: Database["public"]["Functions"]["list_assignments"]["Args"] = {
     p_search: query.search ?? null,
     p_course_id: query.course ?? null,
     p_semester: query.semester ?? null,
@@ -143,8 +142,16 @@ export async function listAssignments(
     p_sort: query.sort,
     p_limit: query.pageSize,
     p_offset: offset,
-    p_class_id: query.class ?? null,
-  });
+  };
+
+  // Send the class filter only when it is used. An older database without the
+  // class migration still serves the public listing, while a class page fails
+  // loudly instead of silently listing unrelated assignments.
+  if (query.class) {
+    args.p_class_id = query.class;
+  }
+
+  const { data, error } = await supabase.rpc("list_assignments", args);
 
   if (error) {
     throw new DataAccessError("Could not load assignments", error.code);
@@ -318,25 +325,6 @@ export async function getPublishedCounts(): Promise<{
     assignments: assignments.count ?? 0,
     courses: courses.count ?? 0,
   };
-}
-
-/** Published assignment ids for the sitemap. Bounded so the query stays cheap. */
-export async function listPublishedForSitemap(
-  limit = 500,
-): Promise<{ id: string; updated_at: string }[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("id, updated_at")
-    .eq("status", "published")
-    .order("updated_at", { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    throw new DataAccessError("Could not build the sitemap", error.code);
-  }
-
-  return data ?? [];
 }
 
 export async function getOrCreateCourse(

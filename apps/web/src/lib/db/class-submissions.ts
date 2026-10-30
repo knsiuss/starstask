@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isInvitationActive } from "@/lib/classes/invitation-status";
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { loadProfiles } from "@/lib/db/classes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,9 +24,10 @@ export type MyClassSubmission = {
   class_name: string;
 };
 
-/** The caller's own class submissions, newest first. */
+/** The caller's own submissions in one class, newest first. */
 export async function listMyClassSubmissions(
   userId: string,
+  classId: string,
   limit = 20,
 ): Promise<MyClassSubmission[]> {
   const supabase = await createSupabaseServerClient();
@@ -36,7 +38,7 @@ export async function listMyClassSubmissions(
       "id, title, status, deadline, revision, rejection_reason, created_at, updated_at, class_id, classes!assignments_class_id_fkey ( slug, name )",
     )
     .eq("user_id", userId)
-    .not("class_id", "is", null)
+    .eq("class_id", classId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -113,14 +115,6 @@ export type AssignmentReviewEntry = {
   created_at: string;
 };
 
-export type MemberDashboardCounts = {
-  classes: number;
-  pendingSubmissions: number;
-  publishedAssignments: number;
-  rejectedSubmissions: number;
-  openApplications: number;
-};
-
 export type ClassDashboardCounts = {
   members: number;
   pendingReview: number;
@@ -130,6 +124,9 @@ export type ClassDashboardCounts = {
 };
 
 export type PlatformDashboardCounts = {
+  totalUsers: number;
+  onboardedUsers: number;
+  platformAdmins: number;
   pendingApplications: number;
   approvedApplications: number;
   rejectedApplications: number;
@@ -137,6 +134,8 @@ export type PlatformDashboardCounts = {
   archivedClasses: number;
   publishedAssignments: number;
   unpublishedAssignments: number;
+  pendingReviews: number;
+  pendingVerifications: number;
 };
 
 const SUBMISSION_COLUMNS =
@@ -271,69 +270,13 @@ export async function listAssignmentReviews(
   return data ?? [];
 }
 
-export async function getMemberDashboardCounts(
-  userId: string,
-): Promise<MemberDashboardCounts> {
-  const supabase = await createSupabaseServerClient();
-
-  const [
-    classes,
-    pendingSubmissions,
-    publishedAssignments,
-    rejectedSubmissions,
-    openApplications,
-  ] = await Promise.all([
-    countRows(
-      supabase
-        .from("class_members")
-        .select("class_id", { count: "exact", head: true })
-        .eq("user_id", userId),
-    ),
-    countRows(
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "pending_review"),
-    ),
-    countRows(
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "published"),
-    ),
-    countRows(
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "rejected"),
-    ),
-    countRows(
-      supabase
-        .from("class_applications")
-        .select("id", { count: "exact", head: true })
-        .eq("applicant_id", userId)
-        .eq("status", "pending"),
-    ),
-  ]);
-
-  return {
-    classes,
-    pendingSubmissions,
-    publishedAssignments,
-    rejectedSubmissions,
-    openApplications,
-  };
-}
-
 export async function getClassDashboardCounts(
   classId: string,
 ): Promise<ClassDashboardCounts> {
   const supabase = await createSupabaseServerClient();
+  const now = new Date();
 
-  const [members, pendingReview, activeInvitations, published, unpublished] =
+  const [members, pendingReview, invitationRows, published, unpublished] =
     await Promise.all([
       countRows(
         supabase
@@ -348,14 +291,12 @@ export async function getClassDashboardCounts(
           .eq("class_id", classId)
           .eq("status", "pending_review"),
       ),
-      countRows(
-        supabase
-          .from("class_invitations")
-          .select("id", { count: "exact", head: true })
-          .eq("class_id", classId)
-          .is("revoked_at", null)
-          .gt("expires_at", new Date().toISOString()),
-      ),
+      // PostgREST cannot compare two columns, so remaining uses are evaluated
+      // here with the same helper the invitation manager uses.
+      supabase
+        .from("class_invitations")
+        .select("expires_at, max_uses, used_count, revoked_at")
+        .eq("class_id", classId),
       countRows(
         supabase
           .from("assignments")
@@ -368,9 +309,20 @@ export async function getClassDashboardCounts(
           .from("assignments")
           .select("id", { count: "exact", head: true })
           .eq("class_id", classId)
-          .in("status", ["unpublished", "archived"]),
+          .eq("status", "unpublished"),
       ),
     ]);
+
+  if (invitationRows.error) {
+    throw new DataAccessError(
+      "Could not count invitations",
+      invitationRows.error.code,
+    );
+  }
+
+  const activeInvitations = (invitationRows.data ?? []).filter((invitation) =>
+    isInvitationActive(invitation, now),
+  ).length;
 
   return { members, pendingReview, activeInvitations, published, unpublished };
 }
@@ -440,72 +392,42 @@ export async function listPlatformModerationQueue(
   });
 }
 
+/**
+ * Authoritative platform counters, computed in one database round trip.
+ *
+ * Definitions matter for the console labels:
+ *   totalUsers            profiles rows provisioned for an auth account
+ *   publishedAssignments  every public assignment, class or standalone
+ *   pendingReviews        class submissions awaiting a class admin decision
+ *   pendingVerifications  submitted class representative requests
+ */
 export async function getPlatformDashboardCounts(): Promise<PlatformDashboardCounts> {
   const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("get_platform_admin_overview");
 
-  const [
-    pendingApplications,
-    approvedApplications,
-    rejectedApplications,
-    activeClasses,
-    archivedClasses,
-    publishedAssignments,
-    unpublishedAssignments,
-  ] = await Promise.all([
-    countRows(
-      supabase
-        .from("class_applications")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-    ),
-    countRows(
-      supabase
-        .from("class_applications")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "approved"),
-    ),
-    countRows(
-      supabase
-        .from("class_applications")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "rejected"),
-    ),
-    countRows(
-      supabase
-        .from("classes")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "active"),
-    ),
-    countRows(
-      supabase
-        .from("classes")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "archived"),
-    ),
-    countRows(
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "published")
-        .not("class_id", "is", null),
-    ),
-    countRows(
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["unpublished", "archived"])
-        .not("class_id", "is", null),
-    ),
-  ]);
+  if (error) {
+    throw new DataAccessError("Could not load platform counts", error.code);
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    throw new DataAccessError("Could not load platform counts", "PGRST116");
+  }
 
   return {
-    pendingApplications,
-    approvedApplications,
-    rejectedApplications,
-    activeClasses,
-    archivedClasses,
-    publishedAssignments,
-    unpublishedAssignments,
+    totalUsers: Number(row.total_users),
+    onboardedUsers: Number(row.onboarded_users),
+    platformAdmins: Number(row.platform_admins),
+    pendingApplications: Number(row.pending_applications),
+    approvedApplications: Number(row.approved_applications),
+    rejectedApplications: Number(row.rejected_applications),
+    activeClasses: Number(row.active_classes),
+    archivedClasses: Number(row.archived_classes),
+    publishedAssignments: Number(row.published_assignments),
+    unpublishedAssignments: Number(row.unpublished_assignments),
+    pendingReviews: Number(row.pending_reviews),
+    pendingVerifications: Number(row.pending_verifications),
   };
 }
 

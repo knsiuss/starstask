@@ -10,6 +10,17 @@ export const APP_TIME_ZONE_LABEL = "WIB";
 
 export type DeadlineState = "none" | "upcoming" | "due_today" | "overdue";
 
+/**
+ * Calendar days after today that still count as "due soon". The window is
+ * inclusive: today plus the next seven Jakarta calendar days.
+ */
+export const DUE_SOON_CALENDAR_DAYS = 7;
+
+export type DeadlineBucket =
+  "none" | "overdue" | "due_today" | "due_soon" | "later";
+
+const DAY_MS = 24 * 60 * 60 * 1_000;
+
 const jakartaDateFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: APP_TIME_ZONE,
   year: "numeric",
@@ -45,9 +56,75 @@ export function toJakartaDateKey(value: Date | string): string {
   return jakartaDateFormatter.format(date);
 }
 
+function jakartaDayNumber(value: Date | string): number {
+  return Date.parse(`${toJakartaDateKey(value)}T00:00:00Z`) / DAY_MS;
+}
+
+/** Whole Jakarta calendar days between `now` and `deadline` (positive = ahead). */
+export function getJakartaDayDifference(
+  deadline: Date | string,
+  now: Date = new Date(),
+): number {
+  return jakartaDayNumber(deadline) - jakartaDayNumber(now);
+}
+
 /**
- * Classifies a deadline. `due_today` wins over `overdue` so a deadline that
- * passed earlier today still reads as actionable rather than late.
+ * Returns the Jakarta calendar boundaries used by the "due soon" statistic.
+ *
+ * `start` is 00:00 WIB today and `end` is 00:00 WIB on the day after the
+ * seven-day window, so the half-open range covers today plus the next seven
+ * calendar days. Database counts and badges must use the same window.
+ */
+export function getDueSoonWindow(now: Date = new Date()): {
+  start: Date;
+  end: Date;
+} {
+  const startKey = toJakartaDateKey(now);
+  const start = new Date(`${startKey}T00:00:00${APP_TIME_ZONE_OFFSET}`);
+
+  return {
+    start,
+    end: new Date(start.getTime() + (DUE_SOON_CALENDAR_DAYS + 1) * DAY_MS),
+  };
+}
+
+/**
+ * Classifies a deadline into the buckets shared by the dashboard statistic and
+ * the deadline badges. Calendar days are always Asia/Jakarta, so a deadline at
+ * 23:59 WIB and one at 00:01 WIB the next day are never in the same bucket.
+ */
+export function getDeadlineBucket(
+  deadline: Date | string | null | undefined,
+  now: Date = new Date(),
+): DeadlineBucket {
+  if (!deadline) {
+    return "none";
+  }
+
+  if (getDeadlineState(deadline, now) === "none") {
+    return "none";
+  }
+
+  const dayDifference = getJakartaDayDifference(deadline, now);
+
+  if (dayDifference < 0) {
+    return "overdue";
+  }
+
+  if (dayDifference === 0) {
+    return "due_today";
+  }
+
+  if (dayDifference <= DUE_SOON_CALENDAR_DAYS) {
+    return "due_soon";
+  }
+
+  return "later";
+}
+
+/**
+ * Classifies a deadline by its exact instant: `overdue` as soon as the
+ * deadline time has passed, `due_today` only while it is still later today.
  */
 export function getDeadlineState(
   deadline: Date | string | null | undefined,
@@ -64,11 +141,15 @@ export function getDeadlineState(
     return "none";
   }
 
+  if (deadlineDate.getTime() <= now.getTime()) {
+    return "overdue";
+  }
+
   if (toJakartaDateKey(deadlineDate) === toJakartaDateKey(now)) {
     return "due_today";
   }
 
-  return deadlineDate.getTime() < now.getTime() ? "overdue" : "upcoming";
+  return "upcoming";
 }
 
 /** Formats a deadline as `29 Oct 2026, 23:59 WIB`. */
@@ -207,6 +288,6 @@ export function deadlineStateLabel(state: DeadlineState): string {
     case "due_today":
       return "Due today";
     case "overdue":
-      return "Overdue";
+      return "Passed";
   }
 }

@@ -3,6 +3,7 @@ import {
   reviewQueueQuerySchema,
   toFieldErrors,
 } from "@starstask/contracts";
+import { after } from "next/server";
 
 import {
   collectFiles,
@@ -13,6 +14,7 @@ import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { listClassSubmissions } from "@/lib/db/class-submissions";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { dispatchNotificationEvents } from "@/lib/push/dispatch";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import {
   requireClassManager,
@@ -72,10 +74,12 @@ export async function GET(
 }
 
 /**
- * Creates a submission in `pending_review`.
+ * Creates a class assignment.
  *
- * Membership and class state are verified by `submit_class_assignment`; the
- * route only parses and validates the form.
+ * Membership, class state, and the resulting status are decided by
+ * `submit_class_assignment`; the route only parses and validates the form. A
+ * class admin's own post publishes immediately and mentions it to the class,
+ * so its push delivery is also kicked off after the response.
  */
 export async function POST(
   request: Request,
@@ -87,7 +91,7 @@ export async function POST(
     }
 
     const { slug } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     await enforceRateLimit({
       action: "classes:submissions:create",
@@ -139,7 +143,12 @@ export async function POST(
       classId: found.id,
       input: parsed.data,
       files: collectFiles(form),
+      publishAsClassPost: role.canManage,
     });
+
+    if (result.status === "published") {
+      after(() => dispatchNotificationEvents());
+    }
 
     return apiSuccess(result, 201);
   } catch (error) {

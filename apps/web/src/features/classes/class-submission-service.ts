@@ -20,20 +20,27 @@ import {
 } from "@/lib/storage/attachments";
 import { toClassApiError } from "@/features/classes/errors";
 
-export type ClassSubmissionResult = { id: string };
+export type ClassSubmissionResult = {
+  id: string;
+  /** A class admin's own post publishes immediately; a member's waits for review. */
+  status: "published" | "pending_review";
+};
 
 /**
- * Creates a submission in `pending_review` and uploads its attachments.
+ * Creates a class assignment and uploads its attachments.
  *
- * The row is created by `submit_class_assignment`, which verifies membership,
- * class state, and sets the status itself. If an upload fails afterwards, the
- * row and any uploaded objects are removed so a half-saved submission never
- * reaches the review queue.
+ * The row is created by `submit_class_assignment`, which verifies membership and
+ * class state and picks the status itself: `draft` for a class admin (nobody else
+ * could approve their post) and `pending_review` for a member. A class-admin post
+ * is published by `publish_class_assignment` only after the attachments land, so
+ * a public post is never half-saved. If either step fails, the row and any
+ * uploaded objects are removed.
  */
 export async function createClassSubmission(params: {
   classId: string;
   input: ClassSubmissionCreateInput;
   files: File[];
+  publishAsClassPost: boolean;
 }): Promise<ClassSubmissionResult> {
   const validated = await validateFiles(params.files);
   const supabase = await createSupabaseServerClient();
@@ -57,12 +64,25 @@ export async function createClassSubmission(params: {
 
   try {
     await uploadAttachments(assignmentId, validated);
-  } catch (uploadError) {
+
+    if (params.publishAsClassPost) {
+      const { error: publishError } = await supabase.rpc(
+        "publish_class_assignment",
+        { p_assignment_id: assignmentId },
+      );
+
+      if (publishError) {
+        throw toClassApiError(publishError, "Could not publish the post.");
+      }
+
+      return { id: assignmentId, status: "published" };
+    }
+  } catch (failure) {
     await deleteOwnSubmission(assignmentId).catch(() => undefined);
-    throw uploadError;
+    throw failure;
   }
 
-  return { id: assignmentId };
+  return { id: assignmentId, status: "pending_review" };
 }
 
 /**

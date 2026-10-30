@@ -12,16 +12,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AttachmentList } from "@/components/assignments/attachment-list";
+import { AssignmentHistory } from "@/components/assignments/assignment-history";
 import { DeadlineBadge } from "@/components/assignments/deadline-badge";
 import { DeleteAssignmentButton } from "@/components/assignments/delete-assignment-button";
+import { MyReportStatus } from "@/components/assignments/my-report-status";
+import { ReportAssignmentButton } from "@/components/assignments/report-assignment-button";
 import { SaveAssignmentButton } from "@/components/assignments/save-assignment-button";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireAssignmentPageSession } from "@/lib/auth/assignment-access";
 import { getAssignmentDetail } from "@/lib/db/assignments";
+import {
+  getMyAssignmentReport,
+  listAssignmentRevisions,
+} from "@/lib/db/assignment-trust";
 import { isAssignmentSaved } from "@/lib/db/push";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { getAttachmentViews } from "@/lib/storage/signed-urls";
@@ -53,6 +60,15 @@ export async function generateMetadata({
     };
   }
 
+  const session = await requireAssignmentPageSession(`/assignments/${id}`);
+
+  if (!session) {
+    return {
+      title: "Assignment",
+      robots: { index: false, follow: false },
+    };
+  }
+
   const assignment = await getAssignmentDetail(parsedId.data);
 
   if (!assignment) {
@@ -63,15 +79,12 @@ export async function generateMetadata({
   }
 
   const description = excerpt(assignment.description, 160);
-  const isPublic = assignment.status === "published";
 
   return {
     title: assignment.title,
     description,
     alternates: { canonical: `/assignments/${assignment.id}` },
-    robots: isPublic
-      ? { index: true, follow: true }
-      : { index: false, follow: false },
+    robots: { index: false, follow: false },
     openGraph: {
       type: "article",
       title: assignment.title,
@@ -86,13 +99,14 @@ export default async function AssignmentPage({
   searchParams,
 }: AssignmentPageProps) {
   const { id } = await params;
+  const session = await requireAssignmentPageSession(`/assignments/${id}`);
   const parsedId = assignmentIdSchema.safeParse(id);
 
   if (!parsedId.success) {
     notFound();
   }
 
-  if (!isSupabaseConfigured()) {
+  if (!session) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
         <SetupNotice />
@@ -100,9 +114,8 @@ export default async function AssignmentPage({
     );
   }
 
-  const [assignment, session, query] = await Promise.all([
+  const [assignment, query] = await Promise.all([
     getAssignmentDetail(parsedId.data),
-    getSessionUser(),
     searchParams,
   ]);
 
@@ -110,12 +123,21 @@ export default async function AssignmentPage({
     notFound();
   }
 
-  const isOwner = session?.user.id === assignment.user_id;
-  const isSaved =
-    session && !isOwner
-      ? await isAssignmentSaved(session.user.id, assignment.id)
-      : false;
-  const attachments = await getAttachmentViews(assignment.attachments);
+  const isOwner = session.user.id === assignment.user_id;
+  // Independent lookups run in parallel: sequential awaits here added a full
+  // round trip each to the page's time to first byte.
+  const [isSaved, attachments, revisions, myReport] = await Promise.all([
+    !isOwner
+      ? isAssignmentSaved(session.user.id, assignment.id)
+      : Promise.resolve(false),
+    getAttachmentViews(assignment.attachments),
+    // RLS returns an empty list for readers who may not see the history, so the
+    // section simply stays hidden instead of leaking whether edits happened.
+    listAssignmentRevisions(assignment.id),
+    !isOwner
+      ? getMyAssignmentReport(assignment.id, session.user.id)
+      : Promise.resolve(null),
+  ]);
   const deadlineState = getDeadlineState(assignment.deadline);
 
   return (
@@ -136,7 +158,7 @@ export default async function AssignmentPage({
           variant="success"
           className="mt-4"
         >
-          Assignment published. It is now visible in public search.
+          Assignment published. Signed-in students can now find it in search.
         </Alert>
       ) : null}
       {query.updated ? (
@@ -227,7 +249,7 @@ export default async function AssignmentPage({
             </div>
           ) : null}
 
-          {session && !isOwner && assignment.status === "published" ? (
+          {!isOwner && assignment.status === "published" ? (
             <div className="mt-5">
               <SaveAssignmentButton
                 assignmentId={assignment.id}
@@ -242,6 +264,10 @@ export default async function AssignmentPage({
                   Notification settings
                 </Link>
               </p>
+              <div className="mt-2 space-y-2">
+                {myReport ? <MyReportStatus report={myReport} /> : null}
+                <ReportAssignmentButton assignmentId={assignment.id} />
+              </div>
             </div>
           ) : null}
 
@@ -323,7 +349,7 @@ export default async function AssignmentPage({
                   href="/submit"
                   className="text-accent font-medium hover:underline"
                 >
-                  Sign in with Google and contribute
+                  Contribute your assignment
                 </Link>{" "}
                 so the next student does not have to guess.
               </p>
@@ -428,6 +454,8 @@ export default async function AssignmentPage({
               </div>
             </div>
           </Card>
+
+          <AssignmentHistory revisions={revisions} />
 
           <Card className="bg-subtle">
             <p className="text-muted-foreground flex items-start gap-2 text-xs leading-relaxed">

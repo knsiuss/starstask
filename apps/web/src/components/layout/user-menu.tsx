@@ -1,8 +1,16 @@
 "use client";
 
-import { Bell, ChevronDown, LogOut, PlusCircle, UserRound } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  LogOut,
+  ShieldCheck,
+  Terminal,
+  UserRound,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   DropdownMenu,
@@ -16,9 +24,18 @@ import {
 type UserMenuProps = {
   displayName: string;
   avatarUrl: string | null;
+  /** Renders the platform console entry; /admin re-checks the role. */
+  isPlatformAdmin?: boolean;
+  /** Renders the developer-console entry; the route re-verifies the email. */
+  isDeveloper?: boolean;
 };
 
-export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
+export function UserMenu({
+  displayName,
+  avatarUrl,
+  isPlatformAdmin = false,
+  isDeveloper = false,
+}: UserMenuProps) {
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
@@ -26,6 +43,20 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  // Radix unmounts the menu content the instant an item is selected, which
+  // silently cancels a native form submit rendered inside it. The POST is
+  // therefore issued explicitly, and refresh() re-fetches the server tree so
+  // no server component rendered for the signed-in viewer survives.
+  const router = useRouter();
+  const signOut = () => {
+    void fetch("/api/auth/signout", { method: "POST" })
+      .catch(() => null)
+      .finally(() => {
+        router.push("/");
+        router.refresh();
+      });
+  };
 
   return (
     <DropdownMenu>
@@ -75,18 +106,6 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link
-            href="/submit"
-            className="flex items-center gap-2"
-          >
-            <PlusCircle
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            Submit assignment
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link
             href="/settings/notifications"
             className="flex items-center gap-2"
           >
@@ -97,24 +116,48 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
             Notification settings
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <form
-          action="/api/auth/signout"
-          method="post"
-        >
+        {isPlatformAdmin ? (
           <DropdownMenuItem asChild>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2 text-left text-sm"
+            <Link
+              href="/admin"
+              className="flex items-center gap-2"
             >
-              <LogOut
+              <ShieldCheck
                 aria-hidden="true"
                 className="h-4 w-4"
               />
-              Sign out
-            </button>
+              Platform console
+            </Link>
           </DropdownMenuItem>
-        </form>
+        ) : null}
+        {isDeveloper ? (
+          <DropdownMenuItem asChild>
+            <Link
+              href="/developer"
+              className="flex items-center gap-2"
+            >
+              <Terminal
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Developer console
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault();
+            signOut();
+          }}
+          className="flex items-center gap-2"
+        >
+          <LogOut
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+          Sign out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

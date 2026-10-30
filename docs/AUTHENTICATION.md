@@ -33,6 +33,7 @@ https://site/auth/callback?code=...&next=%2Fsubmit
   │  provider error?  → /login?error=oauth_cancelled|callback_failed
   │  exchangeCodeForSession(code)   (PKCE verifier cookie)
   │  auth.getUser()  → confirm profile row exists
+  │  profile.onboarded_at null?  → /onboarding?next=%2Fsubmit
   ▼
 redirect(nextPath)   // sanitized internal path
 ```
@@ -61,16 +62,18 @@ with the original path preserved; protected APIs return `401 unauthorized`.
 
 ```sql
 insert into
-  public.profiles (id, display_name, avatar_url)
+  public.profiles (id, display_name, full_name, avatar_url)
 values
   (
     new.id,
     left (v_display_name, 80),
+    left (v_full_name, 80),
     left (v_avatar_url, 2048)
   ) on conflict (id) do nothing;
 ```
 
 - Display name falls back: `full_name` → `name` → email local-part → `StarsTask member`.
+- `full_name` is stored privately for onboarding; `display_name` is what the public sees.
 - Avatar must start with `https://`; otherwise it is stored as `NULL`.
 - `security definer` with `search_path = ''` and fully qualified table names.
 - No tokens, refresh tokens, or Google IDs are stored.
@@ -79,6 +82,25 @@ values
 
 If the trigger is missing, sign-in still succeeds but `/auth/callback` logs
 `[auth] profile missing after sign-in` and cards fall back to the default display name.
+
+### 4b. Completeness gate
+
+`profiles.onboarded_at` records whether the student finished onboarding. `NULL` means
+incomplete. The check is always server-side and reads the verified session:
+
+- `/auth/callback` and `/login` send an incomplete profile to
+  `/onboarding?next=<sanitized destination>` instead of the workspace.
+- `(workspace)/layout.tsx` repeats the check on every request, so a direct URL to
+  `/dashboard`, `/classes`, or any other workspace route cannot skip onboarding.
+- `/onboarding` sits in its own `(onboarding)` route group, outside the gate, so redirecting
+  to it cannot loop.
+- A complete profile never sees the form; `/onboarding` redirects it to `next`.
+- A **missing** profile row is not treated as incomplete. That signals a missing trigger, and
+  redirecting to onboarding would dead-end; the layout leaves it alone.
+
+Only `update_my_profile()` sets `onboarded_at`, and only after every required value has
+been written. A half-saved profile cannot look complete. Saving again keeps the first
+timestamp rather than moving it.
 
 ## 5. Sign out
 
@@ -96,6 +118,8 @@ role.
 - **Platform Admin** is seeded manually in `platform_admins`; there is no API or
   UI path. See [docs/CLASSES.md](./CLASSES.md#14-manual-setup).
 - Invitation links grant membership only.
+- A class-name match during onboarding grants ordinary membership only, and only for a
+  class with `join_policy = 'open'`. It never grants a class admin or platform admin role.
 
 The session user's id comes from `auth.getUser()`; no role claim from the client
 or from user metadata is trusted. Every role check reads the database predicates
@@ -152,6 +176,7 @@ supabase start
 | Supabase env missing   | Login page shows the setup notice; callback redirects with `not_configured` |
 | Session expired        | Treated as signed out                                                       |
 | Profile missing        | Sign-in succeeds, server logs a marker                                      |
+| Profile incomplete     | Redirected to `/onboarding` with the original destination preserved         |
 
 No access token, refresh token, authorization code, or client secret is written to a URL
 that the browser keeps, a log line, or a `NEXT_PUBLIC_` variable.

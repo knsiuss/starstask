@@ -3,11 +3,13 @@ import {
   assignmentReviewSchema,
   toFieldErrors,
 } from "@starstask/contracts";
+import { after } from "next/server";
 
 import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSubmissionDetail } from "@/lib/db/class-submissions";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { dispatchNotificationEvents } from "@/lib/push/dispatch";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireClassManager } from "@/features/classes/class-access";
 import { reviewSubmission } from "@/features/classes/class-review-service";
@@ -23,7 +25,8 @@ type RouteContext = { params: Promise<{ slug: string; id: string }> };
  * `confirmPublic: true`; the contract rejects an approval without it. The
  * database function then verifies class-admin permission, blocks self-review,
  * records the decision and audit entry, publishes atomically, and queues the
- * submitter notification.
+ * submitter notification. Delivery is kicked off after the response so the
+ * reviewer does not wait on the push provider.
  */
 export async function POST(request: Request, context: RouteContext) {
   try {
@@ -65,6 +68,9 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const result = await reviewSubmission(parsedId.data, parsed.data);
+
+    // The submitter should hear about a decision now, not on the next cron pass.
+    after(() => dispatchNotificationEvents());
 
     return apiSuccess(result);
   } catch (error) {

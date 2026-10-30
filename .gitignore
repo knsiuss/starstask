@@ -38,3 +38,6 @@ pnpm-debug.log*
 
 # Vercel
 .vercel/
+
+# WorkBuddy AI agent workspace (local only)
+.workbuddy-ai/

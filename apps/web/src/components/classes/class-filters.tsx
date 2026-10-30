@@ -9,13 +9,15 @@ import type { ClassDiscoveryQuery } from "@starstask/contracts";
 type ClassFiltersProps = {
   query: ClassDiscoveryQuery;
   semesters: string[];
+  /** Public discovery lives on its own route so `/classes` can stay personal. */
+  action: string;
 };
 
-export function ClassFilters({ query, semesters }: ClassFiltersProps) {
+export function ClassFilters({ query, semesters, action }: ClassFiltersProps) {
   return (
     <form
       method="get"
-      action="/classes"
+      action={action}
       role="search"
       aria-label="Filter classes"
       className="border-border bg-surface rounded-xl border p-4 sm:p-5"

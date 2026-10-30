@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 type WorkspaceTopbarProps = {
   isAuthenticated: boolean;
   isPlatformAdmin: boolean;
+  isDeveloper: boolean;
   displayName: string;
   avatarUrl: string | null;
 };
@@ -17,16 +18,14 @@ type WorkspaceTopbarProps = {
 export function WorkspaceTopbar({
   isAuthenticated,
   isPlatformAdmin,
+  isDeveloper,
   displayName,
   avatarUrl,
 }: WorkspaceTopbarProps) {
   return (
     <header className="border-border bg-surface/90 sticky top-0 z-30 border-b backdrop-blur">
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
-        <MobileNav
-          isAuthenticated={isAuthenticated}
-          isPlatformAdmin={isPlatformAdmin}
-        />
+        <MobileNav isAuthenticated={isAuthenticated} />
         <BrandLink className="lg:hidden" />
 
         <div className="hidden min-w-0 flex-1 sm:block">
@@ -51,6 +50,8 @@ export function WorkspaceTopbar({
             <UserMenu
               displayName={displayName}
               avatarUrl={avatarUrl}
+              isPlatformAdmin={isPlatformAdmin}
+              isDeveloper={isDeveloper}
             />
           ) : (
             <Button

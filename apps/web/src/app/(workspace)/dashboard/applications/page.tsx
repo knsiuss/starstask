@@ -172,7 +172,7 @@ export default async function ApplicationsPage() {
           variant="link"
           className="h-auto p-0 text-xs"
         >
-          <Link href="/classes">Browse approved classes</Link>
+          <Link href="/classes/discover">Browse approved classes</Link>
         </Button>
       </p>
     </div>

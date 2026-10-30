@@ -80,9 +80,16 @@ const STATIC_SAFE_PATHS = new Set([
   "/dashboard",
   "/dashboard/review",
   "/my-assignments",
+  "/sessions",
+  "/settings/calendar",
+  "/settings/profile",
+  "/admin/verifications",
 ]);
 
 const CLASS_PATH_PATTERN = /^\/classes\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+const SESSION_PATH_PATTERN =
+  /^\/sessions\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Notification clicks may only open an internal app path: a published
@@ -95,7 +102,11 @@ export function isSafeNotificationPath(value: string): boolean {
     return false;
   }
 
-  if (STATIC_SAFE_PATHS.has(value) || CLASS_PATH_PATTERN.test(value)) {
+  if (
+    STATIC_SAFE_PATHS.has(value) ||
+    CLASS_PATH_PATTERN.test(value) ||
+    SESSION_PATH_PATTERN.test(value)
+  ) {
     return true;
   }
 

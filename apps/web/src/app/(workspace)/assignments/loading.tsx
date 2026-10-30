@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AssignmentsLoading() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 lg:px-10">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Skeleton className="h-9 w-64" />
@@ -11,24 +11,25 @@ export default function AssignmentsLoading() {
         <Skeleton className="h-11 w-44" />
       </div>
 
-      <Skeleton className="mt-6 h-[188px] w-full rounded-xl" />
+      <Skeleton className="mt-6 h-[170px] w-full rounded-xl" />
 
-      <div className="mt-8 flex items-center gap-2.5">
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-5 w-16 rounded-full" />
+      <div className="mt-8 flex items-center justify-between gap-3">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-8 w-32 rounded-lg" />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="border-border bg-surface mt-4 overflow-hidden rounded-xl border">
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}
-            className="border-border bg-surface rounded-xl border p-5"
+            className="border-border flex items-center gap-4 border-b px-5 py-3.5 last:border-b-0"
           >
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="mt-4 h-6 w-3/4" />
-            <Skeleton className="mt-3 h-4 w-full" />
-            <Skeleton className="mt-2 h-4 w-5/6" />
-            <Skeleton className="mt-5 h-4 w-40" />
+            <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg sm:block" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="mt-2 h-3.5 w-1/2" />
+            </div>
+            <Skeleton className="hidden h-8 w-20 rounded-full sm:block" />
           </div>
         ))}
       </div>

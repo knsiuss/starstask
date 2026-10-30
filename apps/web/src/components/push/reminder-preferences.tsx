@@ -78,8 +78,9 @@ export function ReminderPreferences({
         ) : null}
       </div>
       <p className="text-muted-foreground mt-1 text-sm">
-        Reminders are sent for assignments you own or save. They apply only
-        while notifications are enabled.
+        Reminders are sent for assignments you own or save, and for discussion
+        sessions you are going to. They apply only while notifications are
+        enabled.
       </p>
 
       {!preferences.pushEnabled ? (
@@ -93,7 +94,9 @@ export function ReminderPreferences({
         className="mt-4 space-y-3"
         disabled={isSaving}
       >
-        <legend className="sr-only">Reminder windows</legend>
+        <legend className="text-muted-foreground mb-2 text-xs font-medium tracking-[0.08em] uppercase">
+          Assignment deadlines
+        </legend>
         <ToggleRow
           label="24 hours before the deadline"
           description="A reminder the day before, using your time zone."
@@ -105,6 +108,31 @@ export function ReminderPreferences({
           description="A shorter warning on the deadline day."
           checked={preferences.reminder3h}
           onChange={(checked) => void update({ reminder3h: checked })}
+        />
+      </fieldset>
+
+      <fieldset
+        className="mt-5 space-y-3"
+        disabled={isSaving}
+      >
+        <legend className="text-muted-foreground mb-2 text-xs font-medium tracking-[0.08em] uppercase">
+          Discussion sessions
+        </legend>
+        <ToggleRow
+          label="24 hours before a session"
+          description="Sent for sessions you RSVP'd going to."
+          checked={preferences.sessionReminder24h}
+          onChange={(checked) =>
+            void update({ sessionReminder24h: checked })
+          }
+        />
+        <ToggleRow
+          label="3 hours before a session"
+          description="Cancelled sessions never trigger a reminder."
+          checked={preferences.sessionReminder3h}
+          onChange={(checked) =>
+            void update({ sessionReminder3h: checked })
+          }
         />
       </fieldset>
 
