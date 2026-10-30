@@ -1,12 +1,16 @@
 # StarsTask
 
-**A collaborative academic platform for sharing and managing assignments, classes, and student administration.**
+**One place for every class task, session, and attendance — so nothing lives in a paper stack or a buried WhatsApp chat again.**
 
-StarsTask helps students and lecturers discover, contribute, and organize academic assignments in one place. Reading and modifying assignment content requires authentication and is protected by role-based access control.
+StarsTask is a collaborative academic platform where students and lecturers share assignments,
+schedule class sessions, and record attendance — with structured roles instead of group-chat
+chaos. Reading and modifying assignment content requires authentication and is protected by
+role-based access control.
 
 ## Table of Contents
 
-- [Overview](#overview)
+- [The Problem](#the-problem)
+- [What StarsTask Does Differently](#what-starstask-does-differently)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
@@ -21,45 +25,68 @@ StarsTask helps students and lecturers discover, contribute, and organize academ
 - [Contributing](#contributing)
 - [License](#license)
 
-## Overview
+## The Problem
 
-StarsTask is built around three principles:
+Most university classes still run on tools that were never built for the job:
 
-- **Member access:** browse available assignments after signing in.
-- **Accountability:** authenticate before submitting or managing contributed content.
-- **Structured collaboration:** organize academic resources and class workflows with clear permissions.
+**Attendance is still a paper ritual.** A semester has around 21 meetings per course. Every
+meeting, one sheet of paper travels the room, signatures get smudged, and by week 14 nobody
+trusts the numbers. Lose the sheet — or the one person who kept it — and the attendance record
+is gone. Reconciling it at the end of the semester is archaeology.
+
+**Tasks live in WhatsApp — and drown there.** The class group is also where memes, food photos,
+and 200 unread messages live. A lecturer posts "Tugas 3, deadline Jumat" at 9 PM; by morning it
+is 40 messages deep. Students scroll through screenshots to find which file, which format, which
+deadline. There is no single source of truth, no deadline list, and no way to know what you have
+already missed.
+
+**Finding out about a new task depends on luck.** There is no notification that a task exists —
+only whoever happened to open the group that day. The result is familiar to every student:
+the deadline you learned about two days late.
+
+## What StarsTask Does Differently
+
+| The old way                                | The StarsTask way                                                                                                                                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Attendance sheets passed around the room   | **Digital check-in per session** — students check in from their phone, optionally verified by GPS location with a class-defined radius; the organizer can also mark attendance manually. Records are permanent and exportable. |
+| Task details scattered across chat threads | **One structured assignment per class** — title, description, files, deadline, and review status in one place, searchable and filterable.                                                                                      |
+| "Wait, there was a task?"                  | **Instant push notification to every class member** the moment a task is published — plus optional reminders 24 hours and 3 hours before the deadline.                                                                         |
+| Deadline tracked by memory                 | **Live deadline badges and a personal week view** — the dashboard shows what is due today, this week, and what already slipped.                                                                                                |
+| WhatsApp groups with no roles              | **Explicit roles** — class admins review and publish submissions, students contribute, platform admins moderate. Every sensitive action is audited.                                                                            |
 
 ## Features
 
-| Area                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| Assignment browsing     | Sign in to explore published assignments.                                                           |
-| Authentication          | Sign in with Google through Supabase Auth.                                                          |
-| Assignment management   | Submit, edit, and delete your own assignments; attach up to three files.                            |
-| Search and filters      | Filter by course, semester, type, tag, and deadline; full-text search.                              |
-| Deadline reminders      | Opt-in Web Push reminders 24 hours and 3 hours before a deadline.                                   |
-| Saved assignments       | Follow an assignment you do not own to receive its reminders.                                       |
-| PWA                     | Installable manifest and a push-only service worker.                                                |
-| Access control          | Server-side authorization plus RLS and private storage.                                             |
-| Classes and roles       | Approved classes, separate class and platform admin scopes.                                         |
-| Class applications      | Any signed-in user may apply; a platform admin approves or rejects.                                 |
-| Invitations             | Hashed, expiring, usage-limited, optionally email-restricted links.                                 |
-| Assignment review       | Class admins approve or reject; approval publishes the assignment.                                  |
-| Public moderation       | Unpublish, archive, restore, and remove sensitive attachments.                                      |
-| Discussion sessions     | Class admins schedule tutorials and reviews with RSVP and capacity.                                 |
-| Add to Google Calendar  | One link, no account needed; never exposes participant data.                                        |
-| Calendar sync           | Optional OAuth connection that copies sessions into your own calendar.                              |
-| Session reminders       | Opt-in Web Push 24 hours and 3 hours before a session you are going to.                             |
-| Absence requests        | Students record dates and evidence; class admins forward, never approve.                            |
-| Class rep verification  | A declared position plus evidence; a platform admin approval grants class admin for that one class. |
-| Developer monitoring    | Internal, allowlisted `/developer` view of real accounts, sign-ins, activity, errors, and health.   |
-| OCR document extraction | Optional reader suggests dates from a PDF; the student confirms each one.                           |
-| CSV / PDF exports       | Summary PDF, complete PDF with evidence, ZIP, and injection-safe CSV.                               |
+| Area                    | Description                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Assignment browsing     | Sign in to explore published assignments.                                                                                                  |
+| Authentication          | Sign in with Google through Supabase Auth.                                                                                                 |
+| Assignment management   | Submit, edit, and delete your own assignments; attach up to three files.                                                                   |
+| Search and filters      | Filter by course, semester, type, tag, and deadline; full-text search.                                                                     |
+| Instant publish alerts  | Web Push notification to every class member when a class admin publishes a task (once per revision, author excluded).                      |
+| Deadline reminders      | Opt-in Web Push reminders 24 hours and 3 hours before a deadline.                                                                          |
+| Attendance check-in     | Students check in to scheduled sessions from their phone; GPS-verified within a class-defined radius, or marked manually by the organizer. |
+| Saved assignments       | Follow an assignment you do not own to receive its reminders.                                                                              |
+| PWA                     | Installable manifest and a push-only service worker.                                                                                       |
+| Access control          | Server-side authorization plus RLS and private storage.                                                                                    |
+| Classes and roles       | Approved classes, separate class and platform admin scopes.                                                                                |
+| Class applications      | Any signed-in user may apply; a platform admin approves or rejects.                                                                        |
+| Invitations             | Hashed, expiring, usage-limited, optionally email-restricted links.                                                                        |
+| Assignment review       | Class admins approve or reject; approval publishes the assignment.                                                                         |
+| Public moderation       | Unpublish, archive, restore, and remove sensitive attachments.                                                                             |
+| Discussion sessions     | Class admins schedule tutorials and reviews with RSVP and capacity.                                                                        |
+| Add to Google Calendar  | One link, no account needed; never exposes participant data.                                                                               |
+| Calendar sync           | Optional OAuth connection that copies sessions into your own calendar.                                                                     |
+| Session reminders       | Opt-in Web Push 24 hours and 3 hours before a session you are going to.                                                                    |
+| Absence requests        | Students record dates and evidence; class admins forward, never approve.                                                                   |
+| Class rep verification  | A declared position plus evidence; a platform admin approval grants class admin for that one class.                                        |
+| Developer monitoring    | Internal, allowlisted `/developer` view of real accounts, sign-ins, activity, errors, and health.                                          |
+| OCR document extraction | Optional reader suggests dates from a PDF; the student confirms each one.                                                                  |
+| CSV / PDF exports       | Summary PDF, complete PDF with evidence, ZIP, and injection-safe CSV.                                                                      |
 
 > This table reflects the code in this repository. Planned rows are intentionally not
 > described as working features. The class workflow is documented in
-> [docs/CLASSES.md](./docs/CLASSES.md); discussion sessions and the calendar integration
-> in [docs/SESSIONS.md](./docs/SESSIONS.md); student absence requests in
+> [docs/CLASSES.md](./docs/CLASSES.md); discussion sessions, attendance check-in, and the
+> calendar integration in [docs/SESSIONS.md](./docs/SESSIONS.md); student absence requests in
 > [docs/LEAVE_REQUESTS.md](./docs/LEAVE_REQUESTS.md); class representative
 > verification in [docs/CLASS_VERIFICATION.md](./docs/CLASS_VERIFICATION.md); and the
 > internal, allowlisted monitoring dashboard in
@@ -198,6 +225,9 @@ StarsTask is installable and can send deadline reminders through the browser.
 
 - Users opt in from `/settings/notifications`; the browser permission prompt is only shown
   after a click.
+- When a class admin publishes a task, every member receives a Web Push notification —
+  sent once per revision, with no assignment content in the payload, only the class name
+  and a link.
 - Reminders are sent about 24 hours and 3 hours before a deadline for assignments the user
   owns or saved.
 - On iPhone and iPad (iOS/iPadOS 16.4+), the site must be added to the Home Screen first.
@@ -218,6 +248,13 @@ admins are the only roles that can create or edit them; students can participate
 schedule. Capacity is enforced inside the database with a row lock, so two people cannot
 take the last seat.
 
+**Attendance check-in replaces the paper sheet.** A session can define a check-in point
+(latitude, longitude, radius in meters). Members who RSVP'd check in from their phones; the
+database function re-validates membership, session state, and distance on every attempt, so
+the UI is never the security boundary. The organizer can also mark attendance manually —
+including for members who could not use geolocation. Records are permanent, per meeting,
+and exportable with the class reports.
+
 Every session offers **"Add to Google Calendar"**: a plain link that opens Google with the
 title, time, location, and join link pre-filled. It needs no account connection and no
 calendar permission, and it deliberately contains no participant information. Cancelled
@@ -232,8 +269,8 @@ signing anyone out.
 Session reminders are Web Push, opt-in per user, 24 hours and 3 hours before a session the
 user is going to. They never fire for a cancelled or completed session.
 
-The full runbook — schema, permissions, RSVP rules, OAuth flow, sync behaviour, and
-troubleshooting — is [docs/SESSIONS.md](./docs/SESSIONS.md).
+The full runbook — schema, permissions, RSVP rules, check-in rules, OAuth flow, sync
+behaviour, and troubleshooting — is [docs/SESSIONS.md](./docs/SESSIONS.md).
 
 ## Security
 
@@ -251,6 +288,8 @@ Security is part of the application's foundation:
   platform admins are separate roles that cannot be self-assigned.
 - Approved class assignments require a verified session. Pending and rejected attachments
   stay behind RLS and private storage.
+- Check-in attempts are re-validated server-side: membership, session state, and distance
+  are checked in the database function, not in the browser.
 
 See [docs/CLASSES.md](./docs/CLASSES.md) for the class workflow and role boundaries,
 and [docs/ADMIN_CONSOLE.md](./docs/ADMIN_CONSOLE.md) for the platform admin console,
@@ -291,13 +330,13 @@ The application is deployed on Vercel. The full runbook is
 ## Project Status
 
 StarsTask is under active development. Assignment browsing, Google sign-in, assignment
-management with attachments, saved assignments, Web Push deadline reminders, the PWA
-shell, the class workflow, and discussion sessions with optional Google Calendar sync are
-implemented. The class workflow covers applications,
-platform review, class admin assignment, invitations, submission review with automatic
-public publication, moderation, audit logging, and the member, class admin, and platform
-admin dashboards. Student absence requests with evidence, optional OCR field
-extraction, and CSV/PDF/ZIP report exports are also implemented; see
+management with attachments, saved assignments, Web Push deadline reminders and
+publish notifications, the PWA shell, the class workflow, discussion sessions with
+attendance check-in and optional Google Calendar sync are implemented. The class workflow
+covers applications, platform review, class admin assignment, invitations, submission
+review with automatic public publication, moderation, audit logging, and the member, class
+admin, and platform admin dashboards. Student absence requests with evidence, optional OCR
+field extraction, and CSV/PDF/ZIP report exports are also implemented; see
 [docs/LEAVE_REQUESTS.md](./docs/LEAVE_REQUESTS.md). Content reports and account
 suspension are not implemented. Features, interfaces, and internal details may change.
 
