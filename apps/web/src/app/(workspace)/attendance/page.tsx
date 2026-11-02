@@ -9,6 +9,7 @@ import { CourseAttendanceTable } from "@/components/attendance/course-attendance
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth/session";
 import { buildCourseRows } from "@/lib/attendance/course-rows";
 import {
@@ -16,6 +17,7 @@ import {
   getStudentAttendance,
 } from "@/lib/db/attendance";
 import { getStudentAttendanceMeetingView } from "@/lib/db/attendance-meetings";
+import { listMyClasses } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { flattenSearchParams } from "@/lib/utils/search-params";
@@ -101,22 +103,16 @@ export default async function AttendancePage({
   }
 
   const query = parsed.data;
-  const [historyView, checkInView, meetingView] = await Promise.all([
+  const [historyView, checkInView, meetingView, myClasses] = await Promise.all([
     getStudentAttendance(session.user.id, query),
     getAttendanceCheckInView(session.user.id),
     getStudentAttendanceMeetingView(session.user.id),
+    listMyClasses(session.user.id),
   ]);
 
-  const hasActiveFilters =
-    Boolean(
-      query.class ||
-      query.subject ||
-      query.year ||
-      query.semester ||
-      query.from ||
-      query.to,
-    ) || query.status !== "all";
-
+  const managedClasses = myClasses.filter(
+    (classItem) => classItem.is_admin && classItem.status === "active",
+  );
   const summary = historyView.summary;
   const courseRows = buildCourseRows({
     subjects: historyView.options.subjects,
@@ -131,6 +127,52 @@ export default async function AttendancePage({
   return (
     <div className={pageContainer}>
       <AttendanceHeader period={period} />
+
+      {managedClasses.length > 0 ? (
+        <section
+          aria-labelledby="admin-attendance-tools"
+          className="border-border bg-subtle mt-4 rounded-xl border px-4 py-3"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2
+                id="admin-attendance-tools"
+                className="text-sm font-medium"
+              >
+                Class admin tools
+              </h2>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                Open a class to create a meeting and start check-in.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {managedClasses.slice(0, 3).map((classItem) => (
+                <Button
+                  asChild
+                  key={classItem.id}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Link
+                    href={`/dashboard/classes/${classItem.slug}?tab=attendance`}
+                  >
+                    Manage {classItem.name}
+                  </Link>
+                </Button>
+              ))}
+              {managedClasses.length > 3 ? (
+                <Button
+                  asChild
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Link href="/classes">All classes</Link>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-6">
         <AttendanceOverviewMetrics
@@ -181,7 +223,6 @@ export default async function AttendancePage({
             <AttendanceHistorySection
               view={historyView}
               query={query}
-              hasActiveFilters={hasActiveFilters}
               page={parsePage(flat.page)}
             />
           </div>

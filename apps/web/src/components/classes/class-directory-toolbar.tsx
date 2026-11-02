@@ -93,8 +93,8 @@ export function ClassDirectoryToolbar({
         />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative sm:w-40">
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative col-span-2 min-w-0 sm:w-40">
           <Archive
             aria-hidden="true"
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
@@ -117,7 +117,7 @@ export function ClassDirectoryToolbar({
           </Select>
         </div>
 
-        <div className="relative sm:w-36">
+        <div className="relative min-w-0 sm:w-36">
           <CalendarRange
             aria-hidden="true"
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
@@ -147,7 +147,7 @@ export function ClassDirectoryToolbar({
           </Select>
         </div>
 
-        <div className="relative sm:w-44">
+        <div className="relative min-w-0 sm:w-44">
           <CalendarDays
             aria-hidden="true"
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
@@ -177,7 +177,7 @@ export function ClassDirectoryToolbar({
           </Select>
         </div>
 
-        <div className="relative sm:w-48">
+        <div className="relative col-span-2 min-w-0 sm:w-48">
           <ArrowDownUp
             aria-hidden="true"
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"

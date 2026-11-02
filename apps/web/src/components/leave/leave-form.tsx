@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { FileText, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -12,6 +12,8 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { isFeatureEnabled } from "@/lib/config/features";
 import {
+  LEAVE_EVIDENCE_MAX_BYTES,
+  LEAVE_EVIDENCE_MAX_FILES,
   LEAVE_EXPLANATION_MAX,
   LEAVE_EXPLANATION_MIN,
   LEAVE_REASON_CATEGORIES,
@@ -23,7 +25,7 @@ import {
   type LeaveOcrSuggestion,
   type LeaveRequestStatus,
 } from "@starstask/contracts";
-import { formatLeaveDate } from "@starstask/shared";
+import { formatFileSize, formatLeaveDate } from "@starstask/shared";
 
 type LeaveFormProps = {
   mode: "create" | "edit";
@@ -92,11 +94,77 @@ export function LeaveForm({
   const [busy, setBusy] = React.useState<"save" | "submit" | null>(null);
   const [sources, setSources] =
     React.useState<Record<string, LeaveFieldSource>>(fieldSources);
+  // A create attempt that already reached the API must not create a second
+  // draft when the student retries after a failed upload.
+  const [createdId, setCreatedId] = React.useState<string | null>(null);
+  const [files, setFiles] = React.useState<File[]>([]);
 
   const isEditable = status === "draft";
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function onSelectFiles(event: React.ChangeEvent<HTMLInputElement>) {
+    const incoming = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (incoming.length === 0) {
+      return;
+    }
+
+    const oversized = incoming.find(
+      (file) => file.size > LEAVE_EVIDENCE_MAX_BYTES,
+    );
+
+    if (oversized) {
+      setError(`${oversized.name} is larger than 10 MB.`);
+      return;
+    }
+
+    if (files.length + incoming.length > LEAVE_EVIDENCE_MAX_FILES) {
+      setError(`You can attach at most ${LEAVE_EVIDENCE_MAX_FILES} files.`);
+      return;
+    }
+
+    setError(null);
+    setFiles([...files, ...incoming]);
+  }
+
+  function removeFile(file: File) {
+    setFiles((current) => current.filter((item) => item !== file));
+  }
+
+  /**
+   * Uploads the staged files after the draft exists.
+   *
+   * Successful files leave the queue so a retry cannot attach them twice; the
+   * first failure keeps its file and stops, because submitting without every
+   * chosen document would silently drop the student's evidence.
+   */
+  async function uploadStagedFiles(id: string): Promise<boolean> {
+    for (const file of files) {
+      const body = new FormData();
+      body.append("file", file);
+
+      const response = await fetch(`/api/leave-requests/${id}/evidence`, {
+        method: "POST",
+        body,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: { message?: string };
+        } | null;
+
+        setError(payload?.error?.message ?? `Could not upload ${file.name}.`);
+        return false;
+      }
+
+      setFiles((current) => current.filter((item) => item !== file));
+    }
+
+    return true;
   }
 
   function applySuggestion(key: keyof FormState, value: string) {
@@ -119,7 +187,7 @@ export function LeaveForm({
       documentIssueDate: form.documentIssueDate,
     };
 
-    if (mode === "create") {
+    if (mode === "create" && !createdId) {
       const parsed = leaveRequestCreateSchema.safeParse({
         ...payload,
         classId,
@@ -136,7 +204,19 @@ export function LeaveForm({
         body: JSON.stringify(parsed.data),
       });
 
-      return finishSave(await handleSaveResponse(response));
+      const id = await handleSaveResponse(response);
+
+      if (id) {
+        setCreatedId(id);
+      }
+
+      return finishSave(id);
+    }
+
+    const targetId = mode === "edit" ? requestId : createdId;
+
+    if (!targetId) {
+      return null;
     }
 
     const parsed = leaveRequestUpdateSchema.safeParse(payload);
@@ -146,7 +226,7 @@ export function LeaveForm({
       return null;
     }
 
-    const response = await fetch(`/api/leave-requests/${requestId}`, {
+    const response = await fetch(`/api/leave-requests/${targetId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(parsed.data),
@@ -212,6 +292,10 @@ export function LeaveForm({
         return;
       }
 
+      if (!(await uploadStagedFiles(id))) {
+        return;
+      }
+
       router.push(`/leave-requests/${id}`);
       router.refresh();
     } finally {
@@ -220,12 +304,21 @@ export function LeaveForm({
   }
 
   async function onSubmit() {
+    if (mode === "create" && !createdId && files.length === 0) {
+      setError("Attach at least one supporting document before submitting.");
+      return;
+    }
+
     setBusy("submit");
 
     try {
       const id = await persist();
 
       if (!id) {
+        return;
+      }
+
+      if (!(await uploadStagedFiles(id))) {
         return;
       }
 
@@ -386,6 +479,69 @@ export function LeaveForm({
           ) : null}
         </div>
 
+        {mode === "create" ? (
+          <div>
+            <Label htmlFor="evidenceFiles">Supporting document</Label>
+            <input
+              id="evidenceFiles"
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              onChange={onSelectFiles}
+              disabled={busy !== null}
+              className="text-muted-foreground file:border-border file:bg-muted file:text-foreground hover:file:bg-muted/70 mt-1 w-full text-sm file:mr-3 file:rounded-md file:border file:px-3 file:py-1.5 file:text-sm"
+              aria-describedby="evidenceFiles-hint"
+            />
+            <p
+              id="evidenceFiles-hint"
+              className="text-muted-foreground mt-1 text-xs"
+            >
+              PDF, JPG, or PNG · up to 10 MB each · at least one is required
+              before submitting.
+            </p>
+
+            {files.length > 0 ? (
+              <ul className="mt-2 grid gap-2">
+                {files.map((file) => (
+                  <li
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    className="border-border flex items-center justify-between gap-2 rounded-lg border p-2.5"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <FileText
+                        aria-hidden="true"
+                        className="text-muted-foreground h-4 w-4 shrink-0"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">
+                          {file.name}
+                        </span>
+                        <span className="text-muted-foreground block text-xs">
+                          {formatFileSize(file.size)}
+                        </span>
+                      </span>
+                    </span>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFile(file)}
+                      disabled={busy !== null}
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <Trash2
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
           <Button
             type="submit"
@@ -434,7 +590,14 @@ export function LeaveForm({
               Document reader
             </p>
 
-            {ocrStatus === "not_run" ? (
+            {mode === "create" ? (
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                Attach a PDF above. After you save, StarsTask reads it and shows
+                the suggested dates on the request page for you to confirm.
+              </p>
+            ) : null}
+
+            {mode === "edit" && ocrStatus === "not_run" ? (
               <p className="text-muted-foreground mt-1.5 text-xs">
                 Upload a PDF and StarsTask will try to read the dates for you.
                 Everything it finds is a suggestion you must confirm.

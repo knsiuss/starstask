@@ -99,9 +99,9 @@ export function CalendarFilters({
     query.type !== "all" || Boolean(query.class) || Boolean(query.subject);
 
   return (
-    <div className="border-border bg-surface mt-4 rounded-lg border p-3 sm:p-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-40 flex-1">
+    <div className="border-border bg-surface mt-4 rounded-xl border p-3 sm:p-4">
+      <div className="grid grid-cols-2 items-end gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
+        <div className="col-span-2 sm:col-span-1">
           <Label htmlFor="calendar-type">Show</Label>
           <Select
             id="calendar-type"
@@ -125,7 +125,7 @@ export function CalendarFilters({
           </Select>
         </div>
 
-        <div className="min-w-40 flex-1">
+        <div>
           <Label htmlFor="calendar-class">Class</Label>
           <Select
             id="calendar-class"
@@ -145,7 +145,7 @@ export function CalendarFilters({
           </Select>
         </div>
 
-        <div className="min-w-40 flex-1">
+        <div>
           <Label htmlFor="calendar-subject">Subject</Label>
           <Select
             id="calendar-subject"
@@ -177,7 +177,7 @@ export function CalendarFilters({
               setSubjectId("");
               navigate({ type: "all", classId: "", subjectId: "" });
             }}
-            className="text-muted-foreground hover:text-foreground pb-2.5 text-sm underline-offset-4 hover:underline"
+            className="text-muted-foreground hover:text-foreground col-span-2 justify-self-start text-sm underline-offset-4 hover:underline sm:col-span-1 sm:justify-self-end sm:pb-2.5"
           >
             Reset filters
           </button>

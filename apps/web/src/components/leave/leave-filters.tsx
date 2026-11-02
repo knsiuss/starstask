@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -25,9 +26,9 @@ export function LeaveFilters({
     <form
       action={action}
       method="get"
-      className="border-border bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-5"
+      className="border-border bg-card grid grid-cols-2 gap-3 rounded-xl border p-3 sm:p-4 lg:grid-cols-5"
     >
-      <div className="lg:col-span-1">
+      <div className="col-span-2 min-w-0 lg:col-span-1">
         <Label htmlFor="status">Status</Label>
         <Select
           id="status"
@@ -49,7 +50,7 @@ export function LeaveFilters({
         </Select>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <Label htmlFor="from">Absence from</Label>
         <Input
           id="from"
@@ -60,7 +61,7 @@ export function LeaveFilters({
         />
       </div>
 
-      <div>
+      <div className="min-w-0">
         <Label htmlFor="to">Absence to</Label>
         <Input
           id="to"
@@ -72,7 +73,7 @@ export function LeaveFilters({
       </div>
 
       {showSearch ? (
-        <div>
+        <div className="col-span-2 min-w-0 lg:col-span-1">
           <Label htmlFor="q">Student</Label>
           <Input
             id="q"
@@ -85,19 +86,20 @@ export function LeaveFilters({
         </div>
       ) : null}
 
-      <div className="flex items-end gap-2">
-        <button
+      <div className="col-span-2 flex items-center gap-2 lg:col-span-1 lg:items-end lg:justify-end">
+        <Button
           type="submit"
-          className="bg-accent text-accent-foreground hover:bg-accent/90 focus-visible:ring-ring h-10 rounded-md px-4 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+          className="flex-1 lg:flex-none"
         >
           Apply
-        </button>
-        <Link
-          href={action}
-          className="text-muted-foreground hover:text-foreground flex h-10 items-center text-sm underline-offset-4 hover:underline"
+        </Button>
+        <Button
+          asChild
+          variant="secondary"
+          className="flex-1 lg:flex-none"
         >
-          Reset
-        </Link>
+          <Link href={action}>Reset</Link>
+        </Button>
       </div>
     </form>
   );

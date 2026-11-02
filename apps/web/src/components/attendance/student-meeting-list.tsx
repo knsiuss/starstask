@@ -395,9 +395,23 @@ function StudentMeetingCard({
               <Link href="/settings/profile">Complete profile</Link>
             </Button>
           ) : (
-            <p className="text-muted-foreground max-w-[13rem] text-right text-xs">
-              Your class admin has not opened attendance yet.
-            </p>
+            <div className="max-w-[14rem] text-right">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled
+              >
+                <MapPin
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+                Check In
+              </Button>
+              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
+                Your class admin opens check-in when the class starts.
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -425,7 +439,8 @@ function StudentMeetingCard({
             <p className="text-muted-foreground mt-0.5 text-xs">
               The server checks these values against your verified profile. It
               also checks the meeting window, your membership, GPS accuracy, and
-              the allowed radius before writing a record.
+              the allowed radius before writing a record. When you confirm, your
+              browser asks for location permission.
             </p>
           </div>
 

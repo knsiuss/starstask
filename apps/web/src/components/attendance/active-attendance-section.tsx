@@ -6,7 +6,8 @@ import type { StudentAttendanceMeeting } from "@/lib/attendance/meeting-types";
 import type { ActiveAttendanceSession } from "@/lib/attendance/types";
 
 /**
- * Sessions a student may check in to right now.
+ * Attendance meetings a student can check in to now, plus upcoming meetings
+ * that still explain where the check-in button will appear.
  *
  * Course meetings use the identity-verified flow; older, non-meeting sessions
  * keep the original geolocation panel so both remain usable.
@@ -20,24 +21,30 @@ export function ActiveAttendanceSection({
   identity: { fullName: string | null; nim: string | null };
   legacySessions: ActiveAttendanceSession[];
 }) {
-  const openMeetings = meetings.filter((meeting) => meeting.phase === "open");
+  const hasMeetings = meetings.length > 0;
+  const hasLegacySessions = legacySessions.length > 0;
 
-  if (openMeetings.length > 0) {
-    return (
-      <StudentMeetingList
-        meetings={openMeetings}
-        identity={identity}
-        heading="Active Attendance"
-      />
-    );
-  }
+  if (hasMeetings || hasLegacySessions) {
+    const hasOpenMeeting = meetings.some((meeting) => meeting.phase === "open");
 
-  if (legacySessions.length > 0) {
     return (
-      <AttendanceCheckInPanel
-        sessions={legacySessions}
-        recentEntries={[]}
-      />
+      <div className="grid gap-6">
+        {hasMeetings ? (
+          <StudentMeetingList
+            meetings={meetings}
+            identity={identity}
+            heading={
+              hasOpenMeeting ? "Active Attendance" : "Upcoming Attendance"
+            }
+          />
+        ) : null}
+        {hasLegacySessions ? (
+          <AttendanceCheckInPanel
+            sessions={legacySessions}
+            recentEntries={[]}
+          />
+        ) : null}
+      </div>
     );
   }
 

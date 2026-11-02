@@ -5,16 +5,21 @@ import {
   ChevronRight,
   Download,
   FileSpreadsheet,
+  Loader2,
+  PlayCircle,
   PlusCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { AttendanceMeetingForm } from "@/components/attendance/attendance-meeting-form";
+import { Alert } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 import type { AttendanceMeetingListItem } from "@/lib/attendance/meeting-types";
 import {
   ATTENDANCE_MEETING_PHASE_LABELS,
@@ -54,14 +59,56 @@ export function ClassAttendanceMeetings({
   subjects,
   meetings,
 }: ClassAttendanceMeetingsProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [isCreating, setIsCreating] = React.useState(false);
   const [exportSubjectId, setExportSubjectId] = React.useState(
     subjects[0]?.id ?? "",
   );
+  const [pendingMeetingId, setPendingMeetingId] = React.useState<string | null>(
+    null,
+  );
+  const [error, setError] = React.useState<string | null>(null);
   const base = `/dashboard/classes/${classSlug}/attendance`;
+  const apiBase = `/api/classes/${classSlug}/attendance`;
   const openCount = meetings.filter(
     (meeting) => meeting.phase === "open",
   ).length;
+
+  const openMeeting = async (sessionId: string) => {
+    if (pendingMeetingId) {
+      return;
+    }
+
+    setPendingMeetingId(sessionId);
+    setError(null);
+
+    try {
+      const response = await fetch(`${apiBase}/meetings/${sessionId}/open`, {
+        method: "POST",
+      });
+
+      const payload = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+
+      if (!response.ok) {
+        setError(payload?.error?.message ?? "Could not open attendance.");
+        return;
+      }
+
+      toast({
+        variant: "success",
+        title: "Attendance opened",
+        description: "Students can now check in from their Attendance page.",
+      });
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setPendingMeetingId(null);
+    }
+  };
 
   return (
     <section aria-labelledby="attendance-meetings">
@@ -185,12 +232,15 @@ export function ClassAttendanceMeetings({
       ) : (
         <ul className="border-border divide-border mt-4 divide-y rounded-xl border">
           {meetings.map((meeting) => (
-            <li key={meeting.sessionId}>
+            <li
+              key={meeting.sessionId}
+              className="hover:bg-muted/40 flex flex-wrap items-center gap-3 px-4 py-3"
+            >
               <Link
                 href={`${base}/meetings/${meeting.sessionId}`}
-                className="hover:bg-muted/40 focus-visible:outline-accent flex flex-wrap items-center gap-4 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+                className="focus-visible:outline-accent min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">
                       Pertemuan {meeting.meetingNumber}
@@ -221,15 +271,48 @@ export function ClassAttendanceMeetings({
                       : ""}
                   </p>
                 </div>
+              </Link>
+
+              <div className="flex shrink-0 items-center gap-2">
+                {meeting.phase === "scheduled" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void openMeeting(meeting.sessionId)}
+                    disabled={pendingMeetingId !== null}
+                  >
+                    {pendingMeetingId === meeting.sessionId ? (
+                      <Loader2
+                        aria-hidden="true"
+                        className="h-4 w-4 animate-spin"
+                      />
+                    ) : (
+                      <PlayCircle
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      />
+                    )}
+                    Open attendance
+                  </Button>
+                ) : null}
                 <ChevronRight
                   aria-hidden="true"
                   className="text-muted-foreground h-4 w-4 shrink-0"
                 />
-              </Link>
+              </div>
             </li>
           ))}
         </ul>
       )}
+
+      {error ? (
+        <Alert
+          variant="error"
+          className="mt-3"
+        >
+          <p className="text-xs leading-relaxed">{error}</p>
+        </Alert>
+      ) : null}
     </section>
   );
 }

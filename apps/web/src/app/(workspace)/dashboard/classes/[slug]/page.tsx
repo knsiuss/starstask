@@ -441,10 +441,7 @@ export default async function ClassDashboardPage({
           classSummary={found}
           recentAssignments={overviewAssignments}
           submissions={classSubmissions}
-          subjects={subjects}
-          members={members}
           canManage={role.canManage}
-          isActive={found.status === "active"}
         />
       ) : null}
 

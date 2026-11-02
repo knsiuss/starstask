@@ -23,8 +23,8 @@ function NoOpenSessions() {
       </span>
       <p className="mt-3 text-sm font-medium">No open check-in right now</p>
       <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed">
-        A session appears here while its check-in window is open. Open the
-        session from Sessions to manage its location and attendance.
+        Create a meeting above, then open attendance when class starts. Students
+        can check in from their Attendance page while the window is open.
       </p>
     </div>
   );
