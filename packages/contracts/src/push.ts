@@ -167,3 +167,21 @@ export const notificationEventPayloadSchema = z.object({
 export type NotificationEventPayload = z.infer<
   typeof notificationEventPayloadSchema
 >;
+
+/**
+ * Marks inbox rows read. `all` wins when both fields are present; an empty
+ * selection is rejected so an accidental submit cannot clear the whole inbox.
+ */
+export const markNotificationsReadSchema = z
+  .object({
+    all: z.boolean().optional(),
+    ids: z.array(z.uuid("Invalid notification id")).min(1).max(100).optional(),
+  })
+  .strict()
+  .refine((value) => value.all === true || Boolean(value.ids?.length), {
+    message: "Choose at least one notification.",
+  });
+
+export type MarkNotificationsReadInput = z.infer<
+  typeof markNotificationsReadSchema
+>;

@@ -144,9 +144,9 @@ export default async function ClassLeaveRequestsPage({
             </span>
           </div>
           <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
-            Check that a request is complete and legible, then put it in a
-            package for the lecturer. You are not approving the absence — the
-            lecturer decides.
+            Check that a request is complete and legible, then approve or reject
+            it. Approval marks the covered sessions excused — never present. You
+            can still put requests in a package for the lecturer.
           </p>
         </div>
 

@@ -7,9 +7,13 @@ import * as React from "react";
 import {
   ASSIGNMENT_ATTACHMENT_MAX_BYTES,
   ASSIGNMENT_ATTACHMENTS_MAX,
+  ASSIGNMENT_CONTENT_TYPE_HINTS,
+  ASSIGNMENT_CONTENT_TYPE_LABELS,
+  ASSIGNMENT_CONTENT_TYPES,
   ASSIGNMENT_TYPES,
   ATTACHMENT_ALLOWED_EXTENSIONS,
   classSubmissionCreateSchema,
+  classSubmissionReviseSchema,
   toFieldErrors,
 } from "@starstask/contracts";
 import {
@@ -18,17 +22,23 @@ import {
   toJakartaDateTimeInput,
 } from "@starstask/shared";
 
+import { CourseSelector } from "@/components/classes/course-selector";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { CourseOption } from "@/lib/classes/course-selection";
 
 export type ClassSubmissionFormValues = {
   title: string;
   description: string;
   assignmentType: string;
+  contentType: string;
+  sourceLabel: string;
+  driveUrl: string;
+  subjectId: string;
   deadlineLocal: string;
   tagsText: string;
   referenceUrlsText: string;
@@ -42,11 +52,19 @@ type ClassSubmissionFormProps = {
   initialDeadline?: string | null;
   /** True when the author manages the class, so their post needs no review. */
   publishImmediately?: boolean;
+  /** Active courses of this class. A new post must belong to one of them. */
+  courses?: CourseOption[];
+  /** The course shown above the form, so its context is never implicit. */
+  courseName?: string;
 };
 
 const FIELD_IDS: Record<string, string> = {
   title: "title",
   description: "description",
+  contentType: "contentType",
+  sourceLabel: "sourceLabel",
+  driveUrl: "driveUrl",
+  subjectId: "subjectId",
   deadline: "deadline",
   tags: "tags",
   referenceUrls: "referenceUrls",
@@ -58,6 +76,10 @@ export function submissionInitialValues(deadline?: string | null) {
     title: "",
     description: "",
     assignmentType: "",
+    contentType: "lecturer_assignment",
+    sourceLabel: "",
+    driveUrl: "",
+    subjectId: "",
     deadlineLocal: deadline ? toJakartaDateTimeInput(deadline) : "",
     tagsText: "",
     referenceUrlsText: "",
@@ -89,6 +111,8 @@ export function ClassSubmissionForm({
   assignmentId,
   initialValues,
   publishImmediately = false,
+  courses = [],
+  courseName,
 }: ClassSubmissionFormProps) {
   const router = useRouter();
   const [values, setValues] = React.useState(initialValues);
@@ -102,6 +126,13 @@ export function ClassSubmissionForm({
   const update = (key: keyof ClassSubmissionFormValues, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
   };
+
+  const selectedCourse = courses.find(
+    (course) => course.id === values.subjectId,
+  );
+  const activeCourseName =
+    mode === "revise" ? courseName : selectedCourse?.name;
+  const canSubmit = mode === "revise" || courses.length > 0;
 
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
@@ -149,10 +180,18 @@ export function ClassSubmissionForm({
       return;
     }
 
-    const parsed = classSubmissionCreateSchema.safeParse({
+    const schema =
+      mode === "create"
+        ? classSubmissionCreateSchema
+        : classSubmissionReviseSchema;
+    const parsed = schema.safeParse({
       title: values.title,
       description: values.description,
       assignmentType: values.assignmentType || undefined,
+      contentType: values.contentType || undefined,
+      sourceLabel: values.sourceLabel,
+      driveUrl: values.driveUrl,
+      subjectId: values.subjectId || undefined,
       deadline: deadlineIso ?? undefined,
       tags: values.tagsText
         .split(",")
@@ -176,6 +215,10 @@ export function ClassSubmissionForm({
     formData.set("title", parsed.data.title);
     formData.set("description", parsed.data.description);
     formData.set("assignmentType", parsed.data.assignmentType ?? "");
+    formData.set("contentType", parsed.data.contentType);
+    formData.set("sourceLabel", parsed.data.sourceLabel ?? "");
+    formData.set("driveUrl", parsed.data.driveUrl ?? "");
+    formData.set("subjectId", parsed.data.subjectId ?? "");
     formData.set("deadline", parsed.data.deadline ?? "");
     formData.set("tags", JSON.stringify(parsed.data.tags));
     formData.set("referenceUrls", JSON.stringify(parsed.data.referenceUrls));
@@ -214,8 +257,13 @@ export function ClassSubmissionForm({
 
       const published = body?.data?.status === "published";
       const suffix = buildResultSuffix(mode, published);
+      const courseId = parsed.data.subjectId;
 
-      router.push(`/dashboard/classes/${classSlug}?${suffix}`);
+      router.push(
+        courseId
+          ? `/dashboard/classes/${classSlug}/courses/${courseId}/assignments?${suffix}`
+          : `/dashboard/classes/${classSlug}?${suffix}`,
+      );
       router.refresh();
     } catch {
       setFormMessage("Network error. Check your connection and try again.");
@@ -230,6 +278,13 @@ export function ClassSubmissionForm({
       noValidate
       className="space-y-6"
     >
+      {activeCourseName ? (
+        <p className="text-sm">
+          <span className="text-muted-foreground">Course:</span>{" "}
+          <span className="font-semibold">{activeCourseName}</span>
+        </p>
+      ) : null}
+
       <Alert variant="info">
         {publishImmediately && mode === "create" ? (
           <>
@@ -258,6 +313,56 @@ export function ClassSubmissionForm({
 
       <fieldset className="space-y-5">
         <legend className="text-base font-semibold">Assignment details</legend>
+
+        {publishImmediately ? (
+          <Field
+            id="contentType"
+            label="What are you posting?"
+            error={fieldErrors.contentType}
+            hint={
+              ASSIGNMENT_CONTENT_TYPE_HINTS[
+                values.contentType === "class_announcement"
+                  ? "class_announcement"
+                  : "lecturer_assignment"
+              ]
+            }
+          >
+            <Select
+              id="contentType"
+              name="contentType"
+              value={values.contentType}
+              onChange={(event) => update("contentType", event.target.value)}
+            >
+              {ASSIGNMENT_CONTENT_TYPES.map((contentType) => (
+                <option
+                  key={contentType}
+                  value={contentType}
+                >
+                  {ASSIGNMENT_CONTENT_TYPE_LABELS[contentType]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
+
+        {values.contentType !== "class_announcement" ? (
+          <Field
+            id="sourceLabel"
+            label="Recorded from (optional)"
+            error={fieldErrors.sourceLabel}
+            hint="The lecturer whose instructions these are. Leave empty if you wrote them yourself — your account is always shown as the recorder."
+          >
+            <Input
+              id="sourceLabel"
+              name="sourceLabel"
+              value={values.sourceLabel}
+              onChange={(event) => update("sourceLabel", event.target.value)}
+              maxLength={120}
+              aria-invalid={Boolean(fieldErrors.sourceLabel)}
+              placeholder="e.g. Dr. Ani Wijaya"
+            />
+          </Field>
+        ) : null}
 
         <Field
           id="title"
@@ -295,6 +400,27 @@ export function ClassSubmissionForm({
             aria-invalid={Boolean(fieldErrors.description)}
           />
         </Field>
+
+        {mode === "create" ? (
+          <CourseSelector
+            id="subjectId"
+            courses={courses}
+            value={values.subjectId}
+            onChange={(courseId) => update("subjectId", courseId)}
+            error={fieldErrors.subjectId}
+            hint="This post is filed under the chosen course and appears only in that course."
+          />
+        ) : (
+          <Field
+            id="subjectId"
+            label="Course"
+            hint="A revision keeps the course chosen when this post was created."
+          >
+            <div className="border-border bg-subtle text-foreground rounded-md border px-3 py-2 text-sm font-medium">
+              {courseName ?? "Not linked to a course"}
+            </div>
+          </Field>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -349,6 +475,24 @@ export function ClassSubmissionForm({
             value={values.tagsText}
             onChange={(event) => update("tagsText", event.target.value)}
             placeholder="database, sql, chapter-4"
+          />
+        </Field>
+
+        <Field
+          id="driveUrl"
+          label="Google Drive link (optional)"
+          error={fieldErrors.driveUrl}
+          hint="A shared Drive or Docs link. It opens in a new tab; students still need access permission from you."
+        >
+          <Input
+            id="driveUrl"
+            name="driveUrl"
+            type="url"
+            value={values.driveUrl}
+            onChange={(event) => update("driveUrl", event.target.value)}
+            maxLength={2048}
+            placeholder="https://drive.google.com/..."
+            aria-invalid={Boolean(fieldErrors.driveUrl)}
           />
         </Field>
 
@@ -429,7 +573,7 @@ export function ClassSubmissionForm({
       <div className="flex flex-wrap items-center gap-3">
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !canSubmit}
         >
           {isSubmitting ? (
             <>

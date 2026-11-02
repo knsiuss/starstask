@@ -1,9 +1,10 @@
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { resolveSignedInHomePath } from "@/lib/auth/developer";
@@ -68,12 +69,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </Link>
 
       <div className="border-border mt-6 rounded-lg border p-6 shadow-[0_1px_2px_rgba(9,9,11,0.04)] sm:p-8">
-        <span className="bg-accent text-accent-foreground flex h-10 w-10 items-center justify-center rounded-md">
-          <Star
-            aria-hidden="true"
-            className="h-5 w-5"
-          />
-        </span>
+        <BrandMark size={40} />
 
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">
           Sign in to StarsTask

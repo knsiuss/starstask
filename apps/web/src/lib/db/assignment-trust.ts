@@ -116,12 +116,15 @@ export async function createAssignmentReport(
 }
 
 /**
- * Review queue for platform admins.
+ * Review queue for platform admins and class managers.
  *
  * RLS already limits rows to classes the caller manages; the explicit status
- * filter is what turns the table into a queue.
- */ export async function listAssignmentReports(
+ * filter is what turns the table into a queue. Passing `classId` keeps a
+ * single class's page from being truncated by another class's older reports.
+ */
+export async function listAssignmentReports(
   status: AssignmentReportStatus | "all" = "open",
+  options: { classId?: string } = {},
 ): Promise<AssignmentReportQueue> {
   const supabase = await createSupabaseServerClient();
 
@@ -133,16 +136,23 @@ export async function createAssignmentReport(
     .order("created_at", { ascending: false })
     .limit(REPORT_QUEUE_LIMIT);
 
+  let openCountQuery = supabase
+    .from("assignment_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "open");
+
   if (status !== "all") {
     query = query.eq("status", status);
   }
 
+  if (options.classId) {
+    query = query.eq("class_id", options.classId);
+    openCountQuery = openCountQuery.eq("class_id", options.classId);
+  }
+
   const [reportsResult, openCountResult] = await Promise.all([
     query,
-    supabase
-      .from("assignment_reports")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "open"),
+    openCountQuery,
   ]);
 
   if (reportsResult.error) {
@@ -182,6 +192,30 @@ export async function createAssignmentReport(
     })),
     openCount: openCountResult.count ?? 0,
   };
+}
+
+/**
+ * Class that owns a report, used to authorize a class admin's review.
+ *
+ * RLS returns the row to the reporter and to managers of its class, so a
+ * reporter reaching this point still fails the caller's class-role check.
+ * Returns null when the caller cannot see the report at all.
+ */
+export async function getAssignmentReportClassId(
+  reportId: string,
+): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("assignment_reports")
+    .select("class_id")
+    .eq("id", reportId)
+    .maybeSingle<{ class_id: string }>();
+
+  if (error) {
+    throw new DataAccessError("Could not load this report", error.code);
+  }
+
+  return data?.class_id ?? null;
 }
 
 /**

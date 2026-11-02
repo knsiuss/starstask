@@ -4,6 +4,7 @@ import { LEAVE_EVIDENCE_MAX_FILES } from "@starstask/contracts";
 
 import { ApiError, forbidden, notFound } from "@/lib/api/errors";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { getLeaveRequestById, listLeaveEvidence } from "@/lib/db/leave";
 import { runOcr } from "@/lib/ocr";
 import {
@@ -156,6 +157,10 @@ export async function runEvidenceOcr(
   evidenceId: string,
   known?: { requestId: string; storagePath: string; mimeType: string },
 ): Promise<void> {
+  if (!isFeatureEnabled("ocr")) {
+    return;
+  }
+
   try {
     const target = known ?? (await loadEvidenceTarget(evidenceId));
 

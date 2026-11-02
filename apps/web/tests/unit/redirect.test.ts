@@ -49,8 +49,8 @@ describe("safeRedirectPath", () => {
 
 describe("buildLoginPath", () => {
   it("encodes the destination", () => {
-    expect(buildLoginPath("/my-assignments/abc/edit")).toBe(
-      "/login?next=%2Fmy-assignments%2Fabc%2Fedit",
+    expect(buildLoginPath("/assignments/abc/edit")).toBe(
+      "/login?next=%2Fassignments%2Fabc%2Fedit",
     );
   });
 

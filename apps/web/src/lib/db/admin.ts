@@ -5,7 +5,7 @@ import type {
   AdminAssignmentStatus,
   AdminClassesQuery,
   AdminUsersQuery,
-  ClassStatus,
+  ClassLifecycleStatus,
 } from "@starstask/contracts";
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
@@ -76,16 +76,19 @@ export type AdminClassListItem = {
   id: string;
   slug: string;
   name: string;
+  classCode: string | null;
   description: string;
   courseName: string;
   institution: string | null;
   lecturerName: string | null;
   semester: string;
   academicYear: string;
-  status: ClassStatus;
+  status: ClassLifecycleStatus;
+  archivedAt: string | null;
   createdAt: string;
   memberCount: number;
   adminCount: number;
+  subjectCount: number;
   adminNames: string[];
 };
 
@@ -98,6 +101,8 @@ export async function listPlatformClasses(
   const { data, error } = await supabase.rpc("list_platform_classes", {
     p_search: query.search ?? null,
     p_status: query.status,
+    p_academic_year: query.academicYear ?? null,
+    p_semester: query.semester ?? null,
     p_limit: query.pageSize,
     p_offset: offset,
   });
@@ -114,6 +119,7 @@ export async function listPlatformClasses(
       id: row.id,
       slug: row.slug,
       name: row.name,
+      classCode: row.class_code,
       description: row.description,
       courseName: row.course_name,
       institution: row.institution,
@@ -121,9 +127,11 @@ export async function listPlatformClasses(
       semester: row.semester,
       academicYear: row.academic_year,
       status: row.status,
+      archivedAt: row.archived_at,
       createdAt: row.created_at,
       memberCount: Number(row.member_count),
       adminCount: Number(row.admin_count),
+      subjectCount: Number(row.subject_count),
       adminNames: row.admin_names ?? [],
     })),
     total,

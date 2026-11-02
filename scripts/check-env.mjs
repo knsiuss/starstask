@@ -43,14 +43,10 @@ const OPTIONAL_PAIRS = [
 ];
 
 // Push is all-or-none: a half-configured deployment would silently stop
-// sending reminders, so fail the build instead.
-const PUSH_GROUP = [
-  "VAPID_PUBLIC_KEY",
-  "VAPID_PRIVATE_KEY",
-  "VAPID_SUBJECT",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "CRON_SECRET",
-];
+// sending reminders, so fail the build instead. The scheduler also needs the
+// service-role key, but that key has other consumers (attachment removal,
+// calendar sync, the developer console), so it is checked separately below.
+const PUSH_GROUP = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"];
 
 // Calendar sync is optional. When it is configured, all four values are needed:
 // a missing encryption key would only surface after a user had already granted
@@ -114,6 +110,22 @@ if (pushPresent.length > 0 && pushPresent.length !== PUSH_GROUP.length) {
     `Partially configured push notifications: ${PUSH_GROUP.join(", ")}. Set all of them or none (missing: ${PUSH_GROUP.filter(
       (name) => !pushPresent.includes(name),
     ).join(", ")}).`,
+  );
+}
+
+const serviceRolePresent = Boolean(
+  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+);
+
+if (pushPresent.length === PUSH_GROUP.length && !serviceRolePresent) {
+  failures.push(
+    "Push notifications are configured but SUPABASE_SERVICE_ROLE_KEY is missing. The scheduler needs it to claim and deliver notifications.",
+  );
+}
+
+if (process.env.CRON_SECRET?.trim() && !serviceRolePresent) {
+  failures.push(
+    "CRON_SECRET is configured but SUPABASE_SERVICE_ROLE_KEY is missing. The cron endpoints cannot run without the service role.",
   );
 }
 

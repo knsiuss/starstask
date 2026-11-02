@@ -4,54 +4,61 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import type {
-  SessionAssignmentOption,
-  SessionSummary,
-} from "@/lib/db/sessions";
 import {
-  COMMON_NOTIFICATION_TIMEZONES,
-  SESSION_CAPACITY_MAX,
-  SESSION_TYPES,
-  SESSION_TYPE_LABELS,
-  SESSION_VISIBILITIES,
+  SESSION_CHECKIN_RADIUS_MAX,
+  SESSION_CHECKIN_RADIUS_MIN,
   sessionCreateSchema,
   sessionUpdateSchema,
   toFieldErrors,
 } from "@starstask/contracts";
+import { zonedDateTimeInputToIso } from "@starstask/shared";
+
 import {
-  isoToZonedDateTimeInput,
-  zonedDateTimeInputToIso,
-} from "@starstask/shared";
+  SessionAttendanceFields,
+  SessionBasicsFields,
+  SessionScheduleFields,
+  type SessionFieldErrors,
+} from "@/components/sessions/session-form-fields";
+import {
+  toInitialValues,
+  type SessionFormValues,
+} from "@/components/sessions/session-form-model";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import type { SessionAssignmentOption, SessionDetail } from "@/lib/db/sessions";
+import {
+  describeGeolocationError,
+  getCurrentPosition,
+} from "@/lib/geo/position";
 
 type SessionFormProps = {
   classId: string;
   classSlug: string;
   assignments: SessionAssignmentOption[];
-  session?: SessionSummary;
+  session?: SessionDetail;
   defaultTimeZone: string;
 };
 
-type FormValues = {
-  title: string;
-  description: string;
-  agenda: string;
-  sessionType: (typeof SESSION_TYPES)[number];
-  meetingUrl: string;
-  location: string;
-  startsAt: string;
-  endsAt: string;
-  timeZone: string;
-  capacity: string;
-  registrationDeadline: string;
-  visibility: (typeof SESSION_VISIBILITIES)[number];
-  assignmentId: string;
+type CapturedPoint = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
 };
+
+function parseRadius(value: string): number | null {
+  const parsed = Number.parseInt(value, 10);
+
+  if (
+    !Number.isFinite(parsed) ||
+    parsed < SESSION_CHECKIN_RADIUS_MIN ||
+    parsed > SESSION_CHECKIN_RADIUS_MAX
+  ) {
+    return null;
+  }
+
+  return parsed;
+}
 
 /**
  * Create/edit form for a discussion session.
@@ -68,21 +75,54 @@ export function SessionForm({
   defaultTimeZone,
 }: SessionFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const isEdit = Boolean(session);
-  const [values, setValues] = React.useState<FormValues>(() =>
+  const [values, setValues] = React.useState<SessionFormValues>(() =>
     toInitialValues(session, defaultTimeZone),
   );
-  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
-    {},
-  );
+  const [fieldErrors, setFieldErrors] = React.useState<SessionFieldErrors>({});
   const [error, setError] = React.useState<string | null>(null);
   const [isBusy, setIsBusy] = React.useState(false);
+  const [attendanceRadius, setAttendanceRadius] = React.useState(() =>
+    String(session?.checkinRadiusM ?? 150),
+  );
+  const [capturedPoint, setCapturedPoint] =
+    React.useState<CapturedPoint | null>(null);
+  const [isLocating, setIsLocating] = React.useState(false);
+  const [locationError, setLocationError] = React.useState<string | null>(null);
 
-  const update = <Key extends keyof FormValues>(
+  const update = <Key extends keyof SessionFormValues>(
     key: Key,
-    value: FormValues[Key],
+    value: SessionFormValues[Key],
   ) => {
     setValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const captureLocation = async () => {
+    if (isLocating) {
+      return;
+    }
+
+    if (parseRadius(attendanceRadius) === null) {
+      setLocationError(
+        `Choose a radius between ${SESSION_CHECKIN_RADIUS_MIN} and ${SESSION_CHECKIN_RADIUS_MAX} metres.`,
+      );
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError(null);
+
+    try {
+      const position = await getCurrentPosition();
+      const { latitude, longitude, accuracy } = position.coords;
+
+      setCapturedPoint({ latitude, longitude, accuracy });
+    } catch (caught) {
+      setLocationError(describeGeolocationError(caught));
+    } finally {
+      setIsLocating(false);
+    }
   };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -113,6 +153,20 @@ export function SessionForm({
     if (values.registrationDeadline && !registrationDeadline) {
       setFieldErrors({ registrationDeadline: "Enter a valid date and time" });
       setError("Enter a valid registration deadline.");
+      return;
+    }
+
+    const radiusM = parseRadius(attendanceRadius);
+
+    if (
+      values.sessionType === "in_person" &&
+      capturedPoint !== null &&
+      radiusM === null
+    ) {
+      setLocationError(
+        `Choose a radius between ${SESSION_CHECKIN_RADIUS_MIN} and ${SESSION_CHECKIN_RADIUS_MAX} metres.`,
+      );
+      setError("Fix the attendance radius before saving.");
       return;
     }
 
@@ -168,6 +222,51 @@ export function SessionForm({
 
       const id = body?.data?.id ?? session?.id;
 
+      if (
+        id &&
+        values.sessionType === "in_person" &&
+        capturedPoint &&
+        radiusM
+      ) {
+        const locationResponse = await fetch(
+          `/api/sessions/${id}/checkin-location`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude: capturedPoint.latitude,
+              longitude: capturedPoint.longitude,
+              radiusM,
+            }),
+          },
+        );
+
+        if (!locationResponse.ok) {
+          const locationBody = (await locationResponse
+            .json()
+            .catch(() => null)) as {
+            error?: { message?: string };
+          } | null;
+
+          // The session already exists; do not keep the form open, because a
+          // second submit would create a duplicate. The session page has the
+          // same location controls for a retry.
+          toast({
+            variant: "error",
+            title: "Session saved, but the attendance location was not",
+            description:
+              locationBody?.error?.message ??
+              "Open the session to set the check-in point.",
+          });
+        } else {
+          toast({
+            variant: "success",
+            title: "Attendance location saved",
+            description: `Students within ${radiusM} m can check in.`,
+          });
+        }
+      }
+
       router.push(
         id ? `/sessions/${id}` : `/dashboard/classes/${classSlug}/sessions`,
       );
@@ -187,217 +286,31 @@ export function SessionForm({
     >
       {error ? <Alert variant="error">{error}</Alert> : null}
 
-      <section className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="session-title">Title</Label>
-          <Input
-            id="session-title"
-            value={values.title}
-            onChange={(event) => update("title", event.target.value)}
-            maxLength={160}
-            required
-            aria-invalid={Boolean(fieldErrors.title)}
-            placeholder="Week 9 review session"
-          />
-          <FieldError message={fieldErrors.title} />
-        </div>
+      <SessionBasicsFields
+        values={values}
+        fieldErrors={fieldErrors}
+        onUpdate={update}
+      />
 
-        <div className="space-y-1.5">
-          <Label htmlFor="session-description">Description</Label>
-          <Textarea
-            id="session-description"
-            value={values.description}
-            onChange={(event) => update("description", event.target.value)}
-            rows={4}
-            maxLength={5_000}
-            required
-            aria-invalid={Boolean(fieldErrors.description)}
-          />
-          <FieldError message={fieldErrors.description} />
-        </div>
+      <SessionScheduleFields
+        values={values}
+        fieldErrors={fieldErrors}
+        onUpdate={update}
+        assignments={assignments}
+      />
 
-        <div className="space-y-1.5">
-          <Label htmlFor="session-agenda">Agenda (optional)</Label>
-          <Textarea
-            id="session-agenda"
-            value={values.agenda}
-            onChange={(event) => update("agenda", event.target.value)}
-            rows={3}
-            maxLength={5_000}
-            aria-invalid={Boolean(fieldErrors.agenda)}
-          />
-        </div>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="session-type">Format</Label>
-          <Select
-            id="session-type"
-            value={values.sessionType}
-            onChange={(event) =>
-              update(
-                "sessionType",
-                event.target.value as FormValues["sessionType"],
-              )
-            }
-          >
-            {SESSION_TYPES.map((type) => (
-              <option
-                key={type}
-                value={type}
-              >
-                {SESSION_TYPE_LABELS[type]}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="session-visibility">Who can see it</Label>
-          <Select
-            id="session-visibility"
-            value={values.visibility}
-            onChange={(event) =>
-              update(
-                "visibility",
-                event.target.value as FormValues["visibility"],
-              )
-            }
-          >
-            <option value="class_members">Class members only</option>
-            <option value="public">Anyone signed in</option>
-          </Select>
-        </div>
-
-        {values.sessionType === "online" ? (
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="session-meeting">Meeting link</Label>
-            <Input
-              id="session-meeting"
-              type="url"
-              value={values.meetingUrl}
-              onChange={(event) => update("meetingUrl", event.target.value)}
-              maxLength={2_048}
-              placeholder="https://meet.example.com/abc-defg-hij"
-              aria-invalid={Boolean(fieldErrors.meetingUrl)}
-            />
-            <FieldError message={fieldErrors.meetingUrl} />
-          </div>
-        ) : (
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="session-location">Location</Label>
-            <Input
-              id="session-location"
-              value={values.location}
-              onChange={(event) => update("location", event.target.value)}
-              maxLength={200}
-              placeholder="Room 3.04, Faculty of Computer Science"
-              aria-invalid={Boolean(fieldErrors.location)}
-            />
-            <FieldError message={fieldErrors.location} />
-          </div>
-        )}
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="session-starts">Starts</Label>
-          <Input
-            id="session-starts"
-            type="datetime-local"
-            value={values.startsAt}
-            onChange={(event) => update("startsAt", event.target.value)}
-            required
-            aria-invalid={Boolean(fieldErrors.startsAt)}
-          />
-          <FieldError message={fieldErrors.startsAt} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="session-ends">Ends</Label>
-          <Input
-            id="session-ends"
-            type="datetime-local"
-            value={values.endsAt}
-            onChange={(event) => update("endsAt", event.target.value)}
-            required
-            aria-invalid={Boolean(fieldErrors.endsAt)}
-          />
-          <FieldError message={fieldErrors.endsAt} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="session-timezone">Time zone</Label>
-          <Select
-            id="session-timezone"
-            value={values.timeZone}
-            onChange={(event) => update("timeZone", event.target.value)}
-          >
-            {timeZoneOptions(values.timeZone).map((zone) => (
-              <option
-                key={zone}
-                value={zone}
-              >
-                {zone}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="session-capacity">Capacity (optional)</Label>
-          <Input
-            id="session-capacity"
-            type="number"
-            min={1}
-            max={SESSION_CAPACITY_MAX}
-            value={values.capacity}
-            onChange={(event) => update("capacity", event.target.value)}
-            placeholder="No limit"
-            aria-invalid={Boolean(fieldErrors.capacity)}
-          />
-          <FieldError message={fieldErrors.capacity} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="session-deadline">
-            Registration closes (optional)
-          </Label>
-          <Input
-            id="session-deadline"
-            type="datetime-local"
-            value={values.registrationDeadline}
-            onChange={(event) =>
-              update("registrationDeadline", event.target.value)
-            }
-            aria-invalid={Boolean(fieldErrors.registrationDeadline)}
-          />
-          <FieldError message={fieldErrors.registrationDeadline} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="session-assignment">
-            Related assignment (optional)
-          </Label>
-          <Select
-            id="session-assignment"
-            value={values.assignmentId}
-            onChange={(event) => update("assignmentId", event.target.value)}
-          >
-            <option value="">None</option>
-            {assignments.map((assignment) => (
-              <option
-                key={assignment.id}
-                value={assignment.id}
-              >
-                {assignment.title}
-              </option>
-            ))}
-          </Select>
-          <FieldError message={fieldErrors.assignmentId} />
-        </div>
-      </section>
+      {values.sessionType === "in_person" ? (
+        <SessionAttendanceFields
+          radiusM={attendanceRadius}
+          onRadiusChange={setAttendanceRadius}
+          capturedAccuracyM={capturedPoint?.accuracy ?? null}
+          hasExistingLocation={session?.hasCheckInLocation ?? false}
+          isLocating={isLocating}
+          error={locationError}
+          onCapture={() => void captureLocation()}
+          onClear={() => setCapturedPoint(null)}
+        />
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -423,61 +336,4 @@ export function SessionForm({
       </div>
     </form>
   );
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <p className="text-danger text-xs">{message}</p>;
-}
-
-function timeZoneOptions(current: string): string[] {
-  const zones = new Set<string>(COMMON_NOTIFICATION_TIMEZONES);
-
-  zones.add(current);
-
-  return [...zones];
-}
-
-function toInitialValues(
-  session: SessionSummary | undefined,
-  defaultTimeZone: string,
-): FormValues {
-  if (!session) {
-    return {
-      title: "",
-      description: "",
-      agenda: "",
-      sessionType: "online",
-      meetingUrl: "",
-      location: "",
-      startsAt: "",
-      endsAt: "",
-      timeZone: defaultTimeZone,
-      capacity: "",
-      registrationDeadline: "",
-      visibility: "class_members",
-      assignmentId: "",
-    };
-  }
-
-  return {
-    title: session.title,
-    description: session.description,
-    agenda: session.agenda ?? "",
-    sessionType: session.sessionType,
-    meetingUrl: session.meetingUrl ?? "",
-    location: session.location ?? "",
-    startsAt: isoToZonedDateTimeInput(session.startsAt, session.timeZone),
-    endsAt: isoToZonedDateTimeInput(session.endsAt, session.timeZone),
-    timeZone: session.timeZone,
-    capacity: session.capacity === null ? "" : String(session.capacity),
-    registrationDeadline: session.registrationDeadline
-      ? isoToZonedDateTimeInput(session.registrationDeadline, session.timeZone)
-      : "",
-    visibility: session.visibility,
-    assignmentId: session.assignmentId ?? "",
-  };
 }

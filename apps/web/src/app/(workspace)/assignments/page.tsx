@@ -1,22 +1,18 @@
-import { PlusCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AssignmentCard } from "@/components/assignments/assignment-card";
 import { AssignmentFilters } from "@/components/assignments/assignment-filters";
 import { ExploreAssignmentRow } from "@/components/assignments/explore-assignment-row";
 import { ExploreEmptyState } from "@/components/assignments/explore-empty-state";
 import { Pagination } from "@/components/assignments/pagination";
-import { ResultViewToggle } from "@/components/assignments/result-view-toggle";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  buildAssignmentsHref,
-  parseAssignmentView,
-} from "@/lib/assignments/urls";
+import { buildAssignmentsHref } from "@/lib/assignments/urls";
 import { requireAssignmentPageSession } from "@/lib/auth/assignment-access";
+import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { listAssignments } from "@/lib/db/assignments";
+import { listMyClasses } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { formatCount, pluralize } from "@starstask/shared";
 import { listAssignmentsQuerySchema } from "@starstask/contracts";
@@ -32,7 +28,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const pageContainer =
-  "mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10";
+  "mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10";
 
 type AssignmentsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -42,10 +38,9 @@ export default async function AssignmentsPage({
   searchParams,
 }: AssignmentsPageProps) {
   const rawParams = await searchParams;
-  const view = parseAssignmentView(rawParams.view);
   const flatParams = flattenParams(rawParams);
-  const loginPath = buildAssignmentsHref(flatParams, { view });
-  await requireAssignmentPageSession(loginPath);
+  const loginPath = buildAssignmentsHref(flatParams);
+  const session = await requireAssignmentPageSession(loginPath);
 
   const parsed = listAssignmentsQuerySchema.safeParse(flatParams);
 
@@ -71,7 +66,7 @@ export default async function AssignmentsPage({
   if (!isSupabaseConfigured()) {
     return (
       <div className={pageContainer}>
-        <h1 className="text-3xl font-semibold tracking-tight">Assignments</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
         <div className="mt-6">
           <SetupNotice />
         </div>
@@ -92,6 +87,9 @@ export default async function AssignmentsPage({
   };
 
   const result = await listAssignments(query);
+  const items = session
+    ? await withCompletionMarks(session.user.id, result.items)
+    : result.items;
 
   const hasActiveFilters = Boolean(
     query.search ||
@@ -103,94 +101,51 @@ export default async function AssignmentsPage({
     query.sort !== "newest",
   );
 
-  const resetHref = buildAssignmentsHref({ view });
-  const listHref = buildAssignmentsHref(filterParams, { view: "list" });
-  const gridHref = buildAssignmentsHref(filterParams, { view: "grid" });
+  const resetHref = buildAssignmentsHref({});
   const nowIso = new Date().toISOString();
-  const hasResults = result.items.length > 0;
+  const hasResults = items.length > 0;
 
   return (
     <div className={pageContainer}>
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
-            Assignments
-          </h1>
-          <p className="text-muted-foreground mt-1.5 text-sm">
-            Browse university assignments shared by students.
-          </p>
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex items-baseline gap-2.5">
+          <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
+          <span className="text-muted-foreground text-sm tabular-nums">
+            {formatCount(result.total)} {pluralize(result.total, "task")}
+          </span>
         </div>
         <Button
           asChild
-          size="lg"
+          variant="secondary"
+          size="sm"
         >
-          <Link href="/submit">
-            <PlusCircle
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            Submit assignment
-          </Link>
+          <Link href="/submit">Submit assignment</Link>
         </Button>
       </header>
 
-      <div className="mt-6">
-        <AssignmentFilters
-          query={query}
-          view={view}
-        />
+      <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <AssignmentFilters query={query} />
+        {hasActiveFilters ? (
+          <Link
+            href={resetHref}
+            className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+          >
+            Reset
+          </Link>
+        ) : null}
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Results{" "}
-          <span className="text-muted-foreground font-normal">
-            ({formatCount(result.total)} {pluralize(result.total, "result")})
-          </span>
-        </h2>
-        <div className="flex flex-wrap items-center gap-3">
-          {hasResults && hasActiveFilters ? (
-            <Link
-              href={resetHref}
-              className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
-            >
-              Reset filters
-            </Link>
-          ) : null}
-          <ResultViewToggle
-            current={view}
-            listHref={listHref}
-            gridHref={gridHref}
-          />
-        </div>
-      </div>
-
-      <div className="mt-4">
+      <div className="mt-5">
         {hasResults ? (
-          view === "grid" ? (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {result.items.map((assignment) => (
-                <li
-                  key={assignment.id}
-                  className="h-full"
-                >
-                  <AssignmentCard assignment={assignment} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="border-border bg-surface overflow-hidden rounded-xl border shadow-[0_1px_2px_rgba(9,9,11,0.03)]">
-              <ul className="divide-border divide-y">
-                {result.items.map((assignment) => (
-                  <ExploreAssignmentRow
-                    key={assignment.id}
-                    assignment={assignment}
-                    nowIso={nowIso}
-                  />
-                ))}
-              </ul>
-            </div>
-          )
+          <ul className="divide-border border-border divide-y border-y">
+            {items.map((assignment) => (
+              <ExploreAssignmentRow
+                key={assignment.id}
+                assignment={assignment}
+                nowIso={nowIso}
+              />
+            ))}
+          </ul>
         ) : (
           <ExploreEmptyState
             hasActiveFilters={hasActiveFilters}
@@ -203,10 +158,7 @@ export default async function AssignmentsPage({
         basePath="/assignments"
         page={result.page}
         totalPages={result.totalPages}
-        params={{
-          ...filterParams,
-          view: view === "grid" ? "grid" : undefined,
-        }}
+        params={filterParams}
       />
     </div>
   );
@@ -233,4 +185,42 @@ function flattenParams(
   }
 
   return flat;
+}
+
+/**
+ * Attaches the caller's own completion mark to listings of their classes.
+ *
+ * The public listing also shows assignments from classes the caller is not in;
+ * marking those would always be refused by the database policy, so the toggle
+ * is only rendered where `completed` is present.
+ */
+async function withCompletionMarks(
+  userId: string,
+  items: Awaited<ReturnType<typeof listAssignments>>["items"],
+) {
+  const memberships = await listMyClasses(userId);
+  const classIds = new Set(
+    memberships
+      .filter((membership) => membership.status === "active")
+      .map((membership) => membership.id),
+  );
+  const markable = items.filter(
+    (item) => item.class_id !== null && classIds.has(item.class_id),
+  );
+
+  if (markable.length === 0) {
+    return items;
+  }
+
+  const completedIds = await loadCompletionIds(
+    userId,
+    markable.map((item) => item.id),
+  );
+  const markableIds = new Set(markable.map((item) => item.id));
+
+  return items.map((item) =>
+    markableIds.has(item.id)
+      ? { ...item, completed: completedIds.has(item.id) }
+      : item,
+  );
 }

@@ -185,7 +185,7 @@ describe("notificationEventPayloadSchema", () => {
     const parsed = notificationEventPayloadSchema.safeParse({
       title: "Assignment approved",
       body: "Your submission was published.",
-      url: "/my-assignments",
+      url: "/assignments",
       ownerId: "should-not-render",
     });
 

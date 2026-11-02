@@ -99,7 +99,7 @@ export function DeleteAssignmentButton({
             }
 
             if (isMounted.current) {
-              router.push("/my-assignments");
+              router.push("/assignments");
               router.refresh();
             }
           })

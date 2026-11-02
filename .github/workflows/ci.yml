@@ -70,6 +70,72 @@ jobs:
           # none of these values reach a browser bundle as anything but a URL.
           NEXT_PUBLIC_SITE_URL: https://starstask.example
 
+  integration:
+    name: Migrations and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify
+
+    env:
+      # Local-only placeholders required by supabase/config.toml.
+      SUPABASE_AUTH_GOOGLE_CLIENT_ID: test-client-id
+      SUPABASE_AUTH_GOOGLE_SECRET: test-client-secret
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      - name: Start local Supabase
+        # Unneeded services increase startup time and CI flakiness.
+        run: supabase start --exclude studio,imgproxy,logflare,vector,mailpit,realtime,edge-runtime,postgres-meta
+
+      - name: Apply migrations to an empty database
+        run: supabase db reset --local --yes
+
+      - name: Regenerate database types
+        run: pnpm db:types
+
+      - name: Check database types are current
+        run: git diff --exit-code -- apps/web/src/types/database.generated.ts
+
+      - name: Export disposable test credentials
+        run: |
+          set -a
+          source <(supabase status -o env)
+          set +a
+
+          {
+            echo "SUPABASE_TEST_URL=$API_URL"
+            echo "SUPABASE_TEST_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_TEST_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Run integration tests
+        run: pnpm --filter @starstask/web test:integration
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
+
   e2e:
     name: Playwright (public pages)
     runs-on: ubuntu-latest

@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Bell,
-  ChevronDown,
-  LogOut,
-  ShieldCheck,
-  Terminal,
-  UserRound,
-} from "lucide-react";
+import { Bell, ChevronDown, LogOut, ShieldCheck, Terminal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -62,7 +55,13 @@ export function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         className="hover:bg-muted focus-visible:outline-accent flex items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
-        aria-label={`Account menu for ${displayName}`}
+        // Without an avatar the fallback renders the initials as visible text,
+        // so they are part of the accessible name too (WCAG 2.5.3).
+        aria-label={
+          avatarUrl
+            ? `Account menu for ${displayName}`
+            : `Account menu for ${initials || "ST"} ${displayName}`
+        }
       >
         {avatarUrl ? (
           <Image
@@ -80,7 +79,7 @@ export function UserMenu({
           >
             {initials || "ST"}
           </span>
-        )}
+        )}{" "}
         <span className="hidden max-w-32 truncate sm:block">{displayName}</span>
         <ChevronDown
           aria-hidden="true"
@@ -94,26 +93,14 @@ export function UserMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
-            href="/my-assignments"
-            className="flex items-center gap-2"
-          >
-            <UserRound
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            My assignments
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link
-            href="/settings/notifications"
+            href="/notifications"
             className="flex items-center gap-2"
           >
             <Bell
               aria-hidden="true"
               className="h-4 w-4"
             />
-            Notification settings
+            Notifications
           </Link>
         </DropdownMenuItem>
         {isPlatformAdmin ? (

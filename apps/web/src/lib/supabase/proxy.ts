@@ -55,16 +55,18 @@ export async function updateSession(
     },
   });
 
-  // getUser() validates the access token with Supabase Auth and triggers a
-  // refresh when needed. getSession() alone is not a trust boundary.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifies the JWT signature and refreshes an expiring session.
+  // With asymmetric signing keys the verification is local (cached JWKS), so
+  // this no longer repeats the network round-trip that pages make with
+  // getUser(). Pages keep that getUser() call as their authoritative check.
+  // getSession() alone is not a trust boundary.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
 
   const allowlist = parseDeveloperEmails(process.env.DEVELOPER_EMAILS);
 
   if (
-    isAllowlistedDeveloperEmail(user?.email, allowlist) &&
+    isAllowlistedDeveloperEmail(claims?.email, allowlist) &&
     isStudentWorkspacePath(request.nextUrl.pathname)
   ) {
     return NextResponse.redirect(new URL(DEVELOPER_HOME_PATH, request.url));

@@ -22,23 +22,36 @@ export type MyClassSubmission = {
   class_id: string;
   class_slug: string;
   class_name: string;
+  subject_id: string | null;
 };
 
-/** The caller's own submissions in one class, newest first. */
+/**
+ * The caller's own submissions in one class, newest first.
+ *
+ * Passing `subjectId` narrows the result to a single course, which is how a
+ * course page shows the caller's own work without leaking a sibling course.
+ */
 export async function listMyClassSubmissions(
   userId: string,
   classId: string,
   limit = 20,
+  subjectId?: string,
 ): Promise<MyClassSubmission[]> {
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("assignments")
     .select(
-      "id, title, status, deadline, revision, rejection_reason, created_at, updated_at, class_id, classes!assignments_class_id_fkey ( slug, name )",
+      "id, title, status, deadline, revision, rejection_reason, created_at, updated_at, class_id, subject_id, classes!assignments_class_id_fkey ( slug, name )",
     )
     .eq("user_id", userId)
-    .eq("class_id", classId)
+    .eq("class_id", classId);
+
+  if (subjectId) {
+    query = query.eq("subject_id", subjectId);
+  }
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -64,6 +77,7 @@ export async function listMyClassSubmissions(
         class_id: row.class_id,
         class_slug: row.classes.slug,
         class_name: row.classes.name,
+        subject_id: row.subject_id,
       },
     ];
   });
@@ -100,9 +114,13 @@ export type SubmissionListItem = {
 
 export type SubmissionDetail = SubmissionListItem & {
   class_id: string | null;
+  subject_id: string | null;
   published_at: string | null;
   reviewed_at: string | null;
   assignment_type: string | null;
+  content_type: string;
+  source_label: string | null;
+  drive_url: string | null;
   tags: string[];
   reference_urls: string[];
   attachments: SubmissionAttachment[];
@@ -121,6 +139,7 @@ export type ClassDashboardCounts = {
   activeInvitations: number;
   published: number;
   unpublished: number;
+  archived: number;
 };
 
 export type PlatformDashboardCounts = {
@@ -139,7 +158,7 @@ export type PlatformDashboardCounts = {
 };
 
 const SUBMISSION_COLUMNS =
-  "id, title, description, status, deadline, revision, rejection_reason, created_at, updated_at, user_id, class_id, published_at, reviewed_at, assignment_type, tags, reference_urls";
+  "id, title, description, status, deadline, revision, rejection_reason, created_at, updated_at, user_id, class_id, subject_id, published_at, reviewed_at, assignment_type, content_type, source_label, drive_url, tags, reference_urls";
 
 /**
  * Review queue and class submission list.
@@ -152,15 +171,24 @@ export async function listClassSubmissions(options: {
   status: AssignmentStatusRow;
   page: number;
   pageSize: number;
+  /** Case-insensitive title match used by the class content search. */
+  search?: string;
 }): Promise<PaginatedResult<SubmissionListItem>> {
   const supabase = await createSupabaseServerClient();
   const offset = (options.page - 1) * options.pageSize;
+  const search = options.search?.trim().slice(0, 80);
 
-  const { data, error, count } = await supabase
+  let request = supabase
     .from("assignments")
     .select(SUBMISSION_COLUMNS, { count: "exact" })
     .eq("class_id", options.classId)
-    .eq("status", options.status)
+    .eq("status", options.status);
+
+  if (search) {
+    request = request.ilike("title", `%${escapeLike(search)}%`);
+  }
+
+  const { data, error, count } = await request
     .order("created_at", { ascending: true })
     .range(offset, offset + options.pageSize - 1);
 
@@ -234,9 +262,13 @@ export async function getSubmissionDetail(
     created_at: data.created_at,
     updated_at: data.updated_at,
     class_id: data.class_id,
+    subject_id: data.subject_id,
     published_at: data.published_at,
     reviewed_at: data.reviewed_at,
     assignment_type: data.assignment_type,
+    content_type: data.content_type,
+    source_label: data.source_label,
+    drive_url: data.drive_url,
     tags: data.tags,
     reference_urls: parseReferenceUrls(data.reference_urls),
     submitter: toSubmitter(data.user_id, profiles),
@@ -276,42 +308,55 @@ export async function getClassDashboardCounts(
   const supabase = await createSupabaseServerClient();
   const now = new Date();
 
-  const [members, pendingReview, invitationRows, published, unpublished] =
-    await Promise.all([
-      countRows(
-        supabase
-          .from("class_members")
-          .select("class_id", { count: "exact", head: true })
-          .eq("class_id", classId),
-      ),
-      countRows(
-        supabase
-          .from("assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("class_id", classId)
-          .eq("status", "pending_review"),
-      ),
-      // PostgREST cannot compare two columns, so remaining uses are evaluated
-      // here with the same helper the invitation manager uses.
+  const [
+    members,
+    pendingReview,
+    invitationRows,
+    published,
+    unpublished,
+    archived,
+  ] = await Promise.all([
+    countRows(
       supabase
-        .from("class_invitations")
-        .select("expires_at, max_uses, used_count, revoked_at")
+        .from("class_members")
+        .select("class_id", { count: "exact", head: true })
         .eq("class_id", classId),
-      countRows(
-        supabase
-          .from("assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("class_id", classId)
-          .eq("status", "published"),
-      ),
-      countRows(
-        supabase
-          .from("assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("class_id", classId)
-          .eq("status", "unpublished"),
-      ),
-    ]);
+    ),
+    countRows(
+      supabase
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("class_id", classId)
+        .eq("status", "pending_review"),
+    ),
+    // PostgREST cannot compare two columns, so remaining uses are evaluated
+    // here with the same helper the invitation manager uses.
+    supabase
+      .from("class_invitations")
+      .select("expires_at, max_uses, used_count, revoked_at")
+      .eq("class_id", classId),
+    countRows(
+      supabase
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("class_id", classId)
+        .eq("status", "published"),
+    ),
+    countRows(
+      supabase
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("class_id", classId)
+        .eq("status", "unpublished"),
+    ),
+    countRows(
+      supabase
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("class_id", classId)
+        .eq("status", "archived"),
+    ),
+  ]);
 
   if (invitationRows.error) {
     throw new DataAccessError(
@@ -324,7 +369,21 @@ export async function getClassDashboardCounts(
     isInvitationActive(invitation, now),
   ).length;
 
-  return { members, pendingReview, activeInvitations, published, unpublished };
+  return {
+    members,
+    pendingReview,
+    activeInvitations,
+    published,
+    unpublished,
+    archived,
+  };
+}
+
+function escapeLike(value: string): string {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll("%", "\\%")
+    .replaceAll("_", "\\_");
 }
 
 export type PlatformModerationItem = {

@@ -405,7 +405,7 @@ async function renderTable(
 
   cursor.y -= 8;
   cursor.page.drawText(
-    "This report lists absence requests collected by StarsTask. It is not an approval record: forwarding a request does not mean the lecturer approved it.",
+    "This report lists absence requests collected by StarsTask. Status reflects the export time; forwarding a request is a hand-off, not a decision about the absence.",
     {
       x: MARGIN,
       y: cursor.y,

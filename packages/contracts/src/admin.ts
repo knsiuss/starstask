@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { CLASS_APPLICATION_STATUSES, CLASS_STATUSES } from "./classes";
+import {
+  CLASS_APPLICATION_STATUSES,
+  CLASS_LIFECYCLE_STATUSES,
+} from "./classes";
 
 /**
  * Query contracts for the platform admin console.
@@ -68,9 +71,28 @@ export const ADMIN_ASSIGNMENT_STATUS_LABELS: Record<
   archived: "Archived",
 };
 
+const optionalSemester = z
+  .string()
+  .trim()
+  .max(20)
+  .optional()
+  .transform((value) => (value === "" ? undefined : value));
+
+const optionalAcademicYear = z
+  .string()
+  .trim()
+  .max(20)
+  .optional()
+  .transform((value) => (value === "" ? undefined : value))
+  .refine((value) => value === undefined || /^\d{4}\/\d{4}$/.test(value), {
+    message: "Use the format 2025/2026",
+  });
+
 export const adminClassesQuerySchema = z.object({
   search: optionalSearch,
-  status: z.enum(["all", ...CLASS_STATUSES]).default("all"),
+  status: z.enum(["all", ...CLASS_LIFECYCLE_STATUSES]).default("all"),
+  academicYear: optionalAcademicYear,
+  semester: optionalSemester,
   page: pageField,
   pageSize: pageSizeField,
 });

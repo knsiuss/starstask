@@ -151,6 +151,33 @@ export const profileBioSchema = z.object({
 
 export type ProfileBioInput = z.infer<typeof profileBioSchema>;
 
+/**
+ * The profile-settings form: the fields the owner may change after onboarding.
+ *
+ * NIM and university are deliberately absent. They are institution-facing
+ * values, and the settings endpoint resends the stored ones unchanged rather
+ * than accepting a new value from the browser.
+ */
+export const profileSettingsSchema = z.object({
+  fullName: requiredText(
+    "Full name",
+    PROFILE_FULL_NAME_MIN,
+    PROFILE_FULL_NAME_MAX,
+  ),
+  nickname: requiredText(
+    "Nickname",
+    PROFILE_NICKNAME_MIN,
+    PROFILE_NICKNAME_MAX,
+  ),
+  bio: z
+    .string()
+    .trim()
+    .max(PROFILE_BIO_MAX, `Bio must be ${PROFILE_BIO_MAX} characters or fewer`)
+    .transform((value) => (value.length === 0 ? null : value)),
+});
+
+export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
+
 export const CLASS_JOIN_STATUSES = [
   "joined",
   "already_member",
@@ -190,3 +217,22 @@ export const classJoinResultSchema = z.discriminatedUnion("status", [
 ]);
 
 export type ClassJoinResult = z.infer<typeof classJoinResultSchema>;
+
+/**
+ * The "join by class name" field.
+ *
+ * The database matches this against both the class name and its code after
+ * normalization, so one field covers "TPLM002" and "Kelas TPLM002" alike.
+ */
+export const classJoinByNameSchema = z.object({
+  className: z
+    .string()
+    .trim()
+    .min(1, "Enter a class name or code")
+    .max(
+      PROFILE_CLASS_NAME_MAX,
+      `Use ${PROFILE_CLASS_NAME_MAX} characters or fewer`,
+    ),
+});
+
+export type ClassJoinByNameInput = z.infer<typeof classJoinByNameSchema>;

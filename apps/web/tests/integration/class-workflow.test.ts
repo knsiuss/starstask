@@ -258,6 +258,65 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(admins).toEqual([{ user_id: applicant.id }]);
   });
 
+  it("lets only a class admin change how the class is joined", async () => {
+    const readPolicy = async () => {
+      const { data } = await admin
+        .from("classes")
+        .select("join_policy")
+        .eq("id", classId)
+        .single();
+      return data?.join_policy;
+    };
+
+    const { error } = await applicant.client.rpc("set_class_join_policy", {
+      p_class_id: classId,
+      p_policy: "open",
+    });
+    expect(error).toBeNull();
+    expect(await readPolicy()).toBe("open");
+
+    const { data: policyRow, error: policyReadError } = await applicant.client
+      .from("classes")
+      .select("join_policy")
+      .eq("id", classId)
+      .single();
+    expect(policyReadError).toBeNull();
+    expect(policyRow?.join_policy).toBe("open");
+
+    const { error: anonReadError } = await anon
+      .from("classes")
+      .select("join_policy")
+      .eq("id", classId);
+    expect(anonReadError?.code).toBe("42501");
+
+    const { error: invalidError } = await applicant.client.rpc(
+      "set_class_join_policy",
+      { p_class_id: classId, p_policy: "public" },
+    );
+    expect(invalidError?.code).toBe("22023");
+
+    const { error: memberError } = await member.client.rpc(
+      "set_class_join_policy",
+      { p_class_id: classId, p_policy: "invitation" },
+    );
+    expect(memberError?.code).toBe("42501");
+
+    const { error: anonError } = await anon.rpc("set_class_join_policy", {
+      p_class_id: classId,
+      p_policy: "invitation",
+    });
+    expect(anonError?.code).toBe("42501");
+
+    expect(await readPolicy()).toBe("open");
+
+    const { error: resetError } = await applicant.client.rpc(
+      "set_class_join_policy",
+      { p_class_id: classId, p_policy: "invitation" },
+    );
+    expect(resetError).toBeNull();
+    expect(await readPolicy()).toBe("invitation");
+  });
+
   it("hides class membership from unrelated signed-in users", async () => {
     const { data, error } = await member.client
       .from("class_members")
@@ -390,11 +449,12 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(data).toBeTruthy();
     submissionId = data as string;
 
-    const { data: anonRows } = await anon
+    const { data: anonRows, error: anonError } = await anon
       .from("assignments")
       .select("id")
       .eq("id", submissionId);
-    expect(anonRows).toEqual([]);
+    expect(anonError?.code).toBe("42501");
+    expect(anonRows).toBeNull();
 
     const { data: adminRows } = await applicant.client
       .from("assignments")
@@ -455,12 +515,13 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(error).toBeNull();
     expect(data).toBe("published");
 
-    const { data: anonymousRows } = await anon
+    const { data: anonymousRows, error: anonymousError } = await anon
       .from("assignments")
       .select("id, status")
       .eq("id", submissionId);
 
-    expect(anonymousRows ?? []).toEqual([]);
+    expect(anonymousError?.code).toBe("42501");
+    expect(anonymousRows).toBeNull();
 
     const { data: signedInRows } = await member.client
       .from("assignments")
@@ -478,6 +539,41 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect((listed ?? []).map((row: { id: string }) => row.id)).toContain(
       submissionId,
     );
+  });
+
+  it("notifies the reporter when a report is reviewed", async () => {
+    const { data: reportId, error: reportError } =
+      await platformAdmin.client.rpc("report_assignment", {
+        p_assignment_id: submissionId,
+        p_reason: "wrong_details",
+        p_note: "The brief lists the wrong submission format.",
+      });
+
+    expect(reportError).toBeNull();
+    expect(reportId).toBeTruthy();
+
+    const { error: reviewError } = await applicant.client.rpc(
+      "review_assignment_report",
+      {
+        p_report_id: reportId,
+        p_status: "resolved",
+        p_note: "Corrected the format in the brief.",
+      },
+    );
+
+    expect(reviewError).toBeNull();
+
+    const { data } = await admin
+      .from("notification_events")
+      .select("kind, payload")
+      .eq("user_id", platformAdmin.id)
+      .eq("kind", "assignment_report_reviewed");
+
+    expect(data).toHaveLength(1);
+    expect(data?.[0]?.payload).toMatchObject({
+      title: "Report resolved",
+      url: `/assignments/${submissionId}`,
+    });
   });
 
   it("requires a rejection reason and keeps a rejected submission private", async () => {
@@ -517,11 +613,12 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(rejected?.status).toBe("rejected");
     expect(rejected?.rejection_reason).toContain("private student list");
 
-    const { data: publicRows } = await anon
+    const { data: publicRows, error: publicError } = await anon
       .from("assignments")
       .select("id")
       .eq("id", nextSubmission);
-    expect(publicRows).toEqual([]);
+    expect(publicError?.code).toBe("42501");
+    expect(publicRows).toBeNull();
   });
 
   it("lets only the class admin and platform admins read the audit trail", async () => {
@@ -542,20 +639,345 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(memberRows).toEqual([]);
   });
 
-  it("does not let a client archive a class", async () => {
-    const { error } = await applicant.client.rpc("set_class_status", {
-      p_class_id: classId,
-      p_status: "archived",
+  describe("class lifecycle and duplicate prevention", () => {
+    const classCode = `TST-${suffix}`;
+    let courseId = "";
+
+    beforeAll(async () => {
+      const { data, error } = await admin
+        .from("classes")
+        .select("course_id")
+        .eq("id", classId)
+        .single();
+
+      if (error || !data?.course_id) {
+        throw new Error("Could not read the approved class course id");
+      }
+
+      courseId = data.course_id;
+
+      const { error: codeError } = await admin
+        .from("classes")
+        .update({ class_code: classCode })
+        .eq("id", classId);
+
+      if (codeError) {
+        throw new Error(`Could not set the class code: ${codeError.message}`);
+      }
     });
 
-    expect(error).not.toBeNull();
+    async function readStatus() {
+      const { data } = await admin
+        .from("classes")
+        .select("status")
+        .eq("id", classId)
+        .single();
 
-    const { data } = await anon
-      .from("classes")
-      .select("status")
-      .eq("id", classId)
-      .single();
-    expect(data?.status).toBe("active");
+      return data?.status;
+    }
+
+    it("does not let a regular member archive a class", async () => {
+      const { error } = await member.client.rpc("set_class_status", {
+        p_class_id: classId,
+        p_status: "archived",
+      });
+
+      expect(error?.code).toBe("42501");
+      expect(await readStatus()).toBe("active");
+    });
+
+    it("lets a class admin archive and restore without losing history", async () => {
+      const { error: archiveError } = await applicant.client.rpc(
+        "set_class_status",
+        { p_class_id: classId, p_status: "archived" },
+      );
+
+      expect(archiveError).toBeNull();
+      expect(await readStatus()).toBe("archived");
+
+      const { data: publicRows } = await anon.rpc("list_classes", {
+        p_search: classCode,
+      });
+      expect(
+        (publicRows ?? []).map((row: { id: string }) => row.id),
+      ).not.toContain(classId);
+
+      const { data: archivedRows } = await platformAdmin.client.rpc(
+        "list_platform_classes",
+        { p_search: classSlug, p_status: "archived" },
+      );
+      expect(archivedRows?.[0]?.id).toBe(classId);
+
+      const { count: memberCount } = await admin
+        .from("class_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("class_id", classId);
+      expect(memberCount).toBeGreaterThanOrEqual(2);
+
+      const { count: assignmentCount } = await admin
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("class_id", classId);
+      expect(assignmentCount).toBeGreaterThanOrEqual(1);
+
+      const { data: archiveAudit } = await applicant.client
+        .from("audit_logs")
+        .select("action")
+        .eq("class_id", classId)
+        .eq("action", "class_archived");
+      expect(archiveAudit?.length).toBeGreaterThanOrEqual(1);
+
+      const { error: restoreError } = await applicant.client.rpc(
+        "set_class_status",
+        { p_class_id: classId, p_status: "active" },
+      );
+
+      expect(restoreError).toBeNull();
+      expect(await readStatus()).toBe("active");
+
+      const { data: restoreAudit } = await applicant.client
+        .from("audit_logs")
+        .select("action")
+        .eq("class_id", classId)
+        .eq("action", "class_restored");
+      expect(restoreAudit?.length).toBeGreaterThanOrEqual(1);
+
+      const { data: restoredRows } = await anon.rpc("list_classes", {
+        p_search: classCode,
+      });
+      expect(
+        (restoredRows ?? []).map((row: { id: string }) => row.id),
+      ).toContain(classId);
+    });
+
+    it("rejects moving an active class back to draft", async () => {
+      const { error } = await applicant.client.rpc("set_class_status", {
+        p_class_id: classId,
+        p_status: "draft",
+      });
+
+      expect(error?.code).toBe("22023");
+      expect(await readStatus()).toBe("active");
+    });
+
+    it("lets a platform admin archive and restore the class", async () => {
+      const { error: archiveError } = await platformAdmin.client.rpc(
+        "set_class_status",
+        { p_class_id: classId, p_status: "archived" },
+      );
+      expect(archiveError).toBeNull();
+      expect(await readStatus()).toBe("archived");
+
+      const { error: restoreError } = await platformAdmin.client.rpc(
+        "set_class_status",
+        { p_class_id: classId, p_status: "active" },
+      );
+      expect(restoreError).toBeNull();
+      expect(await readStatus()).toBe("active");
+    });
+
+    it("finds a duplicate by normalized code only inside the same period", async () => {
+      const { data: samePeriod, error: sameError } = await applicant.client.rpc(
+        "find_class_duplicates",
+        {
+          p_name: "A different class name",
+          p_class_code: ` ${classCode.toLowerCase()} `,
+          p_academic_year: "2025/2026",
+          p_semester: "1",
+        },
+      );
+
+      expect(sameError).toBeNull();
+      expect(samePeriod).toHaveLength(1);
+      expect(samePeriod?.[0]).toMatchObject({
+        class_id: classId,
+        class_code: classCode,
+        code_match: true,
+        name_match: false,
+      });
+
+      const { data: otherPeriod } = await applicant.client.rpc(
+        "find_class_duplicates",
+        {
+          p_name: "A different class name",
+          p_class_code: classCode,
+          p_academic_year: "2099/2100",
+          p_semester: "1",
+        },
+      );
+      expect(otherPeriod).toEqual([]);
+
+      const { data: excluded } = await applicant.client.rpc(
+        "find_class_duplicates",
+        {
+          p_name: "A different class name",
+          p_class_code: classCode,
+          p_academic_year: "2025/2026",
+          p_semester: "1",
+          p_exclude_class_id: classId,
+        },
+      );
+      expect(excluded).toEqual([]);
+
+      const { data: byName } = await applicant.client.rpc(
+        "find_class_duplicates",
+        {
+          p_name: `rls class ${suffix}`.toUpperCase(),
+          p_class_code: null,
+          p_academic_year: "2025/2026",
+          p_semester: "1",
+        },
+      );
+      expect(byName?.[0]?.name_match).toBe(true);
+    });
+
+    it("enforces code uniqueness per period and institution in the database", async () => {
+      const base = {
+        name: `Duplicate guard ${suffix}`,
+        description: "A class used to verify the duplicate code constraint.",
+        course_id: courseId,
+        course_name: courseName,
+        semester: "1",
+        status: "active",
+        created_by: applicant.id,
+      };
+
+      const { data: otherPeriod, error: otherPeriodError } = await admin
+        .from("classes")
+        .insert({
+          ...base,
+          slug: `dup-other-period-${suffix}`,
+          class_code: classCode.toLowerCase(),
+          academic_year: "2099/2100",
+        })
+        .select("id")
+        .single();
+
+      expect(otherPeriodError).toBeNull();
+      expect(otherPeriod?.id).not.toBe(classId);
+
+      const { error: duplicateError } = await admin
+        .from("classes")
+        .insert({
+          ...base,
+          slug: `dup-same-period-${suffix}`,
+          class_code: classCode.toLowerCase(),
+          academic_year: "2025/2026",
+        })
+        .select("id");
+
+      expect(duplicateError?.code).toBe("23505");
+
+      const { data: otherInstitution, error: institutionError } = await admin
+        .from("classes")
+        .insert({
+          ...base,
+          slug: `dup-other-institution-${suffix}`,
+          class_code: classCode,
+          academic_year: "2025/2026",
+          institution: "Another University",
+        })
+        .select("id")
+        .single();
+
+      expect(institutionError).toBeNull();
+      expect(otherInstitution?.id).not.toBe(classId);
+    });
+
+    it("refuses to permanently delete a class that has academic history", async () => {
+      const { error } = await applicant.client.rpc("delete_class", {
+        p_class_id: classId,
+      });
+
+      expect(error?.code).toBe("P0001");
+
+      const { data: dependencies, error: dependencyError } =
+        await applicant.client.rpc("get_class_dependencies", {
+          p_class_id: classId,
+        });
+
+      expect(dependencyError).toBeNull();
+      expect(dependencies?.[0]?.can_delete).toBe(false);
+      expect(dependencies?.[0]?.has_history).toBe(true);
+      expect(Number(dependencies?.[0]?.member_count)).toBeGreaterThanOrEqual(2);
+
+      const { data: stillThere } = await admin
+        .from("classes")
+        .select("id")
+        .eq("id", classId);
+      expect(stillThere).toEqual([{ id: classId }]);
+    });
+
+    it("does not let a regular member delete a class", async () => {
+      const { error } = await member.client.rpc("delete_class", {
+        p_class_id: classId,
+      });
+
+      expect(error?.code).toBe("42501");
+    });
+
+    it("permanently deletes an empty draft class owned by its manager", async () => {
+      const draftSlug = `draft-empty-${suffix}`;
+      const { data: draft, error: draftError } = await admin
+        .from("classes")
+        .insert({
+          slug: draftSlug,
+          name: `Empty draft ${suffix}`,
+          description: "An empty draft used to verify permanent deletion.",
+          course_id: courseId,
+          course_name: courseName,
+          semester: "2",
+          academic_year: "2098/2099",
+          status: "draft",
+          created_by: applicant.id,
+        })
+        .select("id")
+        .single();
+
+      expect(draftError).toBeNull();
+      expect(draft?.id).toBeTruthy();
+
+      const draftId = draft?.id as string;
+
+      await admin.from("class_members").insert({
+        class_id: draftId,
+        user_id: applicant.id,
+        joined_via: "platform_assignment",
+      });
+      await admin.from("class_admins").insert({
+        class_id: draftId,
+        user_id: applicant.id,
+        assigned_by: platformAdmin.id,
+      });
+
+      const { data: dependencies } = await applicant.client.rpc(
+        "get_class_dependencies",
+        { p_class_id: draftId },
+      );
+      expect(dependencies?.[0]?.class_status).toBe("draft");
+      expect(dependencies?.[0]?.can_delete).toBe(true);
+
+      const { data: deleted, error: deleteError } = await applicant.client.rpc(
+        "delete_class",
+        { p_class_id: draftId },
+      );
+
+      expect(deleteError).toBeNull();
+      expect(deleted).toBe(true);
+
+      const { data: rows } = await admin
+        .from("classes")
+        .select("id")
+        .eq("id", draftId);
+      expect(rows).toEqual([]);
+
+      const { data: audit } = await admin
+        .from("audit_logs")
+        .select("action, entity_id")
+        .eq("entity_id", draftId)
+        .eq("action", "class_deleted");
+      expect(audit?.length).toBe(1);
+    });
   });
 
   it("lets a platform admin moderate a published assignment", async () => {
@@ -571,11 +993,12 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(error).toBeNull();
     expect(data).toBe("unpublished");
 
-    const { data: publicRows } = await anon
+    const { data: publicRows, error: publicError } = await anon
       .from("assignments")
       .select("id")
       .eq("id", submissionId);
-    expect(publicRows).toEqual([]);
+    expect(publicError?.code).toBe("42501");
+    expect(publicRows).toBeNull();
   });
 
   it("does not let a class admin reverse a platform moderation decision", async () => {
@@ -586,11 +1009,12 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
 
     expect(error).not.toBeNull();
 
-    const { data: publicRows } = await anon
+    const { data: publicRows, error: publicError } = await anon
       .from("assignments")
       .select("id")
       .eq("id", submissionId);
-    expect(publicRows).toEqual([]);
+    expect(publicError?.code).toBe("42501");
+    expect(publicRows).toBeNull();
   });
 
   describe("platform admin read models", () => {

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 360" width="1600" height="360" role="img" aria-label="Soft dawn over layered mountains">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dce8f8" />
+      <stop offset="0.55" stop-color="#eef2f8" />
+      <stop offset="1" stop-color="#fbf8f2" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.72" cy="0.72" r="0.42">
+      <stop offset="0" stop-color="#ffe8c8" stop-opacity="0.95" />
+      <stop offset="0.55" stop-color="#ffdfc0" stop-opacity="0.35" />
+      <stop offset="1" stop-color="#ffdfc0" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9c9de" />
+      <stop offset="1" stop-color="#d3deea" />
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fa6c4" />
+      <stop offset="1" stop-color="#b5c6da" />
+    </linearGradient>
+    <linearGradient id="near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6f88a8" />
+      <stop offset="1" stop-color="#98abc2" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="360" fill="url(#sky)" />
+  <rect width="1600" height="360" fill="url(#glow)" />
+
+  <path d="M0 232 L120 178 L214 214 L318 150 L430 226 L520 186 L636 240 L760 170 L864 226 L980 168 L1090 232 L1200 180 L1310 236 L1420 190 L1520 230 L1600 196 L1600 360 L0 360 Z" fill="url(#far)" opacity="0.75" />
+  <path d="M0 268 L96 224 L190 262 L286 208 L392 268 L500 226 L604 276 L712 218 L824 274 L936 226 L1044 280 L1156 232 L1264 278 L1372 236 L1480 280 L1600 240 L1600 360 L0 360 Z" fill="url(#mid)" opacity="0.85" />
+  <path d="M0 312 L110 276 L206 306 L308 264 L414 312 L524 280 L636 318 L748 278 L860 316 L972 282 L1084 320 L1196 284 L1308 318 L1420 288 L1520 316 L1600 292 L1600 360 L0 360 Z" fill="url(#near)" opacity="0.9" />
+
+  <path d="M0 336 Q200 322 400 334 T800 332 T1200 336 T1600 330 L1600 360 L0 360 Z" fill="#f7f5f0" opacity="0.9" />
+</svg>

@@ -55,7 +55,7 @@ export function GlobalSearch() {
         type="search"
         maxLength={100}
         autoComplete="off"
-        placeholder="Search assignments, courses, or keywords..."
+        placeholder="Search assignments, classes, or keywords..."
         className="bg-background h-10 rounded-lg pr-20 pl-9"
       />
       <kbd

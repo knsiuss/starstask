@@ -5,20 +5,20 @@ import { classIdSchema } from "./classes";
 /**
  * Absence-request contracts.
  *
- * There is deliberately no `approved` or `rejected` status here. StarsTask
- * collects absence requests and forwards them; the academic decision happens
- * outside this product, so a status for it would be a lie the database could
- * hold. The class admin has no review decision either — `forwarded` means
- * "included in a completed forwarding package" and nothing more.
+ * A student submits a request; the class admin then approves or rejects it.
+ * Approval is an academic record, so the corresponding attendance rows for the
+ * covered sessions become `excused` (never `present`). `forwarded` remains for
+ * the existing package workflow and old records, and is not an approval.
  *
  * `draft` is internal: it is a half-filled request the student has not sent
- * yet. The administrative statuses are `submitted`, `forwarded`, and
- * `cancelled`.
+ * yet. `cancelled` ends the workflow without a decision.
  */
 
 export const LEAVE_REQUEST_STATUSES = [
   "draft",
   "submitted",
+  "approved",
+  "rejected",
   "forwarded",
   "cancelled",
 ] as const;
@@ -35,7 +35,9 @@ export type LeaveReasonCategory = (typeof LEAVE_REASON_CATEGORIES)[number];
 
 export const LEAVE_STATUS_LABELS: Record<LeaveRequestStatus, string> = {
   draft: "Draft",
-  submitted: "Submitted",
+  submitted: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
   forwarded: "Forwarded",
   cancelled: "Cancelled",
 };
@@ -231,6 +233,33 @@ export const leaveCancellationSchema = z.object({
 });
 
 export type LeaveCancellationInput = z.infer<typeof leaveCancellationSchema>;
+
+export const LEAVE_REVIEW_DECISIONS = ["approved", "rejected"] as const;
+
+export type LeaveReviewDecision = (typeof LEAVE_REVIEW_DECISIONS)[number];
+
+export const LEAVE_REVIEW_NOTE_MAX = 2_000;
+
+/**
+ * A class admin's decision on a submitted request. The note is optional, is
+ * kept in the request history, and is never copied into a push payload.
+ */
+export const leaveRequestReviewSchema = z.object({
+  decision: z.enum(LEAVE_REVIEW_DECISIONS, "Choose approve or reject"),
+  note: z
+    .string()
+    .trim()
+    .max(
+      LEAVE_REVIEW_NOTE_MAX,
+      `Keep the note under ${LEAVE_REVIEW_NOTE_MAX} characters`,
+    )
+    .nullish()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+});
+
+export type LeaveRequestReviewInput = z.infer<
+  typeof leaveRequestReviewSchema
+>;
 
 /**
  * Evidence metadata registered after the object is stored.

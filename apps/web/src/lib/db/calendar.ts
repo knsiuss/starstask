@@ -5,7 +5,10 @@ import type {
   CalendarQuery,
   OfficialCalendarEventType,
 } from "@starstask/contracts";
+import { LEAVE_REASON_LABELS } from "@starstask/contracts";
 import {
+  APP_TIME_ZONE_OFFSET,
+  dateSpanOverlapsWindow,
   expandWeeklyScheduleForDays,
   type CalendarRange,
 } from "@starstask/shared";
@@ -16,7 +19,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type CalendarEventStatus = "published" | "cancelled";
 
-export type CalendarEventOwner = "official" | "assignment" | "personal";
+export type CalendarEventOwner =
+  "official" | "assignment" | "personal" | "absence";
 
 /**
  * One dated thing on the calendar, whichever source it came from.
@@ -170,6 +174,12 @@ export async function listCalendarEvents(
   // Personal events carry no class or subject, so either filter excludes them.
   const includePersonal =
     matchesType(query, "personal") && !query.subject && !query.class;
+  // Absence notifications belong to a class but carry no subject, so only a
+  // subject filter excludes them.
+  const includeAbsence =
+    matchesType(query, "absence") &&
+    !query.subject &&
+    scopedClassIds.length > 0;
 
   // Sessions and personal events carry no subject, so a subject filter
   // excludes them rather than guessing a match.
@@ -180,6 +190,7 @@ export async function listCalendarEvents(
     sessionsResult,
     officialResult,
     personalResult,
+    absenceResult,
     timetableResult,
   ] = await Promise.all([
     includeAssignments
@@ -247,6 +258,21 @@ export async function listCalendarEvents(
           .order("starts_at", { ascending: true })
           .limit(EVENT_LIMIT)
       : null,
+    includeAbsence
+      ? supabase
+          .from("leave_requests")
+          .select(
+            "id, reference, class_id, leave_start_date, leave_end_date, reason_category, status",
+          )
+          .eq("student_id", userId)
+          // A rejected absence did not happen, so it is not shown as a calendar
+          // entry. Pending and approved requests both occupy the dates.
+          .in("status", ["submitted", "approved", "forwarded", "cancelled"])
+          .in("class_id", scopedClassIds)
+          .not("leave_start_date", "is", null)
+          .order("leave_start_date", { ascending: false })
+          .limit(EVENT_LIMIT)
+      : null,
     includeTimetable
       ? (() => {
           let builder = supabase
@@ -274,6 +300,7 @@ export async function listCalendarEvents(
     { result: sessionsResult, message: "Could not load class sessions" },
     { result: officialResult, message: "Could not load official events" },
     { result: personalResult, message: "Could not load your personal events" },
+    { result: absenceResult, message: "Could not load your absence requests" },
     { result: timetableResult, message: "Could not load the weekly timetable" },
   ];
 
@@ -415,6 +442,47 @@ export async function listCalendarEvents(
       owner: "personal",
       href: null,
       editable: true,
+      managedInClass: false,
+    });
+  }
+
+  // Absence requests store calendar dates, not instants, so the overlap test
+  // runs on `YYYY-MM-DD` keys and only then becomes a Jakarta-midnight instant.
+  const window = { startKey: range.startKey, endKey: range.endKey };
+
+  for (const row of absenceResult?.data ?? []) {
+    if (
+      !row.leave_start_date ||
+      !dateSpanOverlapsWindow(row.leave_start_date, row.leave_end_date, window)
+    ) {
+      continue;
+    }
+
+    const endDate = row.leave_end_date ?? row.leave_start_date;
+    const reason =
+      row.reason_category && row.reason_category in LEAVE_REASON_LABELS
+        ? LEAVE_REASON_LABELS[
+            row.reason_category as keyof typeof LEAVE_REASON_LABELS
+          ]
+        : null;
+    const fields = classFields(row.class_id);
+
+    events.push({
+      key: `absence:${row.id}`,
+      sourceId: row.id,
+      eventType: "absence",
+      title: reason ? `Absence · ${reason}` : "Absence",
+      description: row.reference,
+      startsAt: `${row.leave_start_date}T00:00:00${APP_TIME_ZONE_OFFSET}`,
+      endsAt: `${endDate}T23:59:59${APP_TIME_ZONE_OFFSET}`,
+      location: null,
+      ...fields,
+      subjectId: null,
+      subjectName: null,
+      status: row.status === "cancelled" ? "cancelled" : "published",
+      owner: "absence",
+      href: `/leave-requests/${row.id}`,
+      editable: false,
       managedInClass: false,
     });
   }

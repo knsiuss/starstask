@@ -7,6 +7,7 @@ import { SetupNotice } from "@/components/layout/setup-notice";
 import { CalendarConnectionSettings } from "@/components/settings/calendar-connection-settings";
 import { Alert } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { getCalendarConnectionSummary } from "@/features/integrations/google-calendar-service";
@@ -45,6 +46,32 @@ type CalendarSettingsPageProps = {
 export default async function CalendarSettingsPage({
   searchParams,
 }: CalendarSettingsPageProps) {
+  if (!isFeatureEnabled("calendarSync")) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Calendar settings
+        </h1>
+        <div className="mt-6">
+          <Alert variant="info">
+            Google Calendar sync is turned off on this deployment. Session
+            details are still available from the Schedule page.
+          </Alert>
+        </div>
+        <Link
+          href="/schedule"
+          className="text-muted-foreground hover:text-accent mt-6 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+        >
+          <ArrowLeft
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+          Back to schedule
+        </Link>
+      </div>
+    );
+  }
+
   if (!isSupabaseConfigured()) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">

@@ -4,9 +4,9 @@ This document describes the class management and assignment moderation system:
 who can do what, how a class becomes active, how members join, how an assignment
 becomes public, and which database policies enforce each boundary.
 
-> Status: implemented in code and migrations. The database and browser flows were
-> not exercised against a live Supabase project or deployment while this
-> documentation was written. See [Verified vs unverified](#13-verified-vs-unverified).
+> Status: implemented in code and migrations. The migrations and RLS policies were
+> exercised against a freshly reset local Supabase instance; browser flows and a live
+> deployment were not. See [Verified vs unverified](#13-verified-vs-unverified).
 
 ## Table of contents
 
@@ -31,7 +31,8 @@ becomes public, and which database policies enforce each boundary.
 These decisions are deliberate and must not be reversed by a UI change alone:
 
 1. Any authenticated user may apply to create a class.
-2. A class becomes active only after a Platform Admin approves the application.
+2. A class is created only through the Platform Admin approval workflow. The
+   reviewer may start it as hidden `draft` or immediately `active`.
 3. Applying never grants a role, and approving never grants Platform Admin.
 4. Approving an assignment makes it discoverable to signed-in students. There
    is no private-only approved mode.
@@ -55,8 +56,8 @@ These decisions are deliberate and must not be reversed by a UI change alone:
 | Submit an assignment for review             |   no    |  yes   |     yes     |      yes       |
 | Moderate published assignments              |   no    |   no   |     own     |      any       |
 | Assign or revoke class admins               |   no    |   no   |     no      |      yes       |
-| Archive or restore a class                  |   no    |   no   |     no      |      yes       |
-| Delete a class                              |   no    |   no   |     own     |      any       |
+| Archive or restore a class                  |   no    |   no   |     own     |      any       |
+| Permanently delete an empty class           |   no    |   no   |     own     |      any       |
 | Read the platform audit trail               |   no    |   no   |  own class  |      all       |
 
 "Own" means a class the user is a member or admin of. Permission checks are
@@ -67,7 +68,7 @@ hides controls but that is not the security boundary.
 
 An application records:
 
-- proposed name and slug
+- proposed name, slug, and optional class code
 - course or subject
 - institution and lecturer (optional)
 - semester and academic year
@@ -83,10 +84,15 @@ Statuses: `pending`, `approved`, `rejected`, `withdrawn`.
 4. Rejection requires a note of at least three characters.
 5. Approval creates the course if needed, creates the class, adds the applicant as
    a member, and only creates the class admin row when the reviewer explicitly
-   passes `p_grant_class_admin = true`.
-6. Every decision appends to `class_application_reviews` and `audit_logs`, and
+   passes `p_grant_class_admin = true`. The reviewer chooses `initialStatus`
+   `draft` or `active`; draft classes stay hidden until a class admin activates
+   them.
+6. If the proposed name or code already exists in the same academic period and
+   institution, the API returns `409 possible_duplicate` unless the reviewer
+   sends `confirmDuplicate: true`. Nothing is merged automatically.
+7. Every decision appends to `class_application_reviews` and `audit_logs`, and
    queues a notification for the applicant.
-7. The applicant may revise a `pending` or `rejected` application, which returns it
+8. The applicant may revise a `pending` or `rejected` application, which returns it
    to `pending`, or withdraw a `pending` one.
 
 The application status, reviewer, timestamp, and created class are also enforced
@@ -95,38 +101,152 @@ and a class.
 
 ## 4. Class management
 
-A class has a permanent slug, name, description, course, optional institution and
-lecturer, semester, academic year, status (`active` or `archived`), and members.
+A class has a permanent UUID and slug, an optional human-readable class code,
+name, description, course, optional institution and lecturer, semester, academic
+year, lifecycle status (`draft`, `active`, or `archived`), a join policy, and
+members. The UUID is the only identity used by memberships, invitations,
+assignments, submissions, attendance, schedules, and audit rows; names and codes
+may repeat across academic periods.
+
+### Lifecycle
+
+```text
+draft --> active --> archived
+  |                     |
+  +---------------------+--> active (restore)
+```
+
+- `draft` is visible only to class managers and is excluded from discovery.
+- `active` classes are discoverable and accept submissions.
+- `archived` classes leave discovery and the default directory, stop accepting
+  new submissions, and stay readable to their members and managers. Members,
+  assignments, submissions, attendance, schedules, leave requests, and audit
+  history are preserved.
+- Transitions are enforced inside `set_class_status`; `active -> draft` is
+  rejected so a class cannot silently disappear from its members. Class managers
+  may archive and restore their own class; platform admins may change any class.
+- Every transition writes `class_archived`, `class_activated`, or `class_restored`
+  to the audit trail, and `archived_at` / `archived_by` are maintained with it.
+
+### Class codes and duplicate prevention
+
+Codes are trimmed and normalized to uppercase. A partial unique index enforces
+`(class_code, academic_year, semester, institution)` only when a code is set, so
+the same code can be reused in a different academic period or institution but not
+twice inside one period. The database rejects a duplicate even if a caller skips
+the UI check.
+
+`find_class_duplicates` powers a warning on the application, settings, and
+approval forms. It matches a normalized code or the exact name inside the same
+period and institution. It never merges rows: the platform admin must explicitly
+send `confirmDuplicate: true` before an approval can proceed through a match.
+
+### Courses
+
+A class group holds one or more **courses** (`class_subjects`). A course belongs
+to exactly one class and carries the academic content:
+
+- assignments and announcements (`assignments.subject_id`)
+- attendance meetings (`discussion_sessions.subject_id`)
+- schedule entries (`class_course_schedules.subject_id`)
+- learning materials (`course_materials.subject_id`)
+
+Membership stays at the class level. A student joins the class once and can
+reach every course in it; there is no per-course membership. Course records are
+owned by their class, so a course id from another class is rejected even when
+the caller belongs to both classes.
+
+Every new piece of academic content requires a course. Forms show a course
+selector; with a single active course it is preselected but still submitted with
+the request. An archived course cannot receive new assignments, meetings,
+schedule entries, or materials. Historical rows without a course remain readable
+and are never reassigned automatically.
+
+A course that already has records cannot be deleted; it must be archived so the
+academic history is preserved. Only an empty course can be deleted.
+
+Course workspace routes:
+
+- `/dashboard/classes/[slug]/courses/[courseId]` — course overview
+- `…/courses/[courseId]/assignments`
+- `…/courses/[courseId]/materials`
+- `…/courses/[courseId]/announcements`
+- `…/courses/[courseId]/members`
+- `…/courses/[courseId]/attendance`
+- `…/courses/[courseId]/schedule`
+- `…/courses/[courseId]/settings` — course details and visibility, class admins only
+
+Every tab is a URL, so links and the back button behave normally. **Members**
+reuses the parent class roster and states that courses have no separate
+memberships. **Settings** edits the course name, code, lecturer, and description,
+and archives or reactivates the course; a non-manager who opens it gets a
+not-found response. The course header's contextual menu creates an assignment,
+uploads a material, or creates an announcement with the current course already
+selected, and links to the settings page.
+
+The assignments tab filters **All**, **Upcoming** (deadline ahead),
+**In progress** (no deadline and not marked done by the caller), **Submitted**
+(the caller's own submissions in this course), and **Closed** (deadline passed).
+These are read-only views over published rows; the separate submission flow still
+creates the caller's own assignment record, and personal completion marks never
+become submissions.
+
+The class page lists all courses and links into this workspace. Course CRUD
+lives in **Manage Class → Courses**.
+
+Class settings also control how students join. `invitation` (the default) admits
+new members only through an invitation link, while `open` also lets a student join
+by typing the exact class name. Only a class admin of that class can change the
+policy, and every change is recorded in the audit trail.
 
 - `/classes` is the signed-in **My Classes** directory: every class the caller is a
-  member of, with search, semester filter, sort, and a grid/list toggle. Access
-  requires a session, and the query is scoped to the caller's own memberships.
+  member of, with search by name or code, academic year, semester, status
+  (`active` or `archived`), sort, and a grid/list toggle. Active is the default;
+  archived classes are reachable through the archive filter after restoring it.
+  Drafts are included for their managers.
 - `/classes/join` turns a pasted invitation link into the existing
   `/invite/[token]` flow. It never grants membership itself.
-- `/classes/discover` lists active classes publicly with search and semester
-  filter, for people who have not joined yet.
+- `/classes/discover` lists active classes publicly with search (name or code) and
+  semester filter, for people who have not joined yet.
 - `/classes/[slug]` requires a session and shows approved assignments only.
 - `/dashboard/classes/[slug]` is the member view: roster, own submissions, and
   published assignments.
 - `/dashboard/classes/[slug]/manage` is available to a class admin or Platform
-  Admin: review queue, roster, invitations, published content, audit, metadata.
+  Admin. It is split into **Overview**, **Courses**, **Members**, **Invites**,
+  **Content**, and **Settings** tabs. Overview shows database-backed counters,
+  recent audit activity, and class appearance. Courses holds course creation,
+  editing, and archive/reactivate actions plus links into each course workspace.
+  Members holds roster search and role actions; Invites holds link creation and
+  revocation; Content holds searchable published, pending, unpublished, and
+  archived submissions; Settings shows read-only class metadata with an explicit
+  Edit step, lifecycle controls, and the dependency-aware deletion dialog.
 - `/admin/classes/[slug]` is the Platform Admin view focused on roles and status.
 
-Archived classes are hidden from anonymous visitors and stop accepting new
-submissions. Their existing published assignments remain public unless moderated
-separately.
+Archived classes are hidden from anonymous visitors and from the default active
+directory, and stop accepting new submissions. Their existing published
+assignments remain public unless moderated separately. Archived settings are
+read-only until the class is restored.
 
 ### Deleting a class
 
-`delete_class` is available to a class admin of that class or a Platform Admin;
-the API also requires the caller to retype the class name. Deleting cascades
-members, admins, invitations, sessions, leave requests, schedule subjects, and
-verification rows.
+`delete_class` is available to a class admin of that class or a Platform Admin.
+The API and the confirmation dialog require the caller to retype the class code
+(or the name when no code is set).
 
-Published assignments are archived in the same transaction. `assignments.class_id`
-is `ON DELETE SET NULL`, so without that step the content would stay public with
-no class left to moderate it. The audit entry copies the slug and name into its
-metadata, because `audit_logs.class_id` is nulled by the same foreign key.
+Deletion is deliberately narrow:
+
+- a `draft` class may be deleted when it has no assignments, submissions,
+  sessions, attendance, or leave-request history;
+- an `active` or `archived` class may be deleted only when every dependent count
+  is zero;
+- otherwise the delete is refused with `class_has_history`, and archiving is
+  offered as the primary action.
+
+`get_class_dependencies` supplies the counts shown to the user, and `delete_class`
+re-checks them under a row lock. Student submissions and academic records are
+never cascade-deleted merely because a class is removed. The audit entry copies
+the slug, code, name, period, and counts into its metadata because
+`audit_logs.class_id` is nulled by the foreign key.
 
 ## 5. Invitations and membership
 
@@ -189,6 +309,50 @@ A class admin or Platform Admin reviews through `review_class_assignment`:
 The API requires `confirmPublic: true` for an approval. The review screen shows
 the public consequence before the button is enabled and requires the reviewer to
 confirm that the files contain no personal or restricted data.
+
+### Content types
+
+Every class post carries an explicit `content_type`, enforced by a check
+constraint — never a UI label:
+
+| Type                  | Meaning                                                                                           | Who may create     |
+| --------------------- | ------------------------------------------------------------------------------------------------- | ------------------ |
+| `lecturer_assignment` | Instructions a lecturer gave, recorded here for the class. `source_label` may name that lecturer. | Members and admins |
+| `class_announcement`  | Internal class information, reminders, or coordination. Not an official assignment.               | Class admins only  |
+
+`submit_class_assignment` refuses `class_announcement` unless
+`can_manage_class()` is true, so a member cannot post an announcement even by
+calling the function directly.
+
+The interface must not imply that StarsTask verified lecturer instructions. The
+recording administrator is always shown as the poster; `source_label` is a plain
+text attribution the admin typed, and the badge never reads "verified".
+
+### Google Drive links
+
+`drive_url` is optional and restricted at three layers: the Zod schema accepts
+only `https://drive.google.com` or `https://docs.google.com` hosts, the column
+has a check constraint for the https scheme, and the UI opens the link with
+`rel="noopener noreferrer nofollow"`. Students still need access permission from
+whoever owns the file; the app never proxies the file.
+
+### Personal completion marks
+
+`assignment_completions` stores one row per student per assignment. It is
+personal bookkeeping:
+
+- RLS limits select and delete to `auth.uid()`.
+- Insert additionally requires the assignment to be `published` and the caller
+  to be an active member of its class.
+- Class admins and lecturers cannot read another student's marks; there is no
+  aggregate endpoint and no column on the assignment.
+- The UI copy avoids "submit" and "hand in" so a tick can never be mistaken for
+  coursework being delivered.
+
+### Archive timestamp
+
+`assignments.archived_at` is maintained by a trigger on `status`, so every
+moderation path stays consistent without each one remembering to set it.
 
 ## 7. Attachments and public visibility
 
@@ -282,16 +446,18 @@ submission and review routes) instead of waiting for the ten-minute cron pass.
 Delivery stays best effort: without VAPID keys or a service-role key the event
 waits for the cron, which is also the retry path.
 
-There is no full in-app inbox. `/dashboard` lists the caller's five most recent
-notification events, but nothing is marked read or unread. A member with push
-disabled still sees a class post only when they open the class.
+Every event is also stored in the in-app inbox at `/notifications`, where it
+stays readable even for a member who never enabled push. The inbox shows unread
+state and marks an item read when it is opened or when the user chooses
+"Mark all as read".
 
 ## 10. Dashboards
 
 - **Member** — `/dashboard`: task counts, priority deadlines, the week's academic
   agenda, recent notifications, pending invitations, active classes, and recent
   published assignments. Class applications live at `/dashboard/applications`;
-  personal submissions live at `/my-assignments`. The dashboard is read-only: it
+  personal submissions are edited from their assignment detail page
+  (`/assignments/[id]/edit`). The dashboard is read-only: it
   shows only the caller's memberships and published tasks, never other students'
   statistics or class-wide submission data.
 - **My Classes** — `/classes`: the caller's own class memberships with search,
@@ -299,9 +465,10 @@ disabled still sees a class post only when they open the class.
   invitation link to `/invite/[token]`.
 - **Applications** — `/dashboard/applications` and `/[id]`: create, follow,
   correct, resubmit, and withdraw.
-- **Class admin** — `/dashboard/classes/[slug]/manage`: counts, pending review
-  queue, members, invitation links, published content, recent audit entries, class
-  settings, and (for Platform Admins) class status.
+- **Class admin** — `/dashboard/classes/[slug]/manage`: tabbed management with
+  Overview counters and activity, member search and role actions, invitation
+  links, searchable content moderation, and read-only settings that switch to an
+  edit form on request. Class status and deletion sit in Settings.
 - **Review** — `/dashboard/classes/[slug]/review/[id]`: submission, attachments,
   review history, decision form with the public notice, moderation controls, and
   attachment removal.
@@ -357,22 +524,28 @@ What is verified in this repository:
   their results are recorded in the pull request or handoff.
 - Contract tests cover application, invitation, review, moderation, and discovery
   validation rules.
-- An opt-in integration suite describes the expected RLS behaviour. It is skipped
-  unless `SUPABASE_TEST_*` is configured.
+- An opt-in integration suite describes and asserts the expected RLS behaviour. It is
+  skipped unless `SUPABASE_TEST_*` is configured.
+- All 43 migrations and the seed apply from an empty local Supabase database, and the
+  three integration suites (`rls.test.ts`, `class-workflow.test.ts`,
+  `authorization-matrix.test.ts`; 85 tests) pass against a freshly reset local instance.
+  The CI `integration` job runs the same sequence.
 
 What is **not** verified:
 
-- No Supabase project was linked, so migrations were not applied and RLS was not
-  exercised against PostgreSQL.
+- No migration was pushed to the hosted project; only the disposable local database was
+  reset and seeded.
 - The signed-in `/classes` directory was rendered from fixture data during layout
   review only. Its real-data rendering against a live project with a signed-in
   session was not exercised.
 - Google sign-in, invitation acceptance in a browser, file upload, push delivery,
   and cron scheduling were not tested end to end.
+- The CI `integration` job has not yet executed on GitHub-hosted runners.
 - No deployment was performed.
 
-Run `pnpm test:integration` against a disposable local Supabase instance to
-verify the database half before relying on it.
+Run the same sequence locally (`supabase start`, `supabase db reset --local`, then
+`pnpm test:integration` with the exported local credentials) to reproduce the database
+verification.
 
 ## 14. Manual setup
 
@@ -402,9 +575,9 @@ verify the database half before relying on it.
 
 ## 15. Current limitations
 
-- **Content reports** are not implemented. There is no report table, report
-  submission UI, or report queue, so the "review platform-wide reports" capability
-  is not available yet.
+- **Content reports** cover assignment briefs only. A signed-in reader can report a
+  published assignment, and a Platform Admin resolves or dismisses it from `/admin`;
+  class pages, attachments, and comments have no report path.
 - **Account suspension** is not implemented. There is no account status column or
   moderation action for suspending a user.
 - **Attachment replacement** is removal plus upload during a revision; an approved
@@ -413,8 +586,9 @@ verify the database half before relying on it.
   admins; only the submitter receives the approval/rejection outcome.
 - **Invitation discovery in a dashboard** is link-based by design. A user-targeted
   invitation list is not shown; email-restricted invitations send a push event.
-- **No in-app notification inbox.** Class posts and review decisions reach users
-  through Web Push only; there is no bell or feed to catch up on.
+- **In-app inbox read state** is tracked per notification. Opening an item marks it
+  read, and "Mark all as read" clears the unread list; push delivery is a separate
+  channel and never removes the inbox row.
 - **Deleting a class leaves its assignments behind** with `class_id = null` and
   the status `archived`, so only a Platform Admin can restore them afterwards.
 - **Class detail tabs** are limited to assignments and the existing class actions.

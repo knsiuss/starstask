@@ -42,6 +42,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       identifier: session.user.id,
       limit: 60,
       windowSeconds: 60,
+      onBackendFailure: "closed",
     });
 
     await removeVerificationEvidence(evidenceId);

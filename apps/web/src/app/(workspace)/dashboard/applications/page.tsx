@@ -152,6 +152,7 @@ export default async function ApplicationsPage() {
             initialValues={{
               proposedName: "",
               proposedSlug: "",
+              proposedClassCode: "",
               courseName: "",
               institution: "",
               lecturerName: "",

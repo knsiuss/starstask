@@ -80,7 +80,10 @@ columns null — the database constraint refuses a geo row without a reading, so
 the record never pretends to be something it is not.
 
 Coordinates are **not** in the column grant: clients can read distance and
-accuracy, never the raw position.
+accuracy, never the raw position. The session detail page asks
+`session_checkin_summary(p_session_id)` for the derived settings (whether a
+point exists and the radius), so even the check-in configuration reaches the
+browser without the coordinates.
 
 ### `discussion_session_rsvps`
 
@@ -217,7 +220,14 @@ only for managers. A cancelled session keeps its counts but closes RSVP.
 
 Only `in_person` sessions take attendance. The class admin (ketua kelas) either
 saves a room point from their own browser (`checkin_latitude`, `checkin_longitude`,
-`checkin_radius_m`) or records rows manually.
+`checkin_radius_m`) or records rows manually. The session form can capture the
+point and radius while creating an in-person session; the session page keeps the
+same controls for a later change. Capturing the point is optional, and the form
+does not block the session if the reading is unavailable.
+
+`NEXT_PUBLIC_FEATURE_SESSION_CHECKIN=false` hides the check-in cards and answers
+`404` on the check-in routes. Existing attendance rows stay readable, and
+sessions, RSVPs, and reminders are unaffected.
 
 ### What the server decides
 
@@ -243,10 +253,52 @@ block somebody who is actually in the room.
 member when location is unavailable, or mark somebody `absent`. The row is
 stored with `method = 'manual'` and no coordinates, so it is never confused with
 a geo check-in. The function refuses a target who is not a member of the class.
+The `POST /api/sessions/[id]/checkins` route additionally refuses `absent` before
+`ends_at`, so an absence is only recorded after the session finished. That guard
+lives in the API, not yet in the database function; a direct RPC call can still
+write an early absence until the rule is moved into SQL with a reviewed
+migration.
 
 Organizers can override any row to `present`, `late`, `excused`, or `absent`
 through `review_discussion_session_checkin`. The override keeps the original geo
 data and is written to the audit log.
+
+### Student view and the percentage policy
+
+`/attendance` is check-in first for students. It leads with today's present,
+late, and not-yet-checked-in counts and the sessions whose check-in window is
+open. A student presses **Check in**; the browser supplies a reading and the
+server decides whether it counts. The **History** tab keeps the read-only
+record, filters, breakdowns, and per-session details. A failed check-in is shown
+as an error (including the outside-area message) and is never silently turned
+into a present row.
+
+The page and the class-admin summary use one policy everywhere (dashboard,
+student page, class-admin summary):
+
+- **Attended** = `present` + `late`. A late arrival still attended.
+- **Eligible** = attended + `absent` + `unrecorded`. The percentage is
+  `round(attended / eligible × 1000) / 10`, or `—` when nothing is eligible.
+- `excused` is excluded from both sides. It is not present and it does not count
+  as a miss.
+- A finished session with no check-in is `unrecorded`; it is never treated as
+  present. A session that has not finished is `pending` and is excluded.
+- Cancelled sessions, and sessions that started before the student joined the
+  class, are not part of that student's history.
+- Missing records are never silently filled in by a read.
+
+Each class workspace also has an **Attendance** tab with the same **Check-in**
+and **History** split as `/attendance`. Check-in lists only that class's open
+sessions and uses the same server-verified flow; History holds the class-scoped
+subject breakdown plus either the per-member table and session list (managers)
+or the student's own session history (members). Managers see every member's
+attendance; everyone else sees only their own. The older
+`/dashboard/classes/[slug]/attendance` URL redirects to the tab.
+
+An approved absence request integrates here: `review_leave_request` marks the
+covered sessions `excused`, leaves existing `present` / `late` rows untouched,
+and creates `excused` rows for sessions that had none. See
+`docs/LEAVE_REQUESTS.md`.
 
 ### Honest limits
 
@@ -258,13 +310,79 @@ suspicious row as a conversation rather than an automatic sanction.
 Raw latitude and longitude are not in the column grant. Clients see distance and
 accuracy only; the coordinates exist for dispute review.
 
+### Timing limits
+
+The check-in window is derived from the session schedule: it opens 15 minutes
+before `starts_at`, closes at `ends_at`, and the present/late boundary is fixed at
+ten minutes after `starts_at`. The database stores those two instants and the
+fixed offset, not separate opening, closing, or on-time-deadline columns.
+Attendance meetings, described below, are the exception: they store an explicit
+window and late offset in `20261101090000_attendance_meetings.sql`. Configuring
+those values on an ordinary discussion session would still need a separate
+migration. The page groups "today" and the sessions' own date/time labels use
+`Asia/Jakarta`, while each session keeps its own `time_zone` for display.
+
 ### Retention
 
 Check-in rows follow the session (`on delete cascade`). The coordinates are
-personal data, so a deployment should purge `latitude` and `longitude` after the
-review window the institution's policy allows (for example 30 days) while keeping
-`status`, `distance_m`, and `accuracy_m`. No purge job ships with this migration
-yet.
+personal data, so they are purged after the review window the institution's
+policy allows. `purge_discussion_checkin_coordinates(days)` clears `latitude`
+and `longitude` for rows whose session ended before the window, sets
+`coordinates_purged_at`, and keeps `status`, `method`, `distance_m`,
+`accuracy_m`, and the reviewer fields. A geo row stays valid without its reading
+because the purge marker is the documented exception to the geo-fields check.
+
+The scheduler hits `/api/cron/attendance-retention`; each call purges at most
+5,000 rows, so a backlog drains across runs without one large update lock. The
+window comes from `ATTENDANCE_RETENTION_DAYS` (default 30, allowed 1–3650). The
+function is `service_role` only, and no client column grant includes
+`coordinates_purged_at`.
+
+### Attendance meetings
+
+`20261101090000_attendance_meetings.sql` adds session-based attendance for
+`Pertemuan 1, 2…`. **The migration is written but not applied to the live
+project**; the meeting UI and API return an error until the owner applies it.
+An attendance meeting is a `discussion_sessions` row with `subject_id` and
+`meeting_number`; ordinary sessions keep the behaviour above.
+
+- **Lifecycle.** A class admin creates a meeting for one subject, then opens and
+  closes attendance. The phase is `scheduled`, `open`, `closed`, or `finalized`.
+  Closing with `finalize: true` writes a `system` absence for every eligible
+  member without a record; reopening deletes only those system rows. A location
+  is locked once attendance opens and can only change through the audited
+  location route. Every create/open/close/reopen/location/export action is
+  written to `audit_logs`.
+- **Statuses.** `present`, `late` (after `late_after_minutes`, configurable per
+  meeting; `0` disables late), `excused` (approved absence), `absent` (written at
+  finalization or manually), `not_recorded` (opened but not finalized, and no
+  row), and not applicable (a member who joined after the meeting, or a meeting
+  that was never opened). A meeting never becomes absent while it is open.
+- **Check-in.** The student enters their full name and NIM. The server compares
+  those against the verified profile and the roster, requires class membership,
+  checks the window and the accuracy ceiling, and computes the haversine
+  distance against the stored radius. A failure is reported with one of the
+  documented codes (`checkin_name_mismatch`, `checkin_nim_mismatch`,
+  `checkin_identity_missing`, `checkin_too_far`, `checkin_imprecise`,
+  `checkin_not_open`, `checkin_closed`, `checkin_unavailable`), and the student
+  can retry. The unique `(session_id, user_id)` row prevents duplicates; a repeat
+  call returns the existing row with `alreadyCheckedIn`.
+- **Roster.** The master roster is every active class member, sorted
+  case-insensitively by full name (Indonesian collation) and then NIM, including
+  students who never attended. It is never derived from check-in rows alone.
+- **Admin view.** The class Attendance tab lists meetings with live counts and
+  links to a per-meeting dashboard. The dashboard polls every 20 seconds while
+  open and shows the roster, distance, accuracy, status, and failed verification
+  attempts (without the typed name or NIM). Corrections after finalization go
+  through the existing audited manual-check-in route.
+- **Exports.** Real `.xlsx` files: `…_Pertemuan_01.xlsx` (one meeting, all
+  students), `…_Attendance_Recap_2026.xlsx` (semester matrix with `P/L/I/A/NR`
+  and percentages), and `…_Attendance_Checklist.xlsx` (blank, `P/L/I/A`
+  dropdowns, plus a read-only **Existing records** sheet).
+- **Limits.** GPS comes from the browser and can be spoofed; the radius is
+  evidence, not proof. Only normalized distance, accuracy, and timestamps are
+  exposed. Exact coordinates stay server-side and follow the same retention
+  purge as other check-ins.
 
 ---
 
@@ -301,6 +419,11 @@ Deliberate behaviour:
 ---
 
 ## 7. Google Calendar — Stage B (optional connection)
+
+`NEXT_PUBLIC_FEATURE_CALENDAR_SYNC=false` turns this stage off: the settings page
+explains that sync is unavailable, the connect/callback/disconnect routes answer
+`404`, and the cron skips calendar work. Stage A links and all session features
+keep working.
 
 ### Flow
 
@@ -469,6 +592,7 @@ caller from the Supabase session, and rate-limits per user.
 | `GET`    | `/api/integrations/google-calendar/callback`   | Signed-in user         | —          |
 | `POST`   | `/api/integrations/google-calendar/disconnect` | Signed-in user         | 20 / hour  |
 | `GET`    | `/api/cron/session-jobs`                       | `CRON_SECRET`          | —          |
+| `GET`    | `/api/cron/attendance-retention`               | `CRON_SECRET`          | —          |
 
 `POST /api/sessions/[id]/status` accepts `{"status": "scheduled" | "cancelled" |
 "completed"}`. `PUT …/rsvp` accepts `{"status": "going" | "maybe" | "not_going"}`.
@@ -685,8 +809,10 @@ Not verified, because the resources were unavailable:
 - A real OAuth round-trip with Google, and therefore the live Calendar API calls
   (create, patch, delete, search by extended property).
 - End-to-end push delivery to a browser or phone.
-- The Playwright suite was not extended for sessions; there is no seeded
-  database for it to run against in this environment.
+
+The authenticated Playwright suite (`tests/e2e/authenticated-flows.spec.ts`)
+now covers the class-invitation join and an RSVP against a disposable local
+Supabase stack, but not yet check-in, reminders, or the calendar round-trip.
 
 If you have a Supabase project, the highest-value first checks are: create a
 session as a class admin, try the same as a student (expect `403`), RSVP twice as

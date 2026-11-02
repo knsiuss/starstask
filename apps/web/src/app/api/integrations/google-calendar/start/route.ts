@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { apiError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import {
   getGoogleCalendarConfig,
   isGoogleCalendarConfigured,
@@ -27,6 +29,14 @@ const CALENDAR_SETTINGS_PATH = "/settings/calendar";
  * Calendar scope, and the user reaches this route only by choosing to connect.
  */
 export async function GET(request: NextRequest) {
+  if (!isFeatureEnabled("calendarSync")) {
+    return apiError(
+      404,
+      "not_found",
+      "Calendar sync is not available on this deployment.",
+    );
+  }
+
   const origin = new URL(request.url).origin;
   const settingsUrl = new URL(CALENDAR_SETTINGS_PATH, origin);
 

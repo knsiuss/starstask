@@ -2,32 +2,43 @@
 
 Schema source of truth: `supabase/migrations/`.
 
-| File                                                | Contents                                                                     |
-| --------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `20261029000100_core_schema.sql`                    | Extensions, tables, constraints, indexes, triggers                           |
-| `20261029000200_functions.sql`                      | Profile provisioning, course upsert, listing RPC, path parser, rate limiter  |
-| `20261029000300_rls.sql`                            | RLS enablement, policies, column-level grants                                |
-| `20261029000400_storage.sql`                        | Private bucket and `storage.objects` policies                                |
-| `20261029000500_push_notifications.sql`             | Push tables, constraints, indexes, `updated_at` triggers                     |
-| `20261029000600_push_functions.sql`                 | Subscription upsert, audience query, claim/complete RPCs                     |
-| `20261029000700_push_rls.sql`                       | RLS and column grants for the four push tables                               |
-| `20261029000800_function_grants.sql`                | Revokes `anon` EXECUTE that Supabase default privileges add to new functions |
-| `20261029000900_classes.sql`                        | Class, application, membership, invitation, review, audit tables             |
-| `20261029001000_notification_events.sql`            | Durable notification event queue                                             |
-| `20261029001100_class_functions.sql`                | Class workflow and moderation `SECURITY DEFINER` functions                   |
-| `20261029001200_class_rls.sql`                      | RLS, column grants, and reviewer storage policy for class data               |
-| `20261029001300_class_queries.sql`                  | Reviewer read policy and `list_classes` discovery RPC                        |
-| `20261029001400_class_public_assignment_filter.sql` | `list_assignments` class filter and `class_id` result                        |
-| `20261029001500_platform_moderation_restore.sql`    | Restore is platform-admin only; class admins may hide, not restore           |
-| `20261029002000_push_subscription_privileges.sql`   | `user_id` read grant and caller-scoped endpoint delete RPC                   |
-| `20261029002200_leave_requests.sql`                 | Leave request, evidence, history, and forwarding tables                      |
-| `20261029002300_leave_functions.sql`                | Leave workflow `SECURITY DEFINER` functions and notification kinds           |
-| `20261029002400_leave_rls.sql`                      | RLS, `SELECT`-only policies, and the private `leave-evidence` bucket         |
-| `20261029002500_leave_grants.sql`                   | Column-level `SELECT` grants and `EXECUTE` on the leave workflow RPCs        |
-| `20261029002600_class_verification.sql`             | Representative verification tables, functions, RLS, and private bucket       |
-| `20261029003000_platform_admin_queries.sql`         | Platform admin user/class directories and overview counters                  |
-| `20261030090000_absence_cancellation.sql`           | Absence statuses (`draft`/`submitted`/`forwarded`/`cancelled`), cancellation |
-| `20261030180000_assignment_authenticated_read.sql`  | Authenticated-only assignment, attachment, storage, and listing access       |
+| File                                                 | Contents                                                                      |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `20261029000100_core_schema.sql`                     | Extensions, tables, constraints, indexes, triggers                            |
+| `20261029000200_functions.sql`                       | Profile provisioning, course upsert, listing RPC, path parser, rate limiter   |
+| `20261029000300_rls.sql`                             | RLS enablement, policies, column-level grants                                 |
+| `20261029000400_storage.sql`                         | Private bucket and `storage.objects` policies                                 |
+| `20261029000500_push_notifications.sql`              | Push tables, constraints, indexes, `updated_at` triggers                      |
+| `20261029000600_push_functions.sql`                  | Subscription upsert, audience query, claim/complete RPCs                      |
+| `20261029000700_push_rls.sql`                        | RLS and column grants for the four push tables                                |
+| `20261029000800_function_grants.sql`                 | Revokes `anon` EXECUTE that Supabase default privileges add to new functions  |
+| `20261029000900_classes.sql`                         | Class, application, membership, invitation, review, audit tables              |
+| `20261029001000_notification_events.sql`             | Durable notification event queue                                              |
+| `20261029001100_class_functions.sql`                 | Class workflow and moderation `SECURITY DEFINER` functions                    |
+| `20261029001200_class_rls.sql`                       | RLS, column grants, and reviewer storage policy for class data                |
+| `20261029001300_class_queries.sql`                   | Reviewer read policy and `list_classes` discovery RPC                         |
+| `20261029001400_class_public_assignment_filter.sql`  | `list_assignments` class filter and `class_id` result                         |
+| `20261029001500_platform_moderation_restore.sql`     | Restore is platform-admin only; class admins may hide, not restore            |
+| `20261029002000_push_subscription_privileges.sql`    | `user_id` read grant and caller-scoped endpoint delete RPC                    |
+| `20261029002200_leave_requests.sql`                  | Leave request, evidence, history, and forwarding tables                       |
+| `20261029002300_leave_functions.sql`                 | Leave workflow `SECURITY DEFINER` functions and notification kinds            |
+| `20261029002400_leave_rls.sql`                       | RLS, `SELECT`-only policies, and the private `leave-evidence` bucket          |
+| `20261029002500_leave_grants.sql`                    | Column-level `SELECT` grants and `EXECUTE` on the leave workflow RPCs         |
+| `20261029002600_class_verification.sql`              | Representative verification tables, functions, RLS, and private bucket        |
+| `20261029003000_platform_admin_queries.sql`          | Platform admin user/class directories and overview counters                   |
+| `20261030090000_absence_cancellation.sql`            | Absence statuses (`draft`/`submitted`/`forwarded`/`cancelled`), cancellation  |
+| `20261030180000_assignment_authenticated_read.sql`   | Authenticated-only assignment, attachment, storage, and listing access        |
+| `20261031090000_session_checkin_summary.sql`         | Derived check-in configuration RPC; raw coordinates stay server-side          |
+| `20261031160000_class_attendance_summary.sql`        | Per-member and per-session class attendance aggregates, class managers only   |
+| `20261031170000_absence_review_attendance.sql`       | Absence approve/reject statuses, `review_leave_request`, excused conversion   |
+| `20261031190000_checkin_coordinate_retention.sql`    | Check-in coordinate purge marker, service-role purge RPC, retention index     |
+| `20261031200000_developer_class_metrics.sql`         | Aggregate-only class metrics RPC for the developer console                    |
+| `20261031210000_notification_delivery_retention.sql` | Terminal reminder-ledger purge RPC and partial index                          |
+| `20261031220000_feedback_entries.sql`                | In-app feedback table, triage constraints, indexes, and RLS                   |
+| `20261101090000_attendance_meetings.sql`             | Meeting identity columns, verification attempts, meeting RPCs, export audit   |
+| `20261102102000_class_subject_code_unique.sql`       | Partial unique index: one course code per class group (case/trim-insensitive) |
+| `20261102110000_course_scoped_content.sql`           | Course materials, required course on class content, archived-course guard     |
+| `20261102120000_attendance_session_grants.sql`       | Restores `SELECT (checkin_radius_m)`; coordinate columns stay revoked         |
 
 Apply with `supabase db push` (remote) or `supabase db reset` (local). `seed.sql` is loaded
 only by `db reset` / `supabase start`; `db push` never applies it.
@@ -212,8 +223,29 @@ Unique on `(user_id, assignment_id, reminder_type, deadline_at)`. This is the du
 dedupe key: repeated runs are idempotent, and a changed deadline produces a new logical
 reminder while the old row is skipped as stale.
 
-There is no automatic retention job. Delete terminal rows only after their deadline is
-well in the past, otherwise a still-open window could enqueue the reminder again.
+Terminal rows (`sent`, `failed`, `skipped`) are deleted by
+`purge_notification_deliveries(days)`, called daily from
+`/api/cron/notification-retention`. Only rows whose `updated_at` is older than
+`NOTIFICATION_RETENTION_DAYS` (default 180) are eligible, which keeps a
+still-open reminder window intact. Pending and processing rows are never
+purged; the scheduler owns them.
+
+### `feedback_entries`
+
+| Column       | Type          | Notes                                           |
+| ------------ | ------------- | ----------------------------------------------- |
+| `id`         | uuid PK       | `gen_random_uuid()`                             |
+| `user_id`    | uuid NOT NULL | `ON DELETE CASCADE`                             |
+| `category`   | text          | `bug`, `confusing`, `idea`, or `other`          |
+| `message`    | text          | 10–2,000 characters after trimming              |
+| `page_path`  | text NULL     | Route only, 1–200 characters, no query string   |
+| `status`     | text          | `open`, `reviewing`, `resolved`, or `dismissed` |
+| `created_at` | timestamptz   |                                                 |
+| `updated_at` | timestamptz   | `set_updated_at` trigger                        |
+
+No email, name, attachment, or user agent is stored. Indexed on
+`(status, created_at DESC)` for the triage queue and `(user_id, created_at DESC)`
+for the author's recent notes.
 
 ### Class workflow tables
 
@@ -230,6 +262,12 @@ well in the past, otherwise a still-open window could enqueue the reminder again
 | `assignment_reviews`           | Submission, approval, rejection, moderation history | Reason required for rejected/unpublished/archived                         |
 | `audit_logs`                   | Append-only audit trail                             | Action and entity type format checks; metadata must be an object          |
 
+`class_applications.reviewed_by` references `auth.users` with `ON DELETE SET NULL`, while
+the decision-consistency check requires a reviewer on approved and rejected rows. Deleting
+a platform admin who decided an application therefore fails unless that application row is
+deleted first. The app has no account-deletion path today, but operational cleanup must
+handle the decision rows before deleting the user.
+
 `classes.join_policy` is `'invitation'` (default) or `'open'`. Only an `'open'` class may be
 joined automatically when a student types its name; the default keeps every existing class
 invitation-only, so nothing changes until an operator opts a class in:
@@ -242,7 +280,9 @@ where
   slug = 'if-24-01';
 ```
 
-No admin UI sets this yet — it is a documented manual step. `class_members.joined_via` gains
+A class admin can change this from the class's **Class settings** page, which calls
+`set_class_join_policy`; the function re-checks the role and records an audit entry. The SQL
+above remains useful for a class that has no admin yet. `class_members.joined_via` gains
 `name_match` alongside `invitation`, `admin_assignment`, and `platform_assignment`, so a
 membership created by onboarding is distinguishable from an invited one.
 
@@ -255,6 +295,30 @@ A class admin's own post is stored as `draft` by `submit_class_assignment` and m
 archives the class's published assignments before deleting the row, because
 `assignments.class_id` is `ON DELETE SET NULL`. `notification_events.kind` gains
 `class_assignment_published`.
+
+### Course-scoped content
+
+`class_subjects` is the course table. It belongs to exactly one class and is the
+parent of every academic record: `assignments`, `discussion_sessions` (attendance
+meetings), `class_course_schedules`, and `course_materials` all reference it through
+`subject_id`. Membership remains on `class_members`; there is no per-course
+membership table.
+
+`20261102110000_course_scoped_content.sql` adds:
+
+| Object                                       | Purpose                                                                                                  |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `course_materials`                           | Learning materials for one course: `kind`, `title`, optional `description` and `https://` `resource_url` |
+| `ensure_subject_in_class()` trigger          | Rejects a material whose `subject_id` belongs to a different class                                       |
+| `ensure_subject_active()` triggers           | Rejects new content attached to an archived course                                                       |
+| `submit_class_assignment(..., p_subject_id)` | Requires a course that belongs to the class; leaves historical rows untouched                            |
+| `delete_class_subject(p_subject_id)`         | Raises `23503` when the course has records, so it must be archived instead of deleted                    |
+
+`assignments.subject_id` stays nullable so historical class-level rows remain
+readable; the requirement applies only to new inserts. `course_materials` requires
+either a description or a resource link and enforces a 3–200 character title.
+Managers can create, update, and delete materials; any class member can read them.
+Archived courses and classes remain readable but reject new content.
 
 ### Class verification tables
 
@@ -295,7 +359,62 @@ Full behaviour is documented in [SESSIONS.md](SESSIONS.md); this is the schema v
 
 `discussion_sessions` also carries `checkin_latitude`, `checkin_longitude`, and
 `checkin_radius_m` (25–1,000 m, default 150). The point is optional; without it an
-in-person session cannot accept a location check-in.
+in-person session cannot accept a location check-in. Clients hold no column privilege on
+the three coordinate columns; `session_checkin_summary(p_session_id)` returns only
+whether a point exists and its radius, and only to callers who can view the session.
+
+Attendance follows one policy in SQL and in `summarizeAttendance` in the web app:
+attended = `present + late`; eligible = `present + late + absent + unrecorded`;
+`excused` leaves the denominator and a `pending` session is not counted; cancelled
+sessions, and sessions that started before a member joined, never count. Denying an
+absence writes nothing. Approving one rewrites `absent` (and any missing) rows for the
+covered dates to `excused`, so approval cannot become `present`.
+
+`discussion_session_checkins.coordinates_purged_at` marks a row whose `latitude` and
+`longitude` were removed by retention. It is set by
+`purge_discussion_checkin_coordinates(days)`, which is `service_role` only and clears at
+most 5,000 rows per call. The geo-fields check accepts a purged `geo` row without a
+reading, so method and distance remain truthful; clients have no grant on the marker.
+
+#### Attendance meetings
+
+`20261101090000_attendance_meetings.sql` reuses `discussion_sessions` as the meeting
+record. A row is a meeting when `meeting_number` and `subject_id` are both set; the
+`discussion_sessions_meeting_identity` check forbids setting only one, so legacy sessions
+keep the original derived check-in window. Extra columns:
+
+| Column                                                                    | Purpose                                                      |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `subject_id`, `meeting_number`, `meeting_date`                            | Meeting identity (`Pertemuan N`) within a class and subject  |
+| `attendance_opens_at`, `attendance_closes_at`                             | Explicit check-in window, independent of the schedule        |
+| `attendance_opened_at`, `attendance_closed_at`, `attendance_finalized_at` | Manual lifecycle; each state implies the previous one        |
+| `late_after_minutes`                                                      | On-time deadline after opening; `0` disables the late status |
+
+`discussion_sessions_class_subject_meeting_uniq` is a partial unique index on
+`(class_id, subject_id, meeting_number)` and is the database-level duplicate guard.
+`attendance_verification_attempts` stores failed and successful identity/GPS attempts
+(outcome, optional distance and accuracy, timestamp). It stores no typed name or NIM, is
+read only through `attendance_meeting_failures()`, and has no client table grant.
+
+Meeting functions (`SECURITY DEFINER`, class-manager authorized unless noted):
+`create_attendance_meeting`, `open_attendance_meeting`, `close_attendance_meeting`,
+`reopen_attendance_meeting`, `update_attendance_meeting_location`,
+`check_in_attendance_meeting` (class member), `attendance_meeting_roster`,
+`attendance_meeting_failures`, `class_attendance_roster`, `class_attendance_recap`,
+`class_attendance_meeting_list`, and `log_attendance_export`. They audit creation,
+opening, closing/finalization, reopening, location changes, check-ins, and exports as
+`attendance_meeting_*` / `attendance_exported` actions.
+
+Finalization writes an explicit `system` absence only for eligible members (joined on or
+before `starts_at`); reopening deletes only those system rows. The recap RPC returns one
+row per member and meeting, with `not_recorded` for an opened meeting without a record and
+`not_applicable` for a late joiner or an unopened meeting.
+
+`authenticated` may read `checkin_radius_m` because the radius is a rule, not a location.
+`20261102120000_attendance_session_grants.sql` restores that single column grant after an
+earlier blanket revoke; `checkin_latitude` and `checkin_longitude` remain unreadable and
+are exposed only through `session_checkin_summary()`. Student screens must not select the
+coordinate columns directly, or PostgREST returns `42501` for the whole query.
 
 ### Trust-loop tables
 
@@ -312,50 +431,57 @@ an assignment with no class.
 
 ## 3. Indexes
 
-| Index                                               | Purpose                                    |
-| --------------------------------------------------- | ------------------------------------------ |
-| `assignments_public_recent_idx` (partial)           | Newest-first public listing                |
-| `assignments_deadline_idx` (partial)                | Deadline sort, published only              |
-| `assignments_course_idx`                            | Course filter                              |
-| `assignments_owner_recent_idx`                      | My Assignments                             |
-| `assignments_tags_idx` (GIN)                        | Tag filter                                 |
-| `assignments_search_idx` (GIN)                      | Full-text search                           |
-| `courses_normalized_name_key` (unique)              | Deduplicated course upsert                 |
-| `courses_normalized_code_idx`                       | Course code lookup                         |
-| `assignment_attachments_assignment_idx`             | Attachment embeds and counts               |
-| `push_subscriptions_user_active_idx`                | Active devices per user                    |
-| `saved_assignments_user_recent_idx`                 | Saved list, newest first                   |
-| `saved_assignments_assignment_idx`                  | Audience lookup by assignment              |
-| `notification_deliveries_due_idx`                   | Claim query (`status, next_attempt_at`)    |
-| `notification_deliveries_user_recent_idx`           | Per-user delivery history                  |
-| `classes_slug_key` (unique)                         | Public class URL lookup                    |
-| `classes_active_recent_idx` (partial)               | Public class discovery                     |
-| `class_applications_open_applicant_key`             | Duplicate open application prevention      |
-| `assignments_class_idx`                             | Class assignment lists                     |
-| `assignments_review_queue_idx` (partial)            | Pending review queue per class             |
-| `class_invitations_token_hash_key`                  | Constant-time invitation lookup            |
-| `class_verification_requests_student_idx`           | A student's own requests, newest first     |
-| `class_verification_requests_queue_idx` (partial)   | Submitted review queue by status           |
-| `class_verification_requests_active_key` (unique)   | One live request per student and class     |
-| `class_verification_evidence_request_idx` (partial) | Active evidence counts                     |
-| `class_verification_reviews_request_idx`            | Request history, oldest first              |
-| `audit_logs_class_idx` / `_created_idx`             | Class and platform audit views             |
-| `discussion_sessions_class_idx`                     | Class-scoped lists                         |
-| `discussion_sessions_upcoming_idx` (partial)        | Global upcoming list                       |
-| `discussion_sessions_public_upcoming_idx` (partial) | Public session discovery                   |
-| `discussion_sessions_organizer_idx`                 | "Sessions I organise"                      |
-| `discussion_sessions_assignment_idx` (partial)      | Sessions linked to an assignment           |
-| `discussion_session_rsvps_session_idx`              | Attendance counts and participant list     |
-| `discussion_session_rsvps_user_idx`                 | "My RSVPs"                                 |
-| `discussion_session_reminders_due_idx`              | Reminder claim (`status, next_attempt_at`) |
-| `discussion_session_checkins_session_idx`           | Attendance list per session and status     |
-| `discussion_session_checkins_user_idx`              | A student's attendance history             |
-| `google_calendar_event_mappings_due_idx`            | Calendar sync queue                        |
-| `google_calendar_event_mappings_event_key` (unique) | One mapping per Google event               |
-| `assignment_reports_queue_idx`                      | Open-report queue, newest first            |
-| `assignment_reports_class_idx`                      | Reports per class and status               |
-| `assignment_reports_one_open_idx` (unique, partial) | One open report per reader per assignment  |
-| `assignment_revisions_assignment_idx`               | Revision history, newest first             |
+| Index                                                              | Purpose                                    |
+| ------------------------------------------------------------------ | ------------------------------------------ |
+| `assignments_public_recent_idx` (partial)                          | Newest-first public listing                |
+| `assignments_deadline_idx` (partial)                               | Deadline sort, published only              |
+| `assignments_course_idx`                                           | Course filter                              |
+| `assignments_owner_recent_idx`                                     | My Assignments                             |
+| `assignments_tags_idx` (GIN)                                       | Tag filter                                 |
+| `assignments_search_idx` (GIN)                                     | Full-text search                           |
+| `courses_normalized_name_key` (unique)                             | Deduplicated course upsert                 |
+| `courses_normalized_code_idx`                                      | Course code lookup                         |
+| `assignment_attachments_assignment_idx`                            | Attachment embeds and counts               |
+| `push_subscriptions_user_active_idx`                               | Active devices per user                    |
+| `saved_assignments_user_recent_idx`                                | Saved list, newest first                   |
+| `saved_assignments_assignment_idx`                                 | Audience lookup by assignment              |
+| `notification_deliveries_due_idx`                                  | Claim query (`status, next_attempt_at`)    |
+| `notification_deliveries_user_recent_idx`                          | Per-user delivery history                  |
+| `notification_deliveries_retention_idx` (partial)                  | Terminal-row retention purge               |
+| `classes_slug_key` (unique)                                        | Public class URL lookup                    |
+| `classes_active_recent_idx` (partial)                              | Public class discovery                     |
+| `class_applications_open_applicant_key`                            | Duplicate open application prevention      |
+| `assignments_class_idx`                                            | Class assignment lists                     |
+| `assignments_review_queue_idx` (partial)                           | Pending review queue per class             |
+| `class_invitations_token_hash_key`                                 | Constant-time invitation lookup            |
+| `class_verification_requests_student_idx`                          | A student's own requests, newest first     |
+| `class_verification_requests_queue_idx` (partial)                  | Submitted review queue by status           |
+| `class_verification_requests_active_key` (unique)                  | One live request per student and class     |
+| `class_verification_evidence_request_idx` (partial)                | Active evidence counts                     |
+| `class_verification_reviews_request_idx`                           | Request history, oldest first              |
+| `audit_logs_class_idx` / `_created_idx`                            | Class and platform audit views             |
+| `discussion_sessions_class_idx`                                    | Class-scoped lists                         |
+| `discussion_sessions_upcoming_idx` (partial)                       | Global upcoming list                       |
+| `discussion_sessions_public_upcoming_idx` (partial)                | Public session discovery                   |
+| `discussion_sessions_organizer_idx`                                | "Sessions I organise"                      |
+| `discussion_sessions_assignment_idx` (partial)                     | Sessions linked to an assignment           |
+| `discussion_session_rsvps_session_idx`                             | Attendance counts and participant list     |
+| `discussion_session_rsvps_user_idx`                                | "My RSVPs"                                 |
+| `discussion_session_reminders_due_idx`                             | Reminder claim (`status, next_attempt_at`) |
+| `discussion_session_checkins_session_idx`                          | Attendance list per session and status     |
+| `discussion_session_checkins_user_idx`                             | A student's attendance history             |
+| `discussion_session_checkins_retention_idx` (partial)              | Rows whose coordinates still need purging  |
+| `discussion_sessions_class_subject_meeting_uniq` (unique, partial) | One `Pertemuan N` per class and subject    |
+| `discussion_sessions_attendance_open_idx` (partial)                | Open attendance meetings per class         |
+| `attendance_verification_attempts_session_idx`                     | Recent identity/GPS attempts per meeting   |
+| `google_calendar_event_mappings_due_idx`                           | Calendar sync queue                        |
+| `google_calendar_event_mappings_event_key` (unique)                | One mapping per Google event               |
+| `assignment_reports_queue_idx`                                     | Open-report queue, newest first            |
+| `assignment_reports_class_idx`                                     | Reports per class and status               |
+| `assignment_reports_one_open_idx` (unique, partial)                | One open report per reader per assignment  |
+| `assignment_revisions_assignment_idx`                              | Revision history, newest first             |
+| `feedback_entries_queue_idx`                                       | Triage queue (`status, created_at DESC`)   |
+| `feedback_entries_user_idx`                                        | Author's recent notes                      |
 
 ## 4. Functions
 
@@ -391,6 +517,10 @@ an assignment with no class.
 | `set_discussion_session_checkin_location(id, lat, lon, radius)` / `clear_discussion_session_checkin_location(id)`                         | definer, class organizer                             | Save or remove the room point; `in_person` and `scheduled` only                                               |
 | `check_in_discussion_session(id, lat, lon, accuracy)`                                                                                     | definer, authenticated                               | Enforces window, accuracy ≤100 m, radius, and membership; idempotent per user                                 |
 | `record_discussion_session_checkin(id, user, status, note)` / `review_discussion_session_checkin(id, checkin, status, note)`              | definer, class organizer                             | Manual row without coordinates, or a status override; target must be a class member                           |
+| `class_attendance_member_summary(id)` / `class_attendance_session_summary(id)`                                                            | definer, class manager                               | Per-member and per-session counts; a member who joined after a session started is not counted for it          |
+| `review_leave_request(id, decision, note)`                                                                                                | definer, class manager                               | Approve or reject a submitted absence; approval rewrites covered rows to `excused`; self-review is refused    |
+| `purge_discussion_checkin_coordinates(days)`                                                                                              | definer, service_role only                           | Clears old coordinates in 5,000-row batches; keeps status, distance, and accuracy                             |
+| `purge_notification_deliveries(days)`                                                                                                     | definer, service_role only                           | Deletes terminal reminder rows in 5,000-row batches; pending and processing rows are kept                     |
 | `distance_meters(lat1, lon1, lat2, lon2)`                                                                                                 | invoker, internal only                               | Haversine metres; not granted to clients                                                                      |
 | `list_discussion_sessions(...)`                                                                                                           | definer, anon + auth                                 | Visibility-filtered list with class, organiser, and attendance counts                                         |
 | `list_session_reminder_audience(ids)` / `claim_session_reminders(now, limit)` / `complete_session_reminder(...)`                          | definer, service_role only                           | Session reminder scheduler                                                                                    |
@@ -419,37 +549,39 @@ with `classId`/`slug`/`name`, `{status: "ambiguous", candidates: [...]}`, or
 
 ## 5. RLS matrix
 
-| Table                            | anon SELECT                                        | auth SELECT                                | INSERT                           | UPDATE                                      | DELETE     |
-| -------------------------------- | -------------------------------------------------- | ------------------------------------------ | -------------------------------- | ------------------------------------------- | ---------- |
-| `profiles`                       | any row, columns `id, display_name, avatar_url`    | same, plus `onboarded_at`                  | none                             | own row, columns `display_name, avatar_url` | none       |
-| `courses`                        | all rows                                           | all rows                                   | none (RPC only)                  | none                                        | none       |
-| `assignments`                    | `status = 'published'`                             | published **or** own                       | own `user_id` only               | own only                                    | own only   |
-| `assignment_attachments`         | parent published                                   | parent published or own                    | own parent + own path prefix     | none                                        | own parent |
-| `push_subscriptions`             | none                                               | own row (no endpoint/keys)                 | own `user_id` only               | own row, `device_label` only                | own row    |
-| `notification_preferences`       | none                                               | own row                                    | own `user_id` only               | own row, preference columns only            | none       |
-| `saved_assignments`              | none                                               | own rows                                   | own row for a visible assignment | none                                        | own rows   |
-| `notification_deliveries`        | none                                               | own rows (read-only)                       | none                             | none                                        | none       |
-| `rate_limits`                    | none                                               | none                                       | none                             | none                                        | none       |
-| `platform_admins`                | none                                               | none                                       | none                             | none                                        | none       |
-| `classes`                        | active only                                        | active, own, or managed                    | none (RPC only)                  | none (RPC only)                             | none       |
-| `class_applications`             | none                                               | own or platform admin                      | none (RPC only)                  | none (RPC only)                             | none       |
-| `class_members`                  | none                                               | own class or platform admin                | none (RPC only)                  | none                                        | none (RPC) |
-| `class_admins`                   | none                                               | own class or platform admin                | none (RPC only)                  | none                                        | none (RPC) |
-| `class_invitations`              | none                                               | managers, no `token_hash`                  | none (RPC only)                  | none                                        | none (RPC) |
-| `assignment_reviews`             | none                                               | submitter, reviewer, admin                 | none (RPC only)                  | none                                        | none       |
-| `audit_logs`                     | none                                               | class or platform admin                    | none                             | none                                        | none       |
-| `notification_events`            | none                                               | own rows                                   | none (RPC only)                  | none                                        | none       |
-| `class_verification_requests`    | none                                               | own, or platform admin for submitted rows  | none (RPC only)                  | none (RPC only)                             | none (RPC) |
-| `class_verification_evidence`    | none                                               | same as the parent request                 | none (RPC only)                  | none (RPC only)                             | none (RPC) |
-| `class_verification_reviews`     | none                                               | same as the parent request, no `actor_id`  | none (RPC only)                  | none (RPC only)                             | none       |
-| `discussion_sessions`            | `visibility = 'public'`, no `agenda`/`meeting_url` | `can_view_session(id)`                     | none (RPC only)                  | none (RPC only)                             | none       |
-| `discussion_session_rsvps`       | none                                               | own row, or class manager                  | none (RPC only)                  | none (RPC only)                             | none (RPC) |
-| `discussion_session_checkins`    | none                                               | own row, or session organizer              | none (RPC only)                  | none (RPC only)                             | none       |
-| `discussion_session_reminders`   | none                                               | none                                       | none (RPC only)                  | none (RPC only)                             | none       |
-| `google_calendar_connections`    | none                                               | own row, non-secret columns                | none (RPC/service only)          | none                                        | none       |
-| `google_calendar_event_mappings` | none                                               | own rows                                   | none (service only)              | none                                        | none       |
-| `assignment_reports`             | none                                               | own reports, or a class the caller manages | none (RPC only)                  | none (RPC only)                             | none       |
-| `assignment_revisions`           | none                                               | author, class managers, platform admins    | none (trigger only)              | none                                        | none       |
+| Table                            | anon SELECT                                        | auth SELECT                                | INSERT                           | UPDATE                                      | DELETE             |
+| -------------------------------- | -------------------------------------------------- | ------------------------------------------ | -------------------------------- | ------------------------------------------- | ------------------ |
+| `profiles`                       | any row, columns `id, display_name, avatar_url`    | same, plus `onboarded_at`                  | none                             | own row, columns `display_name, avatar_url` | none               |
+| `courses`                        | all rows                                           | all rows                                   | none (RPC only)                  | none                                        | none               |
+| `assignments`                    | `status = 'published'`                             | published **or** own                       | own `user_id` only               | own only                                    | own only           |
+| `assignment_attachments`         | parent published                                   | parent published or own                    | own parent + own path prefix     | none                                        | own parent         |
+| `push_subscriptions`             | none                                               | own row (no endpoint/keys)                 | own `user_id` only               | own row, `device_label` only                | own row            |
+| `notification_preferences`       | none                                               | own row                                    | own `user_id` only               | own row, preference columns only            | none               |
+| `saved_assignments`              | none                                               | own rows                                   | own row for a visible assignment | none                                        | own rows           |
+| `notification_deliveries`        | none                                               | own rows (read-only)                       | none                             | none                                        | none               |
+| `rate_limits`                    | none                                               | none                                       | none                             | none                                        | none               |
+| `platform_admins`                | none                                               | none                                       | none                             | none                                        | none               |
+| `classes`                        | active only                                        | active, own, or managed                    | none (RPC only)                  | none (RPC only)                             | none               |
+| `class_applications`             | none                                               | own or platform admin                      | none (RPC only)                  | none (RPC only)                             | none               |
+| `class_members`                  | none                                               | own class or platform admin                | none (RPC only)                  | none                                        | none (RPC)         |
+| `class_admins`                   | none                                               | own class or platform admin                | none (RPC only)                  | none                                        | none (RPC)         |
+| `class_invitations`              | none                                               | managers, no `token_hash`                  | none (RPC only)                  | none                                        | none (RPC)         |
+| `assignment_reviews`             | none                                               | submitter, reviewer, admin                 | none (RPC only)                  | none                                        | none               |
+| `audit_logs`                     | none                                               | class or platform admin                    | none                             | none                                        | none               |
+| `notification_events`            | none                                               | own rows                                   | none (RPC only)                  | none                                        | none               |
+| `class_verification_requests`    | none                                               | own, or platform admin for submitted rows  | none (RPC only)                  | none (RPC only)                             | none (RPC)         |
+| `class_verification_evidence`    | none                                               | same as the parent request                 | none (RPC only)                  | none (RPC only)                             | none (RPC)         |
+| `class_verification_reviews`     | none                                               | same as the parent request, no `actor_id`  | none (RPC only)                  | none (RPC only)                             | none               |
+| `discussion_sessions`            | `visibility = 'public'`, no `agenda`/`meeting_url` | `can_view_session(id)`                     | none (RPC only)                  | none (RPC only)                             | none               |
+| `discussion_session_rsvps`       | none                                               | own row, or class manager                  | none (RPC only)                  | none (RPC only)                             | none (RPC)         |
+| `discussion_session_checkins`    | none                                               | own row, or session organizer              | none (RPC only)                  | none (RPC only)                             | none               |
+| `discussion_session_reminders`   | none                                               | none                                       | none (RPC only)                  | none (RPC only)                             | none               |
+| `google_calendar_connections`    | none                                               | own row, non-secret columns                | none (RPC/service only)          | none                                        | none               |
+| `google_calendar_event_mappings` | none                                               | own rows                                   | none (service only)              | none                                        | none               |
+| `assignment_reports`             | none                                               | own reports, or a class the caller manages | none (RPC only)                  | none (RPC only)                             | none               |
+| `assignment_revisions`           | none                                               | author, class managers, platform admins    | none (trigger only)              | none                                        | none               |
+| `feedback_entries`               | none                                               | own rows, or platform admin                | own `user_id` only               | platform admin, `status` column only        | none               |
+| `course_materials`               | none                                               | class member, or platform admin            | class manager only               | class manager only                          | class manager only |
 
 Column-level grants back this up: `assignments` INSERT does not include `status`, and
 UPDATE does not include `user_id` or `status`. A client cannot publish into a moderation
@@ -540,11 +672,17 @@ someone else's prefix.
 ```bash
 supabase start
 pnpm db:types
+git diff --exit-code -- apps/web/src/types/database.generated.ts
 ```
 
-`apps/web/src/types/database.ts` is hand-maintained today because no project is connected.
-After regeneration, re-run `pnpm typecheck` and confirm the embedded relationship shapes
-still match `src/lib/db/assignments.ts`.
+`apps/web/src/types/database.generated.ts` is generated from the running schema and
+committed. `apps/web/src/types/database.ts` is hand-maintained on top of it to narrow enum
+columns to literal unions and mark nullable RPC arguments. `src/types/database-contract.ts`
+makes `pnpm typecheck` fail when a migration adds, removes, or renames a table, view,
+function, or column without the hand-written type being updated.
+
+CI regenerates the file after `supabase db reset` and fails if the committed copy differs,
+so the schema, the generated types, and the hand-written types cannot drift apart silently.
 
 ## 8. Verification queries
 
@@ -575,5 +713,9 @@ select count(*) from public.class_verification_requests where submitted_at is nu
 -- as a platform admin who does not own the draft: expect 0
 ```
 
-The automated equivalent is `pnpm test:integration` (see `tests/integration/rls.test.ts`),
-which includes the four push tables and has not been executed in this environment.
+The automated equivalent is `pnpm test:integration` (see `tests/integration/rls.test.ts`,
+`tests/integration/class-workflow.test.ts`, and
+`tests/integration/authorization-matrix.test.ts`), which includes the four push tables. It
+passes against a freshly reset local Supabase instance (all migrations and the seed
+applied from empty), and the CI `integration` job runs the same sequence on a disposable
+local stack. It has not been run against the live project.

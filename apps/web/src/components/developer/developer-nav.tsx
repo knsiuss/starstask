@@ -5,6 +5,7 @@ import {
   Blocks,
   Database,
   Gauge,
+  GraduationCap,
   ScrollText,
   ShieldAlert,
   Siren,
@@ -28,6 +29,7 @@ const DEVELOPER_ITEMS: DeveloperNavItem[] = [
   { href: "/developer/security", label: "Security", icon: ShieldAlert },
   { href: "/developer/database", label: "Database", icon: Database },
   { href: "/developer/users", label: "Users", icon: Users },
+  { href: "/developer/classes", label: "Classes", icon: GraduationCap },
   { href: "/developer/integrations", label: "Integrations", icon: Blocks },
   { href: "/developer/incidents", label: "Incidents", icon: Siren },
 ];

@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { getClassRole, listClassMembers } from "@/lib/db/classes";
 import {
   getSessionById,
@@ -301,6 +302,7 @@ export default async function SessionPage({
           </div>
 
           {viewer &&
+          isFeatureEnabled("sessionCheckIn") &&
           session.sessionType === "in_person" &&
           session.hasCheckInLocation &&
           (session.status === "scheduled" || viewerCheckIn) ? (
@@ -478,7 +480,9 @@ export default async function SessionPage({
             </section>
           ) : null}
 
-          {role?.canManage && session.sessionType === "in_person" ? (
+          {role?.canManage &&
+          isFeatureEnabled("sessionCheckIn") &&
+          session.sessionType === "in_person" ? (
             <section
               aria-labelledby="attendance-heading"
               className="mt-8"
@@ -585,11 +589,13 @@ export default async function SessionPage({
                 className="text-accent inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
               />
               {viewer &&
+              isFeatureEnabled("calendarSync") &&
               calendar?.connected &&
               session.status === "scheduled" ? (
                 <CalendarSyncButton sessionId={session.id} />
               ) : null}
               {viewer &&
+              isFeatureEnabled("calendarSync") &&
               isGoogleCalendarConfigured() &&
               !calendar?.connected ? (
                 <Link
@@ -603,6 +609,7 @@ export default async function SessionPage({
           </Card>
 
           {role?.canManage &&
+          isFeatureEnabled("sessionCheckIn") &&
           session.sessionType === "in_person" &&
           session.status === "scheduled" ? (
             <CheckInLocationCard

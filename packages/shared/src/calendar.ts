@@ -363,3 +363,20 @@ export function expandWeeklyScheduleForDays<T extends WeeklySlot>(
 
   return occurrences;
 }
+
+/**
+ * True when a date-only span overlaps an inclusive window of `YYYY-MM-DD` keys.
+ *
+ * Absence requests are stored as dates, not instants, so they cannot be filtered
+ * with an instant window: a request that started before the visible week still
+ * belongs on it. `endDate` is null for a single-day request.
+ */
+export function dateSpanOverlapsWindow(
+  startDate: string,
+  endDate: string | null,
+  window: { startKey: string; endKey: string },
+): boolean {
+  const spanEnd = endDate ?? startDate;
+
+  return startDate <= window.endKey && spanEnd >= window.startKey;
+}

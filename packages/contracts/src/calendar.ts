@@ -18,6 +18,7 @@ export const CALENDAR_EVENT_TYPES = [
   "all",
   "class_schedule",
   "assignment",
+  "absence",
   "exam",
   "academic_event",
   "personal",
@@ -41,6 +42,7 @@ export const CALENDAR_EVENT_TYPE_LABELS: Record<
 > = {
   class_schedule: "Class schedule",
   assignment: "Assignment deadline",
+  absence: "Absence notification",
   exam: "Exam",
   academic_event: "Academic event",
   personal: "Personal event",

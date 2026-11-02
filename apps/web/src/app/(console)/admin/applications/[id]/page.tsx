@@ -9,6 +9,7 @@ import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { requirePlatformAdmin } from "@/lib/auth/admin";
 import {
+  findClassDuplicates,
   getApplicationById,
   getClassById,
   listApplicationReviews,
@@ -55,12 +56,21 @@ export default async function AdminApplicationPage({
     notFound();
   }
 
-  const [history, profiles, createdClass] = await Promise.all([
+  const [history, profiles, createdClass, duplicates] = await Promise.all([
     listApplicationReviews(application.id),
     loadProfiles([application.applicant_id]),
     application.created_class_id
       ? getClassById(application.created_class_id)
       : Promise.resolve(null),
+    application.status === "pending"
+      ? findClassDuplicates({
+          name: application.proposed_name,
+          classCode: application.proposed_class_code ?? undefined,
+          academicYear: application.academic_year,
+          semester: application.semester,
+          institution: application.institution ?? undefined,
+        })
+      : Promise.resolve([]),
   ]);
 
   const applicant =
@@ -92,6 +102,9 @@ export default async function AdminApplicationPage({
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Proposed link: /classes/{application.proposed_slug}
+          {application.proposed_class_code
+            ? ` · Code: ${application.proposed_class_code}`
+            : ""}
         </p>
       </header>
 
@@ -110,6 +123,9 @@ export default async function AdminApplicationPage({
           className="mt-5"
         >
           Approved.{" "}
+          {createdClass.status === "draft"
+            ? "The class is a draft and stays hidden from students until a class admin activates it."
+            : "The class is active."}{" "}
           <Link
             href={`/admin/classes/${createdClass.slug}`}
             className="underline"
@@ -123,6 +139,10 @@ export default async function AdminApplicationPage({
       <section className="mt-6">
         <h2 className="text-lg font-semibold tracking-tight">Proposed class</h2>
         <dl className="border-border mt-3 grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2">
+          <Detail
+            label="Class code"
+            value={application.proposed_class_code ?? "Not specified"}
+          />
           <Detail
             label="Course"
             value={application.course_name}
@@ -181,7 +201,10 @@ export default async function AdminApplicationPage({
             separate, explicit choice.
           </p>
           <div className="mt-5">
-            <ApplicationDecisionForm applicationId={application.id} />
+            <ApplicationDecisionForm
+              applicationId={application.id}
+              duplicates={duplicates}
+            />
           </div>
         </section>
       ) : application.decision_note ? (

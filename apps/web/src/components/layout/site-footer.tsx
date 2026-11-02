@@ -1,10 +1,10 @@
-import { Star } from "lucide-react";
 import Link from "next/link";
 
+import { BrandMark } from "@/components/layout/brand-mark";
+
 /**
- * Only destinations that exist are linked. There is no privacy, terms, or
- * contact route in the application yet, so those links are deliberately
- * absent rather than pointing at placeholders.
+ * Only destinations that exist are linked. The legal pages are static, so the
+ * footer can safely advertise them without a feature check.
  */
 const FOOTER_GROUPS = [
   {
@@ -26,6 +26,13 @@ const FOOTER_GROUPS = [
     heading: "Account",
     links: [{ href: "/login", label: "Sign in with Google" }],
   },
+  {
+    heading: "Legal",
+    links: [
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
+    ],
+  },
 ];
 
 export function SiteFooter() {
@@ -34,12 +41,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)]">
         <div className="max-w-sm">
           <p className="text-foreground flex items-center gap-2 text-sm font-semibold">
-            <span className="bg-accent text-accent-foreground flex h-7 w-7 items-center justify-center rounded-md">
-              <Star
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
-            </span>
+            <BrandMark size={26} />
             StarsTask
           </p>
           <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
@@ -48,7 +50,7 @@ export function SiteFooter() {
           </p>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {FOOTER_GROUPS.map((group) => (
             <nav
               key={group.heading}

@@ -3,6 +3,7 @@ import "server-only";
 import type {
   LeaveFieldSource,
   LeaveRequestCreateInput,
+  LeaveRequestReviewInput,
   LeaveRequestUpdateInput,
 } from "@starstask/contracts";
 
@@ -97,6 +98,30 @@ export async function cancelLeaveRequest(
 
   if (error) {
     throw toLeaveApiError(error, "Could not cancel the absence request.");
+  }
+}
+
+/**
+ * Approves or rejects a submitted request.
+ *
+ * Approval is recorded in the request history and marks the sessions covered by
+ * the absence as excused; it never turns an absence into attendance. A rejected
+ * request leaves attendance untouched. The database checks that the caller
+ * manages the request's class.
+ */
+export async function reviewLeaveRequest(
+  requestId: string,
+  input: LeaveRequestReviewInput,
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("review_leave_request", {
+    p_request_id: requestId,
+    p_decision: input.decision,
+    p_note: input.note,
+  });
+
+  if (error) {
+    throw toLeaveApiError(error, "Could not record the review decision.");
   }
 }
 

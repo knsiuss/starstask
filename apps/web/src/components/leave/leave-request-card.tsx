@@ -108,7 +108,7 @@ export function LeaveRequestCard({
           {request.forwardedAt
             ? ` on ${formatLeaveDate(request.forwardedAt.slice(0, 10))}`
             : ""}{" "}
-          — the lecturer decides outside StarsTask.
+          — this records the hand-off, not a decision.
         </p>
       ) : null}
 

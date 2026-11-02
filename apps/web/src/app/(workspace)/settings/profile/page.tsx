@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { AdminProfileOverview } from "@/components/profile/admin-profile-overview";
-import { ProfileBioForm } from "@/components/profile/profile-bio-form";
+import { ClassAdminApplyPanel } from "@/components/profile/class-admin-apply-panel";
+import { ProfileAcademic } from "@/components/profile/profile-academic";
+import { ProfileEditor } from "@/components/profile/profile-editor";
+import { ProfileSection } from "@/components/profile/profile-section";
 import { Alert } from "@/components/ui/alert";
 import { PositionForm } from "@/components/verification/position-form";
-import {
-  RepresentativeGrantForm,
-  type GrantableClass,
-} from "@/components/verification/representative-grant-form";
+import type { GrantableClass } from "@/components/verification/representative-grant-form";
 import { VerificationRequestCard } from "@/components/verification/verification-request-card";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, listMyClasses } from "@/lib/db/classes";
@@ -22,6 +23,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { getVerificationEvidenceViews } from "@/features/verification/evidence-service";
+import { formatDate } from "@starstask/shared";
 
 export const metadata: Metadata = {
   title: "Profile settings",
@@ -31,11 +33,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const pageContainer = "mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10";
+
 export default async function ProfileSettingsPage() {
   if (!isSupabaseConfigured()) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-        <h1 className="text-3xl font-semibold tracking-tight">
+      <div className={pageContainer}>
+        <h1 className="text-2xl font-semibold tracking-tight">
           Profile settings
         </h1>
         <div className="mt-6">
@@ -58,7 +62,7 @@ export default async function ProfileSettingsPage() {
 
   if (platformAdmin) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <div className={pageContainer}>
         <AdminProfileOverview
           profile={profile}
           displayName={
@@ -117,70 +121,81 @@ export default async function ProfileSettingsPage() {
       academicYear: item.academic_year,
     }));
 
+  const adminAccessClasses = classes.filter((item) =>
+    representedClasses.has(item.id),
+  );
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Profile and verification
-        </h1>
-        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-          Declare the position you hold. Verification review is temporarily
-          disabled: as a class member you can claim representative access
-          directly, up to 5 representatives per class.
-        </p>
-      </header>
+    <div className={pageContainer}>
+      <ProfileEditor
+        fullName={profile?.fullName ?? ""}
+        nickname={profile?.nickname ?? session.profile?.display_name ?? ""}
+        bio={profile?.bio ?? ""}
+        email={session.user.email ?? null}
+        avatarUrl={profile?.avatarUrl ?? session.profile?.avatar_url ?? null}
+        memberSince={
+          session.user.created_at ? formatDate(session.user.created_at) : null
+        }
+        activeClassCount={
+          classes.filter((item) => item.status === "active").length
+        }
+      >
+        <ProfileAcademic
+          nim={profile?.nim ?? null}
+          university={profile?.university ?? null}
+          declaredClassName={profile?.declaredClassName ?? null}
+          classes={classes.map((item) => ({
+            id: item.id,
+            slug: item.slug,
+            name: item.name,
+            semester: item.semester,
+            academic_year: item.academic_year,
+            status: item.status,
+          }))}
+        />
 
-      <div className="mt-8 space-y-8">
-        <section aria-labelledby="public-profile-heading">
-          <div className="mb-4">
-            <h2
-              id="public-profile-heading"
-              className="text-xl font-semibold tracking-tight"
-            >
-              Public profile
-            </h2>
-            <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-              Your nickname is already visible on class pages. Add a short bio
-              so classmates know who they are working with.
-            </p>
-          </div>
+        <ProfileSection
+          id="class-representative"
+          title="Class representative"
+          description="Declaring a position never grants class admin access."
+        >
+          <PositionForm initialPosition={position} />
 
-          <ProfileBioForm initialBio={profile?.bio ?? ""} />
-        </section>
-
-        <PositionForm initialPosition={position} />
-
-        <section aria-labelledby="verification-heading">
-          <div className="mb-4">
-            <h2
-              id="verification-heading"
-              className="text-xl font-semibold tracking-tight"
-            >
-              Class representative access
-            </h2>
-            <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-              Verification review is temporarily disabled. Pick the class you
-              represent to get class admin access for it right away; a class can
-              have at most 5 representatives.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {availableClasses.length === 0 ? (
-              <Alert variant="info">
-                There is no active class you can claim yet. Join a class first,
-                then claim representative access here.
-              </Alert>
-            ) : (
-              <RepresentativeGrantForm classes={availableClasses} />
-            )}
-
-            {requests.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No verification requests yet.
+          <div className="border-border border-t px-5 py-4">
+            <h3 className="text-foreground text-sm font-medium">
+              Class admin access
+            </h3>
+            {adminAccessClasses.length === 0 ? (
+              <p className="text-muted-foreground mt-1 text-sm">
+                You do not administer any class yet.
               </p>
             ) : (
-              <div className="grid gap-4">
+              <ul className="mt-2 space-y-1.5 text-sm">
+                {adminAccessClasses.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex flex-wrap items-baseline gap-x-2"
+                  >
+                    <Link
+                      href={`/dashboard/classes/${item.slug}/manage`}
+                      className="text-accent underline-offset-4 hover:underline"
+                    >
+                      {item.name}
+                    </Link>
+                    <span className="text-muted-foreground text-xs">
+                      {item.semester} · {item.academic_year}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {requests.length > 0 ? (
+            <div className="border-border border-t px-5 py-4">
+              <h3 className="text-foreground text-sm font-medium">Requests</h3>
+
+              <div className="mt-3 grid gap-3">
                 {requests.map((request) => (
                   <VerificationRequestCard
                     key={request.id}
@@ -199,16 +214,24 @@ export default async function ProfileSettingsPage() {
                   />
                 ))}
               </div>
-            )}
-          </div>
-        </section>
-      </div>
+            </div>
+          ) : null}
 
-      <p className="text-muted-foreground mt-8 text-xs leading-relaxed">
-        Evidence files are stored privately. They can be opened only by you and
-        by platform admins reviewing your request, through short-lived links.
-        Notifications never include document contents or file links.
-      </p>
+          <div className="border-border border-t px-5 py-4">
+            {liveClassIds.size > 0 ? (
+              <Alert
+                variant="info"
+                className="mb-3"
+              >
+                A request is already in review. You cannot file a second one for
+                the same class until it is decided.
+              </Alert>
+            ) : null}
+
+            <ClassAdminApplyPanel classes={availableClasses} />
+          </div>
+        </ProfileSection>
+      </ProfileEditor>
     </div>
   );
 }

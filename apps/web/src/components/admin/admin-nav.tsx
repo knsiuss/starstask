@@ -7,6 +7,7 @@ import {
   Flag,
   GraduationCap,
   LayoutDashboard,
+  MessageSquare,
   ShieldCheck,
   Users,
   type LucideIcon,
@@ -34,6 +35,7 @@ const ADMIN_ITEMS: AdminNavItem[] = [
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
   { href: "/admin/assignments", label: "Assignments", icon: FileText },
   { href: "/admin/reports", label: "Reports", icon: Flag },
+  { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   {
     href: "/admin/verifications",
     label: "Verifications",

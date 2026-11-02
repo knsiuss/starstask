@@ -63,6 +63,7 @@ export async function GET(request: Request, context: RouteContext) {
       identifier: session.user.id,
       limit: 20,
       windowSeconds: 60,
+      onBackendFailure: "closed",
     });
 
     const url = new URL(request.url);

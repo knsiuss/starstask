@@ -6,14 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import {
   ADMIN_SEARCH_MAX,
-  CLASS_STATUSES,
-  type ClassStatus,
+  CLASS_LIFECYCLE_STATUSES,
+  type ClassLifecycleStatus,
 } from "@starstask/contracts";
+
+const STATUS_LABELS: Record<ClassLifecycleStatus, string> = {
+  draft: "Draft",
+  active: "Active",
+  archived: "Archived",
+};
 
 type AdminClassFiltersProps = {
   values: {
     search?: string;
-    status: ClassStatus | "all";
+    status: ClassLifecycleStatus | "all";
+    academicYear?: string;
+    semester?: string;
   };
 };
 
@@ -25,20 +33,44 @@ export function AdminClassFilters({ values }: AdminClassFiltersProps) {
       role="search"
       className="border-border bg-surface grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-12"
     >
-      <div className="lg:col-span-7">
+      <div className="lg:col-span-4">
         <Label htmlFor="admin-class-search">Search</Label>
         <Input
           id="admin-class-search"
           name="search"
           type="search"
-          placeholder="Class name, course, slug, or institution"
+          placeholder="Class name, code, course, slug, or institution"
           maxLength={ADMIN_SEARCH_MAX}
           defaultValue={values.search ?? ""}
           className="mt-1"
         />
       </div>
 
-      <div className="lg:col-span-3">
+      <div className="lg:col-span-2">
+        <Label htmlFor="admin-class-year">Academic year</Label>
+        <Input
+          id="admin-class-year"
+          name="academicYear"
+          placeholder="2025/2026"
+          maxLength={20}
+          defaultValue={values.academicYear ?? ""}
+          className="mt-1"
+        />
+      </div>
+
+      <div className="lg:col-span-2">
+        <Label htmlFor="admin-class-semester">Semester</Label>
+        <Input
+          id="admin-class-semester"
+          name="semester"
+          placeholder="e.g. 1"
+          maxLength={20}
+          defaultValue={values.semester ?? ""}
+          className="mt-1"
+        />
+      </div>
+
+      <div className="lg:col-span-2">
         <Label htmlFor="admin-class-status">Status</Label>
         <Select
           id="admin-class-status"
@@ -47,12 +79,12 @@ export function AdminClassFilters({ values }: AdminClassFiltersProps) {
           className="mt-1"
         >
           <option value="all">All statuses</option>
-          {CLASS_STATUSES.map((status) => (
+          {CLASS_LIFECYCLE_STATUSES.map((status) => (
             <option
               key={status}
               value={status}
             >
-              {status === "active" ? "Active" : "Archived"}
+              {STATUS_LABELS[status]}
             </option>
           ))}
         </Select>

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { apiError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import {
   getGoogleCalendarConfig,
   isGoogleCalendarConfigured,
@@ -28,6 +30,14 @@ const CALENDAR_SETTINGS_PATH = "/settings/calendar";
  * user before the authorization code is used.
  */
 export async function GET(request: NextRequest) {
+  if (!isFeatureEnabled("calendarSync")) {
+    return apiError(
+      404,
+      "not_found",
+      "Calendar sync is not available on this deployment.",
+    );
+  }
+
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
   const redirect = (params: Record<string, string>) => {

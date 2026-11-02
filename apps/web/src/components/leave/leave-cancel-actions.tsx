@@ -107,8 +107,8 @@ export function LeaveCancelActions({
 
       <p className="text-muted-foreground text-xs">
         {isClassAdmin
-          ? "The student is notified. A forwarded request can no longer be cancelled in StarsTask."
-          : "This cannot be undone. Once a request is forwarded, it belongs to the lecturer's process."}
+          ? "The student is notified. A reviewed request can no longer be cancelled in StarsTask."
+          : "This cannot be undone. A reviewed request can no longer be cancelled here."}
       </p>
 
       <div className="flex flex-wrap gap-2">

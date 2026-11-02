@@ -2,19 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  ChevronRight,
-  ClipboardList,
-  FileText,
-  FlaskConical,
-  FolderKanban,
-  GraduationCap,
-  Paperclip,
-  Presentation,
-  Users,
-} from "lucide-react";
+import { ChevronRight, ExternalLink, Paperclip } from "lucide-react";
 import Link from "next/link";
 
+import { CompletionToggle } from "@/components/assignments/completion-toggle";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import type { AssignmentListItem } from "@/types/database";
 import {
@@ -72,66 +63,6 @@ function rowStatus(deadline: string | null, now: Date): RowStatus {
   return { label: "Open", variant: "accent" };
 }
 
-function assignmentTypeLabel(type: string): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function TypeIcon({ type }: { type: string | null }) {
-  const className = "h-4 w-4";
-
-  switch (type) {
-    case "group":
-      return (
-        <Users
-          aria-hidden="true"
-          className={className}
-        />
-      );
-    case "lab":
-      return (
-        <FlaskConical
-          aria-hidden="true"
-          className={className}
-        />
-      );
-    case "project":
-      return (
-        <FolderKanban
-          aria-hidden="true"
-          className={className}
-        />
-      );
-    case "presentation":
-      return (
-        <Presentation
-          aria-hidden="true"
-          className={className}
-        />
-      );
-    case "exam":
-      return (
-        <GraduationCap
-          aria-hidden="true"
-          className={className}
-        />
-      );
-    case "individual":
-      return (
-        <ClipboardList
-          aria-hidden="true"
-          className={className}
-        />
-      );
-    default:
-      return (
-        <FileText
-          aria-hidden="true"
-          className={className}
-        />
-      );
-  }
-}
-
 function MetaDivider() {
   return <span aria-hidden="true">·</span>;
 }
@@ -172,27 +103,33 @@ export function ExploreAssignmentRow({
     : `Published ${formatDate(assignment.created_at)}`;
   const firstTag = assignment.tags[0];
 
+  const isAnnouncement = assignment.content_type === "class_announcement";
+
   return (
-    <li>
+    <li className="flex items-center gap-2 pr-3 sm:pr-4">
       <Link
         href={`/assignments/${assignment.id}`}
-        className="group hover:bg-hover focus-visible:outline-accent flex items-center gap-3 px-4 py-3.5 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:gap-4 sm:px-5"
+        className="group hover:bg-hover focus-visible:outline-accent flex min-w-0 flex-1 items-center gap-3 px-4 py-3 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:gap-4 sm:px-5"
       >
-        <span className="bg-accent-soft text-accent hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg sm:flex">
-          <TypeIcon type={assignment.assignment_type} />
-        </span>
-
         <div className="min-w-0 flex-1">
-          <p className="text-foreground group-hover:text-accent line-clamp-2 text-sm font-medium">
+          <p className="text-foreground group-hover:text-accent line-clamp-2 text-[15px] leading-snug font-medium">
             {assignment.title}
           </p>
           <div className="text-muted-foreground mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             <span className="max-w-full truncate">{courseLabel}</span>
-            {assignment.assignment_type ? (
+            {isAnnouncement ? (
               <>
                 <MetaDivider />
-                <span className="whitespace-nowrap">
-                  {assignmentTypeLabel(assignment.assignment_type)}
+                <span className="text-foreground/80 whitespace-nowrap font-medium">
+                  Announcement
+                </span>
+              </>
+            ) : null}
+            {assignment.source_label ? (
+              <>
+                <MetaDivider />
+                <span className="max-w-40 truncate">
+                  {assignment.source_label}
                 </span>
               </>
             ) : null}
@@ -202,15 +139,30 @@ export function ExploreAssignmentRow({
                 <span className="max-w-40 truncate">#{firstTag}</span>
               </>
             ) : null}
-            <MetaDivider />
-            <span className="inline-flex items-center gap-1 whitespace-nowrap">
-              <Paperclip
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
-              {formatCount(assignment.attachment_count)}{" "}
-              {pluralize(assignment.attachment_count, "file")}
-            </span>
+            {assignment.attachment_count > 0 ? (
+              <>
+                <MetaDivider />
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Paperclip
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+                  {formatCount(assignment.attachment_count)}
+                </span>
+              </>
+            ) : null}
+            {assignment.drive_url ? (
+              <>
+                <MetaDivider />
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <ExternalLink
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+                  Drive
+                </span>
+              </>
+            ) : null}
           </div>
           <p className="text-muted-foreground mt-1 text-xs sm:hidden">
             {dateText}
@@ -236,6 +188,14 @@ export function ExploreAssignmentRow({
           className="text-muted-foreground/70 h-4 w-4 shrink-0"
         />
       </Link>
+
+      {typeof assignment.completed === "boolean" ? (
+        <CompletionToggle
+          assignmentId={assignment.id}
+          completed={assignment.completed}
+          title={assignment.title}
+        />
+      ) : null}
     </li>
   );
 }

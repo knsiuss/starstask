@@ -6,12 +6,14 @@ import { notFound, redirect } from "next/navigation";
 import { EvidenceManager } from "@/components/leave/evidence-manager";
 import { LeaveCancelActions } from "@/components/leave/leave-cancel-actions";
 import { LeaveHistory } from "@/components/leave/leave-history";
+import { LeaveReviewActions } from "@/components/leave/leave-review-actions";
 import { LeaveStatusBadge } from "@/components/leave/leave-status-badge";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { getClassRole } from "@/lib/db/classes";
 import { getLeaveRequestById, listLeaveHistory } from "@/lib/db/leave";
 import { getEvidenceViews } from "@/features/leave/evidence-service";
@@ -119,6 +121,11 @@ export default async function LeaveRequestPage({
     (isOwner && isLeaveRequestCancellable(request.status)) ||
     (canManage && request.status === "submitted");
 
+  const decision = [...history]
+    .reverse()
+    .find(
+      (entry) => entry.action === "approved" || entry.action === "rejected",
+    );
   const suggestion = readOcrSuggestion(request.ocrResult);
   const sources = readFieldSources(request.fieldSources);
 
@@ -153,8 +160,8 @@ export default async function LeaveRequestPage({
           variant="success"
           className="mt-4"
         >
-          Request submitted. Your class admin will check it and forward it to
-          the lecturer.
+          Request submitted. Your class admin will review it. If it is approved,
+          the sessions covered by these dates become excused.
         </Alert>
       ) : null}
       {query.saved ? (
@@ -183,6 +190,46 @@ export default async function LeaveRequestPage({
               {request.cancellationNote}
             </p>
           ) : null}
+        </Alert>
+      ) : null}
+
+      {request.status === "approved" ? (
+        <Alert
+          variant="success"
+          className="mt-4"
+        >
+          <p className="font-medium">
+            Absence approved
+            {decision ? ` by ${decision.actorName ?? "the class admin"}` : ""}
+            {decision
+              ? ` on ${formatLeaveDate(decision.createdAt.slice(0, 10))}`
+              : ""}
+            .
+          </p>
+          <p className="mt-1">
+            Sessions covered by these dates are marked excused. An excused
+            session is not counted as present.
+          </p>
+        </Alert>
+      ) : null}
+
+      {request.status === "rejected" ? (
+        <Alert
+          variant="warning"
+          className="mt-4"
+        >
+          <p className="font-medium">
+            Absence rejected
+            {decision ? ` by ${decision.actorName ?? "the class admin"}` : ""}
+            {decision
+              ? ` on ${formatLeaveDate(decision.createdAt.slice(0, 10))}`
+              : ""}
+            .
+          </p>
+          <p className="mt-1">
+            Attendance is unchanged. The decision note, if any, is in the
+            history below.
+          </p>
         </Alert>
       ) : null}
 
@@ -384,99 +431,116 @@ export default async function LeaveRequestPage({
             </p>
           </Card>
 
-          <Card>
-            <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-              <Sparkles
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Document reader
-            </h2>
-
-            {request.ocrStatus === "not_run" ? (
-              <p className="text-muted-foreground mt-2 text-xs">
-                No document has been read yet. Upload a PDF and StarsTask will
-                offer the dates it finds for you to confirm.
-              </p>
-            ) : null}
-
-            {request.ocrStatus === "pending" ? (
-              <p className="text-muted-foreground mt-2 text-xs">
-                The document is being read. You can keep working.
-              </p>
-            ) : null}
-
-            {request.ocrStatus === "unsupported" ? (
-              <p className="text-muted-foreground mt-2 text-xs">
-                This file could not be read automatically — it is probably a
-                scan or an image. Nothing is blocked; the values on this page
-                are the ones you entered.
-              </p>
-            ) : null}
-
-            {request.ocrStatus === "failed" ? (
-              <p className="text-muted-foreground mt-2 text-xs">
-                The reader failed on this document. Enter the details by hand.
-              </p>
-            ) : null}
-
-            {request.ocrStatus === "succeeded" && suggestion ? (
-              <div className="mt-3 grid gap-2">
-                <ExtractedRow
-                  label="Absence start"
-                  value={
-                    suggestion.leaveStartDate
-                      ? formatLeaveDate(suggestion.leaveStartDate)
-                      : null
-                  }
-                  source={sources.leaveStartDate}
+          {isFeatureEnabled("ocr") ? (
+            <Card>
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                <Sparkles
+                  aria-hidden="true"
+                  className="h-4 w-4"
                 />
-                <ExtractedRow
-                  label="Absence end"
-                  value={
-                    suggestion.leaveEndDate
-                      ? formatLeaveDate(suggestion.leaveEndDate)
-                      : null
-                  }
-                  source={sources.leaveEndDate}
-                />
-                <ExtractedRow
-                  label="Document issue date"
-                  value={
-                    suggestion.documentIssueDate
-                      ? formatLeaveDate(suggestion.documentIssueDate)
-                      : null
-                  }
-                  source={sources.documentIssueDate}
-                />
-                <ExtractedRow
-                  label="Student name"
-                  value={suggestion.studentName ?? null}
-                  source={sources.studentName}
-                />
-                <ExtractedRow
-                  label="Document type"
-                  value={suggestion.documentType ?? null}
-                  source={sources.documentType}
-                />
+                Document reader
+              </h2>
 
-                <p className="text-muted-foreground text-[11px]">
-                  {request.ocrConfirmedAt
-                    ? `Confirmed by the student on ${formatLeaveDate(calendarDate(request.ocrConfirmedAt))}.`
-                    : "Not confirmed yet — these are suggestions, not saved values."}{" "}
-                  Reading a document is not a check that it is genuine.
+              {request.ocrStatus === "not_run" ? (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  No document has been read yet. Upload a PDF and StarsTask will
+                  offer the dates it finds for you to confirm.
                 </p>
-              </div>
-            ) : null}
-          </Card>
+              ) : null}
+
+              {request.ocrStatus === "pending" ? (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  The document is being read. You can keep working.
+                </p>
+              ) : null}
+
+              {request.ocrStatus === "unsupported" ? (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  This file could not be read automatically — it is probably a
+                  scan or an image. Nothing is blocked; the values on this page
+                  are the ones you entered.
+                </p>
+              ) : null}
+
+              {request.ocrStatus === "failed" ? (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  The reader failed on this document. Enter the details by hand.
+                </p>
+              ) : null}
+
+              {request.ocrStatus === "succeeded" && suggestion ? (
+                <div className="mt-3 grid gap-2">
+                  <ExtractedRow
+                    label="Absence start"
+                    value={
+                      suggestion.leaveStartDate
+                        ? formatLeaveDate(suggestion.leaveStartDate)
+                        : null
+                    }
+                    source={sources.leaveStartDate}
+                  />
+                  <ExtractedRow
+                    label="Absence end"
+                    value={
+                      suggestion.leaveEndDate
+                        ? formatLeaveDate(suggestion.leaveEndDate)
+                        : null
+                    }
+                    source={sources.leaveEndDate}
+                  />
+                  <ExtractedRow
+                    label="Document issue date"
+                    value={
+                      suggestion.documentIssueDate
+                        ? formatLeaveDate(suggestion.documentIssueDate)
+                        : null
+                    }
+                    source={sources.documentIssueDate}
+                  />
+                  <ExtractedRow
+                    label="Student name"
+                    value={suggestion.studentName ?? null}
+                    source={sources.studentName}
+                  />
+                  <ExtractedRow
+                    label="Document type"
+                    value={suggestion.documentType ?? null}
+                    source={sources.documentType}
+                  />
+
+                  <p className="text-muted-foreground text-[11px]">
+                    {request.ocrConfirmedAt
+                      ? `Confirmed by the student on ${formatLeaveDate(calendarDate(request.ocrConfirmedAt))}.`
+                      : "Not confirmed yet — these are suggestions, not saved values."}{" "}
+                    Reading a document is not a check that it is genuine.
+                  </p>
+                </div>
+              ) : null}
+            </Card>
+          ) : null}
+
+          {canManage && request.status === "submitted" ? (
+            <Card>
+              <h2 className="text-sm font-semibold">Review this request</h2>
+              <p className="text-muted-foreground mt-1 mb-3 text-xs">
+                Check that the request is complete and the evidence is legible,
+                then record a decision. Approving also marks the covered
+                sessions excused.
+              </p>
+              <LeaveReviewActions
+                requestId={request.id}
+                classSlug={request.classSlug}
+              />
+            </Card>
+          ) : null}
 
           {cancellable ? (
             <Card>
               <h2 className="text-sm font-semibold">Cancel this request</h2>
               <p className="text-muted-foreground mt-1 text-xs">
                 {canManage
-                  ? "Use this when the student no longer needs the absence, or the request cannot be forwarded. The student is told."
-                  : "Use this if you no longer need the absence. A forwarded request can no longer be cancelled here."}
+                  ? "Use this when the request cannot be decided, for example because it was submitted in error. The student is told."
+                  : "Use this if you no longer need the absence. A request that has been reviewed can no longer be cancelled here."}
               </p>
               <div className="mt-3">
                 <LeaveCancelActions

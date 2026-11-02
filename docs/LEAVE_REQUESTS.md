@@ -3,33 +3,29 @@
 ## 1. Scope
 
 StarsTask collects a student's absence request and its supporting document, lets
-a class admin check it, and produces a package the admin can hand to the
-lecturer.
+a class admin review it, and keeps the attendance record consistent with the
+decision. A forwarding package can still be generated for the lecturer.
 
-**It is not an academic approval system.** That boundary is enforced in the
-schema, not just in the UI:
+| In scope                                        | Out of scope (deliberately absent)                    |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| Student records dates, reason, and evidence     | A lecturer decision dashboard                         |
+| Admin checks completeness and legibility        | Any claim that the lecturer received or read the file |
+| Admin approves or rejects with an optional note | Treating an absence as attendance                     |
+| Approval marks covered sessions `excused`       | A second attendance system for absence requests       |
+| A record of what was forwarded, to whom, when   | Editing the past: history is append-only              |
 
-| In scope                                      | Out of scope (deliberately absent)                    |
-| --------------------------------------------- | ----------------------------------------------------- |
-| Student records dates, reason, and evidence   | A lecturer decision dashboard                         |
-| Admin checks completeness and legibility      | Approve / reject buttons and decision records         |
-| Admin generates a package for the lecturer    | Notifying anyone that an absence was "approved"       |
-| A record of what was forwarded, to whom, when | Any claim that the lecturer received or read the file |
+`approved` is an academic decision recorded by a class admin for their own
+class. It is **not** the same as attendance: approval marks the sessions covered
+by the dates as `excused`, and an excused session is never counted as present.
+`rejected` leaves attendance unchanged. `forwarded` remains a separate hand-off
+state meaning the request was included in a package that was generated and
+recorded; it is not a decision.
 
-There is no `approved` or `rejected` status anywhere. `forwarded` means one
-thing: the request was included in a forwarding package that was successfully
-generated and recorded. Whether the absence is granted is the lecturer's
-decision, made outside StarsTask.
-
-**Status:** the three-status workflow is implemented in code, RLS, exports, and
-tests. Static checks and unit tests pass locally. The migration
-`20261030090000_absence_cancellation.sql` has **not been applied** to any
-database yet (this environment has no database credentials). Until it is:
-
-- `cancel_leave_request` does not exist, so the cancel action fails.
-- Existing `needs_revision` rows are still in the table; the app normalises them
-  to `submitted` when reading, so the UI stays coherent but the database does
-  not.
+**Status:** the review workflow is implemented in code, RLS, exports, and tests.
+The migrations that introduce it (`20261031170000_absence_review_attendance.sql`
+and the attendance-summary migration) were applied to the live project on
+2026-11-02, so `review_leave_request` and the new statuses exist there. The
+workflow has not yet been exercised end to end in the UI.
 
 | Piece        | Location                                                                             |
 | ------------ | ------------------------------------------------------------------------------------ |
@@ -38,6 +34,7 @@ database yet (this environment has no database credentials). Until it is:
 | RLS          | `supabase/migrations/20261029002400_leave_rls.sql`                                   |
 | Grants       | `supabase/migrations/20261029002500_leave_grants.sql`                                |
 | Cancellation | `supabase/migrations/20261030090000_absence_cancellation.sql`                        |
+| Review       | `supabase/migrations/20261031170000_absence_review_attendance.sql`                   |
 | Contracts    | `packages/contracts/src/leave.ts`                                                    |
 | Helpers      | `packages/shared/src/leave.ts`, `packages/shared/src/csv.ts`                         |
 | Data         | `apps/web/src/lib/db/leave.ts`                                                       |
@@ -52,43 +49,71 @@ database yet (this environment has no database credentials). Until it is:
 
 ## 2. Statuses and transitions
 
-Three public statuses, plus an internal `draft`:
+Five public statuses, plus an internal `draft`:
 
-| Status      | Meaning                                                       |
-| ----------- | ------------------------------------------------------------- |
-| `draft`     | The student is still filling it in. Private to them.          |
-| `submitted` | Sent to the class admin. Waiting to be checked and forwarded. |
-| `forwarded` | Included in a completed forwarding package. **Not approved.** |
-| `cancelled` | Withdrawn by the student, or cancelled by the class admin.    |
+| Status      | Meaning                                                         |
+| ----------- | --------------------------------------------------------------- |
+| `draft`     | The student is still filling it in. Private to them.            |
+| `submitted` | Sent to the class admin. Waiting for a decision.                |
+| `approved`  | Decided by a class admin. Covered sessions become `excused`.    |
+| `rejected`  | Decided by a class admin. Attendance is unchanged.              |
+| `forwarded` | Included in a completed forwarding package. **Not a decision.** |
+| `cancelled` | Withdrawn by the student, or cancelled by the class admin.      |
 
 ```
-                        submit
-  draft ─────────────────────────> submitted ────forward───> forwarded
-    │                                │
-    │ cancel                         │ cancel
+                        submit                 approve
+  draft ─────────────────────────> submitted ───────────> approved
+    │                                │   │
+    │ cancel                         │   └──reject──────> rejected
+    │                                │ cancel              (terminal)
     └────────────> cancelled <───────┘
+                                     └──forward──────> forwarded (legacy)
 ```
 
 Rules:
 
-- A `draft` may be half-filled. `leave_requests_complete` only demands the
-  required columns for `submitted` and `forwarded`; a cancelled draft stays
-  incomplete and that is valid.
+- A `draft` may be half-filled. `leave_requests_complete` demands the required
+  columns for `submitted`, `approved`, `rejected`, and `forwarded`; a cancelled
+  draft stays incomplete and that is valid.
 - `leave_requests_forwarded_at_consistency` ties `status = 'forwarded'` to
   `forwarded_at IS NOT NULL`, and `leave_requests_cancel_consistency` ties
   `status = 'cancelled'` to `cancelled_at IS NOT NULL`.
-- `forwarded` is terminal. `leave_requests_cancel_not_forwarded` makes a row
-  with both timestamps impossible.
+- `approved`, `rejected`, `forwarded`, and `cancelled` are terminal.
 - `submit_leave_request` only accepts `draft`; anything else raises `SS012`.
+- `review_leave_request` only accepts a `submitted` request; anything else
+  raises `SS012`. Only a manager of the request's class may call it, and a
+  manager may not review their own request (`42501`).
 - A student may cancel their own `draft` or `submitted` request. A class admin
-  may cancel a `submitted` request in their class. Neither may cancel a
-  `forwarded` one.
+  may cancel a `submitted` request in their class. Nobody may cancel an
+  `approved`, `rejected`, or `forwarded` one.
 - Every transition is validated in the `SECURITY DEFINER` function that performs
   it. There is no client-writable status column.
+
+The decision time and author live in `leave_request_history` (actions
+`approved` / `rejected`), not in extra columns. The request holds its current
+status; the append-only history explains how it got there.
 
 The retired `needs_revision` state is folded into `submitted` by the
 cancellation migration. Rows written before it still carry the old value; the
 data layer maps them to `submitted`.
+
+### Attendance consequence of approval
+
+Approval runs in the same transaction as the status change:
+
+1. Sessions in the request's class within the Jakarta calendar date range, and
+   starting after the student joined, are selected.
+2. An existing `absent` or `excused` check-in becomes `excused`, with
+   `reviewed_by` / `reviewed_at` set to the reviewing admin.
+3. A session with no check-in gets one `excused` row. The unique constraint
+   `(session_id, user_id)` makes a retry a no-op.
+4. Existing `present` and `late` rows are **never** changed. They are evidence
+   that the student attended, and approval must not erase attendance.
+5. Cancelled sessions and sessions before `class_members.joined_at` are ignored.
+
+Rejection writes no attendance rows at all. The shared percentage policy then
+applies: excused is not present and is excluded from the eligible denominator,
+so an approved absence neither helps nor hurts the attendance rate.
 
 ### The three dates
 
@@ -123,7 +148,7 @@ three with a note saying so, and the CSV has a column for each.
 | `reason_category`           | text        | `illness` / `family_matter` / `other`                          |
 | `explanation`               | text        | 10–4000 chars once submitted                                   |
 | `document_issue_date`       | date        | Optional; never derived from the absence dates                 |
-| `status`                    | text        | The three statuses above, default `draft`                      |
+| `status`                    | text        | The statuses above, default `draft`                            |
 | `submitted_at`              | timestamptz | Set by `submit_leave_request`                                  |
 | `forwarded_at`              | timestamptz | Set by `complete_leave_forwarding`                             |
 | `cancelled_at`              | timestamptz | Set by `cancel_leave_request`                                  |
@@ -161,7 +186,8 @@ half-deleted row.
 ### `leave_request_history`
 
 Append-only. `action` is constrained to `created`, `updated`, `submitted`,
-`cancelled`, `forwarded`, `evidence_added`, `evidence_removed`, `ocr_recorded`.
+`approved`, `rejected`, `cancelled`, `forwarded`, `evidence_added`,
+`evidence_removed`, `ocr_recorded`.
 The legacy `revision_requested` and `resubmitted` actions are still accepted so
 old rows render, but nothing writes them any more. No UPDATE or DELETE is
 granted to any client role, so a past submission cannot be rewritten.
@@ -193,13 +219,13 @@ rather than relying on application logic.
 
 ## 4. Permissions
 
-| Role            | Can do                                                                                                                           |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Student (owner) | Create, edit while `draft`, upload/remove evidence, submit, cancel before forwarding, confirm OCR values, read their own request |
-| Class admin     | Read every non-draft request in **their own** classes, read evidence, cancel a submitted request, generate reports, forward      |
-| Class member    | Nothing beyond their own requests                                                                                                |
-| Platform admin  | Same as class admin, across classes                                                                                              |
-| Anyone else     | Nothing; the request is invisible                                                                                                |
+| Role            | Can do                                                                                                                                                                             |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Student (owner) | Create, edit while `draft`, upload/remove evidence, submit, cancel while pending, confirm OCR values, read their own request                                                       |
+| Class admin     | Read every non-draft request in **their own** classes, read evidence, approve or reject a submitted request (not their own), cancel a submitted request, generate reports, forward |
+| Class member    | Nothing beyond their own requests                                                                                                                                                  |
+| Platform admin  | Same as class admin, across classes                                                                                                                                                |
+| Anyone else     | Nothing; the request is invisible                                                                                                                                                  |
 
 Predicates used by the policies and functions:
 
@@ -207,8 +233,8 @@ Predicates used by the policies and functions:
 - `is_class_member(uuid)`, `is_class_admin(uuid)`, `can_manage_class(uuid)`
 - `can_view_leave_request(uuid)` — owner, or a manager of its class
 - `can_review_leave_request(uuid)` — a manager of its class who is **not** the
-  owner. It is retained for compatibility but no longer gates any workflow step,
-  because there is no review decision.
+  owner. `review_leave_request` performs the same checks directly inside the
+  transaction, so a caller cannot skip the predicate by calling the RPC.
 
 A user cannot grant themselves class admin: `class_admins` has no client write
 path, and `is_class_admin` reads a table only the class workflow functions write.
@@ -269,6 +295,10 @@ Optional, and additive by design.
 | `OCR_PROVIDER=pdf-text` | Reads the PDF text layer with `unpdf`                            |
 | `OCR_PROVIDER=disabled` | OCR off; every upload records `not_run` and the form works alone |
 | Any unknown value       | Treated as disabled, so a typo cannot silently change behaviour  |
+
+`NEXT_PUBLIC_FEATURE_OCR=false` is a separate module switch: it hides the reader
+UI and answers `404` on the confirmation route. Uploads and manual entry work
+exactly as before.
 
 **What it extracts:** document issue date, leave start/end, student name,
 document type. Month names in Indonesian and English are recognised, and both
@@ -351,9 +381,10 @@ institution uses. Nothing in the product claims a message was delivered.
 All four are `GET /api/classes/[slug]/leave-requests/export?format=…`, require
 class-manager rights, and are rate limited to 20 per minute.
 
-Rows come from `listLeaveReportRows`, which only returns `submitted`,
-`forwarded`, and `cancelled` requests for that one class. Drafts never appear in
-a report.
+Rows come from `listLeaveReportRows`, which returns every status after `draft`
+(`submitted`, `approved`, `rejected`, `forwarded`, `cancelled`) for that one
+class. Drafts never appear in a report, and the status column keeps a decision
+separate from a forwarding hand-off.
 
 ### CSV (`format=csv`)
 
@@ -373,8 +404,8 @@ issue date, reason, submitted at, status, cancellation note.
 
 The table only. Built **without touching storage**, so it still works when a
 document is unavailable or the bucket is misconfigured. A4, page numbers,
-repeated table headers on each page, and a footer stating that the report is not
-an approval record.
+repeated table headers on each page, and a footer stating that the file records
+the request and its status, not the evidence behind a decision.
 
 ### Complete PDF (`format=complete`)
 
@@ -415,11 +446,13 @@ The UI warns that the package contains medical information.
 
 ## 9. Notifications
 
-Three kinds, all through the existing `enqueue_notification_event` ledger:
+Five kinds, all through the existing `enqueue_notification_event` ledger:
 
 | Kind                      | Recipient                                                                                 | Dedupe key suffix      |
 | ------------------------- | ----------------------------------------------------------------------------------------- | ---------------------- |
 | `leave_request_submitted` | Class admins                                                                              | request id + timestamp |
+| `leave_request_approved`  | The student                                                                               | request id + timestamp |
+| `leave_request_rejected`  | The student                                                                               | request id + timestamp |
 | `leave_request_forwarded` | The student                                                                               | forwarding id          |
 | `leave_request_cancelled` | The other party: class admins when the student cancels, the student when an admin cancels | request id + timestamp |
 
@@ -430,10 +463,12 @@ Rules the payloads follow:
 - Dedupe keys make a retried request harmless; the ledger's unique key swallows
   the duplicate.
 - The actor is excluded from their own notification.
-- **No medical content.** The body never contains the explanation, the
-  cancellation note, OCR text, a document name, or an evidence link — a push
-  payload is visible on a lock screen. The note is read in the app.
-- There is no notification for an approval, because there is no approval.
+- **No medical content.** The body never contains the explanation, the review
+  note, the cancellation note, OCR text, a document name, or an evidence link —
+  a push payload is visible on a lock screen. The decision note is read in the
+  request history.
+- Approval says that the absence was approved and that covered sessions are
+  excused; it never says the student was present.
 
 If the notification ledger or push is unconfigured, the workflow still completes;
 only the notification is missing.
@@ -454,6 +489,7 @@ only the notification is missing.
 | `POST`   | `/api/leave-requests/[id]/ocr`                       | Owner                |
 | `GET`    | `/api/classes/[slug]/leave-requests/export?format=…` | Class admin          |
 | `POST`   | `/api/classes/[slug]/leave-requests/forward`         | Class admin          |
+| `POST`   | `/api/classes/[slug]/leave-requests/[id]/review`     | Class admin          |
 
 The forward route returns the PDF with three diagnostic headers:
 `X-Starstask-Forwarding-Reference`, `X-Starstask-Request-Count`, and
@@ -461,15 +497,16 @@ The forward route returns the PDF with three diagnostic headers:
 
 Error mapping (`apps/web/src/features/leave/errors.ts`):
 
-| Postgres | HTTP | Code                 | Meaning                          |
-| -------- | ---- | -------------------- | -------------------------------- |
-| `42501`  | 403  | `forbidden`          | Not allowed                      |
-| `P0002`  | 404  | `not_found`          | Missing or invisible             |
-| `22023`  | 400  | `invalid_input`      | Bad value                        |
-| `SS011`  | 409  | `not_editable`       | No longer editable               |
-| `SS012`  | 409  | `invalid_transition` | Action not allowed in this state |     | `SS013` | 409 | `not_eligible` | Selection has a request that is not ready |
-| `SS014`  | 422  | `incomplete`         | Missing fields or no evidence    |
-| `SS015`  | 409  | `invalid_selection`  | Malformed selection              |
+| Postgres | HTTP | Code                 | Meaning                                   |
+| -------- | ---- | -------------------- | ----------------------------------------- |
+| `42501`  | 403  | `forbidden`          | Not allowed                               |
+| `P0002`  | 404  | `not_found`          | Missing or invisible                      |
+| `22023`  | 400  | `invalid_input`      | Bad value                                 |
+| `SS011`  | 409  | `not_editable`       | No longer editable                        |
+| `SS012`  | 409  | `invalid_transition` | Action not allowed in this state          |
+| `SS013`  | 409  | `not_eligible`       | Selection has a request that is not ready |
+| `SS014`  | 422  | `incomplete`         | Missing fields or no evidence             |
+| `SS015`  | 409  | `invalid_selection`  | Malformed selection                       |
 
 Unexpected database errors log the code and error class only — never the SQL
 message, which can echo a row value.
@@ -478,20 +515,21 @@ message, which can echo a row value.
 
 ## 11. UI
 
-| Route                                              | Purpose                                |
-| -------------------------------------------------- | -------------------------------------- |
-| `/leave-requests`                                  | The student's own absence requests     |
-| `/leave-requests/new`                              | Create a draft (class picker if >1)    |
-| `/leave-requests/[id]`                             | Detail, evidence, history, OCR, cancel |
-| `/leave-requests/[id]/edit`                        | Edit a draft                           |
-| `/dashboard/classes/[slug]/leave-requests`         | Class request list, filters, exports   |
-| `/dashboard/classes/[slug]/leave-requests/forward` | Batch selection and forwarding         |
-| `/dashboard/classes/[slug]/leave-requests/history` | Forwarding history                     |
+| Route                                              | Purpose                                        |
+| -------------------------------------------------- | ---------------------------------------------- |
+| `/leave-requests`                                  | The student's own absence requests             |
+| `/leave-requests/new`                              | Create a draft (class picker if >1)            |
+| `/leave-requests/[id]`                             | Detail, evidence, history, OCR, review, cancel |
+| `/leave-requests/[id]/edit`                        | Edit a draft                                   |
+| `/dashboard/classes/[slug]/leave-requests`         | Class request list, filters, exports           |
+| `/dashboard/classes/[slug]/leave-requests/forward` | Batch selection and forwarding                 |
+| `/dashboard/classes/[slug]/leave-requests/history` | Forwarding history                             |
 
 Every page distinguishes loading, empty, filtered-empty, error, success, and
-partial-failure states. The class-admin UI has **no approve or reject control** —
-only "Forward to lecturer" and "Cancel this request", with copy saying the
-decision belongs to the lecturer.
+partial-failure states. On a submitted request the class admin sees **Approve
+absence** and **Reject**, with an optional note. Forwarding remains a separate
+action on the class list and forward page; it records a hand-off and does not
+change the decision.
 
 ---
 
@@ -518,9 +556,8 @@ no bucket policy needs to be clicked together in the dashboard.
 supabase db reset        # local
 supabase db push         # remote
 
-# 2. Regenerate types if you changed the schema
-pnpm --filter @starstask/web exec supabase gen types typescript \
-  --project-id "$SUPABASE_PROJECT_ID" > src/types/database.ts
+# 2. Regenerate types if you changed the schema (local Supabase must be running)
+pnpm db:types
 
 # 3. Run
 pnpm dev
@@ -546,7 +583,10 @@ affected.
 | Forwarding returns `not_eligible`                  | A selected request is no longer `submitted`, or belongs to another class.             |
 | Forwarding returns `conflict`                      | The request is already in another package (`UNIQUE (request_id)`).                    |
 | Cancel returns `invalid_transition`                | The request is already forwarded or cancelled.                                        |
-| Cancel returns 404 after deployment                | The cancellation migration has not been applied; `cancel_leave_request` is missing.   |
+| Cancel returns 404 after deployment                | The environment is missing `20261030090000`; `cancel_leave_request` is absent.        |
+| Review returns 404 after deployment                | The environment is missing `20261031170000`; `review_leave_request` is absent.        |
+| Approve returns 409                                | The request is no longer `submitted` (already decided or withdrawn).                  |
+| Approve returns 403                                | The caller does not manage the class, or is reviewing their own request.              |
 | The class request list is empty                    | Drafts are excluded by design; the student has not submitted yet.                     |
 | OCR never suggests anything                        | A scanned PDF has no text layer. `unsupported` is the expected outcome.               |
 
@@ -556,14 +596,14 @@ affected.
 
 Stated plainly, because the difference matters:
 
-- **The cancellation migration has not been applied.** `20261030090000` was
-  written against the live schema shape but never executed; there are no
-  database credentials in this environment. Until it runs, cancellation is
-  unavailable and legacy `needs_revision` rows remain in the table (the app
-  normalises them on read).
-- **The earlier migrations have never been executed either.** They parse
-  cleanly (`pgsql-parser` accepts all files) but PL/pgSQL bodies are opaque to a
-  parser, so the function logic was reviewed by hand rather than run.
+- **The cancellation and review migrations are applied but unexercised.**
+  `20261030090000` (cancellation) and `20261031170000` (review, approval,
+  rejection) were applied to the live project on 2026-11-02. The functions
+  exist; a real cancel/review request has not been driven through the UI.
+- **The earlier migrations were executed only through `supabase db push`.**
+  They parse cleanly (`pgsql-parser` accepts all files) and the push succeeded,
+  but PL/pgSQL bodies are opaque to a parser, so the function logic was reviewed
+  by hand rather than exercised.
 - **RLS, storage policies, signed URLs, and the `SECURITY DEFINER` functions
   have never been exercised against Postgres** in this environment.
 - **No end-to-end flow was driven through a browser.** The pages render and the
@@ -572,6 +612,7 @@ Stated plainly, because the difference matters:
 - **Unit tests cover the pure parts:** CSV escaping and formula injection, date
   formatting, OCR parsing, evidence validation, PDF report integrity (every row
   in the table, attachments traceable by reference, missing files reported), the
-  forwarding payload schema, and the cancellation schema. They do not cover SQL,
+  forwarding payload schema, the cancellation schema, and the review schema
+  (decisions, note limits, stripped status). They do not cover SQL,
   RLS, or the network
   calls to Storage.

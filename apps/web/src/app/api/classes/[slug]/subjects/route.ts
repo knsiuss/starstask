@@ -1,12 +1,10 @@
-import {
-  classSubjectCreateSchema,
-  toFieldErrors,
-} from "@starstask/contracts";
+import { classSubjectCreateSchema, toFieldErrors } from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import {
   createClassSubject,
+  DuplicateSubjectCodeError,
   listClassSubjects,
 } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -89,6 +87,14 @@ export async function POST(
 
     return apiSuccess({ id: subjectId });
   } catch (error) {
-    return handleRouteError(error);
+    return handleRouteError(
+      error instanceof DuplicateSubjectCodeError
+        ? new ApiError(
+            409,
+            "course_code_taken",
+            "A course with this code already exists in this class group.",
+          )
+        : error,
+    );
   }
 }

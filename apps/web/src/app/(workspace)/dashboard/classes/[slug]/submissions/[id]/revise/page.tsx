@@ -8,7 +8,7 @@ import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSubmissionDetail } from "@/lib/db/class-submissions";
-import { getClassBySlug } from "@/lib/db/classes";
+import { getClassBySlug, listClassSubjects } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import {
@@ -69,6 +69,10 @@ export default async function ReviseSubmissionPage({
   const editable = (EDITABLE_SUBMISSION_STATUSES as readonly string[]).includes(
     submission.status,
   );
+  const subjects = await listClassSubjects(found.id);
+  const courseName =
+    subjects.find((subject) => subject.id === submission.subject_id)?.name ??
+    null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -106,10 +110,15 @@ export default async function ReviseSubmissionPage({
             classSlug={found.slug}
             mode="revise"
             assignmentId={submission.id}
+            courseName={courseName ?? undefined}
             initialValues={{
               title: submission.title,
               description: submission.description,
               assignmentType: submission.assignment_type ?? "",
+              contentType: submission.content_type ?? "lecturer_assignment",
+              sourceLabel: submission.source_label ?? "",
+              driveUrl: submission.drive_url ?? "",
+              subjectId: "",
               deadlineLocal: submission.deadline
                 ? toJakartaDateTimeInput(submission.deadline)
                 : "",

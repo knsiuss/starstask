@@ -5,10 +5,7 @@ import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import {
-  requireClass,
-  requirePlatformAdmin,
-} from "@/features/classes/class-access";
+import { requireClassManager } from "@/features/classes/class-access";
 import {
   assignClassAdmin,
   revokeClassAdmin,
@@ -21,8 +18,10 @@ const adminChangeSchema = z.object({ userId: memberUserIdSchema }).strict();
 /**
  * Grants a class admin role.
  *
- * Only platform admins may promote somebody; class admins cannot create peers
- * or elevate themselves. The database function repeats this check.
+ * A class admin may promote another member of a class they already administer.
+ * The guard is evaluated per class, so an admin of class A cannot touch class B,
+ * and a plain member cannot promote themselves. The database function repeats
+ * the same check.
  */
 export async function POST(
   request: Request,
@@ -33,9 +32,8 @@ export async function POST(
       throw serviceUnavailable();
     }
 
-    const session = await requirePlatformAdmin();
     const { slug } = await context.params;
-    const found = await requireClass(slug);
+    const { session, class: found } = await requireClassManager(slug);
 
     await enforceRateLimit({
       action: "classes:admins:assign",
@@ -73,9 +71,8 @@ export async function DELETE(
       throw serviceUnavailable();
     }
 
-    const session = await requirePlatformAdmin();
     const { slug } = await context.params;
-    const found = await requireClass(slug);
+    const { session, class: found } = await requireClassManager(slug);
 
     await enforceRateLimit({
       action: "classes:admins:revoke",

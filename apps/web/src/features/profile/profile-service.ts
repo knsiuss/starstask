@@ -33,8 +33,9 @@ export type SaveOnboardingResult = {
  *
  * The object is uploaded before the profile points at it. If the pointer update
  * fails, the object is removed so a failed save cannot leave an orphan avatar.
+ * Returns the public URL the profile now points at.
  */
-async function storeAvatar(userId: string, avatar: File): Promise<void> {
+async function storeAvatar(userId: string, avatar: File): Promise<string> {
   const validation = await validateAvatarFile(avatar);
 
   if (!validation.ok) {
@@ -83,6 +84,20 @@ async function storeAvatar(userId: string, avatar: File): Promise<void> {
 
     throw error;
   }
+
+  return data.publicUrl;
+}
+
+/**
+ * Replaces the signed-in user's photo from the settings page.
+ *
+ * Same validation and cleanup as onboarding; only the owner's own row is ever
+ * written because the id comes from the verified session.
+ */
+export async function saveMyAvatar(avatar: File): Promise<string> {
+  const session = await requireSession();
+
+  return storeAvatar(session.user.id, avatar);
 }
 
 /**

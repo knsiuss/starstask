@@ -7,7 +7,11 @@ import {
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
-import { getClassRole, getClassBySlug } from "@/lib/db/classes";
+import {
+  getClassRole,
+  getClassBySlug,
+  getClassDependencies,
+} from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { notFound } from "@/lib/api/errors";
 import {
@@ -103,12 +107,12 @@ export async function PATCH(
 }
 
 /**
- * Deletes a class for good.
+ * Permanently deletes a class, but only when it has no academic history.
  *
- * Only a class manager may call it, and the body must repeat the class name:
- * the typed confirmation guards against deleting the wrong class, while the
- * database function re-checks the role. Published assignments are archived in
- * the same transaction so the content does not stay public without its class.
+ * Only a class manager may call it, and the body must repeat the class code
+ * (or the name when no code is set). The typed confirmation guards against
+ * deleting the wrong class, the dependency check returns a readable reason to
+ * archive instead, and the database function re-checks both.
  */
 export async function DELETE(
   request: Request,
@@ -137,19 +141,41 @@ export async function DELETE(
       throw new ApiError(
         422,
         "validation_error",
-        "Type the class name to confirm the deletion.",
+        "Type the class code or name to confirm the deletion.",
         toFieldErrors(parsed.error),
       );
     }
 
-    if (
-      parsed.data.confirmName.toLowerCase() !== found.name.trim().toLowerCase()
-    ) {
+    const typed = parsed.data.confirm.toLocaleLowerCase();
+    const acceptedValues = [found.name, found.class_code]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.trim().toLocaleLowerCase());
+
+    if (!acceptedValues.includes(typed)) {
       throw new ApiError(
         422,
         "confirmation_mismatch",
-        "The typed name does not match this class.",
-        { confirmName: "Type the class name exactly as shown" },
+        "The typed code or name does not match this class.",
+        { confirm: "Type the class code or name exactly as shown" },
+      );
+    }
+
+    const dependencies = await getClassDependencies(found.id);
+
+    if (!dependencies) {
+      throw notFound();
+    }
+
+    if (!dependencies.canDelete) {
+      throw new ApiError(
+        409,
+        "class_has_history",
+        "This class has members or academic records. Archive it instead so student work and attendance stay intact.",
+        {
+          members: String(dependencies.memberCount),
+          assignments: String(dependencies.assignmentCount),
+          submissions: String(dependencies.submissionCount),
+        },
       );
     }
 

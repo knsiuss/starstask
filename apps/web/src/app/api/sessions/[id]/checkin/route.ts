@@ -7,6 +7,7 @@ import {
 import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { checkInSession } from "@/features/sessions/session-service";
@@ -24,6 +25,10 @@ type RouteContext = { params: Promise<{ id: string }> };
  */
 export async function POST(request: Request, context: RouteContext) {
   try {
+    if (!isFeatureEnabled("sessionCheckIn")) {
+      throw notFound();
+    }
+
     if (!isSupabaseConfigured()) {
       throw serviceUnavailable();
     }

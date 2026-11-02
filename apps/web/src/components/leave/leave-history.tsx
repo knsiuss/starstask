@@ -6,6 +6,8 @@ const ACTION_LABELS: Record<string, string> = {
   created: "Draft created",
   updated: "Details updated",
   submitted: "Submitted to the class admin",
+  approved: "Absence approved",
+  rejected: "Absence rejected",
   // Legacy rows from the retired revision workflow still render readably.
   revision_requested: "Returned for correction",
   resubmitted: "Resubmitted for review",

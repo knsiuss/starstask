@@ -4,8 +4,9 @@ import {
   toFieldErrors,
 } from "@starstask/contracts";
 
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireSession } from "@/features/classes/class-access";
@@ -23,6 +24,10 @@ type RouteContext = { params: Promise<{ id: string }> };
  */
 export async function POST(request: Request, context: RouteContext) {
   try {
+    if (!isFeatureEnabled("ocr")) {
+      throw notFound();
+    }
+
     if (!isSupabaseConfigured()) {
       throw serviceUnavailable();
     }
@@ -44,6 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
       identifier: session.user.id,
       limit: 60,
       windowSeconds: 60,
+      onBackendFailure: "closed",
     });
 
     const body = (await request.json()) as unknown;

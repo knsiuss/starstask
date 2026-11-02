@@ -1,10 +1,8 @@
 import { MapPin } from "lucide-react";
 import Link from "next/link";
 
-import {
-  EventFormDialog,
-  type CalendarFormEvent,
-} from "@/components/schedule/event-form-dialog";
+import { EventFormDialog } from "@/components/schedule/event-form-dialog";
+import type { CalendarFormEvent } from "@/components/schedule/event-form-model";
 import { CALENDAR_EVENT_TONES } from "@/components/schedule/calendar-event-style";
 import type {
   CalendarClassOption,
@@ -13,7 +11,29 @@ import type {
 } from "@/lib/db/calendar";
 import { cn } from "@/lib/utils/cn";
 import { CALENDAR_EVENT_TYPE_LABELS } from "@starstask/contracts";
+import type {
+  CalendarEventType,
+  OfficialCalendarEventType,
+} from "@starstask/contracts";
 import { formatCalendarTime } from "@starstask/shared";
+
+type FormEventType = OfficialCalendarEventType | "personal";
+
+/**
+ * Which sources open in the edit dialog. Assignments are edited from their own
+ * page and absence notifications from the absence page, so neither is editable
+ * here even though both appear on the calendar.
+ */
+function isFormEventType(
+  value: Exclude<CalendarEventType, "all">,
+): value is FormEventType {
+  return (
+    value === "class_schedule" ||
+    value === "exam" ||
+    value === "academic_event" ||
+    value === "personal"
+  );
+}
 
 type EventChipProps = {
   event: CalendarEvent;
@@ -23,7 +43,7 @@ type EventChipProps = {
 };
 
 function toFormEvent(event: CalendarEvent): CalendarFormEvent | null {
-  if (event.eventType === "assignment") {
+  if (!isFormEventType(event.eventType)) {
     return null;
   }
 

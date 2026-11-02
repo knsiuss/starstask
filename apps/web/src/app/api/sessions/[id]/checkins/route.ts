@@ -12,6 +12,7 @@ import {
 } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { getClassRole } from "@/lib/db/classes";
 import { getSessionById } from "@/lib/db/sessions";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -31,6 +32,10 @@ type RouteContext = { params: Promise<{ id: string }> };
  */
 export async function POST(request: Request, context: RouteContext) {
   try {
+    if (!isFeatureEnabled("sessionCheckIn")) {
+      throw notFound();
+    }
+
     if (!isSupabaseConfigured()) {
       throw serviceUnavailable();
     }
@@ -75,6 +80,19 @@ export async function POST(request: Request, context: RouteContext) {
         "validation_error",
         "That attendance entry is not valid.",
         toFieldErrors(parsed.error),
+      );
+    }
+
+    // An absence is a conclusion about a finished session. The database has
+    // not stored that rule, so the API enforces it before writing a row.
+    if (
+      parsed.data.status === "absent" &&
+      Date.parse(existing.endsAt) > Date.now()
+    ) {
+      throw new ApiError(
+        409,
+        "session_not_finished",
+        "You can mark a session absent only after it ends.",
       );
     }
 

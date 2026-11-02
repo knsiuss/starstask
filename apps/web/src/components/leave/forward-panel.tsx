@@ -287,7 +287,7 @@ export function ForwardPanel({
 
       <p className="text-muted-foreground text-xs">
         Generating a package marks the included requests as forwarded. It does
-        not approve the absence and does not mean the lecturer received it.
+        not change their approval and does not mean the lecturer received it.
       </p>
     </form>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
+import { Archive, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -15,42 +15,72 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { ClassDependencySummary } from "@starstask/contracts";
 
 type DeleteClassButtonProps = {
   classSlug: string;
   name: string;
+  classCode: string | null;
+  academicYear: string;
+  semester: string;
+  dependencies: ClassDependencySummary;
 };
 
 /**
- * Deletes a class after the caller retypes its name.
+ * Deletes a class only when it has no academic history.
  *
- * There is no undo: deleting a class cascades its members, sessions, leave
- * requests, schedule, and verification rows, so the typed name is the guard
- * rather than a timed undo like the assignment delete.
+ * The dialog repeats the class identity and its dependent counts before asking
+ * for a typed code or name. When records exist, permanent deletion is refused
+ * and archiving becomes the primary action so student work and attendance stay
+ * intact.
  */
-export function DeleteClassButton({ classSlug, name }: DeleteClassButtonProps) {
+export function DeleteClassButton({
+  classSlug,
+  name,
+  classCode,
+  academicYear,
+  semester,
+  dependencies,
+}: DeleteClassButtonProps) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  const [typedName, setTypedName] = React.useState("");
-  const [isBusy, setIsBusy] = React.useState(false);
+  const [typedConfirm, setTypedConfirm] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isArchiving, setIsArchiving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const normalizedName = name.trim().toLowerCase();
+  const expected = (classCode ?? name).trim().toLowerCase();
+  const typed = typedConfirm.trim().toLowerCase();
   const isConfirmed =
-    typedName.trim().toLowerCase() === name.trim().toLowerCase();
+    typed.length > 0 && (typed === expected || typed === normalizedName);
+
+  const counts = [
+    { label: "Members", value: dependencies.memberCount },
+    { label: "Assignments", value: dependencies.assignmentCount },
+    { label: "Submissions", value: dependencies.submissionCount },
+    { label: "Sessions", value: dependencies.sessionCount },
+    { label: "Attendance records", value: dependencies.attendanceCount },
+    { label: "Schedule entries", value: dependencies.scheduleCount },
+    { label: "Calendar events", value: dependencies.calendarEventCount },
+    { label: "Leave requests", value: dependencies.leaveRequestCount },
+    { label: "Subjects", value: dependencies.subjectCount },
+    { label: "Invitations", value: dependencies.invitationCount },
+  ].filter((count) => count.value > 0);
 
   const handleDelete = async () => {
-    if (!isConfirmed || isBusy) {
+    if (!isConfirmed || isDeleting) {
       return;
     }
 
-    setIsBusy(true);
+    setIsDeleting(true);
     setError(null);
 
     try {
       const response = await fetch(`/api/classes/${classSlug}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmName: typedName.trim() }),
+        body: JSON.stringify({ confirm: typedConfirm.trim() }),
       });
 
       if (!response.ok) {
@@ -66,7 +96,39 @@ export function DeleteClassButton({ classSlug, name }: DeleteClassButtonProps) {
     } catch {
       setError("Network error. Please try again.");
     } finally {
-      setIsBusy(false);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (isArchiving) {
+      return;
+    }
+
+    setIsArchiving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/classes/${classSlug}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived" }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: { message?: string };
+        } | null;
+        setError(body?.error?.message ?? "Could not archive the class.");
+        return;
+      }
+
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -77,7 +139,7 @@ export function DeleteClassButton({ classSlug, name }: DeleteClassButtonProps) {
         setOpen(next);
 
         if (!next) {
-          setTypedName("");
+          setTypedConfirm("");
           setError(null);
         }
       }}
@@ -98,11 +160,31 @@ export function DeleteClassButton({ classSlug, name }: DeleteClassButtonProps) {
       <DialogContent>
         <DialogTitle>Delete {name}?</DialogTitle>
         <DialogDescription>
-          This cannot be undone. Members, invitations, sessions, absence
-          requests, schedule, and verification records for this class are
-          deleted with it. Published assignments are archived and stop being
-          public.
+          {dependencies.canDelete
+            ? "This class has no members or academic records, so it can be deleted permanently. There is no undo."
+            : "This class has records that belong to students. It cannot be deleted permanently; archive it instead so its history stays available."}
         </DialogDescription>
+
+        <dl className="border-border mt-4 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border p-3 text-sm">
+          <Detail
+            label="Class code"
+            value={classCode ?? "No code"}
+          />
+          <Detail
+            label="Academic period"
+            value={`${academicYear} · Semester ${semester}`}
+          />
+        </dl>
+
+        {counts.length > 0 ? (
+          <ul className="text-muted-foreground mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            {counts.map((count) => (
+              <li key={count.label}>
+                {count.value} {count.label}
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         {error ? (
           <Alert
@@ -113,43 +195,89 @@ export function DeleteClassButton({ classSlug, name }: DeleteClassButtonProps) {
           </Alert>
         ) : null}
 
-        <div className="mt-5 space-y-2">
-          <Label htmlFor="delete-class-confirm">
-            Type <span className="font-semibold">{name}</span> to confirm
-          </Label>
-          <Input
-            id="delete-class-confirm"
-            value={typedName}
-            autoComplete="off"
-            onChange={(event) => setTypedName(event.target.value)}
-          />
-        </div>
+        {dependencies.canDelete ? (
+          <div className="mt-5 space-y-2">
+            <Label htmlFor="delete-class-confirm">
+              Type <span className="font-semibold">{classCode ?? name}</span>{" "}
+              (or the class name) to confirm
+            </Label>
+            <Input
+              id="delete-class-confirm"
+              value={typedConfirm}
+              autoComplete="off"
+              onChange={(event) => setTypedConfirm(event.target.value)}
+            />
+          </div>
+        ) : (
+          <Alert
+            variant="warning"
+            className="mt-4"
+          >
+            <p className="font-medium">Archive keeps the history intact.</p>
+            <p className="mt-1 text-xs">
+              Members, assignments, submissions, attendance, schedules, and
+              leave requests stay attached to this class and remain readable
+              under the archive filter.
+            </p>
+          </Alert>
+        )}
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
           <Button
             type="button"
             variant="secondary"
             onClick={() => setOpen(false)}
-            disabled={isBusy}
+            disabled={isDeleting || isArchiving}
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="danger"
-            onClick={() => void handleDelete()}
-            disabled={!isConfirmed || isBusy}
-          >
-            {isBusy ? (
-              <Loader2
-                aria-hidden="true"
-                className="h-3.5 w-3.5 animate-spin"
-              />
-            ) : null}
-            Delete class permanently
-          </Button>
+
+          {dependencies.canDelete ? (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => void handleDelete()}
+              disabled={!isConfirmed || isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 animate-spin"
+                />
+              ) : null}
+              Delete class permanently
+            </Button>
+          ) : dependencies.classStatus !== "archived" ? (
+            <Button
+              type="button"
+              onClick={() => void handleArchive()}
+              disabled={isArchiving}
+            >
+              {isArchiving ? (
+                <Loader2
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 animate-spin"
+                />
+              ) : (
+                <Archive
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+              )}
+              Archive class instead
+            </Button>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="mt-0.5">{value}</dd>
+    </div>
   );
 }

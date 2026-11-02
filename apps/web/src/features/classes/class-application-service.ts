@@ -27,6 +27,7 @@ export async function submitClassApplication(
   const { data, error } = await supabase.rpc("apply_for_class", {
     p_proposed_slug: input.proposedSlug,
     p_proposed_name: input.proposedName,
+    p_proposed_class_code: input.proposedClassCode ?? null,
     p_course_name: input.courseName,
     p_semester: input.semester,
     p_academic_year: input.academicYear,
@@ -54,6 +55,7 @@ export async function reviseClassApplication(
     p_application_id: applicationId,
     p_proposed_slug: input.proposedSlug,
     p_proposed_name: input.proposedName,
+    p_proposed_class_code: input.proposedClassCode ?? null,
     p_course_name: input.courseName,
     p_semester: input.semester,
     p_academic_year: input.academicYear,
@@ -99,6 +101,7 @@ export async function decideClassApplication(
     p_decision: input.decision,
     p_note: input.note ?? null,
     p_grant_class_admin: input.grantClassAdmin,
+    p_initial_status: input.initialStatus,
   });
 
   if (error) {

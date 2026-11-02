@@ -9,6 +9,8 @@ type SectionHeaderProps = {
     href: string;
     label: string;
   };
+  /** `rail` is the tighter treatment used by the dashboard's right column. */
+  density?: "default" | "rail";
 };
 
 export function SectionHeader({
@@ -16,17 +18,24 @@ export function SectionHeader({
   title,
   description,
   action,
+  density = "default",
 }: SectionHeaderProps) {
+  const isRail = density === "rail";
+
   return (
-    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
         <h2
           id={id}
-          className="text-foreground text-base font-semibold tracking-tight"
+          className={
+            isRail
+              ? "text-foreground text-[15px] font-semibold tracking-tight"
+              : "text-foreground text-base font-semibold tracking-tight sm:text-lg"
+          }
         >
           {title}
         </h2>
-        {description ? (
+        {description && !isRail ? (
           <p className="text-muted-foreground mt-1 text-xs">{description}</p>
         ) : null}
       </div>

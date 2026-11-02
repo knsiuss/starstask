@@ -71,6 +71,7 @@ export default async function AdminClassPage({ params }: AdminClassPageProps) {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={found.status} />
             <span className="text-muted-foreground text-xs">
+              {found.class_code ? `${found.class_code} · ` : ""}
               {found.course_name} · {found.semester} {found.academic_year}
             </span>
           </div>
@@ -78,7 +79,8 @@ export default async function AdminClassPage({ params }: AdminClassPageProps) {
             {found.name}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Created {formatDate(found.created_at)} · /classes/{found.slug}
+            Created {formatDate(found.created_at)} · {found.academic_year} ·
+            Semester {found.semester} · /classes/{found.slug}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

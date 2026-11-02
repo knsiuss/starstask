@@ -18,6 +18,7 @@ from the Class Admin experience at `/dashboard/classes/[slug]`.
 | `/admin/verifications`      | Class representative verification queue                        |
 | `/admin/verifications/[id]` | Evidence, decision history, and review decision                |
 | `/admin/reports`            | Reader-submitted assignment corrections                        |
+| `/admin/feedback`           | In-app feedback queue with triage status                       |
 
 There is no Sessions or Settings entry. Those pages do not exist, so the
 navigation does not offer them.
@@ -115,7 +116,17 @@ All three are `SECURITY DEFINER`, pin `search_path`, re-check
 `authenticated`. They return no emails, tokens, legal names, student IDs, or
 private submissions.
 
-## 7. States and failure handling
+## 7. Feedback queue
+
+`/admin/feedback` lists notes sent from **Settings → Feedback**, newest first,
+with the category, route, message, and a triage status control. The status
+moves through `open`, `reviewing`, `resolved`, and `dismissed`; the change is a
+`PATCH /api/admin/feedback/[id]` that re-checks the role server-side and touches
+only the `status` column. Notes never store an email, name, attachment, or user
+agent, and a reported page path drops its query string. Authors see only their
+own notes on the settings page and cannot change their status.
+
+## 8. States and failure handling
 
 - `admin/loading.tsx` renders the shell skeleton while a page queries.
 - `admin/error.tsx` shows a retry action and a link back to the overview; it
@@ -127,7 +138,7 @@ private submissions.
 - Mutations show their own pending, success, and error states in the existing
   client forms and refresh the affected route.
 
-## 8. Required setup
+## 9. Required setup
 
 Apply the migrations before using the console:
 
@@ -136,7 +147,8 @@ supabase db push
 ```
 
 The overview depends on `20261029003000_platform_admin_queries.sql`. The class
-and verification queues also require their earlier class migrations. A schema
+and verification queues also require their earlier class migrations. The
+feedback queue requires `20261031220000_feedback_entries.sql`. A schema
 that stops before those migrations makes the console's data queries fail; the
 error boundary reports that the view could not load rather than showing zeroes.
 

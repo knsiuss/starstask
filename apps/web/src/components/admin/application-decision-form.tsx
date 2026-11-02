@@ -7,6 +7,7 @@ import * as React from "react";
 import {
   classApplicationDecisionSchema,
   toFieldErrors,
+  type ClassDuplicateMatch,
 } from "@starstask/contracts";
 
 import { Alert } from "@/components/ui/alert";
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 type ApplicationDecisionFormProps = {
   applicationId: string;
+  duplicates: ClassDuplicateMatch[];
 };
 
 /**
@@ -27,6 +29,7 @@ type ApplicationDecisionFormProps = {
  */
 export function ApplicationDecisionForm({
   applicationId,
+  duplicates,
 }: ApplicationDecisionFormProps) {
   const router = useRouter();
   const [decision, setDecision] = React.useState<"approved" | "rejected">(
@@ -34,6 +37,10 @@ export function ApplicationDecisionForm({
   );
   const [note, setNote] = React.useState("");
   const [grantClassAdmin, setGrantClassAdmin] = React.useState(false);
+  const [initialStatus, setInitialStatus] = React.useState<"active" | "draft">(
+    "active",
+  );
+  const [confirmDuplicate, setConfirmDuplicate] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
     {},
@@ -50,10 +57,19 @@ export function ApplicationDecisionForm({
     setError(null);
     setFieldErrors({});
 
+    if (decision === "approved" && duplicates.length > 0 && !confirmDuplicate) {
+      setError(
+        "A class with this name or code already exists in the same academic period. Confirm that this should be a separate class before approving.",
+      );
+      return;
+    }
+
     const parsed = classApplicationDecisionSchema.safeParse({
       decision,
       note: note || undefined,
       grantClassAdmin,
+      initialStatus,
+      confirmDuplicate,
     });
 
     if (!parsed.success) {
@@ -115,8 +131,8 @@ export function ApplicationDecisionForm({
           <span>
             <span className="font-medium">Approve</span>
             <span className="text-muted-foreground mt-0.5 block text-xs">
-              Creates the class, adds the applicant as a member, and publishes
-              the class page.
+              Creates the class and adds the applicant as a member. It can start
+              active or as a draft that only its managers can see.
             </span>
           </span>
         </label>
@@ -140,21 +156,90 @@ export function ApplicationDecisionForm({
       </fieldset>
 
       {decision === "approved" ? (
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={grantClassAdmin}
-            onChange={(event) => setGrantClassAdmin(event.target.checked)}
-            className="mt-0.5"
-          />
-          <span>
-            Make the applicant the initial class admin
-            <span className="text-muted-foreground mt-0.5 block text-xs">
-              Optional. Without this, the class has no admin until you assign
-              one from the class management page.
+        <>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={grantClassAdmin}
+              onChange={(event) => setGrantClassAdmin(event.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Make the applicant the initial class admin
+              <span className="text-muted-foreground mt-0.5 block text-xs">
+                Optional. Without this, the class has no admin until you assign
+                one from the class management page.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Initial status</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="initialStatus"
+                checked={initialStatus === "active"}
+                onChange={() => setInitialStatus("active")}
+                className="mt-0.5"
+              />
+              <span>
+                Active
+                <span className="text-muted-foreground mt-0.5 block text-xs">
+                  Visible to students and open for joins.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="initialStatus"
+                checked={initialStatus === "draft"}
+                onChange={() => setInitialStatus("draft")}
+                className="mt-0.5"
+              />
+              <span>
+                Draft
+                <span className="text-muted-foreground mt-0.5 block text-xs">
+                  Hidden from students until a class admin activates it. Useful
+                  for preparing a class before a term starts.
+                </span>
+              </span>
+            </label>
+          </fieldset>
+
+          {duplicates.length > 0 ? (
+            <Alert variant="warning">
+              <p className="font-medium">
+                A class with this name or code already exists in this academic
+                period.
+              </p>
+              <ul className="mt-2 space-y-1 text-xs">
+                {duplicates.map((match) => (
+                  <li key={match.classId}>
+                    {match.name}
+                    {match.classCode ? ` (${match.classCode})` : ""} ·{" "}
+                    {match.semester} · {match.academicYear}
+                  </li>
+                ))}
+              </ul>
+              <label className="mt-3 flex items-start gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={confirmDuplicate}
+                  onChange={(event) =>
+                    setConfirmDuplicate(event.target.checked)
+                  }
+                  className="mt-0.5"
+                />
+                <span>
+                  I confirm this is a separate class. Nothing will be merged
+                  automatically.
+                </span>
+              </label>
+            </Alert>
+          ) : null}
+        </>
       ) : null}
 
       <div className="space-y-1.5">

@@ -1,97 +1,128 @@
-import { Bell, ChevronRight } from "lucide-react";
+import { Bell } from "lucide-react";
 import Link from "next/link";
 
 import { SectionHeader } from "@/components/dashboard/section-header";
-import type { DashboardNotification } from "@/lib/db/dashboard";
-import { formatDate } from "@starstask/shared";
+import type { NotificationInboxItem } from "@/lib/db/notifications";
+import { cn } from "@/lib/utils/cn";
+import { relativeTimeFrom } from "@/lib/utils/relative-time";
 
 type NotificationsSectionProps = {
-  notifications: DashboardNotification[];
+  notifications: NotificationInboxItem[];
+  /** Server render instant, passed in so the component stays pure. */
+  nowIso: string;
 };
+
+/**
+ * Marker colour follows the destination section, the only reliable signal in
+ * the payload: review work is amber, absences green, everything else accent.
+ */
+function markerClass(href: string | null): string {
+  if (href?.startsWith("/dashboard/review")) {
+    return "bg-warning";
+  }
+
+  if (href?.startsWith("/leave-requests")) {
+    return "bg-success";
+  }
+
+  return "bg-accent";
+}
 
 export function NotificationsSection({
   notifications,
+  nowIso,
 }: NotificationsSectionProps) {
+  const now = new Date(nowIso).getTime();
+
   return (
     <section
       aria-labelledby="recent-notifications"
-      className="mt-8"
+      className="border-border bg-surface rounded-xl border shadow-[0_1px_2px_rgba(9,9,11,0.03)]"
     >
-      <SectionHeader
-        id="recent-notifications"
-        title="Notifications"
-        description="Recent updates about your classes and account."
-        action={{ href: "/settings/notifications", label: "Settings" }}
-      />
-
-      <div className="border-border bg-surface mt-4 overflow-hidden rounded-xl border shadow-[0_1px_2px_rgba(9,9,11,0.03)]">
-        {notifications.length === 0 ? (
-          <div className="px-5 py-8 text-center">
-            <Bell
-              aria-hidden="true"
-              className="text-muted-foreground mx-auto h-5 w-5"
-            />
-            <p className="mt-2 text-sm font-medium">No notifications yet</p>
-            <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed">
-              Updates about your classes and account will appear here.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-border divide-y">
-            {notifications.map((notification) => (
-              <li key={notification.id}>
-                {notification.href ? (
-                  <Link
-                    href={notification.href}
-                    className="hover:bg-hover focus-visible:outline-accent group flex items-start gap-3 px-4 py-3.5 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:px-5"
-                  >
-                    <NotificationContent notification={notification} />
-                    <ChevronRight
-                      aria-hidden="true"
-                      className="text-muted-foreground group-hover:text-accent mt-0.5 h-4 w-4 shrink-0 transition-colors"
-                    />
-                  </Link>
-                ) : (
-                  <div className="flex items-start gap-3 px-4 py-3.5 sm:px-5">
-                    <NotificationContent notification={notification} />
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="px-4 pt-4">
+        <SectionHeader
+          id="recent-notifications"
+          title="Notifications"
+          density="rail"
+          action={{ href: "/notifications", label: "View all" }}
+        />
       </div>
+
+      {notifications.length === 0 ? (
+        <div className="flex flex-col items-center px-4 py-7 text-center">
+          <Bell
+            aria-hidden="true"
+            className="text-muted-foreground h-5 w-5"
+          />
+          <p className="mt-2 text-sm font-medium">No notifications yet</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Updates about your classes and account will appear here.
+          </p>
+        </div>
+      ) : (
+        <ul className="divide-border mt-1 divide-y">
+          {notifications.map((notification) => (
+            <li key={notification.id}>
+              <NotificationRow
+                notification={notification}
+                now={now}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
 
-function NotificationContent({
+function NotificationRow({
   notification,
+  now,
 }: {
-  notification: DashboardNotification;
+  notification: NotificationInboxItem;
+  now: number;
 }) {
-  return (
+  const marker = (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "mt-1 h-3 w-3 shrink-0 rounded-[3px]",
+        markerClass(notification.href),
+      )}
+    />
+  );
+
+  const content = (
     <>
-      <span
-        aria-hidden="true"
-        className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
-      >
-        <Bell className="h-4 w-4" />
+      {marker}
+
+      <span className="min-w-0 flex-1">
+        <span className="text-foreground block text-[13px] font-semibold">
+          {notification.title}
+        </span>
+        {notification.body ? (
+          <span className="text-muted-foreground mt-0.5 block text-xs leading-relaxed">
+            {notification.body}
+          </span>
+        ) : null}
       </span>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-foreground group-hover:text-accent line-clamp-2 text-sm font-medium sm:line-clamp-1">
-          {notification.title}
-        </p>
-        {notification.body ? (
-          <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-relaxed">
-            {notification.body}
-          </p>
-        ) : null}
-        <p className="text-muted-foreground/80 mt-1 text-[11px]">
-          {formatDate(notification.createdAt)}
-        </p>
-      </div>
+      <span className="text-muted-foreground mt-0.5 shrink-0 text-[11px] whitespace-nowrap">
+        {relativeTimeFrom(notification.createdAt, now)}
+      </span>
     </>
+  );
+
+  if (!notification.href) {
+    return <div className="flex items-start gap-3 px-4 py-3">{content}</div>;
+  }
+
+  return (
+    <Link
+      href={notification.href}
+      className="hover:bg-hover focus-visible:outline-accent flex items-start gap-3 px-4 py-3 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
+    >
+      {content}
+    </Link>
   );
 }

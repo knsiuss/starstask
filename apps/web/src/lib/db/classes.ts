@@ -1,8 +1,14 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ClassApplicationStatus,
+  ClassDependencySummary,
   ClassDiscoveryQuery,
+  ClassDuplicateCheckInput,
+  ClassDuplicateMatch,
+  ClassJoinPolicy,
+  ClassLifecycleStatus,
   ClassMembersQuery,
   ClassStatus,
   ClassSubjectCreateInput,
@@ -13,11 +19,13 @@ import type {
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 
 export type ClassListItem = {
   id: string;
   slug: string;
   name: string;
+  class_code: string | null;
   description: string;
   course_name: string;
   institution: string | null;
@@ -32,13 +40,17 @@ export type ClassSummary = {
   id: string;
   slug: string;
   name: string;
+  class_code: string | null;
   description: string;
   course_name: string;
   institution: string | null;
   lecturer_name: string | null;
   semester: string;
   academic_year: string;
-  status: ClassStatus;
+  status: ClassLifecycleStatus;
+  archived_at: string | null;
+  avatar_url: string | null;
+  cover_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -47,10 +59,11 @@ export type MyClassSummary = {
   id: string;
   slug: string;
   name: string;
+  class_code: string | null;
   course_name: string;
   semester: string;
   academic_year: string;
-  status: ClassStatus;
+  status: ClassLifecycleStatus;
   joined_at: string;
   is_admin: boolean;
   subject_count?: number;
@@ -91,6 +104,7 @@ export type ClassApplicationView = {
   applicant_id: string;
   proposed_slug: string;
   proposed_name: string;
+  proposed_class_code: string | null;
   course_name: string;
   institution: string | null;
   lecturer_name: string | null;
@@ -109,6 +123,8 @@ export type ClassApplicationView = {
 
 export type AuditLogView = {
   id: number;
+  actor_id: string | null;
+  actor_name: string | null;
   action: string;
   entity_type: string;
   entity_id: string | null;
@@ -118,10 +134,10 @@ export type AuditLogView = {
 };
 
 const CLASS_COLUMNS =
-  "id, slug, name, description, course_name, institution, lecturer_name, semester, academic_year, status, created_at, updated_at";
+  "id, slug, name, class_code, description, course_name, institution, lecturer_name, semester, academic_year, status, archived_at, avatar_url, cover_url, created_at, updated_at";
 
 const APPLICATION_COLUMNS =
-  "id, applicant_id, proposed_slug, proposed_name, course_name, institution, lecturer_name, semester, academic_year, description, reason, supporting_info, status, reviewed_at, decision_note, created_class_id, created_at, updated_at";
+  "id, applicant_id, proposed_slug, proposed_name, proposed_class_code, course_name, institution, lecturer_name, semester, academic_year, description, reason, supporting_info, status, reviewed_at, decision_note, created_class_id, created_at, updated_at";
 
 type ProfileMap = Map<
   string,
@@ -154,6 +170,7 @@ export async function listClasses(
       id: row.id,
       slug: row.slug,
       name: row.name,
+      class_code: row.class_code,
       description: row.description,
       course_name: row.course_name,
       institution: row.institution,
@@ -202,6 +219,89 @@ export async function getClassById(id: string): Promise<ClassSummary | null> {
   return data;
 }
 
+/**
+ * Classes in the same academic period and institution whose normalized code or
+ * name matches. The result is a warning, never an automatic merge; a platform
+ * admin still decides whether to create another class.
+ */
+export async function findClassDuplicates(
+  input: ClassDuplicateCheckInput,
+): Promise<ClassDuplicateMatch[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase.rpc("find_class_duplicates", {
+    p_name: input.name,
+    p_class_code: input.classCode ?? null,
+    p_academic_year: input.academicYear,
+    p_semester: input.semester,
+    p_institution: input.institution ?? null,
+    p_exclude_class_id: input.excludeClassId ?? null,
+  });
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not check for duplicate classes",
+      error.code,
+    );
+  }
+
+  return (data ?? []).map((row) => ({
+    classId: row.class_id,
+    slug: row.slug,
+    name: row.name,
+    classCode: row.class_code,
+    academicYear: row.academic_year,
+    semester: row.semester,
+    institution: row.institution,
+    status: row.status,
+    codeMatch: row.code_match,
+    nameMatch: row.name_match,
+  }));
+}
+
+/**
+ * Counts every row that depends on a class. Used by the delete confirmation and
+ * by the API before it attempts a permanent delete.
+ */
+export async function getClassDependencies(
+  classId: string,
+): Promise<ClassDependencySummary | null> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase.rpc("get_class_dependencies", {
+    p_class_id: classId,
+  });
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not load the class dependencies",
+      error.code,
+    );
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    classStatus: row.class_status,
+    memberCount: Number(row.member_count),
+    assignmentCount: Number(row.assignment_count),
+    submissionCount: Number(row.submission_count),
+    sessionCount: Number(row.session_count),
+    attendanceCount: Number(row.attendance_count),
+    scheduleCount: Number(row.schedule_count),
+    calendarEventCount: Number(row.calendar_event_count),
+    leaveRequestCount: Number(row.leave_request_count),
+    subjectCount: Number(row.subject_count),
+    invitationCount: Number(row.invitation_count),
+    hasHistory: row.has_history,
+    canDelete: row.can_delete,
+  };
+}
+
 /** Platform-admin predicate for routes that are not scoped to one class. */
 export async function isPlatformAdmin(): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
@@ -214,6 +314,53 @@ export async function isPlatformAdmin(): Promise<boolean> {
   return data === true;
 }
 
+/**
+ * Whether the user administers at least one class. This only decides whether
+ * leader destinations (such as the Action center) are rendered in navigation;
+ * every class-admin route still re-checks the per-class role server-side.
+ */
+export async function isClassAdminAnywhere(userId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_admins")
+    .select("class_id")
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not resolve class admin status",
+      error.code,
+    );
+  }
+
+  return (data ?? []).length > 0;
+}
+
+/**
+ * `join_policy` is granted to signed-in users only, so it stays out of
+ * `CLASS_COLUMNS` and the anonymous class page never reads it.
+ */
+export async function getClassJoinPolicy(
+  classId: string,
+): Promise<ClassJoinPolicy | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("classes")
+    .select("join_policy")
+    .eq("id", classId)
+    .maybeSingle<{ join_policy: ClassJoinPolicy }>();
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not load the class join policy",
+      error.code,
+    );
+  }
+
+  return data?.join_policy ?? null;
+}
+
 export async function listMyClasses(userId: string): Promise<MyClassSummary[]> {
   const supabase = await createSupabaseServerClient();
 
@@ -221,7 +368,7 @@ export async function listMyClasses(userId: string): Promise<MyClassSummary[]> {
     .from("class_members")
     .select(
       `joined_at,
-       classes!class_members_class_id_fkey ( id, slug, name, course_name, semester, academic_year, status )`,
+       classes!class_members_class_id_fkey ( id, slug, name, class_code, course_name, semester, academic_year, status )`,
     )
     .eq("user_id", userId)
     .order("joined_at", { ascending: false })
@@ -250,13 +397,14 @@ export async function listMyClasses(userId: string): Promise<MyClassSummary[]> {
         id: row.classes.id,
         slug: row.classes.slug,
         name: row.classes.name,
+        class_code: row.classes.class_code,
         course_name: row.classes.course_name,
         semester: row.classes.semester,
         academic_year: row.classes.academic_year,
         status: row.classes.status,
         joined_at: row.joined_at,
         is_admin: adminIds.has(row.classes.id),
-        subject_count: subjectCounts.get(row.classes.id) ?? 1,
+        subject_count: subjectCounts.get(row.classes.id) ?? 0,
         admin_name: adminNames.get(row.classes.id) ?? null,
       },
     ];
@@ -267,18 +415,23 @@ export type ClassDirectoryItem = {
   id: string;
   slug: string;
   name: string;
+  class_code: string | null;
   description: string;
   course_name: string;
   institution: string | null;
   lecturer_name: string | null;
   semester: string;
   academic_year: string;
-  status: ClassStatus;
+  status: ClassLifecycleStatus;
+  archived_at: string | null;
   joined_at: string;
   is_admin: boolean;
   /** Published assignments in this class, counted server-side. */
   published_count: number;
-  subject_count?: number;
+  /** Active subjects in this class. */
+  subject_count: number;
+  /** Active members of this class. */
+  member_count: number;
   admin_name?: string | null;
 };
 
@@ -300,7 +453,7 @@ export async function listMyClassDirectory(
     .from("class_members")
     .select(
       `joined_at,
-       classes!class_members_class_id_fkey ( id, slug, name, description, course_name, institution, lecturer_name, semester, academic_year, status )`,
+       classes!class_members_class_id_fkey ( id, slug, name, class_code, description, course_name, institution, lecturer_name, semester, academic_year, status, archived_at )`,
     )
     .eq("user_id", userId)
     .order("joined_at", { ascending: false })
@@ -319,18 +472,20 @@ export async function listMyClassDirectory(
   }
 
   const classIds = memberships.map((membership) => membership.id);
-  const [adminIds, publishedCounts, adminNames, subjectCounts] =
+  const [adminIds, publishedCounts, adminNames, subjectCounts, memberCounts] =
     await Promise.all([
       loadAdminClassIds(classIds, userId),
       countPublishedAssignmentsByClass(classIds),
       loadAdminNamesByClass(classIds),
       countClassSubjects(classIds),
+      countClassMembers(classIds),
     ]);
 
   return memberships.map((membership) => ({
     id: membership.id,
     slug: membership.slug,
     name: membership.name,
+    class_code: membership.class_code,
     description: membership.description,
     course_name: membership.course_name,
     institution: membership.institution,
@@ -338,10 +493,12 @@ export async function listMyClassDirectory(
     semester: membership.semester,
     academic_year: membership.academic_year,
     status: membership.status,
+    archived_at: membership.archived_at,
     joined_at: membership.joined_at,
     is_admin: adminIds.has(membership.id),
     published_count: publishedCounts.get(membership.id) ?? 0,
-    subject_count: subjectCounts.get(membership.id) ?? 1,
+    subject_count: subjectCounts.get(membership.id) ?? 0,
+    member_count: memberCounts.get(membership.id) ?? 0,
     admin_name: adminNames.get(membership.id) ?? null,
   }));
 }
@@ -674,7 +831,7 @@ export async function listAuditLogs(options: {
   let request = supabase
     .from("audit_logs")
     .select(
-      "id, action, entity_type, entity_id, class_id, metadata, created_at",
+      "id, actor_id, action, entity_type, entity_id, class_id, metadata, created_at",
       { count: "exact" },
     );
 
@@ -691,10 +848,18 @@ export async function listAuditLogs(options: {
   }
 
   const total = count ?? 0;
+  const rows = data ?? [];
+  const profiles = await loadProfiles(
+    rows.flatMap((row) => (row.actor_id ? [row.actor_id] : [])),
+  );
 
   return {
-    items: (data ?? []).map((row) => ({
+    items: rows.map((row) => ({
       id: row.id,
+      actor_id: row.actor_id,
+      actor_name: row.actor_id
+        ? (profiles.get(row.actor_id)?.display_name ?? null)
+        : null,
       action: row.action,
       entity_type: row.entity_type,
       entity_id: row.entity_id,
@@ -828,8 +993,55 @@ export async function countClassSubjects(
   const counts = new Map<string, number>();
   results.forEach((result, index) => {
     const classId = classIds[index];
+
+    if (result.error) {
+      throw new DataAccessError(
+        "Could not count class subjects",
+        result.error.code,
+      );
+    }
+
     if (classId) {
-      counts.set(classId, result.count && result.count > 0 ? result.count : 1);
+      // A class with no subjects has zero subjects. Reporting 1 here invented a
+      // statistic that the database never held.
+      counts.set(classId, result.count ?? 0);
+    }
+  });
+
+  return counts;
+}
+
+/** Active members of each class. `class_members` has no inactive rows. */
+async function countClassMembers(
+  classIds: string[],
+): Promise<Map<string, number>> {
+  if (classIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const results = await Promise.all(
+    classIds.map((classId) =>
+      supabase
+        .from("class_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("class_id", classId),
+    ),
+  );
+
+  const counts = new Map<string, number>();
+  results.forEach((result, index) => {
+    const classId = classIds[index];
+
+    if (result.error) {
+      throw new DataAccessError(
+        "Could not count class members",
+        result.error.code,
+      );
+    }
+
+    if (classId) {
+      counts.set(classId, result.count ?? 0);
     }
   });
 
@@ -874,7 +1086,7 @@ export async function listClassSubjects(
           code: null,
           description: classRow.description,
           lecturer_name: classRow.lecturer_name,
-          status: classRow.status,
+          status: classRow.status === "archived" ? "archived" : "active",
           created_at: classRow.created_at,
           updated_at: classRow.updated_at,
           task_count: taskCount.get(classId) ?? 0,
@@ -944,11 +1156,62 @@ export async function getClassSubjectById(
   };
 }
 
+/**
+ * Thrown when a course code is already used by another course in the same
+ * class group. The unique index `class_subjects_class_code_uniq` is the hard
+ * guarantee; this typed error exists so routes can answer 409 with a message
+ * instead of leaking a Postgres constraint failure.
+ */
+export class DuplicateSubjectCodeError extends Error {
+  constructor() {
+    super("A course with this code already exists in this class group");
+    this.name = "DuplicateSubjectCodeError";
+  }
+}
+
+/** Codes are compared trim- and case-insensitively, matching the DB index. */
+function normalizeSubjectCode(code: string): string {
+  return code.trim().toLowerCase();
+}
+
+async function findSubjectWithCode(
+  supabase: SupabaseClient<Database>,
+  classId: string,
+  code: string,
+  excludeSubjectId?: string,
+): Promise<boolean> {
+  const normalized = normalizeSubjectCode(code);
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select("id, code")
+    .eq("class_id", classId)
+    .not("code", "is", null);
+
+  if (error) {
+    throw new DataAccessError("Could not check course codes", error.code);
+  }
+
+  return (data ?? []).some(
+    (row) =>
+      row.id !== excludeSubjectId &&
+      row.code !== null &&
+      normalizeSubjectCode(row.code) === normalized,
+  );
+}
+
 export async function createClassSubject(
   classId: string,
   input: ClassSubjectCreateInput,
 ): Promise<string> {
   const supabase = await createSupabaseServerClient();
+
+  if (input.code) {
+    const taken = await findSubjectWithCode(supabase, classId, input.code);
+
+    if (taken) {
+      throw new DuplicateSubjectCodeError();
+    }
+  }
 
   const { data, error } = await supabase.rpc("create_class_subject", {
     p_class_id: classId,
@@ -959,6 +1222,12 @@ export async function createClassSubject(
   });
 
   if (error || !data) {
+    // The unique index is the race-safe backstop for two admins submitting
+    // the same code at once; surface it as the same friendly failure.
+    if (error?.code === "23505") {
+      throw new DuplicateSubjectCodeError();
+    }
+
     throw new DataAccessError("Could not create class subject", error?.code);
   }
 
@@ -971,6 +1240,25 @@ export async function updateClassSubject(
 ): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
 
+  if (input.code) {
+    const subject = await getClassSubjectById(subjectId);
+
+    if (!subject) {
+      throw new DataAccessError("Could not update class subject", "P0002");
+    }
+
+    const taken = await findSubjectWithCode(
+      supabase,
+      subject.class_id,
+      input.code,
+      subjectId,
+    );
+
+    if (taken) {
+      throw new DuplicateSubjectCodeError();
+    }
+  }
+
   const { data, error } = await supabase.rpc("update_class_subject", {
     p_subject_id: subjectId,
     p_name: input.name ?? "",
@@ -981,6 +1269,10 @@ export async function updateClassSubject(
   });
 
   if (error) {
+    if (error.code === "23505") {
+      throw new DuplicateSubjectCodeError();
+    }
+
     throw new DataAccessError("Could not update class subject", error.code);
   }
 
@@ -1054,5 +1346,207 @@ export async function listClassMembersPaginated(
     page: options.page,
     pageSize: options.pageSize,
     totalPages: Math.max(1, Math.ceil(total / options.pageSize)),
+  };
+}
+
+/**
+ * Points the class at a new profile image and/or cover image.
+ *
+ * Both values are written together, so the caller passes the full desired
+ * state: a `null` clears that image. Authorization lives in the database
+ * function, which requires class admin rights for this class.
+ */
+export async function setClassMedia(
+  classId: string,
+  media: { avatarUrl: string | null; coverUrl: string | null },
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("set_class_media", {
+    p_class_id: classId,
+    p_avatar_url: media.avatarUrl,
+    p_cover_url: media.coverUrl,
+  });
+
+  if (error) {
+    throw new DataAccessError("Could not save the class image", error.code);
+  }
+}
+
+/** One course inside a class group, or null when it does not belong to it. */
+export async function getClassSubject(
+  classId: string,
+  subjectId: string,
+): Promise<ClassSubjectView | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select(
+      "id, class_id, course_id, name, code, description, lecturer_name, status, created_at, updated_at",
+    )
+    .eq("id", subjectId)
+    .eq("class_id", classId)
+    .maybeSingle<ClassSubjectView>();
+
+  if (error) {
+    throw new DataAccessError("Could not load the course", error.code);
+  }
+
+  return data;
+}
+
+/**
+ * Published assignment counts keyed by course id.
+ *
+ * One grouped query instead of a count per course, because the courses page
+ * needs the number for every row at once.
+ */
+export async function countPublishedAssignmentsBySubject(
+  classId: string,
+): Promise<Map<string, number>> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("assignments")
+    .select("subject_id")
+    .eq("class_id", classId)
+    .eq("status", "published")
+    .not("subject_id", "is", null);
+
+  if (error) {
+    throw new DataAccessError("Could not count course assignments", error.code);
+  }
+
+  const counts = new Map<string, number>();
+
+  for (const row of data ?? []) {
+    if (!row.subject_id) {
+      continue;
+    }
+
+    counts.set(row.subject_id, (counts.get(row.subject_id) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+export type CourseContentType = "lecturer_assignment" | "class_announcement";
+
+export type CourseAssignmentSummary = {
+  id: string;
+  title: string;
+  description: string;
+  deadline: string | null;
+  status: string;
+  content_type: CourseContentType;
+  source_label: string | null;
+  created_at: string;
+  published_at: string | null;
+  attachment_count: number;
+};
+
+/**
+ * Published content that belongs to one course.
+ *
+ * Filtering on both ids keeps a course page from ever showing work that belongs
+ * to a sibling course in the same class group, and `contentType` separates the
+ * course's assignments from its announcements.
+ */
+export async function listCourseAssignments(
+  classId: string,
+  subjectId: string,
+  options?: { contentType?: CourseContentType; limit?: number },
+): Promise<CourseAssignmentSummary[]> {
+  const supabase = await createSupabaseServerClient();
+
+  let query = supabase
+    .from("assignments")
+    .select(
+      "id, title, description, deadline, status, content_type, source_label, created_at, published_at, assignment_attachments ( id )",
+    )
+    .eq("class_id", classId)
+    .eq("subject_id", subjectId)
+    .eq("status", "published");
+
+  if (options?.contentType) {
+    query = query.eq("content_type", options.contentType);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(options?.limit ?? 20);
+
+  if (error) {
+    throw new DataAccessError("Could not load course assignments", error.code);
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    deadline: row.deadline,
+    status: row.status,
+    content_type: row.content_type as CourseContentType,
+    source_label: row.source_label,
+    created_at: row.created_at,
+    published_at: row.published_at,
+    attachment_count: row.assignment_attachments.length,
+  }));
+}
+
+export type CourseContentCounts = {
+  assignments: number;
+  announcements: number;
+  materials: number;
+};
+
+/** Published, course-scoped counts for the course overview. */
+export async function countCourseContent(
+  classId: string,
+  subjectId: string,
+): Promise<CourseContentCounts> {
+  const supabase = await createSupabaseServerClient();
+
+  const [assignments, materials] = await Promise.all([
+    supabase
+      .from("assignments")
+      .select("content_type")
+      .eq("class_id", classId)
+      .eq("subject_id", subjectId)
+      .eq("status", "published"),
+    supabase
+      .from("course_materials")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", classId)
+      .eq("subject_id", subjectId),
+  ]);
+
+  if (assignments.error) {
+    throw new DataAccessError(
+      "Could not count course assignments",
+      assignments.error.code,
+    );
+  }
+
+  if (materials.error) {
+    throw new DataAccessError(
+      "Could not count course materials",
+      materials.error.code,
+    );
+  }
+
+  let assignmentCount = 0;
+  let announcementCount = 0;
+
+  for (const row of assignments.data ?? []) {
+    if (row.content_type === "class_announcement") {
+      announcementCount += 1;
+    } else {
+      assignmentCount += 1;
+    }
+  }
+
+  return {
+    assignments: assignmentCount,
+    announcements: announcementCount,
+    materials: materials.count ?? 0,
   };
 }

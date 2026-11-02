@@ -39,6 +39,7 @@ export async function POST(request: Request, context: RouteContext) {
       identifier: session.user.id,
       limit: 10,
       windowSeconds: 60,
+      onBackendFailure: "closed",
     });
 
     const body = (await request.json()) as unknown;

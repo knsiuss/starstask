@@ -39,6 +39,24 @@ export type DeveloperMetrics = {
   totalAssignments: number;
 };
 
+export type DeveloperClassMetric = {
+  classId: string;
+  name: string;
+  classCode: string | null;
+  status: "draft" | "active" | "archived";
+  academicYear: string;
+  semester: string;
+  memberCount: number;
+  adminCount: number;
+  publishedCount: number;
+  pendingReviewCount: number;
+  sessionCount: number;
+  attendanceCount: number;
+  leaveRequestCount: number;
+  invitationCount: number;
+  lastActivityAt: string;
+};
+
 export type DeveloperHealth = {
   database: { ok: boolean; latencyMs: number | null };
   storage: { ok: boolean; latencyMs: number | null };
@@ -133,6 +151,42 @@ export async function getDeveloperMetrics(): Promise<DeveloperMetrics> {
     activeUsers30: Number(row.active_users_30),
     totalAssignments: Number(row.total_assignments),
   };
+}
+
+export async function listDeveloperClassMetrics(
+  limit = 200,
+): Promise<DeveloperClassMetric[]> {
+  requireServiceRole();
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin.rpc("developer_class_metrics", {
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw new DataAccessError("Could not load class metrics", error.code);
+  }
+
+  return (data ?? []).map((row) => ({
+    classId: row.class_id,
+    name: row.name,
+    classCode: row.class_code,
+    status:
+      row.status === "draft" || row.status === "archived"
+        ? row.status
+        : "active",
+    academicYear: row.academic_year,
+    semester: row.semester,
+    memberCount: Number(row.member_count),
+    adminCount: Number(row.admin_count),
+    publishedCount: Number(row.published_count),
+    pendingReviewCount: Number(row.pending_review_count),
+    sessionCount: Number(row.session_count),
+    attendanceCount: Number(row.attendance_count),
+    leaveRequestCount: Number(row.leave_request_count),
+    invitationCount: Number(row.invitation_count),
+    lastActivityAt: row.last_activity_at,
+  }));
 }
 
 export async function listRecentAuthEvents(): Promise<DeveloperAuthEvent[]> {

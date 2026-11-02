@@ -137,12 +137,15 @@ export default async function ApplicationPage({
         >
           <p className="font-medium">Class approved</p>
           <p className="mt-1">
-            {createdClass.name} is live.{" "}
+            {createdClass.name}{" "}
+            {createdClass.status === "draft"
+              ? "was created as a draft and stays hidden from students until a class admin activates it."
+              : "is live."}{" "}
             <Link
               href={`/classes/${createdClass.slug}`}
               className="underline"
             >
-              View the public class page
+              Open the class page
             </Link>
             .
           </p>
@@ -161,6 +164,10 @@ export default async function ApplicationPage({
         </h2>
 
         <dl className="border-border mt-3 grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2">
+          <Detail
+            label="Class code"
+            value={application.proposed_class_code ?? "Not specified"}
+          />
           <Detail
             label="Course"
             value={application.course_name}
@@ -279,6 +286,7 @@ export default async function ApplicationPage({
               initialValues={{
                 proposedName: application.proposed_name,
                 proposedSlug: application.proposed_slug,
+                proposedClassCode: application.proposed_class_code ?? "",
                 courseName: application.course_name,
                 institution: application.institution ?? "",
                 lecturerName: application.lecturer_name ?? "",

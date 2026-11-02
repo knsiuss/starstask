@@ -79,6 +79,8 @@ export function buildReminderPayload(
 const STATIC_SAFE_PATHS = new Set([
   "/dashboard",
   "/dashboard/review",
+  // The page now redirects to /assignments; database events still emit this
+  // path, so dropping it would silently skip their notifications.
   "/my-assignments",
   "/sessions",
   "/settings/calendar",

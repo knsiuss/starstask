@@ -1,6 +1,7 @@
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { disconnectCalendar } from "@/features/integrations/google-calendar-service";
@@ -16,6 +17,10 @@ export const dynamic = "force-dynamic";
  */
 export async function POST() {
   try {
+    if (!isFeatureEnabled("calendarSync")) {
+      throw notFound();
+    }
+
     if (!isSupabaseConfigured()) {
       throw serviceUnavailable();
     }

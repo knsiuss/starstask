@@ -43,10 +43,14 @@ export type AssignmentDetail = {
   semester: string | null;
   academic_year: string | null;
   assignment_type: string | null;
+  content_type: string;
+  source_label: string | null;
+  drive_url: string | null;
   deadline: string | null;
   tags: string[];
   reference_urls: string[];
   status: AssignmentStatus;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
   author_display_name: string;
@@ -72,6 +76,10 @@ export type CourseOption = {
   code: string | null;
 };
 
+export type MemberCourseOption = CourseOption & {
+  department: string | null;
+};
+
 export type PaginatedResult<T> = {
   items: T[];
   total: number;
@@ -90,10 +98,14 @@ type AssignmentRecord = {
   semester: string | null;
   academic_year: string | null;
   assignment_type: string | null;
+  content_type: string;
+  source_label: string | null;
+  drive_url: string | null;
   deadline: string | null;
   tags: string[];
   reference_urls: Json;
   status: AssignmentStatus;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
   courses: {
@@ -114,10 +126,14 @@ const ASSIGNMENT_DETAIL_SELECT = `
   semester,
   academic_year,
   assignment_type,
+  content_type,
+  source_label,
+  drive_url,
   deadline,
   tags,
   reference_urls,
   status,
+  published_at,
   created_at,
   updated_at,
   courses!assignments_course_id_fkey ( name, code, department ),
@@ -261,19 +277,143 @@ export async function getMyAssignments(
   };
 }
 
-export async function getCourseOptions(): Promise<CourseOption[]> {
+export type OwnedAssignmentTemplate = {
+  id: string;
+  title: string;
+  description: string;
+  courseName: string;
+  courseCode: string | null;
+  department: string | null;
+  lecturerName: string | null;
+  assignmentType: string | null;
+  tags: string[];
+  referenceUrls: string[];
+};
+
+type OwnedTemplateRecord = {
+  id: string;
+  title: string;
+  description: string;
+  lecturer_name: string | null;
+  assignment_type: string | null;
+  tags: string[];
+  reference_urls: Json;
+  courses: {
+    name: string;
+    code: string | null;
+    department: string | null;
+  } | null;
+};
+
+/**
+ * Loads the caller's own recent assignments for the starter kit.
+ *
+ * Only rows the caller owns are read, so the picker never exposes another
+ * student's brief.
+ */
+export async function listOwnedAssignmentTemplates(
+  userId: string,
+  limit = 5,
+): Promise<OwnedAssignmentTemplate[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("courses")
-    .select("id, name, code")
-    .order("name", { ascending: true })
-    .limit(200);
+    .from("assignments")
+    .select(
+      "id, title, description, lecturer_name, assignment_type, tags, reference_urls, courses!assignments_course_id_fkey ( name, code, department )",
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .returns<OwnedTemplateRecord[]>();
 
   if (error) {
-    throw new DataAccessError("Could not load courses", error.code);
+    throw new DataAccessError(
+      "Could not load your previous assignments",
+      error.code,
+    );
   }
 
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    courseName: row.courses?.name ?? "Unknown course",
+    courseCode: row.courses?.code ?? null,
+    department: row.courses?.department ?? null,
+    lecturerName: row.lecturer_name,
+    assignmentType: row.assignment_type,
+    tags: row.tags,
+    referenceUrls: parseReferenceUrls(row.reference_urls),
+  }));
+}
+
+/** Courses of the classes the user belongs to; see `getMemberCourseOptions`. */
+const MEMBER_CLASS_LIMIT = 200;
+
+/**
+ * Courses a member may pick when contributing an assignment.
+ *
+ * Courses live inside the class (`class_subjects`), so the picker offers those
+ * records instead of free text: a typed name would fork one course into several
+ * spellings and detach the submission from the class it came from.
+ */
+export async function getMemberCourseOptions(
+  userId: string,
+): Promise<MemberCourseOption[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from("class_members")
+    .select("class_id")
+    .eq("user_id", userId)
+    .limit(MEMBER_CLASS_LIMIT);
+
+  if (membershipError) {
+    throw new DataAccessError(
+      "Could not load your classes",
+      membershipError.code,
+    );
+  }
+
+  const classIds = (memberships ?? []).map((row) => row.class_id);
+
+  if (classIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select(
+      "id, name, code, courses!class_subjects_course_id_fkey ( department )",
+    )
+    .in("class_id", classIds)
+    .eq("status", "active");
+
+  if (error) {
+    throw new DataAccessError("Could not load your courses", error.code);
+  }
+
+  const seenNames = new Set<string>();
+  const options: MemberCourseOption[] = [];
+
+  for (const subject of data ?? []) {
+    // Two classes can offer the same course; the picker shows it once.
+    const key = subject.name.trim().toLowerCase();
+
+    if (seenNames.has(key)) {
+      continue;
+    }
+
+    seenNames.add(key);
+    options.push({
+      id: subject.id,
+      name: subject.name,
+      code: subject.code,
+      department: subject.courses?.department ?? null,
+    });
+  }
+
+  return options.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export async function getSemesterOptions(): Promise<string[]> {
@@ -516,10 +656,14 @@ function toAssignmentDetail(
     semester: record.semester,
     academic_year: record.academic_year,
     assignment_type: record.assignment_type,
+    content_type: record.content_type,
+    source_label: record.source_label,
+    drive_url: record.drive_url,
     deadline: record.deadline,
     tags: record.tags,
     reference_urls: parseReferenceUrls(record.reference_urls),
     status: record.status,
+    published_at: record.published_at,
     created_at: record.created_at,
     updated_at: record.updated_at,
     author_display_name: profile?.display_name ?? "StarsTask member",

@@ -6,7 +6,8 @@ import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
 import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
-import { isPlatformAdmin } from "@/lib/db/classes";
+import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
+import { countUnreadNotifications } from "@/lib/db/notifications";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
 export default async function WorkspaceLayout({
@@ -28,21 +29,37 @@ export default async function WorkspaceLayout({
   const displayName = session?.profile?.display_name ?? "StarsTask member";
   // Admin navigation is cosmetic only; every admin route re-checks the role.
   const platformAdmin = session ? await isPlatformAdmin() : false;
+  const classAdmin = session
+    ? await isClassAdminAnywhere(session.user.id)
+    : false;
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;
+  // A bell badge is presentation only; a count failure must not take the whole
+  // workspace down.
+  const unreadNotificationCount = session
+    ? await countUnreadNotifications().catch(() => 0)
+    : 0;
 
   return (
     <div className="bg-background lg:flex lg:min-h-dvh">
-      <WorkspaceSidebar isAuthenticated={isAuthenticated} />
+      <WorkspaceSidebar
+        isAuthenticated={isAuthenticated}
+        isClassAdmin={classAdmin}
+        displayName={displayName}
+        email={session?.user.email ?? null}
+        avatarUrl={session?.profile?.avatar_url ?? null}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <WorkspaceTopbar
           isAuthenticated={isAuthenticated}
           isPlatformAdmin={platformAdmin}
           isDeveloper={developer}
+          isClassAdmin={classAdmin}
           displayName={displayName}
           avatarUrl={session?.profile?.avatar_url ?? null}
+          unreadNotificationCount={unreadNotificationCount}
         />
         <main
           id="main-content"

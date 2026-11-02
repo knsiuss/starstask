@@ -24,10 +24,25 @@ export async function updateClassMetadata(
     p_academic_year: input.academicYear,
     p_institution: input.institution ?? null,
     p_lecturer_name: input.lecturerName ?? null,
+    p_class_code: input.classCode ?? null,
   });
 
   if (error) {
     throw toClassApiError(error, "Could not update the class.");
+  }
+
+  if (input.joinPolicy) {
+    const { error: policyError } = await supabase.rpc("set_class_join_policy", {
+      p_class_id: classId,
+      p_policy: input.joinPolicy,
+    });
+
+    if (policyError) {
+      throw toClassApiError(
+        policyError,
+        "Could not change how students join the class.",
+      );
+    }
   }
 }
 
@@ -48,11 +63,12 @@ export async function setClassStatus(
 }
 
 /**
- * Deletes a class and everything that belongs to it.
+ * Permanently deletes a class only when it has no academic history.
  *
- * `delete_class` archives the class's published assignments first, because the
- * foreign key only nulls their `class_id`; leaving them published would keep the
- * content public with no class to moderate it.
+ * The database function counts members, assignments, submissions, sessions,
+ * attendance, schedules, leave requests, subjects, and invitations. Anything
+ * beyond a draft or an empty class makes the call fail, so the caller must
+ * archive instead of erasing student records.
  */
 export async function deleteClass(classId: string): Promise<void> {
   const supabase = await createSupabaseServerClient();

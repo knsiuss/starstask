@@ -213,6 +213,8 @@ async function countEvidence(
 const STORED_STATUS_MAP: Record<string, LeaveRequestStatus> = {
   draft: "draft",
   submitted: "submitted",
+  approved: "approved",
+  rejected: "rejected",
   forwarded: "forwarded",
   cancelled: "cancelled",
   needs_revision: "submitted",
@@ -360,6 +362,24 @@ export function listLeaveRequestsForStudent(
   filters: LeaveListFilters,
 ): Promise<PaginatedResult<LeaveRequestSummary>> {
   return listLeaveRequests({ ...filters, studentId });
+}
+
+/** Requests still waiting for a class admin's decision. */
+export async function countPendingLeaveRequests(
+  studentId: string,
+): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const { count, error } = await supabase
+    .from("leave_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .eq("status", "submitted");
+
+  if (error) {
+    throw new DataAccessError("Could not count pending absences", error.code);
+  }
+
+  return count ?? 0;
 }
 
 /** The reviewer queue for one class. */
@@ -557,9 +577,9 @@ export async function listLeaveForwardings(
  * Rows for a CSV or PDF export.
  *
  * Only requests that have left `draft` are eligible: a draft is unfinished and
- * the student has not asked for anything yet. `forwarded`, `submitted`, and
- * `cancelled` are all included so the report can distinguish them, and the
- * status column keeps that visible instead of implying an approval.
+ * the student has not asked for anything yet. Every status after `draft` is
+ * included so the report can distinguish them, and the status column keeps a
+ * decision separate from a forwarding hand-off.
  */
 export async function listLeaveReportRows(options: {
   classId: string;
@@ -574,7 +594,13 @@ export async function listLeaveReportRows(options: {
       "id, reference, student_id, leave_start_date, leave_end_date, document_issue_date, reason_category, submitted_at, status, cancellation_note",
     )
     .eq("class_id", options.classId)
-    .in("status", ["submitted", "forwarded", "cancelled"])
+    .in("status", [
+      "submitted",
+      "approved",
+      "rejected",
+      "forwarded",
+      "cancelled",
+    ])
     .order("leave_start_date", { ascending: true })
     .limit(500);
 

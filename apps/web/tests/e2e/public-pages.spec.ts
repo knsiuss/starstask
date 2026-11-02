@@ -25,17 +25,14 @@ test.describe("public pages", () => {
     await expect(page.getByRole("contentinfo")).toBeVisible();
   });
 
-  test("the header search link reaches assignment search", async ({ page }) => {
+  test("the header exposes assignment search", async ({ page }) => {
     await page.goto("/");
 
-    await page
-      .getByRole("banner")
-      .getByRole("link", { name: "Search assignments" })
-      .click();
-
-    await expect(page).toHaveURL(
-      isConfigured ? /\/login\?next=%2Fassignments/ : /\/assignments/,
-    );
+    await expect(
+      page
+        .getByRole("banner")
+        .getByRole("link", { name: "Search assignments" }),
+    ).toHaveAttribute("href", "/assignments");
   });
 
   test("subject cards link to assignment search", async ({ page }) => {
@@ -82,6 +79,35 @@ test.describe("public pages", () => {
         page.getByText("Supabase is not configured yet."),
       ).toBeVisible();
     }
+  });
+
+  test("privacy and terms pages are public and linked from the footer", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const footer = page.getByRole("contentinfo");
+    await expect(footer.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
+    await expect(footer.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+
+    await page.goto("/privacy");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Privacy" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/does not yet offer self-service account deletion/i),
+    ).toBeVisible();
+
+    await page.goto("/terms");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Terms of use" }),
+    ).toBeVisible();
   });
 
   test("robots.txt advertises the sitemap", async ({ request }) => {
@@ -136,18 +162,6 @@ test.describe("protected actions", () => {
     } else {
       await expect(
         page.getByText("Supabase is not configured yet.").first(),
-      ).toBeVisible();
-    }
-  });
-
-  test("my-assignments requires a session", async ({ page }) => {
-    await page.goto("/my-assignments");
-
-    if (isConfigured) {
-      await expect(page).toHaveURL(/\/login\?next=%2Fmy-assignments/);
-    } else {
-      await expect(
-        page.getByRole("heading", { level: 1, name: "My assignments" }),
       ).toBeVisible();
     }
   });

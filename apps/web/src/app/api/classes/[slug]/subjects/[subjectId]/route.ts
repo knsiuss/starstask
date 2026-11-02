@@ -5,9 +5,11 @@ import {
 } from "@starstask/contracts";
 
 import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
-import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { apiError, apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { DataAccessError } from "@/lib/db/assignments";
 import {
   deleteClassSubject,
+  DuplicateSubjectCodeError,
   getClassSubjectById,
   updateClassSubject,
 } from "@/lib/db/classes";
@@ -91,7 +93,15 @@ export async function PATCH(
 
     return apiSuccess({ updated: true });
   } catch (error) {
-    return handleRouteError(error);
+    return handleRouteError(
+      error instanceof DuplicateSubjectCodeError
+        ? new ApiError(
+            409,
+            "course_code_taken",
+            "A course with this code already exists in this class group.",
+          )
+        : error,
+    );
   }
 }
 
@@ -135,6 +145,14 @@ export async function DELETE(
 
     return apiSuccess({ deleted: true });
   } catch (error) {
+    if (error instanceof DataAccessError && error.code === "23503") {
+      return apiError(
+        409,
+        "course_has_records",
+        "This course has academic records. Archive it instead of deleting it.",
+      );
+    }
+
     return handleRouteError(error);
   }
 }

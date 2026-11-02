@@ -3,12 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { ClassDirectoryList } from "@/components/classes/class-directory-card";
+import { ClassDirectoryList } from "@/components/classes/class-directory-list";
 import {
   EmptyClassDirectory,
   EmptyClassSearch,
 } from "@/components/classes/class-directory-empty";
 import { ClassDirectoryToolbar } from "@/components/classes/class-directory-toolbar";
+import { ClassDirectoryViewToggle } from "@/components/classes/class-directory-view-toggle";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,18 @@ import {
   classDirectoryQuerySchema,
   type ClassDirectoryQuery,
 } from "@starstask/contracts";
+import { formatCount, pluralize } from "@starstask/shared";
 
 export const metadata: Metadata = {
   title: "My Classes",
-  description: "All your enrolled courses in one place.",
+  description: "All your enrolled class groups in one place.",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
+
+const pageContainer =
+  "mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10";
 
 type MyClassesPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -42,8 +47,8 @@ export default async function MyClassesPage({
 }: MyClassesPageProps) {
   if (!isSupabaseConfigured()) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-        <h1 className="text-3xl font-semibold tracking-tight">My Classes</h1>
+      <div className={pageContainer}>
+        <h1 className="text-2xl font-semibold tracking-tight">My Classes</h1>
         <div className="mt-6">
           <SetupNotice />
         </div>
@@ -64,7 +69,7 @@ export default async function MyClassesPage({
 
   if (!parsed.success) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div className={pageContainer}>
         <Alert variant="error">
           <p className="font-medium">Those filters are not valid.</p>
           <p className="mt-1">
@@ -86,31 +91,31 @@ export default async function MyClassesPage({
   const semesters = [
     ...new Set(classes.map((classItem) => classItem.semester)),
   ].sort((left, right) => left.localeCompare(right));
+  const academicYears = [
+    ...new Set(classes.map((classItem) => classItem.academic_year)),
+  ].sort((left, right) => right.localeCompare(left));
   const visible = applyDirectoryQuery(classes, query);
-  const hasFilters = Boolean(query.search || query.semester);
+  const hasFilters = Boolean(
+    query.search ||
+    query.semester ||
+    query.academicYear ||
+    query.status === "archived",
+  );
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+    <div className={pageContainer}>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
-            Classes
-          </p>
-          <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
-            My Classes
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">My Classes</h1>
           <p className="text-muted-foreground mt-1.5 text-sm">
-            All your enrolled courses in one place.
+            All your enrolled class groups in one place.
           </p>
         </div>
 
-        {/* The empty state carries its own primary action, so a header
-            action here would be a second competing button. */}
+        {/* The empty state carries its own primary action, so a header action
+            here would be a second competing button. */}
         {classes.length > 0 ? (
-          <Button
-            asChild
-            size="lg"
-          >
+          <Button asChild>
             <Link href="/classes/join">
               <PlusCircle
                 aria-hidden="true"
@@ -127,12 +132,24 @@ export default async function MyClassesPage({
           <ClassDirectoryToolbar
             query={query}
             semesters={semesters}
+            academicYears={academicYears}
             hasFilters={hasFilters}
           />
         </div>
       ) : null}
 
-      <div className="mt-6">
+      {classes.length > 0 ? (
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <p className="text-muted-foreground text-sm">
+            {formatCount(visible.length)}{" "}
+            {pluralize(visible.length, "class group")}
+            {hasFilters ? ` of ${formatCount(classes.length)}` : ""}
+          </p>
+          <ClassDirectoryViewToggle query={query} />
+        </div>
+      ) : null}
+
+      <div className="mt-4">
         {classes.length === 0 ? (
           <EmptyClassDirectory />
         ) : visible.length === 0 ? (
@@ -159,7 +176,19 @@ function applyDirectoryQuery(
   const term = query.search?.toLocaleLowerCase() ?? null;
 
   const filtered = classes.filter((classItem) => {
+    if (query.status === "archived") {
+      if (classItem.status !== "archived") {
+        return false;
+      }
+    } else if (classItem.status === "archived") {
+      return false;
+    }
+
     if (query.semester && classItem.semester !== query.semester) {
+      return false;
+    }
+
+    if (query.academicYear && classItem.academic_year !== query.academicYear) {
       return false;
     }
 
@@ -167,9 +196,13 @@ function applyDirectoryQuery(
       return true;
     }
 
+    // The class code and the stable slug are what students actually quote to
+    // each other, so both have to be searchable alongside the display name.
     return (
       classItem.name.toLocaleLowerCase().includes(term) ||
-      classItem.course_name.toLocaleLowerCase().includes(term)
+      classItem.course_name.toLocaleLowerCase().includes(term) ||
+      classItem.slug.toLocaleLowerCase().includes(term) ||
+      (classItem.class_code?.toLocaleLowerCase().includes(term) ?? false)
     );
   });
 

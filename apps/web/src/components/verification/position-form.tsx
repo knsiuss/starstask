@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -15,6 +15,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useUnsavedChanges } from "@/lib/hooks/use-unsaved-changes";
 
 /**
  * Records what the student says they are.
@@ -28,12 +29,15 @@ export function PositionForm({
   initialPosition: DeclaredPosition;
 }) {
   const router = useRouter();
+  const [isEditing, setIsEditing] = React.useState(false);
   const [selected, setSelected] =
     React.useState<DeclaredPosition>(initialPosition);
   const [saved, setSaved] = React.useState<DeclaredPosition>(initialPosition);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [message, setMessage] = React.useState<string | null>(null);
+  const [justSaved, setJustSaved] = React.useState(false);
+
+  useUnsavedChanges(isEditing && selected !== saved);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,7 +47,6 @@ export function PositionForm({
     }
 
     setError(null);
-    setMessage(null);
 
     const parsed = declaredPositionUpdateSchema.safeParse({
       position: selected,
@@ -73,8 +76,11 @@ export function PositionForm({
         return;
       }
 
-      setSaved(parsed.data.position);
-      setMessage("Position saved.");
+      const next = body?.data?.position ?? parsed.data.position;
+      setSaved(next);
+      setSelected(next);
+      setIsEditing(false);
+      setJustSaved(true);
       router.refresh();
     } catch {
       setError("Network error. Check your connection and try again.");
@@ -83,29 +89,44 @@ export function PositionForm({
     }
   }
 
+  if (!isEditing) {
+    return (
+      <div className="border-border grid gap-1 border-t px-5 py-3.5 sm:grid-cols-[168px_minmax(0,1fr)] sm:items-baseline sm:gap-5">
+        <p className="text-muted-foreground text-sm">Declared position</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm">{DECLARED_POSITION_LABELS[saved]}</p>
+            {justSaved ? (
+              <p className="text-success mt-1 text-xs">Position saved.</p>
+            ) : null}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setJustSaved(false);
+              setIsEditing(true);
+            }}
+          >
+            <Pencil
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+            Change
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form
       onSubmit={save}
-      className="border-border bg-surface rounded-xl border p-5"
+      noValidate
+      className="border-border space-y-3 border-t px-5 py-4"
     >
-      <div className="flex items-start gap-3">
-        <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-          <ShieldCheck
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-        </span>
-        <div>
-          <h2 className="text-base font-semibold">Your position</h2>
-          <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-            Choose the position you hold in your class. This only records what
-            you declare — to get representative access, claim your class below
-            while review is temporarily disabled.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 max-w-sm space-y-1.5">
+      <div className="max-w-sm space-y-1.5">
         <Label htmlFor="declared-position">Position</Label>
         <Select
           id="declared-position"
@@ -126,45 +147,36 @@ export function PositionForm({
         </Select>
       </div>
 
-      {error ? (
-        <Alert
-          variant="error"
-          className="mt-4"
-        >
-          {error}
-        </Alert>
-      ) : null}
+      {error ? <Alert variant="error">{error}</Alert> : null}
 
-      {message ? (
-        <Alert
-          variant="success"
-          className="mt-4"
-        >
-          {message}
-        </Alert>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           type="submit"
+          size="sm"
           disabled={busy || selected === saved}
+          aria-busy={busy}
         >
           {busy ? (
             <Loader2
               aria-hidden="true"
-              className="h-4 w-4 animate-spin"
+              className="h-3.5 w-3.5 animate-spin"
             />
-          ) : (
-            <CheckCircle2
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-          )}
-          Save position
+          ) : null}
+          {busy ? "Saving..." : "Save position"}
         </Button>
-        <span className="text-muted-foreground text-xs">
-          Changing this never creates, changes, or removes a class admin role.
-        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            setSelected(saved);
+            setError(null);
+            setIsEditing(false);
+          }}
+        >
+          Cancel
+        </Button>
       </div>
     </form>
   );

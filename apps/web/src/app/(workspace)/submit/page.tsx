@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { AssignmentForm } from "@/components/forms/assignment-form";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { getSessionUser } from "@/lib/auth/session";
-import { getCourseOptions } from "@/lib/db/assignments";
+import {
+  getMemberCourseOptions,
+  listOwnedAssignmentTemplates,
+} from "@/lib/db/assignments";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 
@@ -36,7 +39,10 @@ export default async function SubmitAssignmentPage() {
     redirect(buildLoginPath("/submit"));
   }
 
-  const courses = await getCourseOptions();
+  const [courses, previousAssignments] = await Promise.all([
+    getMemberCourseOptions(session.user.id),
+    listOwnedAssignmentTemplates(session.user.id).catch(() => []),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -51,10 +57,8 @@ export default async function SubmitAssignmentPage() {
       <div className="mt-8">
         <AssignmentForm
           mode="create"
-          courseOptions={courses.map((course) => ({
-            name: course.name,
-            code: course.code,
-          }))}
+          courseOptions={courses}
+          previousAssignments={previousAssignments}
           initialValues={{
             title: "",
             description: "",

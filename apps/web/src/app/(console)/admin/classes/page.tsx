@@ -73,7 +73,11 @@ export default async function AdminClassesPage({
   const query = parsed.data;
   const result = await listPlatformClasses(query);
 
-  const hasActiveFilters = Boolean(query.search) || query.status !== "all";
+  const hasActiveFilters =
+    Boolean(query.search) ||
+    Boolean(query.academicYear) ||
+    Boolean(query.semester) ||
+    query.status !== "all";
 
   return (
     <div>
@@ -94,7 +98,12 @@ export default async function AdminClassesPage({
 
       <div className="mt-6">
         <AdminClassFilters
-          values={{ search: query.search, status: query.status }}
+          values={{
+            search: query.search,
+            status: query.status,
+            academicYear: query.academicYear,
+            semester: query.semester,
+          }}
         />
       </div>
 
@@ -176,6 +185,12 @@ export default async function AdminClassesPage({
                   </th>
                   <th
                     scope="col"
+                    className="px-4 py-2.5 text-right font-medium"
+                  >
+                    Subjects
+                  </th>
+                  <th
+                    scope="col"
                     className="px-4 py-2.5 font-medium"
                   >
                     Class admins
@@ -214,6 +229,7 @@ export default async function AdminClassesPage({
                         {item.name}
                       </Link>
                       <p className="text-muted-foreground mt-0.5 truncate text-xs">
+                        {item.classCode ? `${item.classCode} · ` : ""}
                         {item.institution ?? "Institution not specified"} · /
                         {item.slug}
                       </p>
@@ -226,6 +242,9 @@ export default async function AdminClassesPage({
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       {item.memberCount}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {item.subjectCount}
                     </td>
                     <td className="max-w-[220px] px-4 py-3 text-xs">
                       {item.adminNames.length === 0 ? (
@@ -281,6 +300,8 @@ export default async function AdminClassesPage({
         params={{
           search: query.search,
           status: query.status === "all" ? undefined : query.status,
+          academicYear: query.academicYear,
+          semester: query.semester,
           pageSize: String(query.pageSize),
         }}
       />

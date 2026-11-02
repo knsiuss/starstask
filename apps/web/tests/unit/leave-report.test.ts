@@ -122,13 +122,50 @@ describe("buildSummaryPdf", () => {
     expect(text).toContain("11 Mar 2026");
   });
 
-  it("never presents forwarding as an approval", async () => {
+  it("never presents forwarding as a decision", async () => {
     const text = await textOf(await buildSummaryPdf(reportInput(ROWS)));
 
     expect(text).toContain("Forwarded");
-    expect(text).toContain("not an approval record");
+    expect(text).toContain("hand-off, not a decision");
     expect(text).not.toContain("Rejected");
     expect(text).not.toContain("Approved");
+  });
+
+  it("prints an approved or rejected status", async () => {
+    const text = await textOf(
+      await buildSummaryPdf(
+        reportInput([
+          ...ROWS,
+          {
+            id: "44444444-4444-4444-8444-444444444444",
+            reference: "LR-DDDD77778888",
+            studentName: "Dewi Lestari",
+            leaveStartDate: "2026-04-15",
+            leaveEndDate: "2026-04-15",
+            documentIssueDate: null,
+            reasonCategory: "illness",
+            submittedAt: "2026-04-14T02:00:00.000Z",
+            status: "approved",
+            cancellationNote: null,
+          },
+          {
+            id: "55555555-5555-4555-8555-555555555555",
+            reference: "LR-EEEE99990000",
+            studentName: "Eko Prasetyo",
+            leaveStartDate: "2026-04-20",
+            leaveEndDate: "2026-04-21",
+            documentIssueDate: null,
+            reasonCategory: "family_matter",
+            submittedAt: "2026-04-19T02:00:00.000Z",
+            status: "rejected",
+            cancellationNote: null,
+          },
+        ]),
+      ),
+    );
+
+    expect(text).toContain("Approved");
+    expect(text).toContain("Rejected");
   });
 
   it("lists a cancelled request without adding a decision column", async () => {

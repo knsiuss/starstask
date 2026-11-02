@@ -4,17 +4,15 @@ import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import {
-  requireClass,
-  requirePlatformAdmin,
-} from "@/features/classes/class-access";
+import { requireClassManager } from "@/features/classes/class-access";
 import { setClassStatus } from "@/features/classes/class-management-service";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Archives or restores a class. Only platform admins may change class status;
- * the database function enforces the same rule.
+ * Activates, archives, or restores a class. Class admins may change the
+ * lifecycle of their own class; platform admins may change any class. The
+ * database function re-checks the same rule and rejects invalid transitions.
  */
 export async function POST(
   request: Request,
@@ -25,9 +23,8 @@ export async function POST(
       throw serviceUnavailable();
     }
 
-    const session = await requirePlatformAdmin();
     const { slug } = await context.params;
-    const found = await requireClass(slug);
+    const { session, class: found } = await requireClassManager(slug);
 
     await enforceRateLimit({
       action: "classes:status",

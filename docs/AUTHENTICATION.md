@@ -44,11 +44,16 @@ anything under `/login` or `/auth`.
 
 ## 3. Session handling
 
-- `proxy.ts` matches application routes (not static assets), calls `auth.getUser()`, and
-  copies refreshed cookies onto the response. It never makes an authorization decision.
+- `proxy.ts` matches application routes (not static assets), calls `auth.getClaims()`, and
+  copies refreshed cookies onto the response. Claims are verified against the project's
+  JWKS (local crypto for asymmetric signing keys, a server round-trip for symmetric keys).
+  It never makes an authorization decision.
 - Server Components and Route Handlers each call `getSessionUser()`, which calls
-  `auth.getUser()`. This verifies the token with Supabase Auth; a forged cookie cannot
-  become an identity.
+  `auth.getUser()`. This is the authoritative check: it verifies the token with Supabase
+  Auth and notices a revoked session immediately, so a forged cookie cannot become an
+  identity. Because the proxy already refreshed cookies with `getClaims()`, an ordinary
+  navigation makes one auth round-trip instead of two when the project signs with
+  asymmetric keys.
 - `getSessionUser()` is wrapped in React `cache`, so one request resolves the user once.
 - Authorization is re-checked at the mutation: the data layer filters by `user_id` and RLS
   independently enforces the same rule.

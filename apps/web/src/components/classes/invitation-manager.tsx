@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -8,35 +8,15 @@ import {
   classInvitationCreateSchema,
   toFieldErrors,
 } from "@starstask/contracts";
-import { formatDate } from "@starstask/shared";
 
+import { CreatedInvitationAlert } from "@/components/classes/created-invitation-alert";
+import type { InvitationListItem } from "@/components/classes/invitation-list";
+import { InvitationList } from "@/components/classes/invitation-list";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import {
-  getInvitationStatus,
-  type InvitationStatus,
-} from "@/lib/classes/invitation-status";
-
-export type InvitationListItem = {
-  id: string;
-  email_restriction: string | null;
-  expires_at: string;
-  max_uses: number;
-  used_count: number;
-  revoked_at: string | null;
-  created_at: string;
-};
-
-const INVITATION_STATUS_LABELS: Record<InvitationStatus, string> = {
-  active: "Active",
-  revoked: "Revoked",
-  expired: "Expired",
-  exhausted: "Used up",
-};
 
 type InvitationManagerProps = {
   classSlug: string;
@@ -200,39 +180,12 @@ export function InvitationManager({
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       {created ? (
-        <Alert variant="success">
-          <p className="font-medium">Invitation created</p>
-          <p className="mt-1 text-xs">
-            Copy this link now. For security it is shown only once and cannot be
-            recovered later.
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Input
-              readOnly
-              value={`${created.invitePath}`}
-              aria-label="Invitation link"
-              className="max-w-md bg-background"
-              onFocus={(event) => event.currentTarget.select()}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => void copyLink()}
-            >
-              <Copy
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
-              {copied ? "Copied" : "Copy"}
-            </Button>
-          </div>
-          {created.emailRestriction ? (
-            <p className="mt-2 text-xs">
-              Only {created.emailRestriction} can accept this link.
-            </p>
-          ) : null}
-        </Alert>
+        <CreatedInvitationAlert
+          invitePath={created.invitePath}
+          emailRestriction={created.emailRestriction}
+          copied={copied}
+          onCopy={() => void copyLink()}
+        />
       ) : null}
 
       <form
@@ -268,13 +221,13 @@ export function InvitationManager({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="invite-email">Restrict to email</Label>
+          <Label htmlFor="invite-email">Email (optional)</Label>
           <Input
             id="invite-email"
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="Optional"
+            placeholder="Restrict to one email"
             maxLength={254}
             aria-invalid={Boolean(fieldErrors.email)}
           />
@@ -302,59 +255,13 @@ export function InvitationManager({
         </div>
       </form>
 
-      {invitations.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No invitation links yet. Create one and share it with your class.
-        </p>
-      ) : (
-        <ul className="divide-border border-border divide-y rounded-lg border">
-          {invitations.map((invitation) => {
-            const invitationStatus = getInvitationStatus(invitation);
-            const status = INVITATION_STATUS_LABELS[invitationStatus];
-            const variant =
-              invitationStatus === "active" ? "success" : "neutral";
-
-            return (
-              <li
-                key={invitation.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    {invitation.email_restriction ?? "Anyone with the link"}
-                  </p>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {invitation.used_count}/{invitation.max_uses} used · expires{" "}
-                    {formatDate(invitation.expires_at)} · created{" "}
-                    {formatDate(invitation.created_at)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge variant={variant}>{status}</Badge>
-                  {invitationStatus !== "revoked" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => void revoke(invitation.id)}
-                      aria-label="Revoke invitation"
-                    >
-                      <Trash2
-                        aria-hidden="true"
-                        className="h-3.5 w-3.5"
-                      />
-                    </Button>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <InvitationList
+        invitations={invitations}
+        onRevoke={(invitationId) => void revoke(invitationId)}
+      />
 
       <p className="text-muted-foreground text-xs">
-        Invitation links grant membership only. They never grant class admin or
-        platform admin roles.
+        Links grant membership only, never an admin role.
       </p>
     </div>
   );

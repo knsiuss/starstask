@@ -21,7 +21,7 @@
     "check:env": "node scripts/check-env.mjs",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > apps/web/src/types/database.ts"
+    "db:types": "node scripts/generate-db-types.mjs"
   },
   "devDependencies": {
     "prettier": "3.9.10",

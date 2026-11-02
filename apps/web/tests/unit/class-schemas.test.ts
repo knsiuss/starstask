@@ -6,9 +6,11 @@ import {
   attachmentIdSchema,
   classApplicationCreateSchema,
   classApplicationDecisionSchema,
+  classCodeSchema,
   classDeleteSchema,
   classDirectoryQuerySchema,
   classDiscoveryQuerySchema,
+  classDuplicateCheckSchema,
   classInvitationAcceptSchema,
   classInvitationCreateSchema,
   classMetadataUpdateSchema,
@@ -44,11 +46,58 @@ describe("class slug", () => {
   });
 });
 
+describe("class code", () => {
+  it("normalizes surrounding whitespace and casing", () => {
+    expect(classCodeSchema.parse("  tpl-m002  ")).toBe("TPL-M002");
+  });
+
+  it("rejects codes that are too short or use unsafe characters", () => {
+    for (const invalid of ["A", "TPL#002", "-TPL", "TPL;002"]) {
+      expect(classCodeSchema.safeParse(invalid).success).toBe(false);
+    }
+  });
+
+  it("rejects a code longer than the limit", () => {
+    expect(classCodeSchema.safeParse("X".repeat(21)).success).toBe(false);
+  });
+});
+
 describe("class application", () => {
   it("accepts a complete application", () => {
     const parsed = classApplicationCreateSchema.safeParse(validApplication);
 
     expect(parsed.success).toBe(true);
+  });
+
+  it("normalizes an optional class code and drops a blank one", () => {
+    const withCode = classApplicationCreateSchema.safeParse({
+      ...validApplication,
+      proposedClassCode: "  tpl- m002 ",
+    });
+
+    expect(withCode.success && withCode.data.proposedClassCode).toBe(
+      "TPL- M002",
+    );
+
+    const withoutCode = classApplicationCreateSchema.safeParse({
+      ...validApplication,
+      proposedClassCode: "   ",
+    });
+
+    expect(withoutCode.success && withoutCode.data.proposedClassCode).toBe(
+      undefined,
+    );
+  });
+
+  it("rejects a class code with unsafe characters", () => {
+    for (const proposedClassCode of ["A", "TPL#002", "TPL;002"]) {
+      expect(
+        classApplicationCreateSchema.safeParse({
+          ...validApplication,
+          proposedClassCode,
+        }).success,
+      ).toBe(false);
+    }
   });
 
   it("rejects a missing reason and a too-short description", () => {
@@ -109,6 +158,30 @@ describe("class application decision", () => {
     expect(parsed.success && parsed.data.grantClassAdmin).toBe(false);
   });
 
+  it("defaults approval to an active class and requires explicit duplicate confirmation", () => {
+    const parsed = classApplicationDecisionSchema.safeParse({
+      decision: "approved",
+    });
+
+    expect(parsed.success && parsed.data.initialStatus).toBe("active");
+    expect(parsed.success && parsed.data.confirmDuplicate).toBe(false);
+  });
+
+  it("lets an approval start as draft and rejects other initial statuses", () => {
+    expect(
+      classApplicationDecisionSchema.safeParse({
+        decision: "approved",
+        initialStatus: "draft",
+      }).success,
+    ).toBe(true);
+    expect(
+      classApplicationDecisionSchema.safeParse({
+        decision: "approved",
+        initialStatus: "archived",
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects unknown fields so a caller cannot smuggle a role", () => {
     const parsed = classApplicationDecisionSchema.safeParse({
       decision: "approved",
@@ -133,12 +206,91 @@ describe("class metadata and status", () => {
     ).toBe(true);
   });
 
-  it("only accepts active or archived status", () => {
+  it("accepts an optional join policy and rejects unknown values", () => {
+    const base = {
+      name: "Database Systems — Class B",
+      description: "Weekly database labs and their graded assignments.",
+      courseName: "Database Systems",
+      semester: "1",
+      academicYear: "2025/2026",
+    };
+
+    expect(classMetadataUpdateSchema.safeParse(base).success).toBe(true);
     expect(
-      classStatusUpdateSchema.safeParse({ status: "active" }).success,
+      classMetadataUpdateSchema.safeParse({ ...base, joinPolicy: "open" })
+        .success,
     ).toBe(true);
     expect(
+      classMetadataUpdateSchema.safeParse({ ...base, joinPolicy: "invitation" })
+        .success,
+    ).toBe(true);
+    expect(
+      classMetadataUpdateSchema.safeParse({ ...base, joinPolicy: "public" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts the three lifecycle statuses and rejects arbitrary ones", () => {
+    for (const status of ["draft", "active", "archived"]) {
+      expect(classStatusUpdateSchema.safeParse({ status }).success).toBe(true);
+    }
+
+    expect(
       classStatusUpdateSchema.safeParse({ status: "deleted" }).success,
+    ).toBe(false);
+    expect(
+      classStatusUpdateSchema.safeParse({
+        status: "active",
+        force: true,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("class duplicate check", () => {
+  const base = {
+    name: "TPL M002",
+    academicYear: "2025/2026",
+    semester: "1",
+  };
+
+  it("accepts a minimal lookup and normalizes an optional code", () => {
+    const parsed = classDuplicateCheckSchema.safeParse({
+      ...base,
+      classCode: "  tpl-m002 ",
+    });
+
+    expect(parsed.success && parsed.data.classCode).toBe("TPL-M002");
+  });
+
+  it("accepts an exclude id and an optional institution", () => {
+    const parsed = classDuplicateCheckSchema.safeParse({
+      ...base,
+      institution: "Example University",
+      excludeClassId: crypto.randomUUID(),
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
+  it("requires name, semester, and a well-formed academic year", () => {
+    expect(
+      classDuplicateCheckSchema.safeParse({ ...base, name: "" }).success,
+    ).toBe(false);
+    expect(
+      classDuplicateCheckSchema.safeParse({ ...base, semester: "" }).success,
+    ).toBe(false);
+    expect(
+      classDuplicateCheckSchema.safeParse({
+        ...base,
+        academicYear: "2025-2026",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects unknown fields instead of ignoring them", () => {
+    expect(
+      classDuplicateCheckSchema.safeParse({ ...base, merge: true }).success,
     ).toBe(false);
   });
 });
@@ -146,25 +298,23 @@ describe("class metadata and status", () => {
 describe("class deletion", () => {
   it("requires the typed class name and trims it", () => {
     const parsed = classDeleteSchema.safeParse({
-      confirmName: "  Database Systems — Class B  ",
+      confirm: "  Database Systems — Class B  ",
     });
 
     expect(parsed.success).toBe(true);
-    expect(parsed.success && parsed.data.confirmName).toBe(
+    expect(parsed.success && parsed.data.confirm).toBe(
       "Database Systems — Class B",
     );
   });
 
   it("rejects an empty confirmation", () => {
-    expect(classDeleteSchema.safeParse({ confirmName: "   " }).success).toBe(
-      false,
-    );
+    expect(classDeleteSchema.safeParse({ confirm: "   " }).success).toBe(false);
   });
 
   it("rejects unknown fields instead of ignoring them", () => {
     expect(
       classDeleteSchema.safeParse({
-        confirmName: "Database Systems — Class B",
+        confirm: "Database Systems — Class B",
         force: true,
       }).success,
     ).toBe(false);
@@ -172,7 +322,7 @@ describe("class deletion", () => {
 
   it("rejects a name longer than the class name limit", () => {
     expect(
-      classDeleteSchema.safeParse({ confirmName: "x".repeat(121) }).success,
+      classDeleteSchema.safeParse({ confirm: "x".repeat(121) }).success,
     ).toBe(false);
   });
 });
@@ -223,6 +373,7 @@ describe("class submission", () => {
     const parsed = classSubmissionCreateSchema.safeParse({
       title: "Normalization exercise",
       description: "A description long enough for validation.",
+      subjectId: "0b6f1f8e-6f7c-4a1e-9c1d-2f3a4b5c6d7e",
     });
 
     expect(parsed.success).toBe(true);
@@ -235,6 +386,7 @@ describe("class submission", () => {
       classSubmissionCreateSchema.safeParse({
         title: "Normalization exercise",
         description: "A description long enough for validation.",
+        subjectId: "0b6f1f8e-6f7c-4a1e-9c1d-2f3a4b5c6d7e",
         referenceUrls: ["javascript:alert(1)"],
       }).success,
     ).toBe(false);
@@ -322,24 +474,50 @@ describe("class discovery query", () => {
 });
 
 describe("class directory query", () => {
-  it("defaults the ordering and view, and drops blank filters", () => {
+  it("defaults the ordering, view, and active status and drops blank filters", () => {
     const parsed = classDirectoryQuerySchema.parse({
       search: "",
       semester: "",
+      academicYear: "",
     });
 
     expect(parsed.sort).toBe("newest");
     expect(parsed.view).toBe("grid");
+    expect(parsed.status).toBe("active");
     expect(parsed.search).toBeUndefined();
     expect(parsed.semester).toBeUndefined();
+    expect(parsed.academicYear).toBeUndefined();
   });
 
-  it("accepts both views and rejects an unknown value", () => {
+  it("accepts the archived filter and rejects other statuses", () => {
+    expect(
+      classDirectoryQuerySchema.safeParse({ status: "archived" }).success,
+    ).toBe(true);
+    expect(
+      classDirectoryQuerySchema.safeParse({ status: "draft" }).success,
+    ).toBe(false);
+  });
+
+  it("accepts an academic year and rejects a malformed one", () => {
+    expect(
+      classDirectoryQuerySchema.safeParse({ academicYear: "2025/2026" })
+        .success,
+    ).toBe(true);
+    expect(
+      classDirectoryQuerySchema.safeParse({ academicYear: "2025-2026" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts both views and rejects unknown values", () => {
     expect(classDirectoryQuerySchema.safeParse({ view: "list" }).success).toBe(
       true,
     );
     expect(
       classDirectoryQuerySchema.safeParse({ view: "kanban" }).success,
+    ).toBe(false);
+    expect(
+      classDirectoryQuerySchema.safeParse({ sort: "kanban" }).success,
     ).toBe(false);
   });
 

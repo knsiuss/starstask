@@ -1,5 +1,6 @@
-import { Star } from "lucide-react";
 import type { ReactNode } from "react";
+
+import { BrandMark } from "@/components/layout/brand-mark";
 
 /**
  * Minimal shell for onboarding.
@@ -17,12 +18,7 @@ export default function OnboardingLayout({
     <div className="bg-background flex min-h-dvh flex-col">
       <header className="border-border/70 border-b">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 py-4 sm:px-6">
-          <span className="bg-accent text-accent-foreground flex h-8 w-8 items-center justify-center rounded-md">
-            <Star
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-          </span>
+          <BrandMark size={32} />
           <span className="font-semibold tracking-tight">StarsTask</span>
         </div>
       </header>

@@ -1,6 +1,6 @@
 import {
-  ArrowRight,
   BookOpen,
+  ChevronRight,
   ClipboardList,
   GraduationCap,
   ShieldCheck,
@@ -16,20 +16,31 @@ type MyClassesSectionProps = {
   classes: DashboardClass[];
 };
 
+/** Distinct crops of the brand landscape so each class tile reads separately. */
+const IMAGE_POSITIONS: readonly string[] = [
+  "0% 50%",
+  "33% 50%",
+  "66% 50%",
+  "100% 50%",
+];
+
+const DEFAULT_IMAGE_POSITION = "0% 50%";
+
 export function MyClassesSection({ classes }: MyClassesSectionProps) {
   return (
-    <section
-      aria-labelledby="my-classes"
-      className="mt-8"
-    >
+    <section aria-labelledby="my-classes">
       <SectionHeader
         id="my-classes"
         title="My classes"
-        description="Main class groups where you have an active membership."
+        action={
+          classes.length > 0
+            ? { href: "/classes", label: "View all" }
+            : undefined
+        }
       />
 
       {classes.length === 0 ? (
-        <div className="border-border bg-subtle mt-4 flex flex-col gap-3 rounded-xl border border-dashed px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="border-border bg-subtle mt-3 flex flex-col gap-3 rounded-xl border border-dashed px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <span className="border-border bg-surface text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-md border">
               <GraduationCap
@@ -56,80 +67,93 @@ export function MyClassesSection({ classes }: MyClassesSectionProps) {
           </Button>
         </div>
       ) : (
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {classes.map((classItem) => (
+        <ul className="mt-3 space-y-3">
+          {classes.map((classItem, index) => (
             <li key={classItem.id}>
-              <div className="border-border bg-surface hover:border-accent/40 group flex h-full flex-col justify-between rounded-xl border p-4 transition-all">
-                <div>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/dashboard/classes/${classItem.slug}`}
-                          className="text-foreground group-hover:text-accent truncate text-base font-semibold transition-colors"
-                        >
-                          {classItem.name}
-                        </Link>
-                        <span className="bg-muted text-muted-foreground font-mono rounded px-1.5 py-0.5 text-[10px]">
-                          {classItem.slug}
-                        </span>
-                      </div>
-                      {classItem.admin_name ? (
-                        <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                          <ShieldCheck
-                            aria-hidden="true"
-                            className="text-accent h-3 w-3 shrink-0"
-                          />
-                          <span>Admin: {classItem.admin_name}</span>
-                        </p>
-                      ) : null}
-                    </div>
-                    <GraduationCap
-                      aria-hidden="true"
-                      className="text-muted-foreground/60 group-hover:text-accent h-5 w-5 shrink-0 transition-colors"
-                    />
-                  </div>
-
-                  <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-                    <span className="bg-subtle inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium">
-                      <BookOpen
-                        aria-hidden="true"
-                        className="h-3.5 w-3.5 text-accent"
-                      />
-                      {classItem.subject_count}{" "}
-                      {classItem.subject_count === 1 ? "subject" : "subjects"}
-                    </span>
-                    <span className="bg-subtle inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium">
-                      <ClipboardList
-                        aria-hidden="true"
-                        className="h-3.5 w-3.5"
-                      />
-                      {classItem.task_count}{" "}
-                      {pluralize(classItem.task_count, "task")}
-                    </span>
-                    <span className="text-muted-foreground/80">
-                      {classItem.semester} {classItem.academic_year}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="border-border/60 mt-4 border-t pt-3">
-                  <Link
-                    href={`/dashboard/classes/${classItem.slug}`}
-                    className="text-accent hover:text-accent-hover inline-flex items-center gap-1 text-xs font-medium"
-                  >
-                    Open class group
-                    <ArrowRight
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
-                    />
-                  </Link>
-                </div>
-              </div>
+              <ClassRow
+                classItem={classItem}
+                imagePosition={
+                  IMAGE_POSITIONS[index % IMAGE_POSITIONS.length] ??
+                  DEFAULT_IMAGE_POSITION
+                }
+              />
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+function ClassRow({
+  classItem,
+  imagePosition,
+}: {
+  classItem: DashboardClass;
+  imagePosition: string;
+}) {
+  return (
+    <Link
+      href={`/dashboard/classes/${classItem.slug}`}
+      className="border-border bg-surface hover:border-accent/40 focus-visible:outline-accent group flex items-center gap-4 rounded-xl border p-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:p-4"
+    >
+      <span
+        aria-hidden="true"
+        style={{ backgroundPosition: imagePosition }}
+        className="border-border h-16 w-16 shrink-0 rounded-lg border bg-[url('/hero-dashboard.svg')] bg-cover shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
+      />
+
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="text-foreground group-hover:text-accent truncate text-[15px] font-semibold transition-colors">
+            {classItem.name}
+          </span>
+          <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-mono text-[10px]">
+            {classItem.slug}
+          </span>
+          {classItem.is_admin ? (
+            <span className="bg-accent-soft text-accent rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+              Class admin
+            </span>
+          ) : null}
+        </div>
+
+        {classItem.admin_name ? (
+          <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
+            <ShieldCheck
+              aria-hidden="true"
+              className="text-accent h-3 w-3 shrink-0"
+            />
+            <span className="truncate">Admin: {classItem.admin_name}</span>
+          </p>
+        ) : null}
+
+        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs">
+          <span className="bg-subtle inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium">
+            <BookOpen
+              aria-hidden="true"
+              className="text-accent h-3.5 w-3.5"
+            />
+            {classItem.subject_count}{" "}
+            {pluralize(classItem.subject_count, "subject")}
+          </span>
+          <span className="bg-subtle inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium">
+            <ClipboardList
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+            {classItem.task_count} {pluralize(classItem.task_count, "task")}
+          </span>
+          <span className="whitespace-nowrap">
+            {classItem.semester} {classItem.academic_year}
+          </span>
+        </div>
+      </div>
+
+      <ChevronRight
+        aria-hidden="true"
+        className="text-muted-foreground/60 group-hover:text-accent h-4 w-4 shrink-0 transition-colors"
+      />
+    </Link>
   );
 }

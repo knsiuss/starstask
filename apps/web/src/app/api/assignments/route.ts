@@ -79,6 +79,7 @@ export async function POST(request: Request) {
       identifier: session.user.id,
       limit: 10,
       windowSeconds: 3600,
+      onBackendFailure: "closed",
     });
 
     const declaredLength = Number(request.headers.get("content-length") ?? "0");

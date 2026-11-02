@@ -1,43 +1,38 @@
-import {
-  ArrowLeft,
-  CalendarDays,
-  ClipboardCheck,
-  FileWarning,
-  History,
-  Mail,
-  Settings,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Layers } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import * as React from "react";
 
-import { ClassSettingsForm } from "@/components/classes/class-settings-form";
-import { ClassStatusControl } from "@/components/classes/class-status-control";
-import { DeleteClassButton } from "@/components/classes/delete-class-button";
-import { InvitationManager } from "@/components/classes/invitation-manager";
-import { MemberManager } from "@/components/classes/member-manager";
+import {
+  ManageClassTabs,
+  isManageTab,
+  type ManageTab,
+} from "@/components/classes/manage-class-tabs";
+import {
+  ManageContentTab,
+  isContentStatus,
+  type ContentStatus,
+} from "@/components/classes/manage-content-tab";
+import { ManageCoursesTab } from "@/components/classes/manage-courses-tab";
+import { ManageInvitesTab } from "@/components/classes/manage-invites-tab";
+import { ManageMembersTab } from "@/components/classes/manage-members-tab";
+import { ManageOverviewTab } from "@/components/classes/manage-overview-tab";
+import { ManageSettingsTab } from "@/components/classes/manage-settings-tab";
 import { StatusBadge } from "@/components/classes/status-badge";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth/session";
-import {
-  getClassDashboardCounts,
-  listClassSubmissions,
-} from "@/lib/db/class-submissions";
 import {
   getClassBySlug,
   getClassRole,
   isPlatformAdmin,
-  listAuditLogs,
-  listClassInvitations,
-  listClassMembers,
 } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
-import { formatDate } from "@starstask/shared";
+import { flattenSearchParams } from "@/lib/utils/search-params";
 
 export const metadata: Metadata = {
   title: "Manage class",
@@ -46,10 +41,32 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const SEARCH_MAX_LENGTH = 80;
+
 type ManageClassProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ reviewed?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+type ResolvedSearch = {
+  activeTab: ManageTab;
+  contentStatus: ContentStatus;
+  search: string;
+  page: number;
+  reviewed: string | undefined;
+};
+
+function parseSearch(flat: Record<string, string | undefined>): ResolvedSearch {
+  const parsedPage = Number.parseInt(flat.page ?? "1", 10);
+
+  return {
+    activeTab: isManageTab(flat.tab) ? flat.tab : "overview",
+    contentStatus: isContentStatus(flat.status) ? flat.status : "published",
+    search: (flat.q ?? "").trim().slice(0, SEARCH_MAX_LENGTH),
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+    reviewed: flat.reviewed,
+  };
+}
 
 export default async function ManageClassPage({
   params,
@@ -85,26 +102,14 @@ export default async function ManageClassPage({
     notFound();
   }
 
-  const [counts, pending, published, members, invitations, audit, query] =
-    await Promise.all([
-      getClassDashboardCounts(found.id),
-      listClassSubmissions({
-        classId: found.id,
-        status: "pending_review",
-        page: 1,
-        pageSize: 20,
-      }),
-      listClassSubmissions({
-        classId: found.id,
-        status: "published",
-        page: 1,
-        pageSize: 8,
-      }),
-      listClassMembers(found.id),
-      listClassInvitations(found.id),
-      listAuditLogs({ classId: found.id, page: 1, pageSize: 10 }),
-      searchParams,
-    ]);
+  const flat = flattenSearchParams(await searchParams);
+
+  if (flat.tab && !isManageTab(flat.tab)) {
+    redirect(`/dashboard/classes/${found.slug}/manage`);
+  }
+
+  const { activeTab, contentStatus, search, page, reviewed } =
+    parseSearch(flat);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -119,377 +124,152 @@ export default async function ManageClassPage({
         Back to class
       </Link>
 
-      {query.reviewed ? (
+      {reviewed ? (
         <Alert
-          variant={query.reviewed === "approved" ? "success" : "info"}
+          variant={reviewed === "approved" ? "success" : "info"}
           className="mt-4"
         >
-          {query.reviewed === "approved"
+          {reviewed === "approved"
             ? "Submission approved and published publicly."
             : "Submission rejected. The submitter can revise and resubmit."}
         </Alert>
       ) : null}
 
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <header className="mt-4 flex items-start gap-4">
+        <span className="border-border bg-accent-soft text-accent flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border">
+          {found.avatar_url ? (
+            <Image
+              src={found.avatar_url}
+              alt=""
+              width={64}
+              height={64}
+              unoptimized
+              className="h-16 w-16 object-cover"
+            />
+          ) : (
+            <Layers
+              aria-hidden="true"
+              className="h-7 w-7"
+            />
+          )}
+        </span>
+
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Manage Class
+            </h1>
             <StatusBadge status={found.status} />
-            <span className="text-muted-foreground text-xs">
-              {found.course_name} · {found.semester} {found.academic_year}
-            </span>
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Manage {found.name}
-          </h1>
-          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-            Review submissions, manage membership, and keep published content
-            accurate. Approving a submission publishes it without login.
+          <p className="text-muted-foreground mt-1 text-sm">
+            <span className="text-foreground font-medium">{found.name}</span>
+            {found.class_code ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="mx-1.5"
+                >
+                  ·
+                </span>
+                {found.class_code}
+              </>
+            ) : null}
+            <span
+              aria-hidden="true"
+              className="mx-1.5"
+            >
+              ·
+            </span>
+            Semester {found.semester}
+            <span
+              aria-hidden="true"
+              className="mx-1.5"
+            >
+              ·
+            </span>
+            {found.academic_year}
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            asChild
-            variant="secondary"
-          >
-            <Link href={`/dashboard/classes/${found.slug}/sessions`}>
-              <CalendarDays
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Sessions
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="secondary"
-          >
-            <Link href={`/classes/${found.slug}`}>Public class page</Link>
-          </Button>
         </div>
       </header>
 
-      <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <Count
-          label="Members"
-          value={counts.members}
-        />
-        <Count
-          label="Pending review"
-          value={counts.pendingReview}
-        />
-        <Count
-          label="Active invites"
-          value={counts.activeInvitations}
-        />
-        <Count
-          label="Published"
-          value={counts.published}
-        />
-        <Count
-          label="Unpublished"
-          value={counts.unpublished}
-        />
-      </dl>
+      <ManageClassTabs
+        slug={found.slug}
+        activeTab={activeTab}
+      />
 
-      <section
-        aria-labelledby="review-queue"
-        className="mt-10"
+      <React.Suspense
+        key={activeTab}
+        fallback={<ManageTabSkeleton />}
       >
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2
-              id="review-queue"
-              className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-            >
-              <ClipboardCheck
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Pending review
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              You cannot review your own submission. Your own posts publish
-              immediately and never appear here. Approving a member submission
-              publishes it and its attachments.
-            </p>
-          </div>
-          <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
-            {pending.total} waiting
-          </span>
-        </div>
-
-        {pending.items.length === 0 ? (
-          <div className="border-border bg-subtle mt-4 rounded-lg border border-dashed px-5 py-8 text-center">
-            <p className="text-sm font-medium">The queue is empty</p>
-            <p className="text-muted-foreground mt-1 text-xs">
-              New member submissions appear here for review.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-border border-border mt-4 divide-y rounded-lg border">
-            {pending.items.map((submission) => (
-              <li
-                key={submission.id}
-                className="flex flex-wrap items-start justify-between gap-3 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium">{submission.title}</p>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {submission.submitter.display_name} · revision{" "}
-                    {submission.revision} · submitted{" "}
-                    {formatDate(submission.created_at)} ·
-                    {submission.attachment_count}{" "}
-                    {submission.attachment_count === 1 ? "file" : "files"}
-                  </p>
-                </div>
-                <Button
-                  asChild
-                  size="sm"
-                  variant="secondary"
-                >
-                  <Link
-                    href={`/dashboard/classes/${found.slug}/review/${submission.id}`}
-                  >
-                    Open review
-                  </Link>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <section aria-labelledby="members">
-          <h2
-            id="members"
-            className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-          >
-            <Users
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            Members
-          </h2>
-          <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Invitation links add members. Only platform admins can grant or
-            revoke the class admin role.
-          </p>
-          <MemberManager
+        {activeTab === "overview" ? (
+          <ManageOverviewTab
+            classId={found.id}
             classSlug={found.slug}
-            members={members}
-            canManageAdmins={platformAdmin}
-            currentUserId={session.user.id}
+            className={found.name}
+            avatarUrl={found.avatar_url}
+            coverUrl={found.cover_url}
           />
-        </section>
-
-        <section aria-labelledby="invitations">
-          <h2
-            id="invitations"
-            className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-          >
-            <Mail
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            Invitations
-          </h2>
-          <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Links are hashed at rest, expire, can be limited by email, and can
-            be revoked at any time.
-          </p>
-          <InvitationManager
-            classSlug={found.slug}
-            initialInvitations={invitations}
-          />
-        </section>
-      </div>
-
-      <section
-        aria-labelledby="published-content"
-        className="mt-10"
-      >
-        <h2
-          id="published-content"
-          className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-        >
-          <FileWarning
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-          Published content
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Unpublish, archive, or remove sensitive attachments when a published
-          assignment needs moderation.
-        </p>
-
-        {published.items.length === 0 ? (
-          <p className="text-muted-foreground mt-3 text-sm">
-            Nothing published by this class yet.
-          </p>
-        ) : (
-          <ul className="divide-border border-border mt-3 divide-y rounded-lg border">
-            {published.items.map((submission) => (
-              <li
-                key={submission.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium">{submission.title}</p>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {submission.submitter.display_name} · published ·{" "}
-                    {submission.attachment_count}{" "}
-                    {submission.attachment_count === 1 ? "file" : "files"}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <Link
-                    href={`/assignments/${submission.id}`}
-                    className="text-accent text-xs font-medium hover:underline"
-                  >
-                    View public
-                  </Link>
-                  <Link
-                    href={`/dashboard/classes/${found.slug}/review/${submission.id}`}
-                    className="text-accent text-xs font-medium hover:underline"
-                  >
-                    Moderate
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section
-        aria-labelledby="recent-activity"
-        className="mt-10"
-      >
-        <h2
-          id="recent-activity"
-          className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-        >
-          <History
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-          Recent activity
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Audit entries are append-only and never contain invitation tokens or
-          personal data.
-        </p>
-
-        {audit.items.length === 0 ? (
-          <p className="text-muted-foreground mt-3 text-sm">
-            No recorded activity yet.
-          </p>
-        ) : (
-          <ul className="divide-border border-border mt-3 divide-y rounded-lg border">
-            {audit.items.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm"
-              >
-                <span className="font-mono text-xs">
-                  {entry.action.replaceAll("_", " ")}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {entry.entity_type.replaceAll("_", " ")} ·{" "}
-                  {formatDate(entry.created_at)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <section aria-labelledby="class-settings">
-          <h2
-            id="class-settings"
-            className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-          >
-            <Settings
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            Class settings
-          </h2>
-          <p className="text-muted-foreground mt-1 mb-4 text-sm">
-            The class slug is permanent so public links never break.
-          </p>
-          <ClassSettingsForm
-            classSlug={found.slug}
-            initialValues={{
-              name: found.name,
-              description: found.description,
-              courseName: found.course_name,
-              institution: found.institution ?? "",
-              lecturerName: found.lecturer_name ?? "",
-              semester: found.semester,
-              academicYear: found.academic_year,
-            }}
-          />
-        </section>
-
-        {platformAdmin ? (
-          <section aria-labelledby="platform-controls">
-            <h2
-              id="platform-controls"
-              className="text-xl font-semibold tracking-tight"
-            >
-              Platform controls
-            </h2>
-            <div className="border-border mt-4 rounded-lg border p-4">
-              <ClassStatusControl
-                classSlug={found.slug}
-                status={found.status}
-                redirectTo={`/dashboard/classes/${found.slug}/manage`}
-              />
-            </div>
-          </section>
         ) : null}
-      </div>
 
-      <section
-        aria-labelledby="danger-zone"
-        className="mt-10"
-      >
-        <h2
-          id="danger-zone"
-          className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight"
-        >
-          <Trash2
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-          Danger zone
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Deleting removes the class and its whole history for everyone. Archive
-          it instead when the roster should stay readable.
-        </p>
-        <div className="border-danger/30 bg-danger-soft/40 mt-3 rounded-lg border p-4">
-          <DeleteClassButton
+        {activeTab === "courses" ? (
+          <ManageCoursesTab
+            classId={found.id}
             classSlug={found.slug}
-            name={found.name}
           />
-        </div>
-      </section>
+        ) : null}
+
+        {activeTab === "members" ? (
+          <ManageMembersTab
+            classId={found.id}
+            classSlug={found.slug}
+            currentUserId={session.user.id}
+            canManageAdmins={platformAdmin}
+          />
+        ) : null}
+
+        {activeTab === "invites" ? (
+          <ManageInvitesTab
+            classId={found.id}
+            classSlug={found.slug}
+          />
+        ) : null}
+
+        {activeTab === "content" ? (
+          <ManageContentTab
+            classId={found.id}
+            classSlug={found.slug}
+            status={contentStatus}
+            search={search}
+            page={page}
+          />
+        ) : null}
+
+        {activeTab === "settings" ? (
+          <ManageSettingsTab
+            classSummary={found}
+            platformAdmin={platformAdmin}
+          />
+        ) : null}
+      </React.Suspense>
     </div>
   );
 }
 
-function Count({ label, value }: { label: string; value: number }) {
+function ManageTabSkeleton() {
   return (
-    <div className="border-border bg-surface rounded-lg border p-3">
-      <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-        {label}
-      </dt>
-      <dd className="mt-0.5 text-xl font-semibold">{value}</dd>
+    <div
+      aria-hidden="true"
+      className="mt-6 space-y-6"
+    >
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton
+            key={index}
+            className="h-[76px] w-full rounded-2xl"
+          />
+        ))}
+      </div>
+      <Skeleton className="h-72 w-full rounded-2xl" />
     </div>
   );
 }

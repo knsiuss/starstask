@@ -1,6 +1,8 @@
-import { Paperclip } from "lucide-react";
+import { ExternalLink, Paperclip } from "lucide-react";
 import Link from "next/link";
 
+import { AssignmentContentTypeBadge } from "@/components/assignments/assignment-content-type-badge";
+import { CompletionToggle } from "@/components/assignments/completion-toggle";
 import { DeadlineBadge } from "@/components/assignments/deadline-badge";
 import { Badge } from "@/components/ui/badge";
 import type { AssignmentListItem } from "@/types/database";
@@ -20,6 +22,12 @@ export function AssignmentCard({ assignment }: AssignmentCardProps) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
           <Badge variant="neutral">{courseLabel}</Badge>
+          {assignment.content_type ? (
+            <AssignmentContentTypeBadge
+              contentType={assignment.content_type}
+              sourceLabel={assignment.source_label}
+            />
+          ) : null}
           {assignment.semester ? <span>{assignment.semester}</span> : null}
         </div>
         <DeadlineBadge deadline={assignment.deadline} />
@@ -60,16 +68,39 @@ export function AssignmentCard({ assignment }: AssignmentCardProps) {
         <span>
           {assignment.author_display_name} · {formatDate(assignment.created_at)}
         </span>
-        {assignment.attachment_count > 0 ? (
-          <span className="inline-flex items-center gap-1">
-            <Paperclip
-              aria-hidden="true"
-              className="h-3.5 w-3.5"
+        <span className="flex items-center gap-3">
+          {assignment.drive_url ? (
+            <a
+              href={assignment.drive_url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="hover:text-accent inline-flex items-center gap-1"
+            >
+              <ExternalLink
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+              Drive
+            </a>
+          ) : null}
+          {assignment.attachment_count > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <Paperclip
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+              {assignment.attachment_count}{" "}
+              {pluralize(assignment.attachment_count, "file")}
+            </span>
+          ) : null}
+          {typeof assignment.completed === "boolean" ? (
+            <CompletionToggle
+              assignmentId={assignment.id}
+              completed={assignment.completed}
+              title={assignment.title}
             />
-            {assignment.attachment_count}{" "}
-            {pluralize(assignment.attachment_count, "file")}
-          </span>
-        ) : null}
+          ) : null}
+        </span>
       </div>
     </article>
   );

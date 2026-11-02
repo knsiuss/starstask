@@ -1,10 +1,16 @@
 import {
   ArrowLeft,
+  BookOpen,
   CalendarDays,
+  ChevronRight,
+  Clock,
   ExternalLink,
   GraduationCap,
+  Info,
   Pencil,
+  Share2,
   UserRound,
+  Users,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -12,8 +18,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AttachmentList } from "@/components/assignments/attachment-list";
+import { AssignmentContentTypeBadge } from "@/components/assignments/assignment-content-type-badge";
 import { AssignmentHistory } from "@/components/assignments/assignment-history";
-import { DeadlineBadge } from "@/components/assignments/deadline-badge";
+import { CopyLinkButton } from "@/components/assignments/copy-link-button";
 import { DeleteAssignmentButton } from "@/components/assignments/delete-assignment-button";
 import { MyReportStatus } from "@/components/assignments/my-report-status";
 import { ReportAssignmentButton } from "@/components/assignments/report-assignment-button";
@@ -30,8 +37,10 @@ import {
   listAssignmentRevisions,
 } from "@/lib/db/assignment-trust";
 import { isAssignmentSaved } from "@/lib/db/push";
-import { isSupabaseConfigured } from "@/lib/env/public";
+import { getSiteUrl, isSupabaseConfigured } from "@/lib/env/public";
+import { buildWhatsAppShareUrl } from "@/lib/share/whatsapp";
 import { getAttachmentViews } from "@/lib/storage/signed-urls";
+import { cn } from "@/lib/utils/cn";
 import { assignmentIdSchema, isSafeHttpUrl } from "@starstask/contracts";
 import {
   excerpt,
@@ -138,20 +147,48 @@ export default async function AssignmentPage({
       ? getMyAssignmentReport(assignment.id, session.user.id)
       : Promise.resolve(null),
   ]);
+
   const deadlineState = getDeadlineState(assignment.deadline);
+  const publishedAt = assignment.published_at ?? assignment.created_at;
+  const hasDescription = assignment.description.trim().length > 0;
+  const safeReferences = assignment.reference_urls.filter((url) =>
+    isSafeHttpUrl(url),
+  );
+  const isPublished = assignment.status === "published";
+  const canonicalUrl = `${getSiteUrl().replace(/\/$/, "")}/assignments/${assignment.id}`;
+  const whatsappUrl = buildWhatsAppShareUrl({
+    title: assignment.title,
+    deadline: assignment.deadline,
+    url: canonicalUrl,
+  });
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <Link
-        href="/assignments"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <nav
+        aria-label="Breadcrumb"
+        className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-sm"
       >
-        <ArrowLeft
+        <Link
+          href="/assignments"
+          className="hover:text-foreground focus-visible:outline-accent inline-flex shrink-0 items-center gap-1.5 rounded-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          <ArrowLeft
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+          Assignments
+        </Link>
+        <ChevronRight
           aria-hidden="true"
-          className="h-4 w-4"
+          className="h-3.5 w-3.5 shrink-0 opacity-60"
         />
-        All assignments
-      </Link>
+        <span
+          aria-current="page"
+          className="text-foreground truncate font-medium"
+        >
+          {assignment.title}
+        </span>
+      </nav>
 
       {query.created ? (
         <Alert
@@ -170,158 +207,221 @@ export default async function AssignmentPage({
         </Alert>
       ) : null}
 
-      <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <article>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="accent">
-              {assignment.course_code
-                ? `${assignment.course_code} · ${assignment.course_name}`
-                : assignment.course_name}
-            </Badge>
-            {assignment.assignment_type ? (
-              <Badge>{assignment.assignment_type}</Badge>
-            ) : null}
-            {assignment.status === "pending" ? (
-              <Badge variant="warning">Pending review</Badge>
-            ) : null}
-          </div>
-
-          <h1 className="mt-3 text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">
-            {assignment.title}
-          </h1>
-
-          <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <span className="inline-flex items-center gap-1.5">
-              <UserRound
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              {assignment.author_display_name}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Added {formatDate(assignment.created_at)}
-            </span>
-            <DeadlineBadge deadline={assignment.deadline} />
-          </div>
-
-          {assignment.tags.length > 0 ? (
-            <ul
-              className="mt-4 flex flex-wrap gap-2"
-              aria-label="Tags"
-            >
-              {assignment.tags.map((tag) => (
-                <li key={tag}>
-                  <Link
-                    href={`/assignments?tag=${encodeURIComponent(tag)}`}
-                    className="bg-muted text-muted-foreground hover:bg-accent-soft hover:text-accent rounded-full px-2.5 py-1 text-xs"
-                  >
-                    #{tag}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {isOwner ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Button
-                asChild
-                variant="secondary"
-                size="sm"
-              >
-                <Link href={`/my-assignments/${assignment.id}/edit`}>
-                  <Pencil
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                  />
-                  Edit assignment
-                </Link>
-              </Button>
-              <DeleteAssignmentButton
-                assignmentId={assignment.id}
-                title={assignment.title}
-                variant="inline"
-              />
-            </div>
-          ) : null}
-
-          {!isOwner && assignment.status === "published" ? (
-            <div className="mt-5">
-              <SaveAssignmentButton
-                assignmentId={assignment.id}
-                initialSaved={isSaved}
-              />
-              <p className="text-muted-foreground mt-2 text-xs">
-                Saving adds this deadline to your reminders.{" "}
-                <Link
-                  href="/settings/notifications"
-                  className="text-accent hover:underline"
-                >
-                  Notification settings
-                </Link>
-              </p>
-              <div className="mt-2 space-y-2">
-                {myReport ? <MyReportStatus report={myReport} /> : null}
-                <ReportAssignmentButton assignmentId={assignment.id} />
-              </div>
-            </div>
-          ) : null}
-
-          <section
-            aria-labelledby="description-heading"
-            className="mt-8"
+      <header className="mt-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="accent"
+            className="gap-1.5"
           >
-            <h2
-              id="description-heading"
-              className="text-lg font-semibold"
-            >
-              Description
-            </h2>
-            <div className="text-foreground mt-3 text-sm leading-relaxed whitespace-pre-line">
-              {assignment.description}
-            </div>
-          </section>
-
-          {attachments.length > 0 ? (
-            <section
-              aria-labelledby="attachments-heading"
-              className="mt-8"
-            >
-              <h2
-                id="attachments-heading"
-                className="text-lg font-semibold"
-              >
-                Attachments
-              </h2>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Download links expire after 15 minutes. Files are scanned for
-                type and size on upload.
-              </p>
-              <div className="mt-3">
-                <AttachmentList attachments={attachments} />
-              </div>
-            </section>
+            <BookOpen
+              aria-hidden="true"
+              className="h-3 w-3"
+            />
+            {assignment.course_code
+              ? `${assignment.course_code} · ${assignment.course_name}`
+              : assignment.course_name}
+          </Badge>
+          <AssignmentContentTypeBadge
+            contentType={assignment.content_type}
+            sourceLabel={assignment.source_label}
+          />
+          {assignment.assignment_type ? (
+            <Badge>{assignment.assignment_type}</Badge>
           ) : null}
+          {assignment.status === "pending" ? (
+            <Badge variant="warning">Pending review</Badge>
+          ) : null}
+        </div>
 
-          {assignment.reference_urls.length > 0 ? (
+        <h1 className="mt-3 text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl">
+          {assignment.title}
+        </h1>
+
+        <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <UserRound
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
+            {assignment.author_display_name}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
+            Published {formatDate(publishedAt)}
+          </span>
+          {assignment.deadline ? (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 font-medium",
+                deadlineState === "overdue" && "text-danger",
+              )}
+            >
+              <Clock
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Due {formatDeadline(assignment.deadline)}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <Clock
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              No deadline
+            </span>
+          )}
+        </div>
+
+        {isOwner ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button
+              asChild
+              variant="secondary"
+              size="sm"
+            >
+              <Link href={`/assignments/${assignment.id}/edit`}>
+                <Pencil
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+                Edit assignment
+              </Link>
+            </Button>
+            <DeleteAssignmentButton
+              assignmentId={assignment.id}
+              title={assignment.title}
+              variant="inline"
+            />
+          </div>
+        ) : null}
+
+        {!isOwner && isPublished ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <SaveAssignmentButton
+              assignmentId={assignment.id}
+              initialSaved={isSaved}
+            />
+            <ReportAssignmentButton assignmentId={assignment.id} />
+          </div>
+        ) : null}
+
+        {!isOwner && myReport ? (
+          <div className="mt-2">
+            <MyReportStatus report={myReport} />
+          </div>
+        ) : null}
+
+        {assignment.tags.length > 0 ? (
+          <ul
+            className="mt-3 flex flex-wrap gap-2"
+            aria-label="Tags"
+          >
+            {assignment.tags.map((tag) => (
+              <li key={tag}>
+                <Link
+                  href={`/assignments?tag=${encodeURIComponent(tag)}`}
+                  className="bg-muted text-muted-foreground hover:bg-accent-soft hover:text-accent rounded-full px-2.5 py-1 text-xs transition-colors"
+                >
+                  #{tag}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </header>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
+        <div className="min-w-0">
+          <article className="border-border bg-surface rounded-lg border shadow-[0_1px_2px_rgba(9,9,11,0.04)]">
             <section
-              aria-labelledby="references-heading"
-              className="mt-8"
+              aria-labelledby="description-heading"
+              className="p-5 sm:p-6"
             >
               <h2
-                id="references-heading"
-                className="text-lg font-semibold"
+                id="description-heading"
+                className="text-base font-semibold"
               >
-                References
+                Description
               </h2>
-              <ul className="mt-3 space-y-2">
-                {assignment.reference_urls
-                  .filter((url) => isSafeHttpUrl(url))
-                  .map((url) => (
+              {hasDescription ? (
+                <div className="text-foreground mt-2 text-sm leading-relaxed whitespace-pre-line">
+                  {assignment.description}
+                </div>
+              ) : (
+                <p className="text-muted-foreground mt-2 text-sm italic">
+                  No description has been added for this assignment yet.
+                </p>
+              )}
+            </section>
+
+            {attachments.length > 0 ? (
+              <section
+                aria-labelledby="attachments-heading"
+                className="border-border border-t p-5 sm:p-6"
+              >
+                <h2
+                  id="attachments-heading"
+                  className="text-base font-semibold"
+                >
+                  Attached files
+                </h2>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Download links expire after 15 minutes. Files are scanned for
+                  type and size on upload.
+                </p>
+                <div className="mt-3">
+                  <AttachmentList attachments={attachments} />
+                </div>
+              </section>
+            ) : null}
+
+            {assignment.drive_url ? (
+              <section
+                aria-labelledby="drive-heading"
+                className="border-border border-t p-5 sm:p-6"
+              >
+                <h2
+                  id="drive-heading"
+                  className="text-base font-semibold"
+                >
+                  Materials on Google Drive
+                </h2>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Opens in a new tab. Access depends on the sharing settings the
+                  class admin set in Drive.
+                </p>
+                <a
+                  href={assignment.drive_url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="border-border bg-surface hover:bg-muted focus-visible:outline-accent mt-3 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <ExternalLink
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                  />
+                  Open Drive link
+                </a>
+              </section>
+            ) : null}
+
+            {safeReferences.length > 0 ? (
+              <section
+                aria-labelledby="references-heading"
+                className="border-border border-t p-5 sm:p-6"
+              >
+                <h2
+                  id="references-heading"
+                  className="text-base font-semibold"
+                >
+                  References
+                </h2>
+                <ul className="mt-3 space-y-2">
+                  {safeReferences.map((url) => (
                     <li key={url}>
                       <a
                         href={url}
@@ -337,95 +437,102 @@ export default async function AssignmentPage({
                       </a>
                     </li>
                   ))}
-              </ul>
-            </section>
-          ) : null}
+                </ul>
+              </section>
+            ) : null}
+          </article>
 
           {!isOwner ? (
-            <Alert className="mt-8">
-              <p className="font-medium">Have the brief for this course too?</p>
-              <p className="mt-1">
-                <Link
-                  href="/submit"
-                  className="text-accent font-medium hover:underline"
-                >
-                  Contribute your assignment
-                </Link>{" "}
-                so the next student does not have to guess.
-              </p>
-            </Alert>
+            <div className="border-border bg-subtle mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  Have additional assignment materials?
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Help your classmates by contributing useful information.
+                </p>
+              </div>
+              <Button
+                asChild
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+              >
+                <Link href="/submit">Contribute</Link>
+              </Button>
+            </div>
           ) : null}
-        </article>
+        </div>
 
         <aside className="space-y-4">
-          <Card>
-            <h2 className="text-sm font-semibold">Details</h2>
-            <dl className="mt-3 space-y-3 text-sm">
-              <DetailRow
+          <Card className="p-4">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <Info
+                aria-hidden="true"
+                className="text-muted-foreground h-4 w-4"
+              />
+              Assignment information
+            </h2>
+            <dl className="mt-3 space-y-2.5 text-sm">
+              <InfoRow
                 label="Course"
                 value={assignment.course_name}
               />
               {assignment.course_code ? (
-                <DetailRow
+                <InfoRow
                   label="Course code"
                   value={assignment.course_code}
                 />
               ) : null}
               {assignment.course_department ? (
-                <DetailRow
+                <InfoRow
                   label="Department"
                   value={assignment.course_department}
                 />
               ) : null}
-              {assignment.lecturer_name ? (
-                <DetailRow
-                  label="Lecturer"
-                  value={assignment.lecturer_name}
-                />
-              ) : null}
               {assignment.semester ? (
-                <DetailRow
+                <InfoRow
                   label="Semester"
                   value={assignment.semester}
                 />
               ) : null}
+              {assignment.lecturer_name ? (
+                <InfoRow
+                  label="Lecturer"
+                  value={assignment.lecturer_name}
+                />
+              ) : null}
               {assignment.academic_year ? (
-                <DetailRow
+                <InfoRow
                   label="Academic year"
                   value={assignment.academic_year}
                 />
               ) : null}
               {assignment.assignment_type ? (
-                <DetailRow
+                <InfoRow
                   label="Type"
                   value={assignment.assignment_type}
                 />
               ) : null}
-              <div>
-                <dt className="text-muted-foreground text-xs tracking-wide uppercase">
-                  Deadline
-                </dt>
-                <dd className="mt-1">
-                  {assignment.deadline ? (
-                    <span
-                      className={
-                        deadlineState === "overdue" ? "text-danger" : ""
-                      }
-                    >
-                      {formatDeadline(assignment.deadline)}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      No deadline provided
-                    </span>
-                  )}
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Status</dt>
+                <dd>
+                  <Badge variant={isPublished ? "success" : "warning"}>
+                    {isPublished ? "Published" : "Pending review"}
+                  </Badge>
                 </dd>
               </div>
             </dl>
           </Card>
 
-          <Card>
-            <h2 className="text-sm font-semibold">Contributor</h2>
+          <Card className="p-4">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <Users
+                aria-hidden="true"
+                className="text-muted-foreground h-4 w-4"
+              />
+              Contributor
+            </h2>
             <div className="mt-3 flex items-center gap-3">
               {assignment.author_avatar_url ? (
                 <Image
@@ -444,8 +551,8 @@ export default async function AssignmentPage({
                   {assignment.author_display_name.charAt(0).toUpperCase()}
                 </span>
               )}
-              <div>
-                <p className="text-sm font-medium">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">
                   {assignment.author_display_name}
                 </p>
                 <p className="text-muted-foreground text-xs">
@@ -455,31 +562,72 @@ export default async function AssignmentPage({
             </div>
           </Card>
 
+          {isPublished ? (
+            <Card className="p-4">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
+                <Share2
+                  aria-hidden="true"
+                  className="text-muted-foreground h-4 w-4"
+                />
+                Share assignment
+              </h2>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Share this assignment with your class.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <CopyLinkButton url={canonicalUrl} />
+                <Button
+                  asChild
+                  variant="secondary"
+                  size="sm"
+                >
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
+                    Share on WhatsApp
+                  </a>
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
           <AssignmentHistory revisions={revisions} />
 
-          <Card className="bg-subtle">
-            <p className="text-muted-foreground flex items-start gap-2 text-xs leading-relaxed">
-              <GraduationCap
-                aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0"
-              />
-              Assignments are contributed by students and may be incomplete or
-              outdated. Always confirm requirements with your lecturer.
-            </p>
-          </Card>
+          <p className="text-muted-foreground flex items-start gap-2 px-1 text-xs leading-relaxed">
+            <GraduationCap
+              aria-hidden="true"
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            Assignments are contributed by students and may be incomplete or
+            outdated. Always confirm requirements with your lecturer.
+          </p>
         </aside>
       </div>
     </div>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <dt className="text-muted-foreground text-xs tracking-wide uppercase">
-        {label}
-      </dt>
-      <dd className="mt-0.5">{value}</dd>
+    <div className="flex items-start justify-between gap-3">
+      <dt className="text-muted-foreground shrink-0">{label}</dt>
+      <dd className="text-right font-medium break-words">{value}</dd>
     </div>
+  );
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413" />
+    </svg>
   );
 }

@@ -3,13 +3,24 @@ import {
   assignmentReportReviewSchema,
   toFieldErrors,
 } from "@starstask/contracts";
+import { after } from "next/server";
 
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import {
+  ApiError,
+  forbidden,
+  notFound,
+  serviceUnavailable,
+} from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
-import { reviewAssignmentReport } from "@/lib/db/assignment-trust";
+import {
+  getAssignmentReportClassId,
+  reviewAssignmentReport,
+} from "@/lib/db/assignment-trust";
+import { getClassRole } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { dispatchNotificationEvents } from "@/lib/push/dispatch";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import { requirePlatformAdmin } from "@/features/classes/class-access";
+import { requireSession } from "@/features/classes/class-access";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +29,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 /**
  * Resolves or dismisses one assignment report.
  *
- * The route is platform-admin only; the database function independently checks
- * `can_manage_class` and refuses to review a report twice.
+ * Any signed-in user may call it, but only the class manager of the reported
+ * class passes the class-role check. The database function independently
+ * checks `can_manage_class` and refuses to review a report twice.
  */
 export async function PATCH(request: Request, context: RouteContext) {
   try {
@@ -27,7 +39,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       throw serviceUnavailable();
     }
 
-    const session = await requirePlatformAdmin();
+    const session = await requireSession();
     const { id } = await context.params;
     const parsedId = assignmentReportIdSchema.safeParse(id);
 
@@ -36,11 +48,23 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     await enforceRateLimit({
-      action: "admin:assignment-reports:review",
+      action: "assignment-reports:review",
       identifier: session.user.id,
       limit: 240,
       windowSeconds: 3600,
     });
+
+    const classId = await getAssignmentReportClassId(parsedId.data);
+
+    if (!classId) {
+      throw notFound();
+    }
+
+    const role = await getClassRole(classId);
+
+    if (!role.canManage) {
+      throw forbidden();
+    }
 
     const parsed = assignmentReportReviewSchema.safeParse(await request.json());
 
@@ -54,6 +78,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     await reviewAssignmentReport(parsedId.data, parsed.data);
+
+    // The reporter should hear about the outcome now, not on the next cron pass.
+    after(() => dispatchNotificationEvents());
 
     return apiSuccess({ id: parsedId.data, status: parsed.data.status });
   } catch (error) {

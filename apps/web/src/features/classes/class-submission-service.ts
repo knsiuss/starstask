@@ -55,6 +55,10 @@ export async function createClassSubmission(params: {
       p_assignment_type: params.input.assignmentType ?? null,
       p_tags: params.input.tags,
       p_reference_urls: params.input.referenceUrls,
+      p_content_type: params.input.contentType,
+      p_source_label: params.input.sourceLabel,
+      p_drive_url: params.input.driveUrl,
+      p_subject_id: params.input.subjectId,
     },
   );
 

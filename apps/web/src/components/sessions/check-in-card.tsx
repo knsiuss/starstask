@@ -14,6 +14,10 @@ import {
   type SessionCheckInWindowState,
 } from "@starstask/contracts";
 import { formatSessionTime } from "@starstask/shared";
+import {
+  describeGeolocationError,
+  getCurrentPosition,
+} from "@/lib/geo/position";
 
 type CheckInRecord = {
   status: "present" | "late" | "excused" | "absent";
@@ -33,42 +37,6 @@ type CheckInCardProps = {
   initialWindowState: SessionCheckInWindowState;
   initialCheckIn: CheckInRecord | null;
 };
-
-function getPosition(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    if (!("geolocation" in navigator)) {
-      reject(new Error("unsupported"));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 15_000,
-      maximumAge: 0,
-    });
-  });
-}
-
-function describeLocationError(error: unknown): string {
-  const code =
-    typeof error === "object" && error !== null && "code" in error
-      ? (error as { code?: number }).code
-      : undefined;
-
-  if (code === 1) {
-    return "Location permission was denied. Allow it for this site, or ask the organizer to mark you present.";
-  }
-
-  if (code === 2) {
-    return "Your location is unavailable right now. Step outside or near a window and try again.";
-  }
-
-  if (code === 3) {
-    return "Getting your location took too long. Try again.";
-  }
-
-  return "This browser cannot share your location. Ask the organizer to mark you present.";
-}
 
 /**
  * Self check-in for an in-person session.
@@ -121,7 +89,7 @@ export function CheckInCard({
     setError(null);
 
     try {
-      const position = await getPosition();
+      const position = await getCurrentPosition();
       const { latitude, longitude, accuracy } = position.coords;
 
       if (accuracy > SESSION_CHECKIN_ACCURACY_MAX_M) {
@@ -163,7 +131,7 @@ export function CheckInCard({
       });
       router.refresh();
     } catch (caught) {
-      setError(describeLocationError(caught));
+      setError(describeGeolocationError(caught));
     } finally {
       setIsLocating(false);
     }

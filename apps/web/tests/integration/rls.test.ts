@@ -184,16 +184,14 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
     expect(after).toHaveLength(1);
   });
 
-  it("hides published assignments from anonymous visitors", async () => {
+  it("denies published assignments to anonymous visitors", async () => {
     const { data, error } = await anon
       .from("assignments")
       .select("id")
       .eq("id", publishedId);
 
-    expect(data ?? []).toHaveLength(0);
-    if (error) {
-      expect(error.code).toBe("42501");
-    }
+    expect(error?.code).toBe("42501");
+    expect(data).toBeNull();
   });
 
   it("lets signed-in students read published assignments", async () => {
@@ -206,14 +204,14 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
     expect(data).toHaveLength(1);
   });
 
-  it("hides pending assignments from anonymous visitors", async () => {
+  it("denies pending assignments to anonymous visitors", async () => {
     const { data, error } = await anon
       .from("assignments")
       .select("id")
       .eq("id", pendingId);
 
-    expect(error).toBeNull();
-    expect(data).toHaveLength(0);
+    expect(error?.code).toBe("42501");
+    expect(data).toBeNull();
   });
 
   it("lets the owner read their own pending assignment", async () => {
@@ -643,6 +641,181 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
 
       expect(error).toBeNull();
       expect(deletedByOwner).toEqual([{ id: subscriptionId }]);
+    });
+  });
+
+  describe("notification inbox boundaries", () => {
+    const ownPayload = {
+      title: "Own notification",
+      body: "Visible only to its owner.",
+      url: "/notifications",
+    };
+    const otherPayload = {
+      title: "Other notification",
+      body: "Belongs to a different account.",
+      url: "/assignments",
+    };
+
+    let ownEventId = "";
+    let otherEventId = "";
+
+    beforeAll(async () => {
+      // Service role writes stand in for the SECURITY DEFINER functions that
+      // normally enqueue. Neither user has a push device, which used to make
+      // enqueue drop the event; the inbox stores it regardless.
+      const { data: own, error: ownError } = await admin
+        .from("notification_events")
+        .insert({
+          user_id: userA.id,
+          kind: "assignment_approved",
+          dedupe_key: `inbox-${suffix}-own`,
+          payload: ownPayload,
+        })
+        .select("id")
+        .single();
+
+      if (ownError || !own) {
+        throw new Error(`Could not enqueue own event: ${ownError?.message}`);
+      }
+
+      ownEventId = own.id;
+
+      const { data: other, error: otherError } = await admin
+        .from("notification_events")
+        .insert({
+          user_id: userB.id,
+          kind: "assignment_approved",
+          dedupe_key: `inbox-${suffix}-other`,
+          payload: otherPayload,
+        })
+        .select("id")
+        .single();
+
+      if (otherError || !other) {
+        throw new Error(
+          `Could not enqueue other event: ${otherError?.message}`,
+        );
+      }
+
+      otherEventId = other.id;
+    });
+
+    it("shows the caller their own events with a read marker", async () => {
+      const { data, error } = await userA.client
+        .from("notification_events")
+        .select("id, kind, payload, read_at")
+        .eq("id", ownEventId);
+
+      expect(error).toBeNull();
+      expect(data).toEqual([
+        {
+          id: ownEventId,
+          kind: "assignment_approved",
+          payload: ownPayload,
+          read_at: null,
+        },
+      ]);
+    });
+
+    it("hides another user's events", async () => {
+      const { data, error } = await userA.client
+        .from("notification_events")
+        .select("id")
+        .eq("id", otherEventId);
+
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("denies the inbox to anonymous visitors", async () => {
+      const { data, error } = await anon
+        .from("notification_events")
+        .select("id");
+
+      expect(error?.code).toBe("42501");
+      expect(data).toBeNull();
+    });
+
+    it("does not let a client enqueue an event", async () => {
+      const { error } = await userA.client.rpc("enqueue_notification_event", {
+        p_user_id: userA.id,
+        p_kind: "assignment_approved",
+        p_dedupe_key: `inbox-${suffix}-forged`,
+        p_payload: ownPayload,
+      });
+
+      expect(error).not.toBeNull();
+    });
+
+    it("does not let a client write the read marker directly", async () => {
+      const { error } = await userA.client
+        .from("notification_events")
+        .update({ read_at: new Date().toISOString() })
+        .eq("id", ownEventId);
+
+      expect(error).not.toBeNull();
+    });
+
+    it("ignores another user's ids when marking read", async () => {
+      const { data, error } = await userA.client.rpc(
+        "mark_notification_events_read",
+        { p_ids: [otherEventId] },
+      );
+
+      expect(error).toBeNull();
+      expect(data).toBe(0);
+
+      const { data: otherRow } = await admin
+        .from("notification_events")
+        .select("read_at")
+        .eq("id", otherEventId)
+        .single();
+
+      expect(otherRow?.read_at).toBeNull();
+    });
+
+    it("marks the caller's own event read by id", async () => {
+      const { data, error } = await userA.client.rpc(
+        "mark_notification_events_read",
+        { p_ids: [ownEventId] },
+      );
+
+      expect(error).toBeNull();
+      expect(data).toBe(1);
+
+      const { data: ownRow } = await userA.client
+        .from("notification_events")
+        .select("read_at")
+        .eq("id", ownEventId)
+        .single();
+
+      expect(ownRow?.read_at).not.toBeNull();
+    });
+
+    it("marks every unread event read when no ids are given", async () => {
+      const { error: enqueueError } = await admin
+        .from("notification_events")
+        .insert({
+          user_id: userA.id,
+          kind: "class_admin_assigned",
+          dedupe_key: `inbox-${suffix}-bulk`,
+          payload: ownPayload,
+        });
+
+      expect(enqueueError).toBeNull();
+
+      const { data, error } = await userA.client.rpc(
+        "mark_notification_events_read",
+      );
+
+      expect(error).toBeNull();
+      expect(data).toBe(1);
+    });
+
+    it("rejects anonymous read marking", async () => {
+      const { error } = await anon.rpc("mark_notification_events_read");
+
+      expect(error).not.toBeNull();
     });
   });
 });

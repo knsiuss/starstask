@@ -1,5 +1,3 @@
-export type AssignmentView = "list" | "grid";
-
 /** Matches `listAssignmentsQuerySchema` so default page sizes stay out of URLs. */
 const DEFAULT_PAGE_SIZE = "12";
 
@@ -12,20 +10,12 @@ export type AssignmentUrlParams = {
   tag?: string;
   sort?: string;
   pageSize?: string | number;
-  view?: AssignmentView;
 };
-
-export function parseAssignmentView(
-  value: string | string[] | undefined,
-): AssignmentView {
-  const candidate = Array.isArray(value) ? value[0] : value;
-
-  return candidate === "grid" ? "grid" : "list";
-}
 
 /**
  * Builds an assignments-page href from the active filters. Empty values, the
- * default sort, and the default list view are omitted so the URL stays readable.
+ * default sort, and the default page size are omitted so the URL stays
+ * readable.
  */
 export function buildAssignmentsHref(
   params: AssignmentUrlParams,
@@ -40,10 +30,6 @@ export function buildAssignmentsHref(
     }
 
     if (key === "sort" && value === "newest") {
-      continue;
-    }
-
-    if (key === "view" && value === "list") {
       continue;
     }
 

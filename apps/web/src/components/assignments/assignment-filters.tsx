@@ -1,40 +1,55 @@
+"use client";
+
 import { Search, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import * as React from "react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { buildAssignmentsHref } from "@/lib/assignments/urls";
 import {
-  buildAssignmentsHref,
-  type AssignmentView,
-} from "@/lib/assignments/urls";
-import { cn } from "@/lib/utils/cn";
-import type { ListAssignmentsQuery } from "@starstask/contracts";
+  ASSIGNMENT_SORTS,
+  ASSIGNMENT_TYPES,
+  type ListAssignmentsQuery,
+} from "@starstask/contracts";
 
 type AssignmentFiltersProps = {
   query: ListAssignmentsQuery;
-  view: AssignmentView;
 };
 
-/** Shared padding so the input lines up with the search icon. */
-const controlClass = "h-10 pl-8 pr-2.5";
+const SORT_LABELS: Record<(typeof ASSIGNMENT_SORTS)[number], string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  deadline: "Deadline",
+};
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 /**
- * Search box for the assignment list.
+ * The assignment toolbar: one search field, one type filter, one sort order.
  *
- * Course, class, semester, type, tag, and sort are no longer shown, but their
- * query parameters still work: links from the landing page and the global search
- * arrive with them. The active ones ride along as hidden fields so searching
- * does not silently drop the link's filter.
+ * Every control writes to the URL and lets the server render the result, so a
+ * filtered view is shareable and the back button restores the previous filters.
+ * Changing a select re-submits the form immediately; the search field waits for
+ * Enter because navigating on each keystroke would be noise.
+ *
+ * `course`, `class`, `semester`, and `tag` have no control here, but links from
+ * the landing page and search still arrive with them. They ride along as hidden
+ * fields so narrowing the list never silently drops an incoming filter.
  */
-export function AssignmentFilters({ query, view }: AssignmentFiltersProps) {
+export function AssignmentFilters({ query }: AssignmentFiltersProps) {
+  const router = useRouter();
+  const formRef = React.useRef<HTMLFormElement>(null);
+
   const carriedFilters = [
     { name: "course", value: query.course },
     { name: "class", value: query.class },
     { name: "semester", value: query.semester },
-    { name: "type", value: query.type },
     { name: "tag", value: query.tag },
-    { name: "sort", value: query.sort === "newest" ? undefined : query.sort },
   ];
 
   const clearSearchHref = buildAssignmentsHref({
@@ -47,58 +62,128 @@ export function AssignmentFilters({ query, view }: AssignmentFiltersProps) {
     pageSize: String(query.pageSize),
   });
 
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const data = new FormData(event.currentTarget);
+    const params = new URLSearchParams();
+
+    for (const [key, value] of data.entries()) {
+      if (typeof value === "string" && value !== "") {
+        params.set(key, value);
+      }
+    }
+
+    const queryString = params.toString();
+
+    // `page` is deliberately absent: any filter change returns to page 1.
+    router.push(queryString ? `/assignments?${queryString}` : "/assignments");
+  };
+
   return (
     <form
+      // Remounting on a URL change keeps the uncontrolled inputs in sync when
+      // the user navigates back or follows a link with different filters.
+      key={`${query.search ?? ""}|${query.type ?? ""}|${query.sort}`}
+      ref={formRef}
       method="get"
       action="/assignments"
       role="search"
-      aria-label="Search assignments"
-      className="border-border bg-surface rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.04)]"
+      aria-label="Search and filter assignments"
+      onSubmit={submit}
+      className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
     >
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
-          <Search
-            aria-hidden="true"
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2"
-          />
-          <Label
-            htmlFor="filter-search"
-            className="sr-only"
-          >
-            Search
-          </Label>
-          <Input
-            id="filter-search"
-            name="search"
-            type="search"
-            defaultValue={query.search ?? ""}
-            placeholder="Search by title, course, or tag..."
-            maxLength={100}
-            className={cn(
-              controlClass,
-              "pr-10 [&::-webkit-search-cancel-button]:appearance-none",
-            )}
-          />
-          {query.search ? (
-            <Link
-              href={clearSearchHref}
-              aria-label="Clear search"
-              className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
-            >
-              <X
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-            </Link>
-          ) : null}
-        </div>
-        <Button
-          type="submit"
-          className="h-10 px-5 sm:w-auto"
+      <div className="relative min-w-[13rem] flex-1 sm:max-w-sm">
+        <Label
+          htmlFor="filter-search"
+          className="sr-only"
         >
-          Search
-        </Button>
+          Search assignments
+        </Label>
+        <Search
+          aria-hidden="true"
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        />
+        <Input
+          id="filter-search"
+          name="search"
+          type="search"
+          defaultValue={query.search ?? ""}
+          placeholder="Search assignments"
+          maxLength={100}
+          className="h-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
+        />
+        {query.search ? (
+          <Link
+            href={clearSearchHref}
+            aria-label="Clear search"
+            className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
+          >
+            <X
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+          </Link>
+        ) : null}
       </div>
+
+      <div>
+        <Label
+          htmlFor="filter-type"
+          className="sr-only"
+        >
+          Assignment type
+        </Label>
+        <Select
+          id="filter-type"
+          name="type"
+          defaultValue={query.type ?? ""}
+          onChange={() => formRef.current?.requestSubmit()}
+          className="border-border bg-surface h-9 w-auto min-w-[8.5rem] py-0 text-[13px]"
+        >
+          <option value="">All types</option>
+          {ASSIGNMENT_TYPES.map((type) => (
+            <option
+              key={type}
+              value={type}
+            >
+              {capitalize(type)}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div>
+        <Label
+          htmlFor="filter-sort"
+          className="sr-only"
+        >
+          Sort by
+        </Label>
+        <Select
+          id="filter-sort"
+          name="sort"
+          defaultValue={query.sort}
+          onChange={() => formRef.current?.requestSubmit()}
+          className="border-border bg-surface h-9 w-auto min-w-[9rem] py-0 text-[13px]"
+        >
+          {ASSIGNMENT_SORTS.map((sort) => (
+            <option
+              key={sort}
+              value={sort}
+            >
+              {SORT_LABELS[sort]}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <button
+        type="submit"
+        className="sr-only"
+      >
+        Apply filters
+      </button>
 
       {carriedFilters.map((filter) =>
         filter.value ? (
@@ -116,13 +201,6 @@ export function AssignmentFilters({ query, view }: AssignmentFiltersProps) {
         name="pageSize"
         value={query.pageSize}
       />
-      {view === "grid" ? (
-        <input
-          type="hidden"
-          name="view"
-          value="grid"
-        />
-      ) : null}
     </form>
   );
 }

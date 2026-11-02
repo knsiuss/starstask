@@ -113,7 +113,8 @@ return `ambiguous` → existing membership → `join_policy` → insert.
 ### Enabling auto-join for a class
 
 Every class defaults to `join_policy = 'invitation'`, so existing behaviour is unchanged.
-Opt in per class with SQL (there is no admin UI yet):
+Opt in per class from the class's **Class settings** page (Class settings → Joining →
+Open by class name). The SQL below remains for a class that has no admin yet:
 
 ```sql
 update public.classes
@@ -160,7 +161,8 @@ rather than implying membership.
 
 1. Apply the migration: `supabase db push` (or run the SQL file).
 2. No bucket creation is needed; the migration inserts `avatars`.
-3. Set `join_policy = 'open'` only on classes that should be auto-joinable.
+3. Set the class's join policy to _Open by class name_ (Class settings) only on classes that
+   should be auto-joinable.
 4. Existing users have `onboarded_at = NULL` and will be asked to complete onboarding on
    their next visit. That is intentional.
 
@@ -201,7 +203,8 @@ where
 
 ## 8. Known limitations
 
-- `join_policy` has no admin UI; changing it is a manual SQL step.
+- A class admin can change `join_policy` from the class's **Class settings** page. A manual
+  SQL step remains only for a class that has no admin yet.
 - University is free text and is not checked against a registry. Do not describe a profile as
   verified.
 - A class-level match is by slug or name only. There is no fuzzy matching, so a typo lands in

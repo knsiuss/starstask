@@ -1,4 +1,5 @@
 import { apiError, apiSuccess } from "@/lib/api/responses";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { getPushConfig } from "@/lib/push/config";
 import { createWebPushSender } from "@/lib/push/sender";
 import { createSupabaseSessionReminderStore } from "@/lib/push/session-store";
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
     });
   }
 
-  if (isGoogleCalendarConfigured()) {
+  if (isGoogleCalendarConfigured() && isFeatureEnabled("calendarSync")) {
     try {
       calendar = await processDueCalendarSyncs(20);
     } catch (error) {

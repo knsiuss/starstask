@@ -170,7 +170,7 @@ export function VerificationRequestCard({
   }
 
   return (
-    <div className="border-border bg-surface rounded-xl border p-5">
+    <div className="border-border bg-subtle rounded-lg border p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">{request.className}</h3>

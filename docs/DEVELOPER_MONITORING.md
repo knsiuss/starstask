@@ -11,17 +11,18 @@ The console renders inside the normal workspace shell (same left sidebar and
 topbar as every other page). For an allowlisted developer account the sidebar's
 main section is replaced by the console sections below, and the proxy bounces
 developer accounts from student-only workspace paths (`/dashboard`,
-`/assignments`, `/classes`, `/leave-requests`, `/sessions`, `/submit`,
-`/my-assignments`) to `/developer` as a routing rule — every page still
+`/assignments`, `/classes`, `/leave-requests`, `/sessions`, `/submit`) to
+`/developer` as a routing rule — every page still
 enforces its own auth requirements independently. Post-sign-in, a developer
 account lands on `/developer` and every other account on `/dashboard`.
 
-The console has seven sections, all behind the same allowlist:
+The console has eight sections, all behind the same allowlist:
 
 | Section      | Path                      | Purpose                                                              |
 | ------------ | ------------------------- | -------------------------------------------------------------------- |
 | Overview     | `/developer`              | Metrics, health, recent activity.                                    |
 | Users        | `/developer/users`        | Paginated, searchable account directory.                             |
+| Classes      | `/developer/classes`      | Aggregate-only per-class metrics; no member identities.              |
 | Logs         | `/developer/logs`         | Browse sanitized server-error markers with time and text filters.    |
 | Security     | `/developer/security`     | Browse the audit trail and recorded sign-in outcomes.                |
 | Database     | `/developer/database`     | Connectivity, connection usage, table sizes, applied migration list. |
@@ -85,7 +86,7 @@ entirely closes the dashboard for everyone.
    as server-only variables.
 2. Apply `supabase/migrations/20261029002800_developer_monitoring.sql` and
    `supabase/migrations/20261029003200_developer_operations.sql` in order with
-   the other pending migrations.
+   the rest of the migrations; `supabase db push` keeps the order.
 3. Redeploy and sign in with a listed email.
 4. Open `/developer`. If the configuration is malformed, the page stays closed.
 
@@ -106,6 +107,16 @@ screenshots. Use `developer@example.com` as the placeholder.
 | Auth failures (24 hours)     | Recorded `sign_in_failed` callback outcomes.                         |
 
 Nothing is estimated or hardcoded. When a table has no rows, the UI says so.
+
+### Class metrics
+
+`/developer/classes` lists aggregate activity per class through
+`developer_class_metrics(...)`: member and class-admin counts, published and
+pending assignments, discussion sessions, attendance records, leave requests,
+invitations, and the last activity timestamp. Rows contain no member names,
+emails, NIM, leave details, evidence, or coordinates. The list is ordered by
+member count and capped at 500 rows; it stays unavailable while
+`SUPABASE_SERVICE_ROLE_KEY` is not configured.
 
 ### User directory
 
@@ -195,6 +206,8 @@ responses.
   sequence usage. No `UPDATE` or `DELETE` grant exists.
 - `developer_dashboard_metrics(...)` is `SECURITY DEFINER`, revoked from
   `PUBLIC`, `anon`, and `authenticated`, and executable only by `service_role`.
+- `developer_class_metrics(...)` follows the same pattern. It returns aggregate
+  counts only and reads no personal columns.
 - Existing RLS policies and grants are unchanged.
 - `app_activity_events_metadata_no_pii` rejects metadata keys `email`, `nim`,
   `full_name`, `name`, `phone`, and `avatar_url`, so personal data cannot be

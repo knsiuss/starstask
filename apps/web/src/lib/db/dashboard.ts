@@ -4,7 +4,6 @@ import type { MemberAssignmentsQuery } from "@starstask/contracts";
 import {
   LEAVE_REASON_LABELS,
   LEAVE_STATUS_LABELS,
-  notificationEventPayloadSchema,
   type LeaveReasonCategory,
   type LeaveRequestStatus,
 } from "@starstask/contracts";
@@ -16,8 +15,8 @@ import {
 } from "@starstask/shared";
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
+import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { listMyClasses, loadProfiles } from "@/lib/db/classes";
-import { isSafeNotificationPath } from "@/lib/push/payload";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AssignmentListItem } from "@/types/database";
 
@@ -50,6 +49,8 @@ export type DashboardStats = {
   dueSoon: number;
   pastDeadline: number;
   classCount: number;
+  /** Assignments published in the caller's classes during the last 7 days. */
+  newThisWeek: number;
 };
 
 export type DashboardOverview = {
@@ -109,7 +110,13 @@ export async function getDashboardOverview(
   if (classIds.length === 0) {
     return {
       classes: [],
-      stats: { totalTasks: 0, dueSoon: 0, pastDeadline: 0, classCount: 0 },
+      stats: {
+        totalTasks: 0,
+        dueSoon: 0,
+        pastDeadline: 0,
+        classCount: 0,
+        newThisWeek: 0,
+      },
       recentTasks: [],
       timeZone,
       nowIso,
@@ -123,7 +130,7 @@ export async function getDashboardOverview(
       .in("class_id", classIds)
       .eq("status", "published");
 
-  const [dueSoonResult, pastDeadlineResult, recentTasksResult] =
+  const [dueSoonResult, pastDeadlineResult, newTasksResult, recentTasksResult] =
     await Promise.all([
       // The half-open WIB window is shared with the deadline badges: today
       // through the next seven calendar days.
@@ -131,6 +138,10 @@ export async function getDashboardOverview(
         .gte("deadline", dueSoonStartIso)
         .lt("deadline", dueSoonEndIso),
       countPublishedTasks().lt("deadline", dueSoonStartIso),
+      countPublishedTasks().gte(
+        "published_at",
+        new Date(now.getTime() - 7 * 86_400_000).toISOString(),
+      ),
       supabase
         .from("assignments")
         .select(
@@ -147,6 +158,7 @@ export async function getDashboardOverview(
   const failures = [
     { result: dueSoonResult, message: "Could not count due tasks" },
     { result: pastDeadlineResult, message: "Could not count past deadlines" },
+    { result: newTasksResult, message: "Could not count new tasks" },
     { result: recentTasksResult, message: "Could not load recent tasks" },
   ];
 
@@ -184,7 +196,7 @@ export async function getDashboardOverview(
       academic_year: classItem.academic_year,
       task_count: result?.count ?? 0,
       is_admin: classItem.is_admin,
-      subject_count: classItem.subject_count ?? 1,
+      subject_count: classItem.subject_count ?? 0,
       admin_name: classItem.admin_name ?? null,
     };
   });
@@ -218,6 +230,7 @@ export async function getDashboardOverview(
       dueSoon: dueSoonResult.count ?? 0,
       pastDeadline: pastDeadlineResult.count ?? 0,
       classCount: activeClasses.length,
+      newThisWeek: newTasksResult.count ?? 0,
     },
     recentTasks,
     timeZone,
@@ -314,57 +327,6 @@ export async function listPriorityTasks(
     .slice(0, PRIORITY_TASK_LIMIT);
 }
 
-const DASHBOARD_NOTIFICATION_LIMIT = 5;
-
-export type DashboardNotification = {
-  id: string;
-  title: string;
-  body: string;
-  href: string | null;
-  createdAt: string;
-};
-
-/**
- * The caller's latest in-app notifications.
- *
- * No `user_id` filter is added here because that column is deliberately not
- * granted to `authenticated`; the `notification_events_read` policy scopes the
- * rows to `auth.uid()`. Payloads are sanitized by the database functions that
- * enqueue them, and a URL is only surfaced when it is an internal app path.
- */
-export async function listMyNotifications(
-  limit: number = DASHBOARD_NOTIFICATION_LIMIT,
-): Promise<DashboardNotification[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("notification_events")
-    .select("id, payload, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    throw new DataAccessError("Could not load your notifications", error.code);
-  }
-
-  return (data ?? []).flatMap((row) => {
-    const parsed = notificationEventPayloadSchema.safeParse(row.payload);
-
-    if (!parsed.success) {
-      return [];
-    }
-
-    return [
-      {
-        id: row.id,
-        title: parsed.data.title,
-        body: parsed.data.body,
-        href: isSafeNotificationPath(parsed.data.url) ? parsed.data.url : null,
-        createdAt: row.created_at,
-      },
-    ];
-  });
-}
-
 /**
  * Published assignments across every active class the caller belongs to.
  * Class memberships are read first, so the query can never widen beyond the
@@ -399,7 +361,7 @@ export async function listMemberPublishedAssignments(
   let request = supabase
     .from("assignments")
     .select(
-      "id, title, description, course_id, class_id, user_id, lecturer_name, semester, academic_year, assignment_type, deadline, tags, created_at, updated_at, courses!assignments_course_id_fkey ( name, code ), assignment_attachments ( id )",
+      "id, title, description, course_id, class_id, user_id, lecturer_name, semester, academic_year, assignment_type, content_type, source_label, drive_url, deadline, tags, created_at, updated_at, courses!assignments_course_id_fkey ( name, code ), assignment_attachments ( id )",
       { count: "exact" },
     )
     .in("class_id", classIds)
@@ -427,6 +389,13 @@ export async function listMemberPublishedAssignments(
   const profiles = await loadProfiles(rows.map((row) => row.user_id));
   const total = count ?? 0;
 
+  // Personal completion marks are read in one extra query so the list stays a
+  // single page of assignments. A missing row simply means "not marked".
+  const completedIds = await loadCompletionIds(
+    userId,
+    rows.map((row) => row.id),
+  );
+
   return {
     items: rows.map((row) => {
       const profile = profiles.get(row.user_id);
@@ -443,6 +412,10 @@ export async function listMemberPublishedAssignments(
         semester: row.semester,
         academic_year: row.academic_year,
         assignment_type: row.assignment_type,
+        content_type: row.content_type,
+        source_label: row.source_label,
+        drive_url: row.drive_url,
+        completed: completedIds.has(row.id),
         deadline: row.deadline,
         tags: row.tags ?? [],
         created_at: row.created_at,
@@ -579,6 +552,8 @@ export type MyWeekItem = {
   className: string;
   /** Sortable instant. An all-day leave request is anchored to its first day. */
   at: string;
+  /** Sessions carry an end so the timeline can show a real time range. */
+  endsAt: string | null;
   allDay: boolean;
   href: string;
   detail: string;
@@ -588,12 +563,32 @@ export type MyWeek = {
   items: MyWeekItem[];
   startsAtIso: string;
   endsAtIso: string;
+  /** Monday 00:00 WIB of the displayed week, as an ISO instant. */
+  weekStartIso: string;
 };
 
+const DAY_MS = 86_400_000;
 const MY_WEEK_ITEM_LIMIT = 40;
 
 /**
- * Deadline, session, and leave items for the next Jakarta week.
+ * Monday 00:00 Asia/Jakarta for the week containing `now`, shifted by
+ * `weekOffset` weeks. Jakarta has no DST, so a fixed offset is exact.
+ */
+function jakartaWeekStart(now: Date, weekOffset: number): Date {
+  const dateKey = toJakartaDateKey(now);
+  const midnight = Date.parse(`${dateKey}T00:00:00${APP_TIME_ZONE_OFFSET}`);
+  // Reading the date key back in UTC gives the weekday of that calendar date
+  // without letting the host machine's zone leak into the calculation.
+  const weekday = new Date(`${dateKey}T00:00:00Z`).getUTCDay();
+  const daysSinceMonday = (weekday + 6) % 7;
+
+  return new Date(
+    midnight - daysSinceMonday * DAY_MS + weekOffset * 7 * DAY_MS,
+  );
+}
+
+/**
+ * Deadline, session, and leave items for one Jakarta week.
  *
  * Deadlines and sessions come from the caller's active classes; leave requests
  * are always the caller's own. RLS still filters every row, so the explicit
@@ -602,14 +597,16 @@ const MY_WEEK_ITEM_LIMIT = 40;
 export async function getMyWeek(
   userId: string,
   now: Date = new Date(),
+  weekOffset = 0,
 ): Promise<MyWeek> {
-  const window = getDueSoonWindow(now);
-  const startsAtIso = now.toISOString();
-  const endsAtIso = window.end.toISOString();
-  const todayKey = toJakartaDateKey(now);
+  const weekStart = jakartaWeekStart(now, weekOffset);
+  const weekEnd = new Date(weekStart.getTime() + 7 * DAY_MS);
+  const startsAtIso = weekStart.toISOString();
+  const endsAtIso = weekEnd.toISOString();
+  const weekStartKey = toJakartaDateKey(weekStart);
   // The window end is exclusive midnight, so subtract a millisecond before
   // turning it into an inclusive date key for the leave overlap filter.
-  const lastDayKey = toJakartaDateKey(new Date(window.end.getTime() - 1));
+  const lastDayKey = toJakartaDateKey(new Date(weekEnd.getTime() - 1));
 
   const memberships = await listMyClasses(userId);
   const classIds = memberships
@@ -620,7 +617,7 @@ export async function getMyWeek(
   );
 
   if (classIds.length === 0) {
-    return { items: [], startsAtIso, endsAtIso };
+    return { items: [], startsAtIso, endsAtIso, weekStartIso: startsAtIso };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -640,7 +637,7 @@ export async function getMyWeek(
     supabase
       .from("discussion_sessions")
       .select(
-        "id, title, starts_at, session_type, location, meeting_url, class_id, classes!discussion_sessions_class_id_fkey ( name )",
+        "id, title, starts_at, ends_at, session_type, location, meeting_url, class_id, classes!discussion_sessions_class_id_fkey ( name )",
       )
       .in("class_id", classIds)
       .eq("status", "scheduled")
@@ -656,7 +653,8 @@ export async function getMyWeek(
       .eq("student_id", userId)
       .neq("status", "draft")
       .neq("status", "cancelled")
-      .gte("leave_end_date", todayKey)
+      .neq("status", "rejected")
+      .gte("leave_end_date", weekStartKey)
       .lte("leave_start_date", lastDayKey)
       .order("leave_start_date", { ascending: true })
       .limit(MY_WEEK_ITEM_LIMIT),
@@ -690,6 +688,7 @@ export async function getMyWeek(
           title: row.title,
           className: row.classes?.name ?? "Class",
           at: row.deadline,
+          endsAt: null,
           allDay: false,
           href: `/assignments/${row.id}`,
           detail: "Deadline",
@@ -706,6 +705,7 @@ export async function getMyWeek(
         title: row.title,
         className: row.classes?.name ?? "Class",
         at: row.starts_at,
+        endsAt: row.ends_at,
         allDay: false,
         href: `/sessions/${row.id}`,
         detail:
@@ -722,9 +722,10 @@ export async function getMyWeek(
     }
 
     // An ongoing leave keeps its original start date as the anchor, so the
-    // timeline does not jump when the student refreshes on a later day.
+    // timeline does not jump when the student refreshes on a later day. A leave
+    // that started before the displayed week is pinned to that week's Monday.
     const anchorKey =
-      row.leave_start_date < todayKey ? todayKey : row.leave_start_date;
+      row.leave_start_date < weekStartKey ? weekStartKey : row.leave_start_date;
     const reason = row.reason_category
       ? LEAVE_REASON_LABELS[row.reason_category as LeaveReasonCategory]
       : "Absence";
@@ -740,6 +741,7 @@ export async function getMyWeek(
         at: new Date(
           `${anchorKey}T00:00:00${APP_TIME_ZONE_OFFSET}`,
         ).toISOString(),
+        endsAt: null,
         allDay: true,
         href: `/leave-requests/${row.id}`,
         detail: `Absence - ${statusLabel}`,
@@ -751,5 +753,5 @@ export async function getMyWeek(
     .sort((left, right) => left.at.localeCompare(right.at))
     .slice(0, MY_WEEK_ITEM_LIMIT);
 
-  return { items, startsAtIso, endsAtIso };
+  return { items, startsAtIso, endsAtIso, weekStartIso: startsAtIso };
 }

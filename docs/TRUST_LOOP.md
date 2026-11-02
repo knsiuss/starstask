@@ -9,7 +9,7 @@ revision history.
 ```
 Reader                Class admin / platform admin
   │                              │
-  ├─ Report a problem ──────────►│  /admin/reports queue
+  ├─ Report a problem ──────────►│  class reports / /admin/reports queue
   │   (one open per reader)      │
   │                              ├─ fix the brief (normal edit path)
   │                              └─ resolve or dismiss + note
@@ -20,6 +20,12 @@ Reader                Class admin / platform admin
 A report is advisory. It never edits the assignment, so a wrong or malicious
 report cannot change published content. The reviewer edits the brief through the
 existing assignment path and then closes the report.
+
+A class admin works their own queue at
+`/dashboard/classes/[slug]/reports`; a platform admin sees every class at
+`/admin/reports`. Both use the same `PATCH /api/admin/assignment-reports/[id]`
+route, which checks the caller's role in the report's class before calling the
+database function.
 
 ### Reasons
 
@@ -94,8 +100,9 @@ published brief. Resolution stays a human decision with an audit trail.
 
 ## 5. Not implemented
 
-- No notification to the reporter when a report is resolved. The assignment page
-  is the source of truth, and a resolution note is stored for reviewers.
+- Resolving a report sends the reporter an inbox and push event, but the event opens the
+  assignment page rather than the report queue. The assignment stays the source of truth,
+  and the resolution note stays with reviewers.
 - No automatic duplicate grouping. A `duplicate` report is still a human queue
   item.
 - No per-class report metrics or SLA tracking.

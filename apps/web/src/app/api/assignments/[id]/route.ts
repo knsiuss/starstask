@@ -76,6 +76,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       identifier: session.user.id,
       limit: 60,
       windowSeconds: 3600,
+      onBackendFailure: "closed",
     });
 
     const declaredLength = Number(request.headers.get("content-length") ?? "0");

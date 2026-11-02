@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import {
+  CLASS_ACADEMIC_YEAR_PATTERN,
+  CLASS_CODE_MAX,
+  CLASS_NAME_MIN,
   classApplicationCreateSchema,
   toFieldErrors,
+  type ClassDuplicateMatch,
 } from "@starstask/contracts";
 
 import { Alert } from "@/components/ui/alert";
@@ -18,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 export type ClassApplicationFormValues = {
   proposedName: string;
   proposedSlug: string;
+  proposedClassCode: string;
   courseName: string;
   institution: string;
   lecturerName: string;
@@ -37,6 +42,7 @@ type ClassApplicationFormProps = {
 const FIELD_IDS: Record<string, string> = {
   proposedName: "proposedName",
   proposedSlug: "proposedSlug",
+  proposedClassCode: "proposedClassCode",
   courseName: "courseName",
   semester: "semester",
   academicYear: "academicYear",
@@ -63,6 +69,74 @@ export function ClassApplicationForm({
   );
   const [formMessage, setFormMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [duplicates, setDuplicates] = React.useState<ClassDuplicateMatch[]>([]);
+
+  const duplicateName = values.proposedName.trim();
+  const duplicateCode = values.proposedClassCode.trim();
+  const duplicateYear = values.academicYear.trim();
+  const duplicateSemester = values.semester.trim();
+  const duplicateInstitution = values.institution.trim();
+  const canCheckDuplicates =
+    duplicateName.length >= CLASS_NAME_MIN &&
+    duplicateSemester.length > 0 &&
+    CLASS_ACADEMIC_YEAR_PATTERN.test(duplicateYear);
+
+  React.useEffect(() => {
+    if (!canCheckDuplicates) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      const params = new URLSearchParams({
+        name: duplicateName,
+        academicYear: duplicateYear,
+        semester: duplicateSemester,
+      });
+
+      if (duplicateCode) {
+        params.set("classCode", duplicateCode);
+      }
+
+      if (duplicateInstitution) {
+        params.set("institution", duplicateInstitution);
+      }
+
+      try {
+        const response = await fetch(
+          `/api/classes/duplicates?${params.toString()}`,
+          { signal: controller.signal },
+        );
+
+        if (!response.ok) {
+          setDuplicates([]);
+          return;
+        }
+
+        const body = (await response.json().catch(() => null)) as {
+          data?: ClassDuplicateMatch[];
+        } | null;
+
+        setDuplicates(body?.data ?? []);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          setDuplicates([]);
+        }
+      }
+    }, 500);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [
+    canCheckDuplicates,
+    duplicateName,
+    duplicateCode,
+    duplicateYear,
+    duplicateSemester,
+    duplicateInstitution,
+  ]);
 
   const update = (key: keyof ClassApplicationFormValues, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -93,6 +167,7 @@ export function ClassApplicationForm({
     const payload = {
       proposedName: values.proposedName,
       proposedSlug: values.proposedSlug,
+      proposedClassCode: values.proposedClassCode || undefined,
       courseName: values.courseName,
       institution: values.institution || undefined,
       lecturerName: values.lecturerName || undefined,
@@ -205,6 +280,26 @@ export function ClassApplicationForm({
           </Field>
         </div>
 
+        <Field
+          id="proposedClassCode"
+          label="Class code"
+          error={fieldErrors.proposedClassCode}
+          hint="Optional, e.g. TPL-M002. Two classes cannot share a code in the same academic period."
+        >
+          <Input
+            id="proposedClassCode"
+            name="proposedClassCode"
+            value={values.proposedClassCode}
+            onChange={(event) =>
+              update("proposedClassCode", event.target.value.toUpperCase())
+            }
+            maxLength={CLASS_CODE_MAX}
+            autoCapitalize="characters"
+            aria-invalid={Boolean(fieldErrors.proposedClassCode)}
+            placeholder="TPL-M002"
+          />
+        </Field>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             id="courseName"
@@ -291,6 +386,29 @@ export function ClassApplicationForm({
             maxLength={120}
           />
         </Field>
+
+        {canCheckDuplicates && duplicates.length > 0 ? (
+          <Alert variant="warning">
+            <p className="font-medium">
+              A class with this name or code already exists in this academic
+              period.
+            </p>
+            <ul className="mt-2 space-y-1 text-xs">
+              {duplicates.map((match) => (
+                <li key={match.classId}>
+                  {match.name}
+                  {match.classCode ? ` (${match.classCode})` : ""} ·{" "}
+                  {match.semester} · {match.academicYear}
+                  {match.institution ? ` · ${match.institution}` : ""}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs">
+              This is only a warning. A platform admin must confirm before a
+              second class is created, and nothing is merged automatically.
+            </p>
+          </Alert>
+        ) : null}
       </fieldset>
 
       <fieldset className="space-y-5">

@@ -1,6 +1,7 @@
-import { Search, Star } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
 
+import { BrandMark } from "@/components/layout/brand-mark";
 import { HeaderSignIn } from "@/components/layout/header-sign-in";
 import { NavLink } from "@/components/layout/nav-link";
 import { SiteMobileNav } from "@/components/layout/site-mobile-nav";
@@ -25,12 +26,7 @@ export async function SiteHeader() {
           href={session ? "/dashboard" : "/"}
           className="flex items-center gap-2 font-semibold tracking-tight"
         >
-          <span className="bg-accent text-accent-foreground flex h-8 w-8 items-center justify-center rounded-md">
-            <Star
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-          </span>
+          <BrandMark size={32} />
           <span>StarsTask</span>
         </Link>
 
@@ -46,9 +42,6 @@ export async function SiteHeader() {
               {link.label}
             </NavLink>
           ))}
-          {session ? (
-            <NavLink href="/my-assignments">My assignments</NavLink>
-          ) : null}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

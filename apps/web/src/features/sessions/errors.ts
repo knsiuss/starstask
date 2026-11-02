@@ -75,6 +75,23 @@ const CODE_MAP: Record<
     code: "checkin_not_scheduled",
     message: "This session is not open for check-in.",
   },
+  SS108: {
+    status: 409,
+    code: "use_attendance_checkin",
+    message: "Use the attendance meeting check-in for this session.",
+  },
+  SS111: {
+    status: 409,
+    code: "attendance_finalized",
+    message:
+      "This meeting is finalized. Reopen it before changing attendance.",
+  },
+  SS112: {
+    status: 409,
+    code: "attendance_location_locked",
+    message:
+      "The location is locked while attendance is open. Use the explicit location change action.",
+  },
   "23505": {
     status: 409,
     code: "conflict",

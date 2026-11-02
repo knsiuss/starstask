@@ -12,6 +12,7 @@ import {
 } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { isFeatureEnabled } from "@/lib/config/features";
 import { getClassRole } from "@/lib/db/classes";
 import { getSessionById } from "@/lib/db/sessions";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -34,6 +35,10 @@ type RouteContext = { params: Promise<{ id: string }> };
  */
 export async function PUT(request: Request, context: RouteContext) {
   try {
+    if (!isFeatureEnabled("sessionCheckIn")) {
+      throw notFound();
+    }
+
     if (!isSupabaseConfigured()) {
       throw serviceUnavailable();
     }
@@ -92,6 +97,10 @@ export async function PUT(request: Request, context: RouteContext) {
 /** Turns check-in off for the session without touching the schedule. */
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
+    if (!isFeatureEnabled("sessionCheckIn")) {
+      throw notFound();
+    }
+
     if (!isSupabaseConfigured()) {
       throw serviceUnavailable();
     }

@@ -5,7 +5,7 @@ import {
   ClipboardList,
   Compass,
   LayoutDashboard,
-  UserRound,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -22,17 +22,19 @@ type TabItem = {
 const TABS: TabItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/assignments", label: "Assignments", icon: Compass },
-  { href: "/sessions", label: "Schedule", icon: CalendarDays },
+  { href: "/attendance", label: "Attendance", icon: UserCheck },
+  // The aggregated calendar, not `/sessions`: discussion sessions are one event
+  // source inside it, and the tab used to open that narrower list instead.
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/leave-requests", label: "Absence", icon: ClipboardList },
-  // Matches every settings page, including notifications and calendar.
-  { href: "/settings", label: "Profile", icon: UserRound },
 ];
 
 /**
  * One-tap destinations on small screens.
  *
- * Covers the five sections a signed-in student uses daily; everything else
- * stays in the drawer. Hidden at `lg`, where the sidebar takes over.
+ * Profile and Settings stay in the drawer and the topbar account menu, which
+ * leaves room for Attendance in the five daily destinations. Hidden at `lg`,
+ * where the sidebar takes over.
  */
 export function MobileTabBar() {
   const pathname = usePathname();

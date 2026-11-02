@@ -321,17 +321,18 @@ Run from the repository root on Windows:
 | `pnpm build`                        | Passed; the build does not contact the database             |
 | `prettier --check` on changed files | Passed                                                      |
 
-**Not verified (no database was contacted; no Supabase CLI is installed):**
+**Not verified (no hosted project was contacted):**
 
-- The migration was never applied. It is syntactically formatted by the repository's
-  PostgreSQL Prettier plugin, which is not a substitute for execution.
-- RLS policies, definer functions, constraints, and the storage policies were not
-  exercised against a live database.
+- The migration has since been applied by a full local `supabase db reset`, but it was
+  never pushed to the live project during verification.
+- Class-verification-specific RLS policies, definer functions, and storage policies are
+  not covered by the integration suites. The general RLS suite passes, but no case
+  exercises `class_verification_requests` or the `verification-evidence` bucket.
 - No object was uploaded to `verification-evidence`; signed URLs were not minted against
   real storage.
 - No Google sign-in, push delivery, or browser end-to-end flow was run.
-- `pnpm test:integration` was not run. It requires a configured project and can create
-  and delete rows, so it was not pointed at an unknown database.
+- `pnpm test:integration` runs against a disposable local Supabase instance only. It was
+  never pointed at the live project, because it creates and deletes rows.
 
 ### Manual setup
 
@@ -340,8 +341,9 @@ Run from the repository root on Windows:
 2. Ensure at least one row exists in `platform_admins` for the reviewer. There is no API
    or UI path to grant it; use the service role as documented in `CLASSES.md`.
 3. No new environment variable is required. The bucket is created by the migration.
-4. After applying, regenerate types if the project is connected (`pnpm db:types`) and
-   confirm `apps/web/src/types/database.ts` still matches.
+4. After applying, regenerate types (`pnpm db:types`) and run `pnpm typecheck`. The
+   contract in `apps/web/src/types/database-contract.ts` fails if the hand-written type
+   has not followed a schema change.
 
 ## 13. Known limits and residual risks
 

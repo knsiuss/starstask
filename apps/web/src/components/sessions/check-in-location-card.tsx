@@ -18,6 +18,10 @@ import {
   SESSION_CHECKIN_RADIUS_MAX,
   SESSION_CHECKIN_RADIUS_MIN,
 } from "@starstask/contracts";
+import {
+  describeGeolocationError,
+  getCurrentPosition,
+} from "@/lib/geo/position";
 
 const RADIUS_CHOICES = [50, 100, 150, 250, 500];
 
@@ -26,21 +30,6 @@ type CheckInLocationCardProps = {
   hasCheckInLocation: boolean;
   radiusM: number;
 };
-
-function getPosition(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    if (!("geolocation" in navigator)) {
-      reject(new Error("unsupported"));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 15_000,
-      maximumAge: 0,
-    });
-  });
-}
 
 /**
  * Saves the room an organizer is standing in.
@@ -75,7 +64,7 @@ export function CheckInLocationCard({
     setError(null);
 
     try {
-      const position = await getPosition();
+      const position = await getCurrentPosition();
       const { latitude, longitude } = position.coords;
 
       const response = await fetch(
@@ -102,10 +91,8 @@ export function CheckInLocationCard({
         description: `Students within ${radius} m can now check in.`,
       });
       router.refresh();
-    } catch {
-      setError(
-        "Could not read your location. Allow location access for this site and try again.",
-      );
+    } catch (caught) {
+      setError(describeGeolocationError(caught));
     } finally {
       setIsSaving(false);
     }

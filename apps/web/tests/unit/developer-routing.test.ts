@@ -40,8 +40,7 @@ describe("isStudentWorkspacePath", () => {
       "/sessions",
       "/sessions/abc",
       "/submit",
-      "/my-assignments",
-      "/my-assignments/abc/edit",
+      "/assignments/abc/edit",
     ];
 
     for (const path of paths) {
@@ -75,9 +74,7 @@ describe("isStudentWorkspacePath", () => {
 
 describe("resolveSignedInHomePath", () => {
   it("sends allowlisted developers to the console", () => {
-    expect(resolveSignedInHomePath("Developer@Example.com")).toBe(
-      "/developer",
-    );
+    expect(resolveSignedInHomePath("Developer@Example.com")).toBe("/developer");
   });
 
   it("sends everyone else to the workspace dashboard", () => {

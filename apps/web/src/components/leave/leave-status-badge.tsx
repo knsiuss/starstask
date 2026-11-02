@@ -10,6 +10,8 @@ const VARIANTS: Record<
 > = {
   draft: "neutral",
   submitted: "accent",
+  approved: "success",
+  rejected: "warning",
   forwarded: "success",
   cancelled: "neutral",
 };
@@ -17,8 +19,9 @@ const VARIANTS: Record<
 /**
  * Workflow status pill.
  *
- * `forwarded` reads as success because the hand-off completed — not because the
- * lecturer approved the absence. The tooltip says so explicitly.
+ * `approved` means the class admin accepted the absence and the matching
+ * sessions were marked excused. `forwarded` is the legacy hand-off state; it
+ * says nothing about approval, which is why its tooltip spells that out.
  */
 export function LeaveStatusBadge({
   status,

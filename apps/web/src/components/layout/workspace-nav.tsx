@@ -4,10 +4,12 @@ import {
   CalendarDays,
   ClipboardList,
   Compass,
-  FileText,
   GraduationCap,
   LayoutDashboard,
+  ListChecks,
+  MessageSquare,
   Settings,
+  UserCheck,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -23,7 +25,7 @@ type NavItem = {
   requiresAuth?: boolean;
 };
 
-const MAIN_ITEMS: NavItem[] = [
+const STUDY_ITEMS: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
@@ -31,22 +33,40 @@ const MAIN_ITEMS: NavItem[] = [
     requiresAuth: true,
   },
   { href: "/assignments", label: "Assignments", icon: Compass },
-  { href: "/classes", label: "Classes", icon: GraduationCap },
+  { href: "/classes", label: "My Classes", icon: GraduationCap },
   {
-    href: "/leave-requests",
-    label: "Absence requests",
-    icon: ClipboardList,
+    href: "/attendance",
+    label: "Attendance",
+    icon: UserCheck,
     requiresAuth: true,
   },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   {
-    href: "/my-assignments",
-    label: "My submissions",
-    icon: FileText,
+    href: "/leave-requests",
+    label: "Absence Requests",
+    icon: ClipboardList,
     requiresAuth: true,
   },
 ];
 
+/**
+ * Leader destinations render only for users who administer at least one class.
+ * The flag is cosmetic; /dashboard/actions re-checks every class role on load.
+ */
+const LEADER_ITEMS: NavItem[] = [
+  {
+    href: "/dashboard/actions",
+    label: "Action center",
+    icon: ListChecks,
+    requiresAuth: true,
+  },
+];
+
+/**
+ * Notifications and Google Calendar are deliberately absent: the topbar bell
+ * owns notifications, and the calendar connection lives under Schedule and
+ * Settings. A second sidebar destination would only duplicate them.
+ */
 const ACCOUNT_ITEMS: NavItem[] = [
   {
     href: "/settings/profile",
@@ -61,15 +81,19 @@ const ACCOUNT_ITEMS: NavItem[] = [
     requiresAuth: true,
   },
   {
-    href: "/settings/calendar",
-    label: "Google Calendar",
-    icon: CalendarDays,
+    href: "/settings/feedback",
+    label: "Feedback",
+    icon: MessageSquare,
     requiresAuth: true,
   },
 ];
 
 type WorkspaceNavProps = {
   isAuthenticated: boolean;
+  /** Renders the Action center; true only for users leading a class. */
+  isClassAdmin?: boolean;
+  /** Icon-only rendering for the collapsed desktop sidebar. */
+  compact?: boolean;
   /** Closes the mobile drawer after a link is followed. */
   onNavigate?: () => void;
 };
@@ -77,18 +101,21 @@ type WorkspaceNavProps = {
 /**
  * Student navigation.
  *
- * Platform and developer consoles deliberately have their own shells and
- * navigation. Keeping operator links out of this list is the visible half of
- * the separation; access is still enforced server-side on every console route.
+ * Class admins gain the leader section and management actions inside My
+ * Classes. Platform and developer consoles deliberately have their own shells
+ * and navigation; access is still enforced server-side on every console route.
  */
 export function WorkspaceNav({
   isAuthenticated,
+  isClassAdmin = false,
+  compact = false,
   onNavigate,
 }: WorkspaceNavProps) {
   const pathname = usePathname();
 
   const items = [
-    ...MAIN_ITEMS,
+    ...STUDY_ITEMS,
+    ...(isClassAdmin ? LEADER_ITEMS : []),
     ...(isAuthenticated ? ACCOUNT_ITEMS : []),
   ].filter((item) => !item.requiresAuth || isAuthenticated);
 
@@ -110,9 +137,12 @@ export function WorkspaceNav({
         <Link
           href={item.href}
           aria-current={isActive ? "page" : undefined}
+          aria-label={compact ? item.label : undefined}
+          title={compact ? item.label : undefined}
           onClick={onNavigate}
           className={cn(
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+            compact && "justify-center px-2",
             isActive
               ? "bg-accent-soft text-accent font-medium"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -122,7 +152,9 @@ export function WorkspaceNav({
             aria-hidden="true"
             className="h-[18px] w-[18px] shrink-0"
           />
-          <span className="truncate">{item.label}</span>
+          <span className={cn("truncate", compact && "sr-only")}>
+            {item.label}
+          </span>
         </Link>
       </li>
     );
@@ -130,9 +162,27 @@ export function WorkspaceNav({
 
   return (
     <div className="flex flex-col gap-6">
-      <NavSection label="Student">{MAIN_ITEMS.map(renderItem)}</NavSection>
+      <NavSection
+        label="Study"
+        compact={compact}
+      >
+        {STUDY_ITEMS.map(renderItem)}
+      </NavSection>
+      {isClassAdmin && isAuthenticated ? (
+        <NavSection
+          label="Class leader"
+          compact={compact}
+        >
+          {LEADER_ITEMS.map(renderItem)}
+        </NavSection>
+      ) : null}
       {isAuthenticated ? (
-        <NavSection label="Account">{ACCOUNT_ITEMS.map(renderItem)}</NavSection>
+        <NavSection
+          label="Account"
+          compact={compact}
+        >
+          {ACCOUNT_ITEMS.map(renderItem)}
+        </NavSection>
       ) : null}
     </div>
   );
@@ -140,17 +190,23 @@ export function WorkspaceNav({
 
 function NavSection({
   label,
+  compact,
   children,
 }: {
   label: string;
+  compact: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <p className="text-muted-foreground px-3 text-[11px] font-medium tracking-[0.08em] uppercase">
-        {label}
-      </p>
-      <ul className="mt-2 space-y-1">{children}</ul>
+      {compact ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <p className="text-muted-foreground px-3 text-[11px] font-medium tracking-[0.08em] uppercase">
+          {label}
+        </p>
+      )}
+      <ul className={cn("space-y-1", !compact && "mt-2")}>{children}</ul>
     </div>
   );
 }

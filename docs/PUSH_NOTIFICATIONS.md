@@ -74,6 +74,9 @@ Key constraints:
   makes the old one stale.
 - `notification_deliveries.status` is one of `pending`, `processing`, `sent`, `failed`,
   `skipped`.
+- Terminal rows (`sent`, `failed`, `skipped`) are deleted once their `updated_at` is older
+  than `NOTIFICATION_RETENTION_DAYS` (default 180) by `/api/cron/notification-retention`.
+  Pending and processing rows are never purged, so an open reminder window stays intact.
 - No notification payload, endpoint, or key is stored in the ledger.
 
 Full column list and RLS matrix: `docs/DATABASE.md`.
@@ -295,8 +298,10 @@ iOS flow as implemented and reasoned about, not device-verified.
 
 - Only the **public** VAPID key reaches the browser, passed as a server-component prop. The
   private key never leaves the scheduler module.
-- `SUPABASE_SERVICE_ROLE_KEY` is read only by the cron scheduler. It is not imported by any
-  page, client component, or normal API route.
+- `SUPABASE_SERVICE_ROLE_KEY` is read only by server-side code. The scheduler uses it to
+  claim and deliver notifications; attachment removal, Google Calendar sync,
+  observability events, and the developer console also construct a service-role client.
+  It is never imported by a page, client component, or normal API route.
 - Endpoints and `p256dh`/`auth` keys are not granted to `authenticated`; the browser already
   knows its own subscription and no UI needs to read another device's endpoint.
 - Clients can read their own delivery history but cannot insert or mutate delivery rows.
@@ -336,8 +341,9 @@ Unit tests cover the pure pieces and the whole scheduler against in-memory fakes
 pnpm --filter @starstask/web test
 ```
 
-The RLS suite (`pnpm test:integration`) includes push-table cases but has **not** been run
-against a live project.
+The RLS suite (`pnpm test:integration`) includes push-table cases. It passes against a
+freshly reset local Supabase instance and runs in the CI `integration` job, but it has
+**not** been run against the live project, and no real push delivery has been observed.
 
 ---
 
@@ -392,8 +398,9 @@ long-term retention is required.
 
 **Not verified**
 
-- No Supabase project exists, so migrations, RLS, RPC grants, and the integration suite
-  have not run against a real database.
+- All migrations and the seed apply from an empty local Supabase database, and the
+  integration suite (including the push-table RLS cases) passes there. A CI job repeats
+  the sequence on a disposable local stack.
 - No VAPID keys or deployed environment, so no real push was sent.
 - No iPhone/iPad, Android, or desktop device test; iOS behavior is implemented but not
   device-verified.

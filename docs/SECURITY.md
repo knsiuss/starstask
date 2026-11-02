@@ -199,22 +199,28 @@ allow-list:
 ## 7. Abuse prevention
 
 - Rate limits are distributed by default (Postgres counter) and can be upgraded to Upstash.
+  The Upstash client is created once per limit/window pair, not once per request.
   In-memory limiting exists only for local development without Supabase.
 - IPs are hashed with `RATE_LIMIT_SALT` before being used as a counter key; raw IPs are
-  never stored.
+  never stored. The app refuses to run rate limits in production without a salt.
+- `x-forwarded-for` and the other IP headers are trusted only on Vercel or when
+  `TRUST_X_FORWARDED_FOR=true` is set behind a proxy that overwrites them. Without a
+  trustworthy address the rule is skipped rather than pooling every client into one
+  `unknown` bucket.
 - A hidden `website` honeypot rejects naive bots.
 - Request bodies are capped (34 MB multipart, 64 KB JSON, 8 KB push subscription, 4 KB
   preferences).
 - Push endpoints are rate-limited per user (subscribe 30/hour, unsubscribe 60/hour,
   preferences 60/hour, saves 120/hour).
-- Limiter outages fail open and are logged; the trade-off is documented in code.
+- Limiter outages fail open for reads and are logged. Uploads, OCR, evidence, leave
+  forwarding, and exports fail closed with 503 so an outage cannot remove their only
+  abuse control.
 
 ## 8. Headers and rendering
 
-Set in `next.config.ts` for every route:
+`next.config.ts` sets these on every route:
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; …
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
@@ -222,12 +228,20 @@ Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 ```
 
+`src/proxy.ts` adds a fresh `Content-Security-Policy` per request:
+
+```
+default-src 'self'; script-src 'self' 'nonce-<per-request>' 'strict-dynamic'; …
+```
+
+Next.js reads the nonce from the request header and attaches it to every script it
+renders, so `script-src` no longer needs `'unsafe-inline'`. `style-src` still allows
+inline styles because the UI and Next's runtime use them. Development adds
+`'unsafe-eval'`; production adds `upgrade-insecure-requests`.
+
 `poweredByHeader` is disabled. React escapes all interpolated text, so assignment
 descriptions render as text, never HTML. Reference links are validated before becoming
 `href`s and open with `rel="noopener noreferrer"`.
-
-Known gap: the CSP allows inline scripts because Next.js hydration needs them. A
-nonce-based policy is a documented follow-up.
 
 ## 9. Secrets and logging
 
@@ -235,8 +249,10 @@ nonce-based policy is a documented follow-up.
   a `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` or `NEXT_PUBLIC_VAPID_PRIVATE_KEY` ever exists.
 - The public VAPID key is passed to the settings page as a server prop. The private key is
   read only by the scheduler module and is never logged or serialized into a response.
-- `SUPABASE_SERVICE_ROLE_KEY` is imported only by `src/lib/push/store.ts` through the
-  admin client, and only the cron route constructs that store.
+- `SUPABASE_SERVICE_ROLE_KEY` is imported only by the server-side admin client
+  (`src/lib/supabase/admin.ts`). Its consumers are the cron scheduler, attachment
+  removal, Google Calendar sync, observability events, and the developer console; no
+  page, client component, or normal API route imports it.
 - `CRON_SECRET` is compared with `crypto.timingSafeEqual`; a missing secret disables the
   endpoint instead of leaving it open.
 - Push endpoints, `p256dh`/`auth`, payloads, and provider response bodies are never logged.
@@ -256,26 +272,34 @@ nonce-based policy is a documented follow-up.
 
 **Verified locally**
 
-- 501 unit tests across 32 files, including redirect sanitization, URL safety, schema
+- 734 unit tests across 58 files, including redirect sanitization, URL safety, schema
   strictness, file signature checks, timezone boundaries, push capability detection, iOS
   guidance, service-worker registration, permission states, subscription validation,
   reminder windows, dedupe at the scheduler boundary, retries, expiry handling, deadline
-  changes, cron authentication, click destinations, and the verification contracts and
+  changes, cron authentication, and the verification contracts and
   evidence checks listed below.
 - `tsc`, ESLint, and `next build` pass.
-- 8 Playwright tests pass against the unconfigured build (public pages, 404, robots,
-  sitemap, skip link, protected-route handling).
+- 85 integration tests pass against a disposable local Supabase stack, including the
+  RLS, privilege, and class-workflow matrices.
+- 25 Playwright tests pass: 16 public/protected-route checks, 3 public-page
+  accessibility scans, and 6 authenticated checks — invitation join, RSVP, leave
+  draft → evidence → submit, review → publish, a WCAG A/AA scan of four workspace
+  pages, and a local-only dashboard layout capture — signed in against that same
+  local stack. The accessibility scans run axe-core with the WCAG 2.0/2.1/2.2 A and
+  AA tags only.
 - Verification contracts and evidence checks are covered by dedicated unit tests:
   status/decision schemas, strict rejection of unknown fields, magic-byte validation,
   filename sanitization, storage-key scoping, and notification path allowlisting.
 
 **Not verified**
 
-- RLS policies against a live database (`tests/integration/rls.test.ts` is written but was
-  not run in this environment; it can create and delete rows, so it was not pointed at an
-  unknown project). This includes all four push tables and the verification tables.
-- The class verification migration was never applied to Postgres. Its functions,
-  constraints, grants, and storage policies have not been executed.
+- RLS policies against the hosted project. The integration suite runs against a
+  disposable local Supabase stack only; it can create and delete rows, so it is never
+  pointed at an unknown project. This includes all four push tables and the
+  verification tables.
+- The class verification migration has been applied and exercised only on the local
+  stack; its functions, constraints, grants, and storage policies have not run against
+  the hosted project.
 - Storage policy behaviour with real objects, including the verification bucket.
 - Live OAuth.
 - Real push delivery: no VAPID keys, no deployed scheduler, no device test.
@@ -286,24 +310,24 @@ nonce-based policy is a documented follow-up.
 
 ## 11. Residual risks
 
-| Risk                                                  | Mitigation / status                                                                                                                                                             |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Malicious file with a valid signature                 | No antivirus/scanning integration. Documented.                                                                                                                                  |
-| Orphaned storage object if cleanup fails              | Logged; no scheduled sweeper.                                                                                                                                                   |
-| Course catalogue pollution by any signed-in user      | Any authenticated user can create courses through the RPC. Intended for MVP.                                                                                                    |
-| No moderation queue                                   | `pending` exists but is unreachable from the UI.                                                                                                                                |
-| Inline-script CSP                                     | Required by Next.js hydration; nonce policy is future work.                                                                                                                     |
-| Rate limiter fails open                               | Availability trade-off; alert on the logged marker.                                                                                                                             |
-| Missing `RATE_LIMIT_SALT`                             | Falls back to a fixed development salt, so IP hashes become predictable. `pnpm check:env` fails on this, but the app still starts.                                              |
-| Service-role key in the cron runtime                  | The only privileged path. It is read by the scheduler module alone, its RPCs are `service_role`-only, and the route requires a timing-safe bearer token. Rotate on suspicion.   |
-| Push endpoint leak                                    | Endpoints and key material are excluded from client SELECT grants and from logs/responses. A database-level reader could still see them.                                        |
-| Stale reminder after a deadline change                | Each claim is re-validated against the current deadline and assignment status; mismatches are marked `skipped`, never sent.                                                     |
-| Reminder delivered after the deadline                 | Messages use `TTL: 3600` and a one-hour grace window, so a long-held push cannot arrive much after the deadline.                                                                |
-| Scheduler never runs                                  | No cron source is configured; on Vercel Hobby the 10-minute schedule needs Pro. Documented, not silently assumed.                                                               |
-| Delivery ledger growth                                | No automatic retention job; rows are small and contain no payloads. Manual cleanup SQL is documented.                                                                           |
-| Leave evidence left readable after removal            | Removal is a soft delete plus an immediate object deletion; if the object deletion fails it is logged, and the storage policy already blocks reads for removed evidence owners. |
-| Forged but readable verification evidence             | Validation proves file type only. Approval is a human decision; there is no authenticity detector, by design.                                                                   |
-| Reviewer approves a class the student does not attend | The reviewer sees the claim and evidence; the schema cannot prove attendance.                                                                                                   |
-| Verified request after access is revoked              | The status stays `verified` for history; the UI reads the `class_admins` row to show current access, and revocation refuses to remove the last class admin.                     |
-| Verification evidence retained after a decision       | Kept for audit, accessible only through policy and five-minute links; never public and never in notifications.                                                                  |
-| OCR mis-read treated as fact                          | OCR is advisory only: extracted values are shown with provenance and nothing is applied or forwarded without the student confirming each field.                                 |
+| Risk                                                  | Mitigation / status                                                                                                                                                               |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Malicious file with a valid signature                 | No antivirus/scanning integration. Documented.                                                                                                                                    |
+| Orphaned storage object if cleanup fails              | Logged; no scheduled sweeper.                                                                                                                                                     |
+| Course catalogue pollution by any signed-in user      | Any authenticated user can create courses through the RPC. Intended for MVP.                                                                                                      |
+| No moderation queue                                   | `pending` exists but is unreachable from the UI.                                                                                                                                  |
+| Inline styles under CSP                               | `script-src` is nonce-bound and rejects inline scripts; `style-src` still allows inline styles for layout and dev overlays.                                                       |
+| Rate limiter fails open                               | Reads fail open and log a marker; uploads, OCR, evidence, forwarding, and exports fail closed. Alert on the marker.                                                               |
+| Missing `RATE_LIMIT_SALT`                             | Production refuses to apply rate limits without it, so requests fail rather than using a predictable salt. Development falls back to a fixed salt for local runs.                 |
+| Service-role key in server code                       | Read only by server-side code: cron, attachment removal, calendar sync, observability, and the developer console. Each route enforces its own authorization. Rotate on suspicion. |
+| Push endpoint leak                                    | Endpoints and key material are excluded from client SELECT grants and from logs/responses. A database-level reader could still see them.                                          |
+| Stale reminder after a deadline change                | Each claim is re-validated against the current deadline and assignment status; mismatches are marked `skipped`, never sent.                                                       |
+| Reminder delivered after the deadline                 | Messages use `TTL: 3600` and a one-hour grace window, so a long-held push cannot arrive much after the deadline.                                                                  |
+| Scheduler never runs                                  | No cron source is configured; on Vercel Hobby the 10-minute schedule needs Pro. Documented, not silently assumed.                                                                 |
+| Delivery ledger growth                                | No automatic retention job; rows are small and contain no payloads. Manual cleanup SQL is documented.                                                                             |
+| Leave evidence left readable after removal            | Removal is a soft delete plus an immediate object deletion; if the object deletion fails it is logged, and the storage policy already blocks reads for removed evidence owners.   |
+| Forged but readable verification evidence             | Validation proves file type only. Approval is a human decision; there is no authenticity detector, by design.                                                                     |
+| Reviewer approves a class the student does not attend | The reviewer sees the claim and evidence; the schema cannot prove attendance.                                                                                                     |
+| Verified request after access is revoked              | The status stays `verified` for history; the UI reads the `class_admins` row to show current access, and revocation refuses to remove the last class admin.                       |
+| Verification evidence retained after a decision       | Kept for audit, accessible only through policy and five-minute links; never public and never in notifications.                                                                    |
+| OCR mis-read treated as fact                          | OCR is advisory only: extracted values are shown with provenance and nothing is applied or forwarded without the student confirming each field.                                   |

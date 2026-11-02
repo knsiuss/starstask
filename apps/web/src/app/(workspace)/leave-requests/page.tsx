@@ -20,7 +20,7 @@ import { leaveRequestListQuerySchema } from "@starstask/contracts";
 export const metadata: Metadata = {
   title: "Absence requests",
   description:
-    "Collect your absence documents, attach the supporting evidence, and send them to your class admin for forwarding to the lecturer.",
+    "Collect your absence documents, attach the supporting evidence, and send them to your class admin for review.",
   robots: { index: false, follow: false },
 };
 
@@ -110,8 +110,8 @@ export default async function LeaveRequestsPage({
           </h1>
           <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
             Put your absence document and its dates in one place, then send it
-            to your class admin. StarsTask collects and forwards requests — your
-            lecturer still decides.
+            to your class admin for approval. An approved absence becomes
+            excused; it is never counted as attendance.
           </p>
         </div>
         {myClasses.length > 0 ? (

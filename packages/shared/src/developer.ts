@@ -84,7 +84,6 @@ const STUDENT_WORKSPACE_PREFIXES = [
   "/leave-requests",
   "/sessions",
   "/submit",
-  "/my-assignments",
 ] as const;
 
 export function isStudentWorkspacePath(pathname: string): boolean {

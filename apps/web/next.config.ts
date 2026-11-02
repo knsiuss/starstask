@@ -1,33 +1,8 @@
 import type { NextConfig } from "next";
 
-const isProduction = process.env.NODE_ENV === "production";
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://*.supabase.co";
-const supabaseOrigin = supabaseUrl.startsWith("https://")
-  ? supabaseUrl
-  : "https://*.supabase.co";
-const supabaseSocket = supabaseOrigin.replace("https://", "wss://");
-
-// Inline scripts are required by Next.js' hydration bootstrap; a nonce-based
-// policy is a documented follow-up rather than pretending this is strict.
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co https://*.googleusercontent.com",
-  "font-src 'self' data:",
-  `connect-src 'self' ${supabaseOrigin} ${supabaseSocket}`,
-  "worker-src 'self'",
-  "manifest-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self' https://accounts.google.com",
-  "object-src 'none'",
-  ...(isProduction ? ["upgrade-insecure-requests"] : []),
-].join("; ");
-
+// The Content-Security-Policy is built per request in `src/proxy.ts` because it
+// carries a nonce that Next.js copies onto its own script tags.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: contentSecurityPolicy },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -54,6 +29,22 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.googleusercontent.com" },
       { protocol: "https", hostname: "*.supabase.co" },
     ],
+  },
+  async redirects() {
+    // The "My assignments" page is gone; edit now lives on the assignment
+    // itself. Old notification links and bookmarks keep working.
+    return [
+      {
+        source: "/my-assignments",
+        destination: "/assignments",
+        permanent: false,
+      },
+      {
+        source: "/my-assignments/:id/edit",
+        destination: "/assignments/:id/edit",
+        permanent: false,
+      },
+    ];
   },
   async headers() {
     return [

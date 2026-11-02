@@ -20,6 +20,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  STARTER_PRESETS,
+  applyStarterAssignment,
+  applyStarterPreset,
+  type StarterAssignmentSource,
+  type StarterPreset,
+} from "@/lib/assignments/starter-kit";
 
 export type AssignmentFormValues = {
   title: string;
@@ -40,8 +47,18 @@ type AssignmentFormProps = {
   mode: "create" | "edit";
   assignmentId?: string;
   initialValues: AssignmentFormValues;
-  courseOptions: { name: string; code: string | null }[];
+  /** Courses of the classes the user belongs to; empty for a user with none. */
+  courseOptions: {
+    id: string;
+    name: string;
+    code: string | null;
+    department: string | null;
+  }[];
+  previousAssignments?: StarterAssignmentSource[];
 };
+
+/** Marks a stored course that no longer belongs to any of the user's classes. */
+const CURRENT_COURSE_ID = "current-course";
 
 const FIELD_IDS: Record<string, string> = {
   title: "title",
@@ -58,10 +75,32 @@ export function AssignmentForm({
   assignmentId,
   initialValues,
   courseOptions,
+  previousAssignments = [],
 }: AssignmentFormProps) {
   const router = useRouter();
-  const [values, setValues] = React.useState(initialValues);
+  const [values, setValues] = React.useState(() => {
+    // A member of exactly one class has exactly one course; preselect it so the
+    // code and department are filled from the class instead of left blank.
+    if (initialValues.courseName || courseOptions.length !== 1) {
+      return initialValues;
+    }
+
+    const onlyCourse = courseOptions[0];
+
+    if (!onlyCourse) {
+      return initialValues;
+    }
+
+    return {
+      ...initialValues,
+      courseName: onlyCourse.name,
+      courseCode: onlyCourse.code ?? "",
+      department: onlyCourse.department ?? "",
+    };
+  });
   const [files, setFiles] = React.useState<File[]>([]);
+  const [previousId, setPreviousId] = React.useState("");
+  const [starterNote, setStarterNote] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
     {},
   );
@@ -70,6 +109,65 @@ export function AssignmentForm({
 
   const update = (key: keyof AssignmentFormValues, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
+  };
+
+  // An edited assignment may point at a course the user has since left. Keep it
+  // selectable so saving cannot silently rewrite the course of a submission.
+  const courseChoices =
+    values.courseName &&
+    !courseOptions.some((course) => course.name === values.courseName)
+      ? [
+          ...courseOptions,
+          {
+            id: CURRENT_COURSE_ID,
+            name: values.courseName,
+            code: values.courseCode || null,
+            department: values.department || null,
+          },
+        ]
+      : courseOptions;
+
+  const selectedCourse = courseChoices.find(
+    (course) => course.name === values.courseName,
+  );
+
+  const handleCourseChange = (courseId: string) => {
+    const course = courseChoices.find((option) => option.id === courseId);
+
+    if (!course) {
+      return;
+    }
+
+    setValues((current) => ({
+      ...current,
+      courseName: course.name,
+      courseCode: course.code ?? "",
+      department: course.department ?? "",
+    }));
+  };
+
+  const applyPreset = (preset: StarterPreset) => {
+    setValues((current) => applyStarterPreset(current, preset));
+    setFieldErrors({});
+    setFormMessage(null);
+    setStarterNote(
+      `${preset.label} template applied. Review every field before publishing.`,
+    );
+  };
+
+  const applyPreviousAssignment = () => {
+    const source = previousAssignments.find((item) => item.id === previousId);
+
+    if (!source) {
+      return;
+    }
+
+    setValues((current) => applyStarterAssignment(current, source));
+    setFieldErrors({});
+    setFormMessage(null);
+    setStarterNote(
+      "Details copied. Your title, deadline, semester, and academic year were left unchanged.",
+    );
   };
 
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +301,72 @@ export function AssignmentForm({
     >
       {formMessage ? <Alert variant="error">{formMessage}</Alert> : null}
 
+      {mode === "create" ? (
+        <fieldset className="border-border bg-subtle space-y-4 rounded-lg border p-4">
+          <legend className="px-1 text-base font-semibold">Starter kit</legend>
+          <p className="text-muted-foreground text-sm">
+            Optional. A template fills the description skeleton, type, and tags.
+            You can still change everything afterwards.
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {STARTER_PRESETS.map((preset) => (
+              <Button
+                key={preset.id}
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => applyPreset(preset)}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+
+          {previousAssignments.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="grid gap-1.5">
+                <Label htmlFor="previous-assignment">
+                  Copy details from a previous assignment
+                </Label>
+                <Select
+                  id="previous-assignment"
+                  value={previousId}
+                  onChange={(event) => setPreviousId(event.target.value)}
+                >
+                  <option value="">Choose one of your assignments</option>
+                  {previousAssignments.map((assignment) => (
+                    <option
+                      key={assignment.id}
+                      value={assignment.id}
+                    >
+                      {assignment.title} · {assignment.courseName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!previousId}
+                onClick={applyPreviousAssignment}
+              >
+                Copy details
+              </Button>
+            </div>
+          ) : null}
+
+          {starterNote ? (
+            <p
+              aria-live="polite"
+              className="text-muted-foreground text-xs"
+            >
+              {starterNote}
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
+
       <fieldset className="space-y-5">
         <legend className="text-base font-semibold">Assignment details</legend>
 
@@ -255,69 +419,125 @@ export function AssignmentForm({
       <fieldset className="space-y-5">
         <legend className="text-base font-semibold">Course</legend>
 
-        <Field
-          id="courseName"
-          label="Course name"
-          error={fieldErrors.courseName}
-          required
-        >
-          <Input
-            id="courseName"
-            name="courseName"
-            list="course-options"
-            value={values.courseName}
-            onChange={(event) => update("courseName", event.target.value)}
-            maxLength={120}
-            required
-            aria-required="true"
-            aria-invalid={Boolean(fieldErrors.courseName)}
-            aria-describedby={
-              fieldErrors.courseName ? "courseName-error" : undefined
-            }
-            placeholder="e.g. Database Systems"
-          />
-          <datalist id="course-options">
-            {courseOptions.map((course) => (
-              <option
-                key={course.name}
-                value={course.name}
+        {courseOptions.length > 0 ? (
+          <>
+            <Field
+              id="courseName"
+              label="Course"
+              error={fieldErrors.courseName}
+              required
+            >
+              <Select
+                id="courseName"
+                name="courseName"
+                value={selectedCourse?.id ?? ""}
+                onChange={(event) => handleCourseChange(event.target.value)}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.courseName)}
+                aria-describedby={
+                  fieldErrors.courseName
+                    ? "courseName-error courseName-hint"
+                    : "courseName-hint"
+                }
               >
-                {course.code ?? undefined}
-              </option>
-            ))}
-          </datalist>
-        </Field>
+                <option value="">Select a course</option>
+                {courseChoices.map((course) => (
+                  <option
+                    key={course.id}
+                    value={course.id}
+                  >
+                    {course.code &&
+                    course.code.toLowerCase() !== course.name.toLowerCase()
+                      ? `${course.name} (${course.code})`
+                      : course.name}
+                  </option>
+                ))}
+              </Select>
+              <p
+                id="courseName-hint"
+                className="text-muted-foreground text-xs"
+              >
+                Courses come from the classes you belong to. The code and
+                department follow the class.
+              </p>
+            </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            id="courseCode"
-            label="Course code"
-            error={fieldErrors.courseCode}
-          >
-            <Input
-              id="courseCode"
-              name="courseCode"
-              value={values.courseCode}
-              onChange={(event) => update("courseCode", event.target.value)}
-              maxLength={20}
-              placeholder="e.g. IF2230"
-            />
-          </Field>
-          <Field
-            id="department"
-            label="Department"
-            error={fieldErrors.department}
-          >
-            <Input
-              id="department"
-              name="department"
-              value={values.department}
-              onChange={(event) => update("department", event.target.value)}
-              maxLength={120}
-              placeholder="e.g. Informatics"
-            />
-          </Field>
-        </div>
+            <dl className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-sm font-medium">Course code</dt>
+                <dd className="text-muted-foreground mt-1 text-sm">
+                  {values.courseCode || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium">Department</dt>
+                <dd className="text-muted-foreground mt-1 text-sm">
+                  {values.department || "—"}
+                </dd>
+              </div>
+            </dl>
+          </>
+        ) : (
+          <>
+            <Field
+              id="courseName"
+              label="Course name"
+              error={fieldErrors.courseName}
+              required
+            >
+              <Input
+                id="courseName"
+                name="courseName"
+                value={values.courseName}
+                onChange={(event) => update("courseName", event.target.value)}
+                maxLength={120}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.courseName)}
+                aria-describedby={
+                  fieldErrors.courseName ? "courseName-error" : undefined
+                }
+                placeholder="e.g. Database Systems"
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                id="courseCode"
+                label="Course code"
+                error={fieldErrors.courseCode}
+              >
+                <Input
+                  id="courseCode"
+                  name="courseCode"
+                  value={values.courseCode}
+                  onChange={(event) => update("courseCode", event.target.value)}
+                  maxLength={20}
+                  placeholder="e.g. IF2230"
+                />
+              </Field>
+              <Field
+                id="department"
+                label="Department"
+                error={fieldErrors.department}
+              >
+                <Input
+                  id="department"
+                  name="department"
+                  value={values.department}
+                  onChange={(event) => update("department", event.target.value)}
+                  maxLength={120}
+                  placeholder="e.g. Informatics"
+                />
+              </Field>
+            </div>
+
+            <p className="text-muted-foreground text-xs">
+              Join a class to pick its course instead of typing one.
+            </p>
+          </>
+        )}
       </fieldset>
 
       <fieldset className="space-y-5">

@@ -1,13 +1,11 @@
-import { ArrowLeft, MailPlus } from "lucide-react";
+import { ArrowLeft, UserPlus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { JoinClassForm } from "@/components/classes/join-class-form";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
@@ -74,7 +72,7 @@ export default async function JoinClassPage({
 
       <div className="border-border bg-surface mt-4 rounded-xl border p-6 sm:p-8">
         <span className="bg-accent-soft text-accent flex h-11 w-11 items-center justify-center rounded-md">
-          <MailPlus
+          <UserPlus
             aria-hidden="true"
             className="h-5 w-5"
           />
@@ -84,9 +82,9 @@ export default async function JoinClassPage({
           Join a class
         </h1>
         <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-          Paste the invitation link a class admin sent you. Accepting it adds
-          you as a class member only — it never grants class admin or platform
-          admin permissions.
+          Join with the class name or code if the class accepts open joining, or
+          paste the invitation link a class admin sent you. Either way you
+          become a class member only — never a class admin or platform admin.
         </p>
 
         {showInvalid ? (
@@ -99,33 +97,10 @@ export default async function JoinClassPage({
           </Alert>
         ) : null}
 
-        <form
-          method="get"
-          action="/classes/join"
-          className="mt-6 space-y-2"
-        >
-          <Label htmlFor="invitation">Invitation link</Label>
-          <Input
-            id="invitation"
-            name="invitation"
-            type="text"
-            required
-            defaultValue={submitted}
-            placeholder="https://starstask.app/invite/..."
-            aria-invalid={showInvalid}
-            className="h-11"
-          />
-          <p className="text-muted-foreground text-xs">
-            The link must be opened with the same Google account the admin
-            invited.
-          </p>
-          <Button
-            type="submit"
-            className="mt-2 h-11 px-6"
-          >
-            Continue
-          </Button>
-        </form>
+        <JoinClassForm
+          submittedLink={submitted}
+          showInvalidLink={showInvalid}
+        />
       </div>
     </div>
   );

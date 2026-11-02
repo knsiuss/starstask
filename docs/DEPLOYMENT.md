@@ -13,7 +13,8 @@ The repository itself is deployable in the sense that `pnpm build` succeeds with
 secret; it is not _usable_ until the database and OAuth provider exist. Deadline reminders
 are optional and stay off until the five push variables and a cron source are configured.
 
-Push-specific procedure: `docs/PUSH_NOTIFICATIONS.md`.
+Push-specific procedure: `docs/PUSH_NOTIFICATIONS.md`. Pilot-specific scope, owner
+decision gates, operations, and stop conditions: `docs/PILOT_RUNBOOK.md`.
 
 ---
 
@@ -42,17 +43,18 @@ You also need a domain (or the `*.vercel.app` hostname) and access to Google Clo
    - **Publishable key** (`sb_publishable_…`) → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 The `service_role` key is **not** an application-wide secret. Copy it only into the
-server-only `SUPABASE_SERVICE_ROLE_KEY` variable, which the cron scheduler uses to claim
-delivery rows across users. Never expose it to the browser, and never prefix it with
-`NEXT_PUBLIC_`. `scripts/check-env.mjs` fails the build if a
-`NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` exists.
+server-only `SUPABASE_SERVICE_ROLE_KEY` variable. The cron scheduler uses it to claim
+delivery rows across users; attachment removal, Google Calendar sync, observability
+events, and the developer console also construct a service-role client. Never expose it
+to the browser, and never prefix it with `NEXT_PUBLIC_`. `scripts/check-env.mjs` fails the
+build if a `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` exists.
 
 ### 2.2 Apply the migrations
 
 ```bash
 supabase login
 supabase link --project-ref <project-ref>
-supabase db push --dry-run     # review the fifteen migrations
+supabase db push --dry-run     # review every migration in supabase/migrations/
 supabase db push
 ```
 
@@ -218,28 +220,41 @@ If you skip all of this, Stage A ("Add to Google Calendar") still works and
 
 ## 4. Environment variables
 
-| Variable                               | Scope  | Needed at             | Notes                                           |
-| -------------------------------------- | ------ | --------------------- | ----------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Public | Build **and** runtime | Inlined into the client bundle                  |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public | Build **and** runtime | Inlined; safe because RLS is the guard          |
-| `NEXT_PUBLIC_SITE_URL`                 | Public | Build                 | Canonical URLs, OG tags, `robots.txt`, sitemap  |
-| `RATE_LIMIT_SALT`                      | Server | Runtime               | ≥32 chars; rotating it resets all counters      |
-| `UPSTASH_REDIS_REST_URL`               | Server | Runtime               | Optional                                        |
-| `UPSTASH_REDIS_REST_TOKEN`             | Server | Runtime               | Optional, set together with the URL             |
-| `VAPID_PUBLIC_KEY`                     | Server | Runtime               | Push group; passed to the browser as a prop     |
-| `VAPID_PRIVATE_KEY`                    | Server | Runtime               | Push group; never log or expose                 |
-| `VAPID_SUBJECT`                        | Server | Runtime               | Push group; `mailto:` or `https:` URI           |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Server | Runtime               | Push group; cron scheduler only, bypasses RLS   |
-| `CRON_SECRET`                          | Server | Runtime               | Push group; ≥32 chars, bearer token             |
-| `GOOGLE_CALENDAR_CLIENT_ID`            | Server | Runtime               | Calendar group; separate from sign-in           |
-| `GOOGLE_CALENDAR_CLIENT_SECRET`        | Server | Runtime               | Calendar group; never log or expose             |
-| `GOOGLE_CALENDAR_REDIRECT_URI`         | Server | Runtime               | Calendar group; must match the console entry    |
-| `GOOGLE_TOKEN_ENCRYPTION_KEY`          | Server | Runtime               | Calendar group; 32 bytes, base64                |
-| `OCR_PROVIDER`                         | Server | Runtime               | Leave group; `disabled` (default) or `pdf-text` |
-| `SUPABASE_TEST_*`                      | Server | Tests only            | Never set in Vercel                             |
+| Variable                               | Scope  | Needed at             | Notes                                                                                        |
+| -------------------------------------- | ------ | --------------------- | -------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Public | Build **and** runtime | Inlined into the client bundle                                                               |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public | Build **and** runtime | Inlined; safe because RLS is the guard                                                       |
+| `NEXT_PUBLIC_SITE_URL`                 | Public | Build                 | Canonical URLs, OG tags, `robots.txt`, sitemap                                               |
+| `RATE_LIMIT_SALT`                      | Server | Runtime               | ≥32 chars; required in production; rotating it resets all counters                           |
+| `TRUST_X_FORWARDED_FOR`                | Server | Runtime               | Optional; `true` only behind a proxy that overwrites `x-forwarded-for`; Vercel auto-detected |
+| `UPSTASH_REDIS_REST_URL`               | Server | Runtime               | Optional                                                                                     |
+| `UPSTASH_REDIS_REST_TOKEN`             | Server | Runtime               | Optional, set together with the URL                                                          |
+| `VAPID_PUBLIC_KEY`                     | Server | Runtime               | Push group (all-or-none); passed to the browser as a prop                                    |
+| `VAPID_PRIVATE_KEY`                    | Server | Runtime               | Push group (all-or-none); never log or expose                                                |
+| `VAPID_SUBJECT`                        | Server | Runtime               | Push group (all-or-none); `mailto:` or `https:` URI                                          |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Server | Runtime               | Server only; cron, attachment removal, calendar sync, developer console; bypasses RLS        |
+| `CRON_SECRET`                          | Server | Runtime               | Cron group; requires the service role; ≥32 chars, bearer token                               |
+| `GOOGLE_CALENDAR_CLIENT_ID`            | Server | Runtime               | Calendar group; separate from sign-in                                                        |
+| `GOOGLE_CALENDAR_CLIENT_SECRET`        | Server | Runtime               | Calendar group; never log or expose                                                          |
+| `GOOGLE_CALENDAR_REDIRECT_URI`         | Server | Runtime               | Calendar group; must match the console entry                                                 |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY`          | Server | Runtime               | Calendar group; 32 bytes, base64                                                             |
+| `OCR_PROVIDER`                         | Server | Runtime               | Leave group; `disabled` (default) or `pdf-text`                                              |
+| `ATTENDANCE_RETENTION_DAYS`            | Server | Runtime               | Optional; check-in coordinate retention window, default 30, allowed 1–3650                   |
+| `NOTIFICATION_RETENTION_DAYS`          | Server | Runtime               | Optional; reminder-ledger retention window, default 180, allowed 1–3650                      |
+| `NEXT_PUBLIC_FEATURE_OCR`              | Client | Build time            | Optional; `false` hides document reading; default on                                         |
+| `NEXT_PUBLIC_FEATURE_CALENDAR_SYNC`    | Client | Build time            | Optional; `false` hides Google Calendar sync; default on                                     |
+| `NEXT_PUBLIC_FEATURE_SESSION_CHECKIN`  | Client | Build time            | Optional; `false` hides session check-in; default on                                         |
+| `SUPABASE_TEST_*`                      | Server | Tests only            | Never set in Vercel                                                                          |
 
-The five push variables are all-or-none. When any is missing, the app still builds and
+The three `NEXT_PUBLIC_FEATURE_*` variables are optional module switches. They default to
+on; only `false`, `0`, `off`, `no`, or `disabled` turns a module off. They are public and
+read at build time, so changing one requires a rebuild. A disabled module hides its UI and
+its API routes answer `404`; authorization inside the module is unchanged.
+
+The three VAPID variables are all-or-none. When any is missing, the app still builds and
 serves; `/settings/notifications` shows "not configured" and the cron route answers `503`.
+The scheduler also needs `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET`;
+`scripts/check-env.mjs` fails when push is configured without the service role.
 Generate the keys once per deployment:
 
 ```bash
@@ -343,7 +358,9 @@ Two things break preview OAuth by default:
 
 Push the repository to GitHub, import it in Vercel, set the environment variables, deploy.
 The build does not need a database connection: every page is dynamic and no query runs at
-build time.
+build time. A local `next build` with a warm Turbopack cache takes about 30 seconds on the
+development machine; the GitHub Actions `verify` job has not run yet, so its build time is
+still unknown.
 
 ### 5.5 Cron scheduling
 
@@ -354,7 +371,9 @@ build time.
   "crons": [
     { "path": "/api/cron/deadline-reminders", "schedule": "*/10 * * * *" },
     { "path": "/api/cron/notification-events", "schedule": "*/10 * * * *" },
-    { "path": "/api/cron/session-jobs", "schedule": "*/10 * * * *" }
+    { "path": "/api/cron/session-jobs", "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/attendance-retention", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/notification-retention", "schedule": "0 4 * * *" }
   ]
 }
 ```
@@ -366,6 +385,16 @@ relevant configuration is incomplete.
 `/api/cron/session-jobs` runs two phases in one invocation: session reminders (24h and 3h)
 and up to 20 due Google Calendar syncs. A failure in the reminder phase is logged and the
 calendar phase still runs, so one broken queue does not stall the other.
+
+`/api/cron/attendance-retention` clears check-in coordinates once the session ended longer
+ago than `ATTENDANCE_RETENTION_DAYS` (default 30 days). It keeps status, distance, and
+accuracy, purges at most 5,000 rows per call, and logs only a count. A daily schedule is
+enough; it is independent of push configuration.
+
+`/api/cron/notification-retention` deletes terminal reminder-ledger rows
+(`sent`, `failed`, `skipped`) older than `NOTIFICATION_RETENTION_DAYS` (default 180).
+Pending and processing rows are never touched, so an open reminder window stays
+intact. It also purges at most 5,000 rows per call and logs only a count.
 
 **Plan limitation:** Vercel Hobby only offers daily cron jobs, so a 10-minute schedule is
 not available there. Either upgrade to Pro, or do not rely on the Vercel cron:
@@ -381,6 +410,8 @@ Verify the deployed schedule rather than assuming it:
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/deadline-reminders
 curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/session-jobs
+curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/attendance-retention
+curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/notification-retention
 # expect 401 without the header; 200 with it
 ```
 
@@ -432,8 +463,8 @@ In the browser:
 
 1. Open `/login`, click **Continue with Google**, complete consent, land back on the page
    you started from (e.g. `/submit`).
-2. Publish an assignment with one PDF. It should appear on `/assignments` and on
-   `/my-assignments`.
+2. Publish an assignment with one PDF. It should appear on `/assignments`, and its
+   detail page should offer **Edit assignment** for its owner.
 3. Download the attachment — the link must be a `…/storage/v1/object/sign/…` URL that
    expires in 15 minutes.
 4. Sign out, then open the same assignment: the detail page must still load, and
@@ -590,13 +621,15 @@ removed manually in the Storage browser.
 - No error tracking. Failures are logged to the platform log with a Postgres code or an
   error name; there is no Sentry/OTel integration.
 - No scheduled job for orphaned storage objects when cleanup fails mid-request.
-- Content reports and account suspension are not implemented.
+- Account suspension is not implemented: there is no account status column or moderation
+  action. Content reports cover assignment briefs and are resolved from `/admin`.
 - No automated backup verification; rely on the Supabase plan's retention.
 - No cron source is configured or observed. The Vercel schedule needs Pro; alternatives are
   listed in `docs/PUSH_NOTIFICATIONS.md` §5.
 - No real push delivery has been observed: there is no VAPID key pair, no deployed
   environment, and no physical iOS/Android/desktop device test.
 - `notification_deliveries` has no automatic retention job; cleanup is manual SQL.
-- The integration suite (`pnpm test:integration`) has never been run against a real
-  project. Run it once against a disposable project before trusting the RLS claims,
-  including the four push tables.
+- The integration suite (`pnpm test:integration`) passes against a freshly reset local
+  Supabase instance, and the CI `integration` job applies every migration from empty and
+  runs it there. It has not been run against the live project, and the GitHub job has not
+  yet executed on GitHub-hosted runners.

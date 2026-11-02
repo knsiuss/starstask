@@ -1,18 +1,27 @@
 "use client";
 
-import { Loader2, ShieldCheck, ShieldOff, UserMinus } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  ShieldCheck,
+  ShieldOff,
+  UserMinus,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { formatDate } from "@starstask/shared";
 
+import { AdminUserCell } from "@/components/admin/admin-user-cell";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export type ManagedMember = {
   user_id: string;
   display_name: string;
+  avatar_url: string | null;
   bio?: string | null;
   joined_via: string;
   joined_at: string;
@@ -22,7 +31,7 @@ export type ManagedMember = {
 type MemberManagerProps = {
   classSlug: string;
   members: ManagedMember[];
-  /** Only platform admins may grant or revoke the class admin role. */
+  /** Class admins manage their own class; the server checks the same rule. */
   canManageAdmins: boolean;
   currentUserId: string;
 };
@@ -37,6 +46,7 @@ export function MemberManager({
   const [current, setCurrent] = React.useState(members);
   const [error, setError] = React.useState<string | null>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
+  const [query, setQuery] = React.useState("");
 
   const send = async (
     url: string,
@@ -109,101 +119,128 @@ export function MemberManager({
 
     return a.display_name.localeCompare(b.display_name);
   });
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const filtered = normalizedQuery
+    ? sorted.filter((member) =>
+        member.display_name.toLocaleLowerCase().includes(normalizedQuery),
+      )
+    : sorted;
 
   return (
     <div className="space-y-3">
+      <div className="relative max-w-sm">
+        <Search
+          aria-hidden="true"
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search members"
+          aria-label="Search members"
+          className="pl-9"
+        />
+      </div>
+
       {error ? <Alert variant="error">{error}</Alert> : null}
 
-      <ul className="divide-border border-border divide-y rounded-lg border">
-        {sorted.map((member) => (
-          <li
-            key={member.user_id}
-            className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
-          >
-            <div className="min-w-0">
-              <p className="truncate font-medium">
-                {member.display_name}
-                {member.user_id === currentUserId ? (
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    (you)
-                  </span>
-                ) : null}
-              </p>
-              {member.bio ? (
-                <p className="text-muted-foreground mt-1 line-clamp-3 text-xs leading-relaxed whitespace-pre-line">
-                  {member.bio}
-                </p>
-              ) : null}
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                Joined {formatDate(member.joined_at)} ·{" "}
-                {member.joined_via.replace("_", " ")}
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              {member.is_admin ? (
-                <Badge variant="accent">
-                  <ShieldCheck
-                    aria-hidden="true"
-                    className="h-3 w-3"
+      {filtered.length === 0 ? (
+        <div className="border-border bg-subtle rounded-xl border border-dashed px-5 py-10 text-center">
+          <p className="text-sm font-medium">No members match that search</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Try a different name.
+          </p>
+        </div>
+      ) : (
+        <ul className="divide-border border-border divide-y rounded-xl border">
+          {filtered.map((member) => (
+            <li
+              key={member.user_id}
+              className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
+            >
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <AdminUserCell
+                    displayName={member.display_name}
+                    avatarUrl={member.avatar_url}
                   />
-                  Admin
-                </Badge>
-              ) : null}
+                  {member.user_id === currentUserId ? (
+                    <span className="text-muted-foreground shrink-0 text-xs">
+                      (you)
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Joined {formatDate(member.joined_at)}
+                </p>
+              </div>
 
-              {canManageAdmins ? (
+              <div className="flex shrink-0 items-center gap-2">
+                {member.is_admin ? (
+                  <Badge variant="accent">
+                    <ShieldCheck
+                      aria-hidden="true"
+                      className="h-3 w-3"
+                    />
+                    Class admin
+                  </Badge>
+                ) : (
+                  <Badge variant="neutral">Member</Badge>
+                )}
+
+                {canManageAdmins ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => void toggleAdmin(member)}
+                    disabled={busyId === member.user_id}
+                    aria-label={
+                      member.is_admin
+                        ? `Revoke class admin from ${member.display_name}`
+                        : `Make ${member.display_name} a class admin`
+                    }
+                  >
+                    {busyId === member.user_id ? (
+                      <Loader2
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 animate-spin"
+                      />
+                    ) : member.is_admin ? (
+                      <ShieldOff
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5"
+                      />
+                    ) : (
+                      <ShieldCheck
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5"
+                      />
+                    )}
+                  </Button>
+                ) : null}
+
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
-                  onClick={() => void toggleAdmin(member)}
+                  onClick={() => void remove(member.user_id)}
                   disabled={busyId === member.user_id}
-                  aria-label={
-                    member.is_admin
-                      ? `Revoke class admin from ${member.display_name}`
-                      : `Make ${member.display_name} a class admin`
-                  }
+                  aria-label={`Remove ${member.display_name} from the class`}
                 >
-                  {busyId === member.user_id ? (
-                    <Loader2
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 animate-spin"
-                    />
-                  ) : member.is_admin ? (
-                    <ShieldOff
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5"
-                    />
-                  ) : (
-                    <ShieldCheck
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5"
-                    />
-                  )}
+                  <UserMinus
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
                 </Button>
-              ) : null}
-
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => void remove(member.user_id)}
-                disabled={busyId === member.user_id}
-                aria-label={`Remove ${member.display_name} from the class`}
-              >
-                <UserMinus
-                  aria-hidden="true"
-                  className="h-3.5 w-3.5"
-                />
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <p className="text-muted-foreground text-xs">
-        Removing a member also removes their class admin role. A class always
-        keeps at least one admin.
+        A class always keeps at least one admin.
       </p>
     </div>
   );

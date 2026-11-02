@@ -47,6 +47,8 @@ later, and remove something they regret posting.
 - Submit an assignment with up to three attachments (10 MB each).
 - My Assignments with status filter and pagination.
 - Edit title, description, course, metadata, deadline, tags, and references.
+- Start from a preset or copy course details from an earlier assignment.
+- Share a published brief to WhatsApp with its title, deadline, and link.
 - Delete with confirmation; attachment objects are removed.
 - Sign out.
 
@@ -71,6 +73,8 @@ moderation UI, admin roles, public attachment buckets, mobile apps.
 | F10 | Rate limiting                | Public reads and writes limited per IP or user                 |
 | F11 | Safe redirects               | `next` reduced to an allowlisted internal path                 |
 | F12 | Empty/error states           | Every data view has an explicit empty and failure state        |
+| F13 | Share a published brief      | WhatsApp message carries title, deadline, and canonical link   |
+| F14 | Starter kit                  | Presets and own past briefs prefill a new submission           |
 
 ## 7. Non-functional requirements
 
@@ -94,7 +98,7 @@ moderation UI, admin roles, public attachment buckets, mobile apps.
 
 - Live Google OAuth round-trip.
 - Production deployment.
-- RLS suite against a real project.
+- RLS suite against a hosted project (it passes against a disposable local Supabase).
 - Real attachment upload/download against Supabase Storage.
 
 These require external configuration that this repository does not perform.

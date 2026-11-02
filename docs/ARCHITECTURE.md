@@ -17,9 +17,10 @@ Next.js 16 (Vercel)
 ```
 
 There is no separate backend service. Next.js Route Handlers are the write boundary;
-Server Components read directly through the data-access layer. The only privileged runtime
-path is the cron scheduler, which uses a service-role client to claim delivery rows across
-users.
+Server Components read directly through the data-access layer. Privileged server-side
+paths that use a service-role client are the cron scheduler (claiming delivery rows
+across users), attachment removal, Google Calendar sync, observability events, and the
+developer console.
 
 ## 2. Layers
 
@@ -115,10 +116,11 @@ The UI is layered the same way:
 - `(onboarding)` holds `/onboarding`: a minimal shell (brand strip + centred column) outside
   the workspace chrome, so the completeness gate cannot redirect into a page that redirects
   back.
-- `(workspace)` holds the student workspace: `/dashboard`, `/my-assignments`,
-  `/sessions`, `/leave-requests`, `/dashboard/applications`, the personal class
-  directory (`/classes`, `/classes/join`), and member class pages. Its navigation is
-  student-only; no admin or developer entry appears here.
+- `(workspace)` holds the student workspace: `/dashboard`, `/assignments` (including
+  `/assignments/[id]/edit` for your own contributions), `/notifications`, `/sessions`,
+  `/leave-requests`, `/dashboard/applications`, the personal class directory (`/classes`,
+  `/classes/join`), and member class pages. Its navigation is student-only; no admin or
+  developer entry appears here.
 - `(console)` holds the staff surfaces, each with its own shell and nav:
   `/admin/*` (platform admin) and `/developer/*` (developer). The only way in from
   the student workspace is the account menu, which shows the console link for the
@@ -151,6 +153,13 @@ The browser only ever receives the public VAPID key. The private key and the ser
 key stay in the scheduler module. The service worker at `/sw.js` has no `fetch` handler and
 no cache, so authenticated pages cannot be served from a stale cache. Full behavior,
 windows, retry policy, and deployment options: `docs/PUSH_NOTIFICATIONS.md`.
+
+**Inbox alongside push.** `notification_events` is the durable record; push is only a
+delivery detail, so a member without a device still receives every event. RLS scopes each
+row to its owner, the owner may select `read_at`, and only
+`mark_notification_events_read(uuid[])` — a `SECURITY DEFINER` function — can set it. The
+queue therefore needs no client UPDATE grant. `/notifications` pages through the caller's
+events with an unread filter, and `/dashboard` shows the five most recent.
 
 ## 7. Session and calendar path
 
@@ -221,14 +230,21 @@ POST /api/leave-requests/[id]/cancel
   ├─ owner (draft or submitted) or class admin (submitted)
   ├─ cancel_leave_request     re-checks the state inside SQL
   └─ cancelled is terminal; no transition leaves it
+
+POST /api/classes/[slug]/leave-requests/[id]/review
+  ├─ requireClassManager       class-scoped check
+  ├─ review_leave_request      re-checks manager, state, and self-review
+  └─ approval rewrites covered absent rows to excused; never present
 ```
 
 Two invariants shape the design:
 
-- **Forwarding is not approval.** `forwarded` only means "included in a
-  successfully completed forwarding package". There is no approve/reject state;
-  the lecturer decides outside StarsTask, and a class admin can only forward,
-  export, or cancel.
+- **Review and forwarding are separate.** A class admin approves or rejects a
+  submitted request; approval marks the covered sessions `excused` and notifies
+  the student, and it can never mark anybody `present`. `forwarded` only means
+  "included in a successfully completed forwarding package" — it is not a
+  decision, and the lecturer still decides outside StarsTask. Cancelling stays
+  available for a request that cannot be decided.
 - **Evidence is private by construction.** The bucket is private, keys embed the
   owner and request IDs, preview uses 5-minute signed URLs, and every read is
   re-authorized server-side. OCR is an optional helper; nothing is decided from
@@ -272,8 +288,9 @@ POST /api/assignments/[id]/reports
   ├─ Zod parse                 → 422
   └─ report_assignment         upsert the caller's one open report
 
-PATCH /api/admin/assignment-reports/[id]      platform admin only
+PATCH /api/admin/assignment-reports/[id]      class manager or platform admin
   ├─ Zod parse                 → 422
+  ├─ class role check          → 403
   └─ review_assignment_report  can_manage_class + open-only + audit entry
 ```
 
@@ -297,8 +314,11 @@ returns an empty list for anyone else, which hides the section entirely.
    `/onboarding?next=<sanitized>` instead. The same check runs once on `/login`, and the
    workspace layout repeats it on every request so a direct URL cannot skip it.
 6. `src/proxy.ts` refreshes the session on every matched request and mirrors cookies.
+   It verifies `auth.getClaims()`, which checks the JWT against the project JWKS
+   locally when the project signs with asymmetric keys.
 7. Server Components call `auth.getUser()` (verified with Supabase), never
-   `getSession()` alone.
+   `getSession()` alone. This is the authoritative identity and revocation check,
+   so a navigation costs one auth round-trip rather than two.
 
 No second sign-in is needed: the session from step 4 is already valid, and onboarding only
 posts the profile form to `/api/profile/onboarding`.
@@ -307,17 +327,17 @@ Details: `docs/AUTHENTICATION.md`.
 
 ## 12. Caching
 
-| Surface                                                             | Strategy                                                 |
-| ------------------------------------------------------------------- | -------------------------------------------------------- |
-| `/`, `/assignments`, detail, `/login`, `/submit`, `/my-assignments` | `force-dynamic`; per-request session and data            |
-| `GET /api/assignments`                                              | `no-store`; authenticated readers only                   |
-| `GET /api/assignments/[id]`                                         | `no-store` (payload may include owner-only pending data) |
-| Authenticated endpoints                                             | `no-store`                                               |
-| `/api/cron/deadline-reminders`                                      | `force-dynamic`, `no-store`                              |
-| `/manifest.webmanifest`                                             | static metadata route                                    |
-| `/sw.js`, `/icons/*`                                                | worker `no-cache`; icons immutable                       |
-| `sitemap.xml`                                                       | Static public routes only; no assignment URLs            |
-| `robots.txt`                                                        | static                                                   |
+| Surface                                          | Strategy                                                 |
+| ------------------------------------------------ | -------------------------------------------------------- |
+| `/`, `/assignments`, detail, `/login`, `/submit` | `force-dynamic`; per-request session and data            |
+| `GET /api/assignments`                           | `no-store`; authenticated readers only                   |
+| `GET /api/assignments/[id]`                      | `no-store` (payload may include owner-only pending data) |
+| Authenticated endpoints                          | `no-store`                                               |
+| `/api/cron/deadline-reminders`                   | `force-dynamic`, `no-store`                              |
+| `/manifest.webmanifest`                          | static metadata route                                    |
+| `/sw.js`, `/icons/*`                             | worker `no-cache`; icons immutable                       |
+| `sitemap.xml`                                    | Static public routes only; no assignment URLs            |
+| `robots.txt`                                     | static                                                   |
 
 Assignment pages and APIs require a verified session and never use a shared cache.
 
@@ -331,9 +351,12 @@ Action whose error shape is implicit.
 and returns the total in one round trip. `create_or_get_course` is the only controlled
 write path into `courses`, so clients never hold INSERT rights there.
 
-**Hand-written DB types.** `src/types/database.ts` mirrors the migrations and is
-regenerated with `pnpm db:types` once a local instance exists. It keeps `tsc` useful
-before any project is connected.
+**DB types: generated plus a hand-written contract.** `src/types/database.generated.ts`
+is produced from the migrations by `pnpm db:types` and committed. `src/types/database.ts`
+stays hand-written because it narrows enum columns to literal unions and marks nullable RPC
+arguments, which the generator cannot express. `src/types/database-contract.ts` asserts at
+compile time that both types agree on table, view, function, and column names, so a
+migration that changes the schema without updating the hand-written type fails `tsc`.
 
 **Nickname in `display_name`, private columns behind RPCs.** Onboarding writes the
 student's chosen nickname into the existing `display_name`, so every public surface keeps
@@ -394,7 +417,8 @@ deterministic on both server and client. `Intl` is still used for formatting.
 - The class workflow requires a manually seeded first platform admin.
 - Pending attachments are readable by every class admin of that class, not only the
   assigned reviewer; reviewer assignment is not modelled.
-- No CSP nonce; `script-src` allows inline scripts for Next.js hydration.
+- No inline-script CSP gap: `proxy.ts` issues a nonce per request and Next.js binds its
+  scripts to it.
 - No observability integration (Sentry/OTel); logs are structured JSON-ish `console.error`.
 - Session calendar sync is one-directional and has no webhook, so an event edited in
   Google is overwritten on the next sync and a deleted one is recreated. That is

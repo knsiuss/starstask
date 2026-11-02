@@ -67,7 +67,7 @@ export type SessionCheckIn = {
 
 export type SessionCheckInStatus = "present" | "late" | "excused" | "absent";
 
-export type SessionCheckInMethod = "geo" | "manual";
+export type SessionCheckInMethod = "geo" | "manual" | "system";
 
 export type SessionParticipant = {
   userId: string;
@@ -97,8 +97,10 @@ export type SessionAssignmentOption = {
   title: string;
 };
 
+// Raw check-in coordinates are not granted to clients; read them through
+// session_checkin_summary(), which returns only the derived values.
 const SESSION_COLUMNS =
-  "id, class_id, assignment_id, organizer_id, title, description, agenda, session_type, meeting_url, location, starts_at, ends_at, time_zone, capacity, registration_deadline, visibility, status, cancelled_at, completed_at, created_at, updated_at, checkin_latitude, checkin_longitude, checkin_radius_m";
+  "id, class_id, assignment_id, organizer_id, title, description, agenda, session_type, meeting_url, location, starts_at, ends_at, time_zone, capacity, registration_deadline, visibility, status, cancelled_at, completed_at, created_at, updated_at";
 
 type SessionRow = {
   id: string;
@@ -122,9 +124,6 @@ type SessionRow = {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
-  checkin_latitude: number | null;
-  checkin_longitude: number | null;
-  checkin_radius_m: number;
 };
 
 function mapListRow(row: SessionListRow): SessionSummary {
@@ -223,11 +222,21 @@ export async function getSessionById(
     return null;
   }
 
-  const [attendance, profiles] = await Promise.all([
+  const [attendance, profiles, checkinSummary] = await Promise.all([
     getSessionAttendance(sessionId),
     loadProfiles([data.organizer_id]),
+    supabase.rpc("session_checkin_summary", { p_session_id: sessionId }),
   ]);
   const organizer = profiles.get(data.organizer_id);
+
+  if (checkinSummary.error) {
+    throw new DataAccessError(
+      "Could not load the check-in settings",
+      checkinSummary.error.code,
+    );
+  }
+
+  const checkin = checkinSummary.data?.[0];
 
   return {
     id: data.id,
@@ -258,9 +267,8 @@ export async function getSessionById(
     goingCount: attendance.goingCount,
     maybeCount: attendance.maybeCount,
     viewerStatus: attendance.viewerStatus,
-    hasCheckInLocation:
-      data.checkin_latitude !== null && data.checkin_longitude !== null,
-    checkinRadiusM: data.checkin_radius_m,
+    hasCheckInLocation: checkin?.has_location ?? false,
+    checkinRadiusM: checkin?.radius_m ?? 150,
   };
 }
 

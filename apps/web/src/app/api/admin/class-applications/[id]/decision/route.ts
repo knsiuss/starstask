@@ -6,6 +6,7 @@ import {
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { getApplicationById, findClassDuplicates } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requirePlatformAdmin } from "@/features/classes/class-access";
@@ -54,6 +55,37 @@ export async function POST(request: Request, context: RouteContext) {
         "Please fix the highlighted fields.",
         toFieldErrors(parsed.error),
       );
+    }
+
+    // Approval must stay an explicit choice: if a class with the same code or
+    // name already exists in this academic period, the reviewer has to confirm
+    // that another class is intended. Nothing is merged automatically.
+    if (parsed.data.decision === "approved") {
+      const application = await getApplicationById(parsedId.data);
+
+      if (!application) {
+        throw new ApiError(404, "not_found", "Application not found.");
+      }
+
+      const duplicates = await findClassDuplicates({
+        name: application.proposed_name,
+        classCode: application.proposed_class_code ?? undefined,
+        academicYear: application.academic_year,
+        semester: application.semester,
+        institution: application.institution ?? undefined,
+      });
+
+      if (duplicates.length > 0 && !parsed.data.confirmDuplicate) {
+        throw new ApiError(
+          409,
+          "possible_duplicate",
+          "A class with this code or name already exists in this academic period. Review it, then confirm that a new class is still intended.",
+          {
+            confirmDuplicate:
+              "Confirm that you reviewed the existing class and still want to create another one",
+          },
+        );
+      }
     }
 
     const result = await decideClassApplication(parsedId.data, parsed.data);

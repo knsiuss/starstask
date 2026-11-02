@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { isFeatureEnabled } from "@/lib/config/features";
 import {
   LEAVE_EXPLANATION_MAX,
   LEAVE_EXPLANATION_MIN,
@@ -416,96 +417,98 @@ export function LeaveForm({
         </div>
 
         <p className="text-muted-foreground text-xs">
-          Submitting sends the request to your class admin, who checks it and
-          forwards it to the lecturer. StarsTask has no approve or reject step;
-          the lecturer decides outside StarsTask.
+          Submitting sends the request to your class admin, who approves or
+          rejects it. An approved absence marks the covered sessions excused; it
+          never marks you present.
         </p>
       </form>
 
-      <aside className="grid content-start gap-3">
-        <div className="border-border bg-muted/40 rounded-xl border p-4">
-          <p className="flex items-center gap-1.5 text-sm font-medium">
-            <Sparkles
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            Document reader
-          </p>
-
-          {ocrStatus === "not_run" ? (
-            <p className="text-muted-foreground mt-1.5 text-xs">
-              Upload a PDF and StarsTask will try to read the dates for you.
-              Everything it finds is a suggestion you must confirm.
+      {isFeatureEnabled("ocr") ? (
+        <aside className="grid content-start gap-3">
+          <div className="border-border bg-muted/40 rounded-xl border p-4">
+            <p className="flex items-center gap-1.5 text-sm font-medium">
+              <Sparkles
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Document reader
             </p>
-          ) : null}
 
-          {ocrStatus === "unsupported" ? (
-            <p className="text-muted-foreground mt-1.5 text-xs">
-              This file could not be read automatically (it may be a scan).
-              Enter the details by hand — nothing is blocked.
-            </p>
-          ) : null}
-
-          {ocrStatus === "failed" ? (
-            <p className="text-muted-foreground mt-1.5 text-xs">
-              The document could not be read. Enter the details by hand.
-            </p>
-          ) : null}
-
-          {hasSuggestion ? (
-            <div className="mt-3 grid gap-2">
-              {SUGGESTION_FIELDS.map((field) => {
-                const value = suggestion?.[field.key];
-
-                if (!value) {
-                  return null;
-                }
-
-                const isDate =
-                  field.key !== "studentName" && field.key !== "documentType";
-                const display = isDate ? formatLeaveDate(value) : value;
-                const source = sources[field.key];
-
-                return (
-                  <div
-                    key={field.key}
-                    className="border-border bg-background rounded-lg border p-2.5"
-                  >
-                    <p className="text-muted-foreground text-[11px]">
-                      {field.label}
-                    </p>
-                    <p className="text-sm font-medium">{display}</p>
-
-                    {field.key !== "studentName" &&
-                    field.key !== "documentType" ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          applySuggestion(field.key as keyof FormState, value)
-                        }
-                        className="text-accent mt-1 text-xs underline-offset-4 hover:underline"
-                      >
-                        Use this value
-                      </button>
-                    ) : null}
-
-                    {source ? (
-                      <p className="text-muted-foreground mt-1 text-[11px]">
-                        {SOURCE_LABELS[source]}
-                      </p>
-                    ) : null}
-                  </div>
-                );
-              })}
-
-              <p className="text-muted-foreground text-[11px]">
-                Read from the document, not verified. Check every value before
-                submitting.
+            {ocrStatus === "not_run" ? (
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                Upload a PDF and StarsTask will try to read the dates for you.
+                Everything it finds is a suggestion you must confirm.
               </p>
-            </div>
-          ) : null}
-        </div>
-      </aside>
+            ) : null}
+
+            {ocrStatus === "unsupported" ? (
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                This file could not be read automatically (it may be a scan).
+                Enter the details by hand — nothing is blocked.
+              </p>
+            ) : null}
+
+            {ocrStatus === "failed" ? (
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                The document could not be read. Enter the details by hand.
+              </p>
+            ) : null}
+
+            {hasSuggestion ? (
+              <div className="mt-3 grid gap-2">
+                {SUGGESTION_FIELDS.map((field) => {
+                  const value = suggestion?.[field.key];
+
+                  if (!value) {
+                    return null;
+                  }
+
+                  const isDate =
+                    field.key !== "studentName" && field.key !== "documentType";
+                  const display = isDate ? formatLeaveDate(value) : value;
+                  const source = sources[field.key];
+
+                  return (
+                    <div
+                      key={field.key}
+                      className="border-border bg-background rounded-lg border p-2.5"
+                    >
+                      <p className="text-muted-foreground text-[11px]">
+                        {field.label}
+                      </p>
+                      <p className="text-sm font-medium">{display}</p>
+
+                      {field.key !== "studentName" &&
+                      field.key !== "documentType" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            applySuggestion(field.key as keyof FormState, value)
+                          }
+                          className="text-accent mt-1 text-xs underline-offset-4 hover:underline"
+                        >
+                          Use this value
+                        </button>
+                      ) : null}
+
+                      {source ? (
+                        <p className="text-muted-foreground mt-1 text-[11px]">
+                          {SOURCE_LABELS[source]}
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+
+                <p className="text-muted-foreground text-[11px]">
+                  Read from the document, not verified. Check every value before
+                  submitting.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </aside>
+      ) : null}
     </div>
   );
 }

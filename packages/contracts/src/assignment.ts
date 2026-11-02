@@ -16,6 +16,40 @@ export const ASSIGNMENT_STATUSES = ["published", "pending"] as const;
 
 export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
 
+/**
+ * Two kinds of class content share the assignment table.
+ *
+ * A lecturer assignment carries instructions a class admin recorded on behalf
+ * of a lecturer; the class admin is the recorder, never the author. A class
+ * announcement is internal class information with no academic source.
+ */
+export const ASSIGNMENT_CONTENT_TYPES = [
+  "lecturer_assignment",
+  "class_announcement",
+] as const;
+
+export type AssignmentContentType = (typeof ASSIGNMENT_CONTENT_TYPES)[number];
+
+export const ASSIGNMENT_CONTENT_TYPE_LABELS: Record<
+  AssignmentContentType,
+  string
+> = {
+  lecturer_assignment: "Lecturer assignment",
+  class_announcement: "Class announcement",
+};
+
+export const ASSIGNMENT_CONTENT_TYPE_HINTS: Record<
+  AssignmentContentType,
+  string
+> = {
+  lecturer_assignment:
+    "Instructions a lecturer gave, recorded here for the class. StarsTask does not verify them.",
+  class_announcement:
+    "Internal class information, reminders, or coordination. Not an official assignment.",
+};
+
+export const SOURCE_LABEL_MAX = 120;
+
 export const ASSIGNMENT_SORTS = ["newest", "oldest", "deadline"] as const;
 
 export type AssignmentSort = (typeof ASSIGNMENT_SORTS)[number];
@@ -181,6 +215,15 @@ export type AssignmentUpdateInput = z.infer<typeof assignmentUpdateSchema>;
 
 export const assignmentIdSchema = z.uuid("Invalid assignment id");
 
+/** Personal completion toggle. Never an official submission. */
+export const assignmentCompletionSchema = z
+  .object({ completed: z.boolean() })
+  .strict();
+
+export type AssignmentCompletionInput = z.infer<
+  typeof assignmentCompletionSchema
+>;
+
 export const courseIdSchema = z.uuid("Invalid course id");
 
 export const semesterSchema = z.string().trim().max(20);
@@ -273,6 +316,43 @@ export function isSafeHttpUrl(value: string): boolean {
     return false;
   }
 }
+
+/** Hosts a shared Google Drive file or folder link can live on. */
+const GOOGLE_DRIVE_HOSTS = ["drive.google.com", "docs.google.com"] as const;
+
+export function isGoogleDriveUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" &&
+      GOOGLE_DRIVE_HOSTS.some(
+        (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A Drive link is stored as-is and opened in a new tab, so the host is pinned
+ * to Google: an arbitrary https URL would let a class admin point the "materi"
+ * button anywhere while the label still says Google Drive.
+ */
+export const googleDriveUrlSchema = z
+  .string()
+  .trim()
+  .max(2048, "The link is too long")
+  .refine((value) => isGoogleDriveUrl(value), {
+    message: "Use a Google Drive or Google Docs link (https://)",
+  });
+
+/** Optional Drive link: an empty string clears it. */
+export const optionalGoogleDriveUrlSchema = z
+  .union([googleDriveUrlSchema, z.literal("")])
+  .optional()
+  .transform((value) => (value === "" || value === undefined ? null : value));
 
 /** Converts Zod issues into `{ field: firstMessage }` for form rendering. */
 export function toFieldErrors(error: z.ZodError): Record<string, string> {
