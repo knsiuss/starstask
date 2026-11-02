@@ -364,23 +364,38 @@ still unknown.
 
 ### 5.5 Cron scheduling
 
-`apps/web/vercel.json` declares:
+`apps/web/vercel.json` declares only the two daily cleanup jobs, because the Vercel Hobby
+plan caps a project at two cron jobs that run at most once per day:
 
 ```json
 {
   "crons": [
-    { "path": "/api/cron/deadline-reminders", "schedule": "*/10 * * * *" },
-    { "path": "/api/cron/notification-events", "schedule": "*/10 * * * *" },
-    { "path": "/api/cron/session-jobs", "schedule": "*/10 * * * *" },
     { "path": "/api/cron/attendance-retention", "schedule": "0 3 * * *" },
     { "path": "/api/cron/notification-retention", "schedule": "0 4 * * *" }
   ]
 }
 ```
 
-Vercel adds `Authorization: Bearer $CRON_SECRET` automatically when that variable is set
-for the environment. The routes reject anything else with `401` and return `503` when the
-relevant configuration is incomplete.
+The three sub-daily jobs are driven by `.github/workflows/cron.yml` instead:
+
+| Endpoint                           | Schedule | Driver         |
+| ---------------------------------- | -------- | -------------- |
+| `/api/cron/deadline-reminders`     | 10 min   | GitHub Actions |
+| `/api/cron/notification-events`    | 10 min   | GitHub Actions |
+| `/api/cron/session-jobs`           | 10 min   | GitHub Actions |
+| `/api/cron/attendance-retention`   | Daily    | Vercel Cron    |
+| `/api/cron/notification-retention` | Daily    | Vercel Cron    |
+
+The workflow needs two repository settings: the variable **`APP_URL`** (the deployed
+origin, for example `https://starstask.vercel.app`) and the secret **`CRON_SECRET`** with
+the same value configured in Vercel. Both endpoints authenticate with
+`Authorization: Bearer $CRON_SECRET`; Vercel adds that header automatically for its own
+cron invocations, while the workflow sends it explicitly. The routes reject anything else
+with `401` and return `503` when the relevant configuration is incomplete.
+
+If the repository upgrades to Vercel Pro, the three sub-daily entries can move back into
+`vercel.json` and the workflow can be deleted; keep exactly one driver per endpoint so a
+job does not run twice.
 
 `/api/cron/session-jobs` runs two phases in one invocation: session reminders (24h and 3h)
 and up to 20 due Google Calendar syncs. A failure in the reminder phase is logged and the
@@ -396,14 +411,20 @@ enough; it is independent of push configuration.
 Pending and processing rows are never touched, so an open reminder window stays
 intact. It also purges at most 5,000 rows per call and logs only a count.
 
-**Plan limitation:** Vercel Hobby only offers daily cron jobs, so a 10-minute schedule is
-not available there. Either upgrade to Pro, or do not rely on the Vercel cron:
+**Plan limitation:** Vercel Hobby allows two cron jobs that run at most once per day, so
+the 10-minute schedule from the original design cannot run there. This repository keeps the
+two daily jobs on Vercel and uses `.github/workflows/cron.yml` for the sub-daily ones.
+Alternatives, if Actions is undesirable:
 
+- Upgrade to Vercel Pro and move the three entries back into `vercel.json`.
 - Supabase `pg_cron` + `pg_net` calling the route every 10 minutes (store the secret in
   Supabase Vault).
-- An external scheduler (GitHub Actions, cron-job.org, a worker) hitting the same URL with
-  the bearer token.
+- Another external scheduler (cron-job.org, a worker) hitting the same URL with the bearer
+  token.
 - A manual `curl` while verifying.
+
+GitHub scheduled workflows only run on the default branch, may start a few minutes late
+during peak periods, and are disabled after 60 days without repository activity.
 
 Verify the deployed schedule rather than assuming it:
 
@@ -416,7 +437,8 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://<domain>/api/cron/notification
 ```
 
 The scheduler does not depend on page visits, but it is **inactive** until one of these is
-configured and observed running.
+configured and observed running. Check the Actions tab for a green `Cron` run, or trigger
+it manually with `workflow_dispatch`.
 
 ---
 
@@ -624,8 +646,8 @@ removed manually in the Storage browser.
 - Account suspension is not implemented: there is no account status column or moderation
   action. Content reports cover assignment briefs and are resolved from `/admin`.
 - No automated backup verification; rely on the Supabase plan's retention.
-- No cron source is configured or observed. The Vercel schedule needs Pro; alternatives are
-  listed in `docs/PUSH_NOTIFICATIONS.md` §5.
+- The sub-daily cron source is `.github/workflows/cron.yml`; it has not been observed running
+  against a deployment yet. Vercel only runs the two daily retention jobs.
 - No real push delivery has been observed: there is no VAPID key pair, no deployed
   environment, and no physical iOS/Android/desktop device test.
 - `notification_deliveries` has no automatic retention job; cleanup is manual SQL.

@@ -1,0 +1,49 @@
+name: Cron
+
+on:
+  schedule:
+    # Vercel Hobby cannot run sub-daily crons, so these three endpoints are
+    # driven from Actions instead. GitHub may delay a scheduled run by a few
+    # minutes during peak periods.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Call cron endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Ping endpoints
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${APP_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "Set the APP_URL repository variable and the CRON_SECRET secret first." >&2
+            exit 1
+          fi
+
+          status=0
+          for path in deadline-reminders notification-events session-jobs; do
+            echo "Calling ${path}"
+            if ! curl --fail --silent --show-error --max-time 90 \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${APP_URL}/api/cron/${path}"; then
+              echo "::error::${path} failed"
+              status=1
+            fi
+            echo
+          done
+
+          exit "${status}"
