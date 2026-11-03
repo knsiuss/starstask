@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   attendanceMeetingCheckInSchema,
   attendanceMeetingCloseSchema,
+  attendanceMeetingCorrectionSchema,
   attendanceMeetingCreateSchema,
   attendanceMeetingLocationChangeSchema,
   getAttendanceLateDeadline,
@@ -29,7 +30,7 @@ describe("attendanceMeetingCreateSchema", () => {
     const parsed = attendanceMeetingCreateSchema.parse(baseMeeting);
 
     expect(parsed.lateAfterMinutes).toBe(10);
-    expect(parsed.radiusM).toBe(150);
+    expect(parsed.radiusM).toBe(100);
     expect(parsed.title).toBeUndefined();
   });
 
@@ -110,7 +111,7 @@ describe("attendanceMeetingCreateSchema", () => {
     expect(
       attendanceMeetingCreateSchema.safeParse({
         ...baseMeeting,
-        radiusM: 1_001,
+        radiusM: 501,
       }).success,
     ).toBe(false);
   });
@@ -269,5 +270,50 @@ describe("getAttendanceLateDeadline", () => {
 
   it("returns null for an invalid start", () => {
     expect(getAttendanceLateDeadline("not-a-date", 10)).toBeNull();
+  });
+});
+
+describe("attendanceMeetingCorrectionSchema", () => {
+  const valid = {
+    userId: "11111111-1111-4111-8111-111111111111",
+    status: "present",
+    reason: "Student in room; GPS accuracy too poor",
+    physicallyVerified: true,
+  } as const;
+
+  it("accepts a physically verified correction to present", () => {
+    expect(attendanceMeetingCorrectionSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("rejects a present correction without a reason", () => {
+    expect(
+      attendanceMeetingCorrectionSchema.safeParse({ ...valid, reason: "" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects a present correction without physical verification", () => {
+    const parsed = attendanceMeetingCorrectionSchema.safeParse({
+      ...valid,
+      physicallyVerified: false,
+    });
+
+    expect(parsed.success).toBe(false);
+
+    if (!parsed.success) {
+      expect(
+        parsed.error.issues.some((issue) => issue.path[0] === "physicallyVerified"),
+      ).toBe(true);
+    }
+  });
+
+  it("allows a non-present correction without physical verification", () => {
+    expect(
+      attendanceMeetingCorrectionSchema.safeParse({
+        ...valid,
+        status: "excused",
+        physicallyVerified: false,
+      }).success,
+    ).toBe(true);
   });
 });

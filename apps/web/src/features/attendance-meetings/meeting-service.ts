@@ -3,6 +3,7 @@ import "server-only";
 import type {
   AttendanceExportKind,
   AttendanceMeetingCheckInInput,
+  AttendanceMeetingCorrectionInput,
   AttendanceMeetingCreateInput,
   AttendanceMeetingLocationChangeInput,
 } from "@starstask/contracts";
@@ -196,6 +197,38 @@ export async function checkInAttendanceMeeting(
     accuracyM: readNullableNumber(payload.accuracy_m),
     alreadyCheckedIn: payload.already_checked_in === true,
   };
+}
+
+/**
+ * Manual attendance correction.
+ *
+ * The database function is the security boundary: it requires a class
+ * organizer, validates membership and the reason, refuses a present-mark
+ * without an explicit physical-verification attestation, and writes the
+ * append-only audit row in the same transaction.
+ */
+export async function recordAttendanceCorrection(
+  sessionId: string,
+  input: AttendanceMeetingCorrectionInput,
+): Promise<string> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("record_attendance_correction", {
+    p_session_id: sessionId,
+    p_user_id: input.userId,
+    p_status: input.status,
+    p_reason: input.reason,
+    p_physically_verified: input.physicallyVerified,
+  });
+
+  if (error) {
+    throw toSessionApiError(error, "Could not record the correction.");
+  }
+
+  if (!data) {
+    throw new ApiError(500, "internal_error", "Could not record the correction.");
+  }
+
+  return data;
 }
 
 /** Records a manager-requested export. The function re-checks class access. */

@@ -3,11 +3,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { LeaveForm } from "@/components/leave/leave-form";
+import {
+  LeaveForm,
+  type LeaveClassChoice,
+} from "@/components/leave/leave-form";
 import { LeaveStatusBadge } from "@/components/leave/leave-status-badge";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth/session";
+import {
+  listActiveCoursesByClass,
+  listMyClasses,
+  type ClassCourseSummary,
+} from "@/lib/db/classes";
 import { getLeaveRequestById } from "@/lib/db/leave";
 import {
   readFieldSources,
@@ -76,6 +84,32 @@ export default async function EditLeaveRequestPage({
   const suggestion = readOcrSuggestion(request.ocrResult);
   const fieldSources = readFieldSources(request.fieldSources);
 
+  // The class cannot change here, but its courses can: a draft that covered
+  // the wrong courses is fixable until it is submitted.
+  const [myClasses, coursesByClass] = await Promise.all([
+    listMyClasses(session.user.id),
+    listActiveCoursesByClass([request.classId]).catch(
+      () => new Map<string, ClassCourseSummary[]>(),
+    ),
+  ]);
+  const requestClass = myClasses.find((item) => item.id === request.classId);
+  const classChoices: LeaveClassChoice[] = requestClass
+    ? [
+        {
+          id: requestClass.id,
+          name: requestClass.name,
+          courses: (coursesByClass.get(requestClass.id) ?? []).map(
+            (course) => ({
+              id: course.id,
+              name: course.code
+                ? `${course.code} · ${course.name}`
+                : course.name,
+            }),
+          ),
+        },
+      ]
+    : [];
+
   return (
     <div className={pageContainer}>
       <Link
@@ -110,6 +144,8 @@ export default async function EditLeaveRequestPage({
           classId={request.classId}
           requestId={request.id}
           status={request.status}
+          classes={classChoices}
+          initialSubjectIds={request.subjectIds}
           initial={{
             leaveStartDate: request.leaveStartDate ?? "",
             leaveEndDate: request.leaveEndDate ?? "",

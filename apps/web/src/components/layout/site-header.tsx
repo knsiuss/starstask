@@ -8,6 +8,7 @@ import { SiteMobileNav } from "@/components/layout/site-mobile-nav";
 import { SITE_LINKS } from "@/components/layout/site-nav-links";
 import { UserMenu } from "@/components/layout/user-menu";
 import { isDeveloperEmail } from "@/lib/auth/developer";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -45,6 +46,7 @@ export async function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <Button
             asChild
             variant="ghost"

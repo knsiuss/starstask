@@ -49,7 +49,7 @@ export function AttendanceExportCard({
     );
   }
 
-  const exportHref = (kind: "recap" | "checklist") =>
+  const exportHref = (kind: "recap" | "checklist" | "report") =>
     `/api/classes/${classSlug}/attendance/exports/${kind}?subjectId=${selectedSubjectId}`;
 
   return (
@@ -107,6 +107,19 @@ export function AttendanceExportCard({
               className="h-4 w-4"
             />
             Blank checklist
+          </a>
+        </Button>
+        <Button
+          asChild
+          size="sm"
+          variant="secondary"
+        >
+          <a href={exportHref("report")}>
+            <Download
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
+            Report (.pdf)
           </a>
         </Button>
       </div>

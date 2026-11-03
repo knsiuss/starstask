@@ -3,6 +3,7 @@ import { fileDownload, handleRouteError } from "@/lib/api/responses";
 import {
   getAttendanceMeetingDetail,
   getClassAttendanceSubject,
+  listCorrectionAudit,
 } from "@/lib/db/attendance-meetings";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
@@ -54,6 +55,8 @@ export async function GET(
       throw notFound();
     }
 
+    const audits = await listCorrectionAudit(found.id, subject.id);
+
     const generatedAt = new Date();
     const exportContext: AttendanceExportContext = {
       classInfo: found,
@@ -65,7 +68,7 @@ export async function GET(
       generatedAt,
     };
 
-    const bytes = await buildMeetingWorkbook(detail, exportContext);
+    const bytes = await buildMeetingWorkbook(detail, exportContext, audits);
     const filename = buildMeetingFilename({
       classCode: found.class_code,
       className: found.name,

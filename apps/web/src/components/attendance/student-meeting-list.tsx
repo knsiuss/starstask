@@ -17,7 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/toast";
+import {
+  CheckInResultDialog,
+  type CheckInResultFailure,
+  type CheckInResultSuccess,
+} from "@/components/attendance/check-in-result-dialog";
+import { LocationPermissionDialog } from "@/components/attendance/location-permission-dialog";
 import { describeCheckInFailure } from "@/lib/attendance/check-in-errors";
 import type { StudentAttendanceMeeting } from "@/lib/attendance/meeting-types";
 import type { AttendanceCheckInStatus } from "@/lib/attendance/types";
@@ -121,17 +126,22 @@ function StudentMeetingCard({
   identity: { fullName: string | null; nim: string | null };
 }) {
   const router = useRouter();
-  const { toast } = useToast();
   const [isOpen, setIsOpen] = React.useState(false);
   const [fullName, setFullName] = React.useState(identity.fullName ?? "");
   const [nim, setNim] = React.useState(identity.nim ?? "");
   const [checkIn, setCheckIn] = React.useState(meeting.checkIn);
   const [isBusy, setIsBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [permissionOpen, setPermissionOpen] = React.useState(false);
+  const [resultSuccess, setResultSuccess] =
+    React.useState<CheckInResultSuccess | null>(null);
+  const [resultFailure, setResultFailure] =
+    React.useState<CheckInResultFailure | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<{
     fullName?: string;
     nim?: string;
   }>({});
+  const pendingCheckIn = React.useRef(false);
 
   const identityReady = Boolean(identity.fullName && identity.nim);
   const lateDeadline = getAttendanceLateDeadline(
@@ -141,10 +151,10 @@ function StudentMeetingCard({
   const hasCheckInTime = checkIn !== null;
   const isOpenPhase = meeting.phase === "open";
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (isBusy) {
+    if (isBusy || pendingCheckIn.current) {
       return;
     }
 
@@ -165,6 +175,15 @@ function StudentMeetingCard({
 
     setFieldErrors({});
     setError(null);
+    setPermissionOpen(true);
+  };
+
+  const runCheckIn = async () => {
+    if (isBusy || pendingCheckIn.current) {
+      return;
+    }
+
+    pendingCheckIn.current = true;
     setIsBusy(true);
 
     try {
@@ -175,9 +194,13 @@ function StudentMeetingCard({
         !Number.isFinite(accuracy) ||
         accuracy > SESSION_CHECKIN_ACCURACY_MAX_M
       ) {
-        setError(
-          `Your location is only accurate to about ${Math.round(accuracy)} m. Move somewhere with a clearer signal and try again.`,
-        );
+        setResultFailure({
+          message: `Your GPS signal is not accurate enough (about ${Math.round(accuracy)} m). Move to an area with a clearer signal and try again.`,
+          distanceM: null,
+          radiusM: meeting.radiusM,
+          canRetry: isOpenPhase,
+        });
+        setPermissionOpen(false);
         return;
       }
 
@@ -224,9 +247,17 @@ function StudentMeetingCard({
           setFieldErrors(nextErrors);
         }
 
-        setError(
-          describeCheckInFailure(body?.error?.code, body?.error?.message),
-        );
+        const code = body?.error?.code;
+        const retryable =
+          code !== "checkin_closed" && code !== "checkin_unavailable";
+
+        setResultFailure({
+          message: describeCheckInFailure(code, body?.error?.message),
+          distanceM: null,
+          radiusM: code === "checkin_too_far" ? meeting.radiusM : null,
+          canRetry: retryable && isOpenPhase,
+        });
+        setPermissionOpen(false);
         return;
       }
 
@@ -238,9 +269,14 @@ function StudentMeetingCard({
         saved?.status !== "excused" &&
         saved?.status !== "absent"
       ) {
-        setError(
-          "The server did not confirm your check-in. Try again before leaving the meeting point.",
-        );
+        setResultFailure({
+          message:
+            "The server did not confirm your check-in. Try again before leaving the meeting point.",
+          distanceM: null,
+          radiusM: null,
+          canRetry: isOpenPhase,
+        });
+        setPermissionOpen(false);
         return;
       }
 
@@ -250,18 +286,26 @@ function StudentMeetingCard({
         distanceM: saved.distanceM ?? null,
       });
       setIsOpen(false);
-      toast({
-        variant: "success",
-        title: "Attendance recorded",
-        description:
-          saved.status === "late"
-            ? "Recorded as late. Your class admin can review it."
-            : "Recorded as present.",
+      setPermissionOpen(false);
+      setResultSuccess({
+        status: saved.status,
+        checkedInAt: saved.checkedInAt ?? new Date().toISOString(),
+        distanceM: saved.distanceM ?? null,
+        subjectName: meeting.subjectName,
+        meetingNumber: meeting.meetingNumber,
       });
       router.refresh();
     } catch (caught) {
-      setError(describeGeolocationError(caught));
+      const message = describeGeolocationError(caught);
+      setResultFailure({
+        message,
+        distanceM: null,
+        radiusM: null,
+        canRetry: isOpenPhase,
+      });
+      setPermissionOpen(false);
     } finally {
+      pendingCheckIn.current = false;
       setIsBusy(false);
     }
   };
@@ -526,6 +570,27 @@ function StudentMeetingCard({
           </p>
         </form>
       ) : null}
+
+      <LocationPermissionDialog
+        open={permissionOpen}
+        isRequesting={isBusy}
+        onCancel={() => setPermissionOpen(false)}
+        onEnable={() => void runCheckIn()}
+      />
+      <CheckInResultDialog
+        success={resultSuccess}
+        failure={resultFailure}
+        onClose={() => {
+          setResultSuccess(null);
+          setResultFailure(null);
+        }}
+        onRetry={() => {
+          setResultFailure(null);
+          setIsOpen(true);
+          setPermissionOpen(true);
+        }}
+        isRetrying={isBusy}
+      />
     </article>
   );
 }

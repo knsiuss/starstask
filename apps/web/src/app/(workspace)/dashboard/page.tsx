@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { redirect } from "next/navigation";
 
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
 import { MyWeekSection } from "@/components/dashboard/my-week-section";
+import { NextSchedule } from "@/components/dashboard/next-schedule";
 import { PendingInvitationsSection } from "@/components/dashboard/pending-invitations-section";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { SetupNotice } from "@/components/layout/setup-notice";
@@ -12,6 +14,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import {
   getDashboardOverview,
   getMyWeek,
+  getNextSchedule,
   listStudentPendingInvitations,
 } from "@/lib/db/dashboard";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -91,10 +94,11 @@ export default async function DashboardPage({
   const query = await searchParams;
   const weekOffset = parseWeekOffset(query.week);
 
-  const [overview, pendingInvitations, week] = await Promise.all([
+  const [overview, pendingInvitations, week, nextSchedule] = await Promise.all([
     getDashboardOverview(session.user.id),
     listStudentPendingInvitations(session.user.id, session.user.email),
     getMyWeek(session.user.id, new Date(), weekOffset),
+    getNextSchedule(session.user.id),
   ]);
 
   return (
@@ -110,15 +114,28 @@ export default async function DashboardPage({
 
       <PendingInvitationsSection initialInvitations={pendingInvitations} />
 
-      <div className="mt-5">
+      <div
+        className="mt-5"
+        style={{ "--rise-delay": "0ms" } as CSSProperties}
+      >
         <StatCards stats={overview.stats} />
       </div>
 
-      <div className="mt-5 space-y-5">
+      <div className="mt-5">
+        <NextSchedule item={nextSchedule} />
+      </div>
+
+      <div
+        className="mt-5 space-y-5"
+        style={{ "--rise-delay": "120ms" } as CSSProperties}
+      >
         <MyWeekSection
           week={week}
           nowIso={overview.nowIso}
           weekOffset={weekOffset}
+          canScheduleSessions={overview.classes.some(
+            (classItem) => classItem.is_admin,
+          )}
         />
 
         <MyClassesSection classes={overview.classes} />

@@ -46,7 +46,32 @@ export async function createLeaveRequest(
     );
   }
 
+  if (input.subjectIds) {
+    await saveCoveredCourses(created.id, input.subjectIds);
+  }
+
   return { id: created.id, reference: created.reference };
+}
+
+/**
+ * Stores the courses the absence covers.
+ *
+ * The database function rejects another class's course and any request that is
+ * no longer a draft, so the selection can never be widened from the browser.
+ */
+async function saveCoveredCourses(
+  requestId: string,
+  subjectIds: string[],
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("set_leave_request_subjects", {
+    p_request_id: requestId,
+    p_subject_ids: subjectIds,
+  });
+
+  if (error) {
+    throw toLeaveApiError(error, "Could not save the covered courses.");
+  }
 }
 
 export async function updateLeaveRequest(
@@ -65,6 +90,10 @@ export async function updateLeaveRequest(
 
   if (error) {
     throw toLeaveApiError(error, "Could not save the absence request.");
+  }
+
+  if (input.subjectIds) {
+    await saveCoveredCourses(requestId, input.subjectIds);
   }
 }
 

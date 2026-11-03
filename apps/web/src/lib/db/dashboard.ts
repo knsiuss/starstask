@@ -67,9 +67,9 @@ const RECENT_TASK_LIMIT = 5;
 /**
  * Reads the member dashboard from records the caller is already allowed to see.
  *
- * Tasks are published assignments in the caller's active classes. There is no
- * per-student completion state in the schema, so a deadline that has passed is
- * reported as a "past deadline" rather than claiming the work is outstanding.
+ * Tasks are published assignments in the caller's active classes. A deadline
+ * that has passed is reported as a "past deadline" unless the student has
+ * already ticked it as done, since the schema has no submitted-work state.
  */
 export async function getDashboardOverview(
   userId: string,
@@ -123,37 +123,213 @@ export async function getDashboardOverview(
     };
   }
 
-  const countPublishedTasks = () =>
+  // A class also sees the public assignments of its catalog courses: rows
+  // with no class/subject yet, matched by `course_id` (same rule the class
+  // pages use). Counting only by `class_id` hides every such task.
+  const { data: subjectRows, error: subjectError } = await supabase
+    .from("class_subjects")
+    .select("class_id, course_id")
+    .in("class_id", classIds);
+
+  if (subjectError) {
+    throw new DataAccessError(
+      "Could not load your class subjects",
+      subjectError.code,
+    );
+  }
+
+  const courseIdsByClass = new Map<string, Set<string>>();
+
+  for (const row of subjectRows ?? []) {
+    if (!row.course_id) {
+      continue;
+    }
+
+    const bucket = courseIdsByClass.get(row.class_id) ?? new Set<string>();
+    bucket.add(row.course_id);
+    courseIdsByClass.set(row.class_id, bucket);
+  }
+
+  const classCourseIds = [...courseIdsByClass.values()].flatMap((ids) => [
+    ...ids,
+  ]);
+  const allCourseIds = [...new Set(classCourseIds)];
+
+  const countPublishedTasks = (ids: string[] = classIds) =>
     supabase
       .from("assignments")
       .select("id", { count: "exact", head: true })
-      .in("class_id", classIds)
+      .in("class_id", ids)
       .eq("status", "published");
 
-  const [dueSoonResult, pastDeadlineResult, newTasksResult, recentTasksResult] =
-    await Promise.all([
-      // The half-open WIB window is shared with the deadline badges: today
-      // through the next seven calendar days.
-      countPublishedTasks()
-        .gte("deadline", dueSoonStartIso)
-        .lt("deadline", dueSoonEndIso),
-      countPublishedTasks().lt("deadline", dueSoonStartIso),
-      countPublishedTasks().gte(
-        "published_at",
-        new Date(now.getTime() - 7 * 86_400_000).toISOString(),
-      ),
-      supabase
-        .from("assignments")
-        .select(
-          "id, title, deadline, classes!assignments_class_id_fkey ( name )",
+  const countPublicTasks = () =>
+    supabase
+      .from("assignments")
+      .select("id", { count: "exact", head: true })
+      .is("class_id", null)
+      .is("subject_id", null)
+      .eq("status", "published")
+      .in("course_id", allCourseIds);
+
+  const countPublicForClass = (classItem: (typeof activeClasses)[number]) => {
+    const ids = [...(courseIdsByClass.get(classItem.id) ?? [])];
+
+    if (ids.length === 0) {
+      return Promise.resolve({ count: 0, error: null });
+    }
+
+    return supabase
+      .from("assignments")
+      .select("id", { count: "exact", head: true })
+      .is("class_id", null)
+      .is("subject_id", null)
+      .eq("status", "published")
+      .in("course_id", ids);
+  };
+
+  const countAllTasks = (ids: string[]) =>
+    supabase
+      .from("assignments")
+      .select("id", { count: "exact", head: true })
+      .in("class_id", ids);
+
+  /** Tasks the caller can actually see in a class: admins see drafts too. */
+  const countVisibleTasks = async (
+    classItem: (typeof activeClasses)[number],
+  ): Promise<{ count: number | null; error: { code?: string } | null }> => {
+    const scoped = await (classItem.is_admin
+      ? countAllTasks([classItem.id])
+      : countPublishedTasks([classItem.id]));
+
+    if (scoped.error) {
+      return { count: null, error: scoped.error };
+    }
+
+    const publicCount = await countPublicForClass(classItem);
+
+    if (publicCount.error) {
+      return { count: null, error: publicCount.error };
+    }
+
+    return {
+      count: (scoped.count ?? 0) + (publicCount.count ?? 0),
+      error: null,
+    };
+  };
+
+  const pastDeadlineIds = () =>
+    supabase
+      .from("assignments")
+      .select("id")
+      .in("class_id", classIds)
+      .eq("status", "published")
+      .lt("deadline", dueSoonStartIso)
+      .limit(5_000);
+
+  const publicPastDeadlineIds = () =>
+    supabase
+      .from("assignments")
+      .select("id")
+      .is("class_id", null)
+      .is("subject_id", null)
+      .eq("status", "published")
+      .lt("deadline", dueSoonStartIso)
+      .in("course_id", allCourseIds)
+      .limit(5_000);
+
+  const recentScoped = () =>
+    supabase
+      .from("assignments")
+      .select(
+        "id, title, deadline, published_at, classes!assignments_class_id_fkey ( name )",
+      )
+      .in("class_id", classIds)
+      .eq("status", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(RECENT_TASK_LIMIT);
+
+  const recentPublic = () =>
+    supabase
+      .from("assignments")
+      .select(
+        "id, title, deadline, published_at, courses!assignments_course_id_fkey ( name )",
+      )
+      .is("class_id", null)
+      .is("subject_id", null)
+      .eq("status", "published")
+      .in("course_id", allCourseIds)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(RECENT_TASK_LIMIT);
+
+  // Scoped tasks (owned by the class row) plus the same class's public
+  // course tasks. The public half is skipped entirely when no catalog
+  // courses link the caller's classes to public rows.
+  const hasPublic = allCourseIds.length > 0;
+  const noneCount = Promise.resolve({ count: 0, error: null });
+  const noneRows = Promise.resolve({ data: [], error: null });
+
+  const [
+    dueSoonScoped,
+    dueSoonPublic,
+    pastScoped,
+    pastPublic,
+    newScoped,
+    newPublic,
+    recentScopedResult,
+    recentPublicResult,
+  ] = await Promise.all([
+    // The half-open WIB window is shared with the deadline badges: today
+    // through the next seven calendar days.
+    countPublishedTasks()
+      .gte("deadline", dueSoonStartIso)
+      .lt("deadline", dueSoonEndIso),
+    hasPublic
+      ? countPublicTasks()
+          .gte("deadline", dueSoonStartIso)
+          .lt("deadline", dueSoonEndIso)
+      : noneCount,
+    pastDeadlineIds(),
+    hasPublic ? publicPastDeadlineIds() : noneRows,
+    countPublishedTasks().gte(
+      "published_at",
+      new Date(now.getTime() - 7 * 86_400_000).toISOString(),
+    ),
+    hasPublic
+      ? countPublicTasks().gte(
+          "published_at",
+          new Date(now.getTime() - 7 * 86_400_000).toISOString(),
         )
-        .in("class_id", classIds)
-        .eq("status", "published")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(RECENT_TASK_LIMIT),
-    ]);
+      : noneCount,
+    recentScoped(),
+    hasPublic ? recentPublic() : noneRows,
+  ]);
+
+  const dueSoonResult = {
+    count: (dueSoonScoped.count ?? 0) + (dueSoonPublic.count ?? 0),
+    error: dueSoonScoped.error ?? dueSoonPublic.error,
+  };
+  const pastDeadlineResult = {
+    data: [...(pastScoped.data ?? []), ...(pastPublic.data ?? [])],
+    error: pastScoped.error ?? pastPublic.error,
+  };
+  const newTasksResult = {
+    count: (newScoped.count ?? 0) + (newPublic.count ?? 0),
+    error: newScoped.error ?? newPublic.error,
+  };
+  const mergedRecent = [
+    ...(recentScopedResult.data ?? []),
+    ...(recentPublicResult.data ?? []),
+  ]
+    .sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""))
+    .slice(0, RECENT_TASK_LIMIT);
+  const recentTasksResult = {
+    data: mergedRecent,
+    error: recentScopedResult.error ?? recentPublicResult.error,
+  };
 
   const failures = [
     { result: dueSoonResult, message: "Could not count due tasks" },
@@ -172,9 +348,7 @@ export async function getDashboardOverview(
   // migration the live project does not have yet. One bounded count per active
   // class stays correct and uses `head: true`, so no rows cross the wire.
   const classCountResults = await Promise.all(
-    activeClasses.map((classItem) =>
-      countPublishedTasks().eq("class_id", classItem.id),
-    ),
+    activeClasses.map((classItem) => countVisibleTasks(classItem)),
   );
 
   const classes: DashboardClass[] = activeClasses.map((classItem, index) => {
@@ -206,9 +380,24 @@ export async function getDashboardOverview(
     0,
   );
 
+  // Past-deadline tasks the student already ticked as done are not "needs
+  // attention", so the raw count is reduced by their completion marks.
+  const pastDeadlineRows = pastDeadlineResult.data ?? [];
+  const completedPastIds = await loadCompletionIds(
+    userId,
+    pastDeadlineRows.map((row) => row.id),
+  );
+
   const recentTasks: DashboardTask[] = (recentTasksResult.data ?? []).flatMap(
     (row) => {
-      if (!row.classes) {
+      const className =
+        "classes" in row && row.classes
+          ? row.classes.name
+          : "courses" in row && row.courses
+            ? row.courses.name
+            : null;
+
+      if (!className) {
         return [];
       }
 
@@ -217,7 +406,7 @@ export async function getDashboardOverview(
           id: row.id,
           title: row.title,
           deadline: row.deadline,
-          class_name: row.classes.name,
+          class_name: className,
         },
       ];
     },
@@ -228,7 +417,10 @@ export async function getDashboardOverview(
     stats: {
       totalTasks,
       dueSoon: dueSoonResult.count ?? 0,
-      pastDeadline: pastDeadlineResult.count ?? 0,
+      pastDeadline: Math.max(
+        0,
+        pastDeadlineRows.length - completedPastIds.size,
+      ),
       classCount: activeClasses.length,
       newThisWeek: newTasksResult.count ?? 0,
     },
@@ -325,6 +517,147 @@ export async function listPriorityTasks(
       ];
     })
     .slice(0, PRIORITY_TASK_LIMIT);
+}
+
+export type NextScheduleItem = {
+  kind: "assignment" | "session";
+  title: string;
+  className: string;
+  /** Sortable instant: deadline for tasks, start for sessions. */
+  at: string;
+  endsAt: string | null;
+  href: string;
+  detail: string;
+};
+
+/**
+ * The nearest upcoming task deadline or session start at or after `now`.
+ * Both sources include the class's public course tasks, so this card stays
+ * in step with the stats and My week.
+ */
+export async function getNextSchedule(
+  userId: string,
+  now: Date = new Date(),
+): Promise<NextScheduleItem | null> {
+  const memberships = await listMyClasses(userId);
+  const classIds = memberships
+    .filter((classItem) => classItem.status === "active")
+    .map((classItem) => classItem.id);
+
+  if (classIds.length === 0) {
+    return null;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const nowIso = now.toISOString();
+
+  const { data: subjectCourseRows } = await supabase
+    .from("class_subjects")
+    .select("course_id")
+    .in("class_id", classIds);
+
+  const courseIds = [
+    ...new Set(
+      (subjectCourseRows ?? [])
+        .map((row) => row.course_id)
+        .filter((courseId): courseId is string => Boolean(courseId)),
+    ),
+  ];
+
+  const [scopedTasks, publicTasks, sessions] = await Promise.all([
+    supabase
+      .from("assignments")
+      .select("id, title, deadline, classes!assignments_class_id_fkey ( name )")
+      .in("class_id", classIds)
+      .eq("status", "published")
+      .not("deadline", "is", null)
+      .gte("deadline", nowIso)
+      .order("deadline", { ascending: true })
+      .limit(5),
+    courseIds.length > 0
+      ? supabase
+          .from("assignments")
+          .select(
+            "id, title, deadline, courses!assignments_course_id_fkey ( name )",
+          )
+          .is("class_id", null)
+          .is("subject_id", null)
+          .eq("status", "published")
+          .not("deadline", "is", null)
+          .in("course_id", courseIds)
+          .gte("deadline", nowIso)
+          .order("deadline", { ascending: true })
+          .limit(5)
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("discussion_sessions")
+      .select(
+        "id, title, starts_at, ends_at, session_type, classes!discussion_sessions_class_id_fkey ( name )",
+      )
+      .in("class_id", classIds)
+      .eq("status", "scheduled")
+      .gte("starts_at", nowIso)
+      .order("starts_at", { ascending: true })
+      .limit(5),
+  ]);
+
+  const failures = [
+    { result: scopedTasks, message: "Could not load next tasks" },
+    { result: publicTasks, message: "Could not load next tasks" },
+    { result: sessions, message: "Could not load next sessions" },
+  ];
+
+  for (const failure of failures) {
+    if (failure.result.error) {
+      throw new DataAccessError(failure.message, failure.result.error.code);
+    }
+  }
+
+  const candidates: NextScheduleItem[] = [
+    ...(scopedTasks.data ?? []).flatMap((row) =>
+      row.deadline && row.classes
+        ? [
+            {
+              kind: "assignment" as const,
+              title: row.title,
+              className: row.classes.name,
+              at: row.deadline,
+              endsAt: null,
+              href: `/assignments/${row.id}`,
+              detail: "Deadline",
+            },
+          ]
+        : [],
+    ),
+    ...(publicTasks.data ?? []).flatMap((row) =>
+      row.deadline && row.courses
+        ? [
+            {
+              kind: "assignment" as const,
+              title: row.title,
+              className: row.courses.name,
+              at: row.deadline,
+              endsAt: null,
+              href: `/assignments/${row.id}`,
+              detail: "Deadline",
+            },
+          ]
+        : [],
+    ),
+    ...(sessions.data ?? []).map((row) => ({
+      kind: "session" as const,
+      title: row.title,
+      className: row.classes?.name ?? "Class",
+      at: row.starts_at,
+      endsAt: row.ends_at,
+      href: `/sessions/${row.id}`,
+      detail: row.session_type === "online" ? "Online session" : "Session",
+    })),
+  ];
+
+  candidates.sort((a, b) => a.at.localeCompare(b.at));
+
+  return candidates[0] ?? null;
 }
 
 /**
@@ -622,7 +955,28 @@ export async function getMyWeek(
 
   const supabase = await createSupabaseServerClient();
 
-  const [assignmentsResult, sessionsResult, leaveResult] = await Promise.all([
+  // Deadline rows include the class's public course tasks (no class/subject
+  // yet, matched by `course_id`), mirroring the dashboard stats and the class
+  // pages. Without this they would be invisible here while visible elsewhere.
+  const { data: subjectCourseRows } = await supabase
+    .from("class_subjects")
+    .select("course_id")
+    .in("class_id", classIds);
+
+  const myWeekCourseIds = [
+    ...new Set(
+      (subjectCourseRows ?? [])
+        .map((row) => row.course_id)
+        .filter((courseId): courseId is string => Boolean(courseId)),
+    ),
+  ];
+
+  const [
+    assignmentsResult,
+    publicAssignmentsResult,
+    sessionsResult,
+    leaveResult,
+  ] = await Promise.all([
     supabase
       .from("assignments")
       .select(
@@ -634,6 +988,21 @@ export async function getMyWeek(
       .lt("deadline", endsAtIso)
       .order("deadline", { ascending: true })
       .limit(MY_WEEK_ITEM_LIMIT),
+    myWeekCourseIds.length > 0
+      ? supabase
+          .from("assignments")
+          .select(
+            "id, title, deadline, courses!assignments_course_id_fkey ( name )",
+          )
+          .is("class_id", null)
+          .is("subject_id", null)
+          .eq("status", "published")
+          .in("course_id", myWeekCourseIds)
+          .gte("deadline", startsAtIso)
+          .lt("deadline", endsAtIso)
+          .order("deadline", { ascending: true })
+          .limit(MY_WEEK_ITEM_LIMIT)
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from("discussion_sessions")
       .select(
@@ -665,6 +1034,10 @@ export async function getMyWeek(
       result: assignmentsResult,
       message: "Could not load this week's deadlines",
     },
+    {
+      result: publicAssignmentsResult,
+      message: "Could not load this week's deadlines",
+    },
     { result: sessionsResult, message: "Could not load this week's sessions" },
     { result: leaveResult, message: "Could not load this week's absences" },
   ];
@@ -675,27 +1048,35 @@ export async function getMyWeek(
     }
   }
 
-  const assignmentItems: MyWeekItem[] = (assignmentsResult.data ?? []).flatMap(
-    (row) => {
-      if (!row.deadline) {
-        return [];
-      }
+  const assignmentItems: MyWeekItem[] = [
+    ...(assignmentsResult.data ?? []),
+    ...(publicAssignmentsResult.data ?? []),
+  ].flatMap((row) => {
+    if (!row.deadline) {
+      return [];
+    }
 
-      return [
-        {
-          key: `assignment:${row.id}`,
-          kind: "assignment" as const,
-          title: row.title,
-          className: row.classes?.name ?? "Class",
-          at: row.deadline,
-          endsAt: null,
-          allDay: false,
-          href: `/assignments/${row.id}`,
-          detail: "Deadline",
-        },
-      ];
-    },
-  );
+    const className =
+      "classes" in row && row.classes
+        ? row.classes.name
+        : "courses" in row && row.courses
+          ? row.courses.name
+          : "Class";
+
+    return [
+      {
+        key: `assignment:${row.id}`,
+        kind: "assignment" as const,
+        title: row.title,
+        className,
+        at: row.deadline,
+        endsAt: null,
+        allDay: false,
+        href: `/assignments/${row.id}`,
+        detail: "Deadline",
+      },
+    ];
+  });
 
   const sessionItems: MyWeekItem[] = (sessionsResult.data ?? []).flatMap(
     (row) => [

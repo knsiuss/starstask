@@ -80,6 +80,25 @@ export type AttendanceMeetingDetail = AttendanceMeetingListItem & {
   failures: AttendanceMeetingFailure[];
 };
 
+export type AttendanceCorrectionAuditEntry = {
+  id: string;
+  sessionId: string;
+  meetingNumber: number | null;
+  meetingDate: string | null;
+  studentId: string;
+  studentNim: string | null;
+  studentName: string;
+  subjectId: string | null;
+  subjectName: string | null;
+  previousStatus: string;
+  newStatus: string;
+  reason: string;
+  physicallyVerified: boolean;
+  verificationMethod: string;
+  adminName: string;
+  createdAt: string;
+};
+
 export type AttendanceRosterMember = {
   userId: string;
   fullName: string;

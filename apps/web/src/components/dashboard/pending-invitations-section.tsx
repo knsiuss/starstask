@@ -18,19 +18,30 @@ export function PendingInvitationsSection({
 }: PendingInvitationsSectionProps) {
   const router = useRouter();
   const [invitations, setInvitations] = React.useState(initialInvitations);
-  const [loadingId, setLoadingId] = React.useState<string | null>(null);
+  const [busyIds, setBusyIds] = React.useState<ReadonlySet<string>>(new Set());
   const [feedback, setFeedback] = React.useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  // Keep the list in step with the server after router.refresh() so new or
+  // removed invitations appear without a manual reload.
+  const [prevInitial, setPrevInitial] = React.useState(initialInvitations);
+
+  if (initialInvitations !== prevInitial) {
+    setPrevInitial(initialInvitations);
+    setInvitations(initialInvitations);
+  }
 
   // If there are no pending invitations, omit the section to keep the dashboard clean.
   if (invitations.length === 0 && !feedback) {
     return null;
   }
 
+  const anyBusy = busyIds.size > 0;
+
   const handleAccept = async (invitation: DashboardPendingInvitation) => {
-    setLoadingId(invitation.id);
+    setBusyIds(new Set([invitation.id]));
     setFeedback(null);
 
     try {
@@ -68,12 +79,12 @@ export function PendingInvitationsSection({
         message: "Network error. Please try again.",
       });
     } finally {
-      setLoadingId(null);
+      setBusyIds(new Set());
     }
   };
 
   const handleDecline = async (invitationId: string) => {
-    setLoadingId(invitationId);
+    setBusyIds(new Set([invitationId]));
     setFeedback(null);
 
     try {
@@ -83,10 +94,14 @@ export function PendingInvitationsSection({
         body: JSON.stringify({ invitationId }),
       });
 
+      const body = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+
       if (!response.ok) {
         setFeedback({
           type: "error",
-          message: "Could not decline this invitation.",
+          message: body?.error?.message ?? "Could not decline this invitation.",
         });
         return;
       }
@@ -100,7 +115,7 @@ export function PendingInvitationsSection({
         message: "Network error. Please try again.",
       });
     } finally {
-      setLoadingId(null);
+      setBusyIds(new Set());
     }
   };
 
@@ -142,7 +157,7 @@ export function PendingInvitationsSection({
 
       <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {invitations.map((invitation) => {
-          const isBusy = loadingId === invitation.id;
+          const isBusy = busyIds.has(invitation.id);
 
           return (
             <li
@@ -183,7 +198,7 @@ export function PendingInvitationsSection({
                 <Button
                   size="sm"
                   onClick={() => void handleAccept(invitation)}
-                  disabled={isBusy}
+                  disabled={anyBusy}
                   className="flex-1"
                 >
                   {isBusy ? (
@@ -203,7 +218,7 @@ export function PendingInvitationsSection({
                   size="sm"
                   variant="secondary"
                   onClick={() => void handleDecline(invitation.id)}
-                  disabled={isBusy}
+                  disabled={anyBusy}
                 >
                   <X
                     aria-hidden="true"

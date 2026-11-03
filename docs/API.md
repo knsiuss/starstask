@@ -123,8 +123,9 @@ Authenticated. `Content-Type: multipart/form-data`.
 | `files`          | no       | 1–3 files, ≤10 MB each                                    |
 | `website`        | no       | Honeypot; must be empty                                   |
 
-`user_id` and `status` are **not** accepted. Ownership comes from the verified session;
-status defaults to `published`.
+`user_id` and `status` are **not** accepted. Ownership comes from the verified session.
+The server writes the status: `published` when `can_publish_public_assignment()` is true
+for the caller, otherwise `pending` for the review queue.
 
 Limits: 10 creations / hour per user; body ≤34 MB.
 

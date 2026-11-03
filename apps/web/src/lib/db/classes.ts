@@ -1055,6 +1055,34 @@ export type ClassCourseSummary = {
 };
 
 /**
+ * Course names for ids stored on another record (an absence request, for one).
+ * Reading by id keeps the caller from trusting a name sent by the browser.
+ */
+export async function listClassSubjectsByIds(
+  subjectIds: string[],
+): Promise<ClassCourseSummary[]> {
+  if (subjectIds.length === 0) {
+    return [];
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select("id, name, code")
+    .in("id", subjectIds);
+
+  if (error) {
+    throw new DataAccessError("Could not load the courses", error.code);
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    code: row.code,
+  }));
+}
+
+/**
  * Active courses of several classes in a single query.
  *
  * A class can hold more than one course, and a caller that only has a list of
@@ -1437,34 +1465,138 @@ export async function getClassSubject(
 }
 
 /**
+ * PostgREST filter for the assignments one course owns.
+ *
+ * `subject_id` covers work created inside the course. The second branch covers
+ * published public assignments of the same catalog course: the public submit
+ * form has no class context, so those rows carry only `course_id`. Matching
+ * only `subject_id` made every course report zero.
+ */
+function assignmentCourseScope(
+  classId: string,
+  subjectId: string,
+  courseId: string | null,
+): string {
+  const scoped = `and(class_id.eq.${classId},subject_id.eq.${subjectId})`;
+
+  return courseId
+    ? `${scoped},and(class_id.is.null,subject_id.is.null,course_id.eq.${courseId})`
+    : scoped;
+}
+
+/** The catalog course behind one `class_subjects` row, when it has one. */
+async function loadSubjectCourseId(subjectId: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select("course_id")
+    .eq("id", subjectId)
+    .maybeSingle();
+
+  if (error) {
+    throw new DataAccessError("Could not load the course", error.code);
+  }
+
+  return data?.course_id ?? null;
+}
+
+/**
  * Published assignment counts keyed by course id.
  *
- * One grouped query instead of a count per course, because the courses page
- * needs the number for every row at once.
+ * Two reads instead of one per course: the class's own rows, then the published
+ * public assignments of the same catalog courses, bucketed by `course_id`.
  */
 export async function countPublishedAssignmentsBySubject(
   classId: string,
 ): Promise<Map<string, number>> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("subject_id")
-    .eq("class_id", classId)
-    .eq("status", "published")
-    .not("subject_id", "is", null);
+  const { data: subjects, error: subjectError } = await supabase
+    .from("class_subjects")
+    .select("id, course_id")
+    .eq("class_id", classId);
 
-  if (error) {
-    throw new DataAccessError("Could not count course assignments", error.code);
+  if (subjectError) {
+    throw new DataAccessError(
+      "Could not count course assignments",
+      subjectError.code,
+    );
   }
 
   const counts = new Map<string, number>();
 
-  for (const row of data ?? []) {
+  if (!subjects || subjects.length === 0) {
+    return counts;
+  }
+
+  const subjectIds = subjects.map((subject) => subject.id);
+  const courseIds = [
+    ...new Set(
+      subjects.flatMap((subject) =>
+        subject.course_id ? [subject.course_id] : [],
+      ),
+    ),
+  ];
+
+  const { data: scoped, error: scopedError } = await supabase
+    .from("assignments")
+    .select("subject_id")
+    .eq("class_id", classId)
+    .eq("status", "published")
+    .not("subject_id", "is", null)
+    .in("subject_id", subjectIds);
+
+  if (scopedError) {
+    throw new DataAccessError(
+      "Could not count course assignments",
+      scopedError.code,
+    );
+  }
+
+  for (const row of scoped ?? []) {
     if (!row.subject_id) {
       continue;
     }
 
     counts.set(row.subject_id, (counts.get(row.subject_id) ?? 0) + 1);
+  }
+
+  if (courseIds.length === 0) {
+    return counts;
+  }
+
+  const { data: publicRows, error: publicError } = await supabase
+    .from("assignments")
+    .select("course_id")
+    .is("class_id", null)
+    .is("subject_id", null)
+    .eq("status", "published")
+    .in("course_id", courseIds);
+
+  if (publicError) {
+    throw new DataAccessError(
+      "Could not count course assignments",
+      publicError.code,
+    );
+  }
+
+  const publicCounts = new Map<string, number>();
+
+  for (const row of publicRows ?? []) {
+    if (!row.course_id) {
+      continue;
+    }
+
+    publicCounts.set(row.course_id, (publicCounts.get(row.course_id) ?? 0) + 1);
+  }
+
+  for (const subject of subjects) {
+    const extra = subject.course_id
+      ? (publicCounts.get(subject.course_id) ?? 0)
+      : 0;
+
+    if (extra > 0) {
+      counts.set(subject.id, (counts.get(subject.id) ?? 0) + extra);
+    }
   }
 
   return counts;
@@ -1499,14 +1631,15 @@ export async function listCourseAssignments(
 ): Promise<CourseAssignmentSummary[]> {
   const supabase = await createSupabaseServerClient();
 
+  const courseId = await loadSubjectCourseId(subjectId);
+
   let query = supabase
     .from("assignments")
     .select(
       "id, title, description, deadline, status, content_type, source_label, created_at, published_at, assignment_attachments ( id )",
     )
-    .eq("class_id", classId)
-    .eq("subject_id", subjectId)
-    .eq("status", "published");
+    .eq("status", "published")
+    .or(assignmentCourseScope(classId, subjectId, courseId));
 
   if (options?.contentType) {
     query = query.eq("content_type", options.contentType);
@@ -1547,13 +1680,14 @@ export async function countCourseContent(
 ): Promise<CourseContentCounts> {
   const supabase = await createSupabaseServerClient();
 
+  const courseId = await loadSubjectCourseId(subjectId);
+
   const [assignments, materials] = await Promise.all([
     supabase
       .from("assignments")
       .select("content_type")
-      .eq("class_id", classId)
-      .eq("subject_id", subjectId)
-      .eq("status", "published"),
+      .eq("status", "published")
+      .or(assignmentCourseScope(classId, subjectId, courseId)),
     supabase
       .from("course_materials")
       .select("id", { count: "exact", head: true })

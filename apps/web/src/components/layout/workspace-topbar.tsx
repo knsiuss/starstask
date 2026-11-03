@@ -5,6 +5,7 @@ import { BrandLink } from "@/components/layout/brand-link";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 type WorkspaceTopbarProps = {
@@ -40,6 +41,7 @@ export function WorkspaceTopbar({
         </div>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <ThemeToggle />
           {isAuthenticated ? (
             <Link
               href="/notifications"

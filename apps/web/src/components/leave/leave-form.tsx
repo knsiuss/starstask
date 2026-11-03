@@ -4,6 +4,7 @@ import {
   AlignLeft,
   Bookmark,
   CalendarDays,
+  Check,
   ChevronDown,
   ClipboardCheck,
   FileText,
@@ -43,12 +44,18 @@ import {
 } from "@starstask/contracts";
 import { formatFileSize, formatLeaveDate } from "@starstask/shared";
 
+/** One course of a class the absence can cover. */
+export type LeaveCourseChoice = {
+  id: string;
+  name: string;
+};
+
 /** One class the student can file the request under. */
 export type LeaveClassChoice = {
   id: string;
   name: string;
   /** Active courses of the class. A class can hold more than one. */
-  courses: string[];
+  courses: LeaveCourseChoice[];
 };
 
 type LeaveFormProps = {
@@ -58,6 +65,8 @@ type LeaveFormProps = {
   status?: LeaveRequestStatus;
   /** Classes offered in create mode; the form starts on `classId`. */
   classes?: LeaveClassChoice[];
+  /** Courses the absence already covers, when editing a draft. */
+  initialSubjectIds?: string[];
   initial: {
     leaveStartDate: string;
     leaveEndDate: string;
@@ -110,6 +119,7 @@ export function LeaveForm({
   requestId,
   status = "draft",
   classes = [],
+  initialSubjectIds = [],
   initial,
   suggestion,
   fieldSources = {},
@@ -133,6 +143,10 @@ export function LeaveForm({
   // simply not sent to the extraction provider.
   const [readerEnabled, setReaderEnabled] = React.useState(true);
   const [selectedClassId, setSelectedClassId] = React.useState(classId);
+  // A class's courses belong to that class only, so switching the class clears
+  // a selection that could not be saved against the new one.
+  const [selectedSubjectIds, setSelectedSubjectIds] =
+    React.useState<string[]>(initialSubjectIds);
 
   const isEditable = status === "draft";
   // A saved draft already belongs to a class; switching the picker afterwards
@@ -143,6 +157,19 @@ export function LeaveForm({
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function selectClass(nextClassId: string) {
+    setSelectedClassId(nextClassId);
+    setSelectedSubjectIds([]);
+  }
+
+  function toggleCourse(subjectId: string) {
+    setSelectedSubjectIds((current) =>
+      current.includes(subjectId)
+        ? current.filter((id) => id !== subjectId)
+        : [...current, subjectId],
+    );
   }
 
   function onSelectFiles(event: React.ChangeEvent<HTMLInputElement>) {
@@ -229,6 +256,7 @@ export function LeaveForm({
       reasonCategory: form.reasonCategory,
       explanation: form.explanation,
       documentIssueDate: form.documentIssueDate,
+      subjectIds: selectedSubjectIds,
     };
 
     if (mode === "create" && !createdId) {
@@ -348,6 +376,16 @@ export function LeaveForm({
   }
 
   async function onSubmit() {
+    // A class with courses needs a choice: the request must say which courses
+    // the absence is for, otherwise it silently claims all of them.
+    if (
+      (selectedClass?.courses.length ?? 0) > 0 &&
+      selectedSubjectIds.length === 0
+    ) {
+      setError("Select at least one course this absence covers.");
+      return;
+    }
+
     if (mode === "create" && !createdId && files.length === 0) {
       setError("Attach at least one supporting document before submitting.");
       return;
@@ -420,7 +458,7 @@ export function LeaveForm({
           </Alert>
         ) : null}
 
-        {mode === "create" && selectedClass ? (
+        {selectedClass ? (
           <section className={CARD}>
             <SectionHeader
               icon={GraduationCap}
@@ -438,7 +476,7 @@ export function LeaveForm({
                 <Select
                   id="leaveClass"
                   value={selectedClass.id}
-                  onChange={(event) => setSelectedClassId(event.target.value)}
+                  onChange={(event) => selectClass(event.target.value)}
                   disabled={busy !== null || classLocked}
                   className={cn(FIELD, "font-medium")}
                 >
@@ -464,27 +502,55 @@ export function LeaveForm({
 
             {selectedClass.courses.length > 0 ? (
               <div className="mt-3">
-                <p className="text-muted-foreground text-[11px] font-medium">
-                  {selectedClass.courses.length === 1
-                    ? "Course"
-                    : `Courses · ${selectedClass.courses.length}`}
-                </p>
-                <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                  {selectedClass.courses.map((course, index) => (
-                    <li
-                      key={`${index}-${course}`}
-                      className="border-border bg-subtle text-foreground rounded-lg border px-2.5 py-1 text-xs font-medium"
-                    >
-                      {course}
-                    </li>
-                  ))}
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-muted-foreground text-[11px] font-medium">
+                    Courses this absence covers
+                  </p>
+                  <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+                    {selectedSubjectIds.length} selected
+                  </span>
+                </div>
+
+                <ul
+                  aria-label="Courses this absence covers"
+                  className="mt-1.5 flex flex-wrap gap-1.5"
+                >
+                  {selectedClass.courses.map((course) => {
+                    const selected = selectedSubjectIds.includes(course.id);
+
+                    return (
+                      <li key={course.id}>
+                        <button
+                          type="button"
+                          aria-pressed={selected}
+                          disabled={busy !== null}
+                          onClick={() => toggleCourse(course.id)}
+                          className={cn(
+                            "focus-visible:outline-accent flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                            selected
+                              ? "border-accent bg-accent-soft text-accent"
+                              : "border-border bg-subtle text-foreground hover:border-accent/60",
+                          )}
+                        >
+                          {selected ? (
+                            <Check
+                              aria-hidden="true"
+                              className="h-3 w-3"
+                            />
+                          ) : null}
+                          {course.name}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
+
+                <p className="text-muted-foreground mt-2 text-[11px] leading-relaxed">
+                  Pick every course this absence applies to. You can choose more
+                  than one.
+                </p>
               </div>
             ) : null}
-
-            <p className="text-muted-foreground mt-3 text-[11px] leading-relaxed">
-              The request covers this class, so every course above is included.
-            </p>
           </section>
         ) : null}
 

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   ArrowRight,
   CalendarClock,
@@ -40,7 +41,7 @@ export function StatCards({ stats }: StatCardsProps) {
   const items: StatItem[] = [
     {
       label: "Total assignments",
-      hint: "Published in your classes",
+      hint: "In your classes",
       value: stats.totalTasks,
       icon: ClipboardList,
       tone: "accent",
@@ -74,7 +75,10 @@ export function StatCards({ stats }: StatCardsProps) {
   ];
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <ul
+      className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      style={{ "--rise-delay": "40ms" } as CSSProperties}
+    >
       {items.map((item) => (
         <li key={item.label}>
           <Link

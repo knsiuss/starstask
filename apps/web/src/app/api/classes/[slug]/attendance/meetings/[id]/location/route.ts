@@ -39,7 +39,7 @@ export async function POST(
     await assertMeetingInClass(id, found.id);
 
     const parsed = attendanceMeetingLocationChangeSchema.safeParse(
-      await request.json(),
+      await readJson(request),
     );
 
     if (!parsed.success) {
@@ -56,5 +56,13 @@ export async function POST(
     return apiSuccess({ changed: true });
   } catch (error) {
     return handleRouteError(error);
+  }
+}
+
+async function readJson(request: Request): Promise<unknown> {
+  try {
+    return (await request.json()) as unknown;
+  } catch {
+    throw new ApiError(422, "validation_error", "Check the location details.");
   }
 }

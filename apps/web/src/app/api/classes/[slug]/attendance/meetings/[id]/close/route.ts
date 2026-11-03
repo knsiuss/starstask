@@ -69,5 +69,9 @@ async function readOptionalJson(request: Request): Promise<unknown> {
     return {};
   }
 
-  return JSON.parse(text) as unknown;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new ApiError(422, "validation_error", "Check the close request.");
+  }
 }

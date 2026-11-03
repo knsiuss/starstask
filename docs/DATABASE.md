@@ -41,6 +41,10 @@ Schema source of truth: `supabase/migrations/`.
 | `20261102120000_attendance_session_grants.sql`       | Restores `SELECT (checkin_radius_m)`; coordinate columns stay revoked         |
 | `20261103120000_class_course_shared_assignments.sql` | Class lists include public assignments in the class's catalog courses         |
 | `20261103130000_attachment_owner_rename.sql`         | Owner-only rename of `assignment_attachments.original_filename`               |
+| `20261103140000_public_assignment_review.sql`        | Public submissions queue for a platform admin review                          |
+| `20261103160000_assignment_status_write_grant.sql`   | Adds the review-column grants; members can only ever write `pending`          |
+| `20261103170000_public_publish_privilege.sql`        | Lets class admins publish to the public board without review                  |
+| `20261103190000_url_regex_repetition_limit.sql`      | Replaces both URL checks; a `{8,2048}` bound exceeds Postgres's limit         |
 
 Apply with `supabase db push` (remote) or `supabase db reset` (local). `seed.sql` is loaded
 only by `db reset` / `supabase start`; `db push` never applies it.
@@ -142,6 +146,9 @@ Triggers:
 
 - `assignments_set_updated_at` — sets `updated_at = now()` on every UPDATE.
 - `assignments_owner_immutable` — raises `42501` if `user_id` changes.
+- `assignments_status_guard` — raises `42501` if an `authenticated` UPDATE changes
+  `status` or a decision column and the new row is not a class-less request back to
+  `pending` with the decision cleared.
 
 ### `assignment_attachments`
 
@@ -492,6 +499,8 @@ an assignment with no class.
 | `set_updated_at()`                                                                                                                        | invoker                                              | Generic `updated_at` trigger                                                                                  |
 | `handle_new_user()`                                                                                                                       | definer, `search_path = ''`                          | Provision a profile from Google metadata (display name + legal name); idempotent via `on conflict do nothing` |
 | `prevent_assignment_owner_change()`                                                                                                       | invoker                                              | Reject `user_id` changes                                                                                      |
+| `prevent_assignment_status_escalation()`                                                                                                  | invoker, trigger only                                | Refuses a client write that moves its own assignment out of the pending request state                         |
+| `can_publish_public_assignment()`                                                                                                         | definer, authenticated                               | Allows a class-less submission to be created as `published`: platform admin or any class admin                |
 | `create_or_get_course(p_name, p_code, p_department)`                                                                                      | definer, authenticated only                          | Insert-or-select with normalized-name conflict handling                                                       |
 | `list_assignments(...)`                                                                                                                   | invoker                                              | Filtered, sorted, paginated public listing with `total_count`                                                 |
 | `assignment_id_from_object_path(text)`                                                                                                    | invoker                                              | Extract the assignment UUID from a storage key                                                                |
@@ -555,7 +564,7 @@ with `classId`/`slug`/`name`, `{status: "ambiguous", candidates: [...]}`, or
 | -------------------------------- | -------------------------------------------------- | ------------------------------------------ | -------------------------------- | ------------------------------------------- | ------------------ |
 | `profiles`                       | any row, columns `id, display_name, avatar_url`    | same, plus `onboarded_at`                  | none                             | own row, columns `display_name, avatar_url` | none               |
 | `courses`                        | all rows                                           | all rows                                   | none (RPC only)                  | none                                        | none               |
-| `assignments`                    | `status = 'published'`                             | published **or** own                       | own `user_id` only               | own only                                    | own only           |
+| `assignments`                    | `status = 'published'`                             | published **or** own                       | own `user_id`; `pending`/admin   | own only; status reset to `pending`         | own only           |
 | `assignment_attachments`         | parent published                                   | parent published or own                    | own parent + own path prefix     | own parent, `original_filename` only        | own parent         |
 | `push_subscriptions`             | none                                               | own row (no endpoint/keys)                 | own `user_id` only               | own row, `device_label` only                | own row            |
 | `notification_preferences`       | none                                               | own row                                    | own `user_id` only               | own row, preference columns only            | none               |
@@ -585,11 +594,21 @@ with `classId`/`slug`/`name`, `{status: "ambiguous", candidates: [...]}`, or
 | `feedback_entries`               | none                                               | own rows, or platform admin                | own `user_id` only               | platform admin, `status` column only        | none               |
 | `course_materials`               | none                                               | class member, or platform admin            | class manager only               | class manager only                          | class manager only |
 
-Column-level grants back this up: `assignments` INSERT does not include `status`, and
-UPDATE does not include `user_id` or `status`. A client cannot publish into a moderation
-state or transfer ownership even before the trigger fires. For push tables, `endpoint`,
-`p256dh`, and `auth` are not granted for SELECT, and `notification_deliveries` has no
-INSERT/UPDATE/DELETE grant at all.
+Column-level grants back this up. On `assignments`, `INSERT` includes `status` and
+`UPDATE` includes `status`, `rejection_reason`, `reviewed_by`, and `reviewed_at`,
+because the public submit flow writes them; `user_id` is still not granted. What the
+missing grants used to prevent is enforced one layer up instead: the insert policy
+accepts only `status = 'pending'`, or `published` when `can_publish_public_assignment()`
+is true — a platform admin, or anyone who administers a class and therefore already
+publishes into that class. No other status can be inserted, and the
+`assignments_status_guard` trigger refuses an `authenticated` update that leaves that
+state. A client therefore cannot forge a decision. A direct publish leaves
+`published_at` unset — the row is created as it is published — and readers fall back to
+`created_at`. The review RPCs are unaffected: `review_public_assignment` and the class
+queue run as the `postgres` owner, so `current_user` is not `authenticated` and RLS does
+not apply. For
+push tables, `endpoint`, `p256dh`, and `auth` are not granted for SELECT, and
+`notification_deliveries` has no INSERT/UPDATE/DELETE grant at all.
 
 `profiles.full_name` and `profiles.nim` have no SELECT or UPDATE grant for any client role,
 so the open read policy never exposes the legal name or student ID. The owner reaches them

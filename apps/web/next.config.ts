@@ -7,8 +7,11 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
+    // `geolocation=(self)` is required: a blanket `geolocation=()` disables the
+    // Geolocation API for every page, so the "Use my location" button fails
+    // with PERMISSION_DENIED even when the browser has granted access.
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=()",
+    value: "camera=(), microphone=(), geolocation=(self), payment=()",
   },
   {
     key: "Strict-Transport-Security",

@@ -4,7 +4,6 @@ import {
   CalendarDays,
   Clock,
   Download,
-  ExternalLink,
   Loader2,
   Lock,
   MapPin,
@@ -13,7 +12,6 @@ import {
   RotateCcw,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -90,41 +88,92 @@ export function AttendanceMeetingDashboard({
   const [detail, setDetail] = React.useState(initialDetail);
   const [pending, setPending] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [refreshError, setRefreshError] = React.useState<string | null>(null);
   const [isChangingLocation, setIsChangingLocation] = React.useState(false);
   const [finalizeOpen, setFinalizeOpen] = React.useState(false);
+  const pendingRef = React.useRef<string | null>(null);
+  const refreshSeqRef = React.useRef(0);
   const isOpen = detail.phase === "open";
+
+  // Server re-renders (e.g. router.refresh after a location change) pass
+  // fresh props; without this the client state would keep showing stale data.
+  const [prevInitialDetail, setPrevInitialDetail] = React.useState(initialDetail);
+
+  if (initialDetail !== prevInitialDetail) {
+    setPrevInitialDetail(initialDetail);
+    setDetail(initialDetail);
+  }
+
+  React.useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
   const exportHref = `/api/classes/${classSlug}/attendance/exports/meeting/${detail.sessionId}`;
 
   const refresh = React.useCallback(async () => {
-    const response = await fetch(
-      `/api/classes/${classSlug}/attendance/meetings/${detail.sessionId}`,
-      { cache: "no-store" },
-    );
+    const seq = (refreshSeqRef.current += 1);
 
-    if (!response.ok) {
-      return;
-    }
+    try {
+      const response = await fetch(
+        `/api/classes/${classSlug}/attendance/meetings/${detail.sessionId}`,
+        { cache: "no-store" },
+      );
 
-    const body = (await response.json().catch(() => null)) as {
-      data?: AttendanceMeetingDetail;
-    } | null;
+      if (seq !== refreshSeqRef.current) {
+        return;
+      }
 
-    if (body?.data) {
-      setDetail(body.data);
+      if (!response.ok) {
+        setRefreshError("Live update failed — showing the last known data.");
+        return;
+      }
+
+      const body = (await response.json().catch(() => null)) as {
+        data?: AttendanceMeetingDetail;
+      } | null;
+
+      if (seq !== refreshSeqRef.current) {
+        return;
+      }
+
+      if (body?.data) {
+        setDetail(body.data);
+        setRefreshError(null);
+      }
+    } catch {
+      if (seq === refreshSeqRef.current) {
+        setRefreshError("Live update failed — showing the last known data.");
+      }
     }
   }, [classSlug, detail.sessionId]);
 
+  const shouldPoll = detail.phase === "open" || detail.phase === "scheduled";
+
   React.useEffect(() => {
-    if (!isOpen) {
+    if (!shouldPoll) {
       return;
     }
 
     const timer = window.setInterval(() => {
-      void refresh();
+      if (!pendingRef.current) {
+        void refresh();
+      }
     }, POLL_INTERVAL_MS);
 
-    return () => window.clearInterval(timer);
-  }, [isOpen, refresh]);
+    const onVisible = () => {
+      if (!pendingRef.current && document.visibilityState === "visible") {
+        void refresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [shouldPoll, refresh]);
 
   const run = async (
     action: "open" | "close" | "reopen",
@@ -405,20 +454,6 @@ export function AttendanceMeetingDashboard({
               Meeting .xlsx
             </a>
           </Button>
-
-          <Button
-            asChild
-            size="sm"
-            variant="ghost"
-          >
-            <Link href={`/sessions/${detail.sessionId}`}>
-              <ExternalLink
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Correct records
-            </Link>
-          </Button>
         </div>
       </div>
 
@@ -427,7 +462,10 @@ export function AttendanceMeetingDashboard({
           classSlug={classSlug}
           sessionId={detail.sessionId}
           currentRadiusM={detail.radiusM}
-          onDone={() => setIsChangingLocation(false)}
+          onDone={() => {
+            setIsChangingLocation(false);
+            void refresh();
+          }}
         />
       ) : null}
 
@@ -440,7 +478,16 @@ export function AttendanceMeetingDashboard({
         </Alert>
       ) : null}
 
-      <dl className="border-border divide-border mt-6 grid grid-cols-2 divide-x rounded-xl border sm:grid-cols-3 lg:grid-cols-6">
+      {refreshError ? (
+        <Alert
+          variant="warning"
+          className="mt-4"
+        >
+          <p className="text-xs leading-relaxed">{refreshError}</p>
+        </Alert>
+      ) : null}
+
+      <dl className="border-border mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3 lg:grid-cols-6">
         <Stat
           label="Registered"
           value={counts.expected}
@@ -485,7 +532,12 @@ export function AttendanceMeetingDashboard({
           </p>
         </div>
         <div className="mt-3">
-          <AttendanceMeetingTable roster={detail.roster} />
+          <AttendanceMeetingTable
+            roster={detail.roster}
+            classSlug={classSlug}
+            sessionId={detail.sessionId}
+            onCorrected={() => void refresh()}
+          />
         </div>
       </div>
 
@@ -501,7 +553,7 @@ export function AttendanceMeetingDashboard({
           </p>
         ) : (
           <ul className="border-border divide-border mt-3 divide-y rounded-xl border text-xs">
-            {detail.failures.map((failure, index) => (
+            {detail.failures.slice(0, 25).map((failure, index) => (
               <li
                 key={`${failure.userId}-${failure.createdAt}-${index}`}
                 className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
@@ -522,6 +574,12 @@ export function AttendanceMeetingDashboard({
             ))}
           </ul>
         )}
+        {detail.failures.length > 25 ? (
+          <p className="text-muted-foreground mt-2 text-xs">
+            Showing the 25 most recent attempts · {detail.failures.length - 25}{" "}
+            older attempts are not listed.
+          </p>
+        ) : null}
       </div>
 
       <p className="text-muted-foreground mt-6 text-xs leading-relaxed">
@@ -543,7 +601,7 @@ function Stat({
   tone?: "success" | "warning" | "danger";
 }) {
   return (
-    <div className="px-4 py-3">
+    <div className="bg-surface px-4 py-3">
       <dt className="text-muted-foreground text-[11px]">{label}</dt>
       <dd
         className={

@@ -67,12 +67,19 @@ the other.
   `assignment_attachments`, `rate_limits`, the four push tables, and the five leave
   tables (`leave_requests`, `leave_request_evidence`, `leave_request_history`,
   `leave_request_forwardings`, `leave_request_forwarding_items`).
-- Column grants narrow what a role can touch: `assignments` INSERT excludes `status`;
-  UPDATE excludes `user_id` and `status`; `profiles` UPDATE excludes `id`.
+- Column grants narrow what a role can touch: `assignments` UPDATE excludes `user_id`
+  and `published_at`; `profiles` UPDATE excludes `id`.
   `push_subscriptions` SELECT excludes `endpoint`, `p256dh`, and `auth`;
   `notification_deliveries` has no client write grant at all.
 - `assignments_owner_immutable` trigger raises `42501` if `user_id` changes, covering any
   path that bypasses column grants.
+- The review columns are granted because the public submit flow writes them, so the
+  "a member cannot approve their own work" rule is enforced by policy and trigger, not by
+  a missing privilege: `assignments_owner_insert` accepts `status = 'pending'`, and
+  `status = 'published'` only when `can_publish_public_assignment()` is true, and no other
+  status at all; `assignments_status_guard` raises `42501` on an `authenticated` UPDATE
+  that leaves that state. `SECURITY DEFINER` review RPCs run as the table owner, so they
+  keep both privileges and the guards.
 - `list_assignments` is `security invoker`, so its `status = 'published'` filter is
   defence in depth, not the only guard.
 - `create_or_get_course` is `security definer` but checks `auth.uid() is not null` and is
@@ -95,6 +102,9 @@ the other.
   `is_platform_admin()`, revoke `PUBLIC` execute, and return only safe profile and
   aggregate fields. They expose no emails, legal names, student IDs, or submissions.
 - `platform_admins` has no client grant at all. There is no API or UI path to grant it.
+- `can_publish_public_assignment` is `security definer` with `search_path` pinned so it can
+  read `platform_admins`, which has no client grant at all. It carries the same execute ACL
+  as the other role predicates and returns a single boolean, never a row.
 - `classes`, `class_members`, `class_admins`, and `class_invitations` grant only `SELECT`
   to clients; every write goes through a function. `class_invitations` never grants
   `token_hash`.
@@ -226,9 +236,14 @@ allow-list:
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=()
 Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 ```
+
+`geolocation=(self)` is deliberate: a blanket `geolocation=()` disables the
+Geolocation API on every page, so the attendance "Use my location" button failed
+with `PERMISSION_DENIED` even when the browser had already granted access. The
+browser still prompts the user, and every coordinate is re-validated server-side.
 
 `src/proxy.ts` adds a fresh `Content-Security-Policy` per request:
 

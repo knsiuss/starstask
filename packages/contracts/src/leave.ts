@@ -81,6 +81,10 @@ export const LEAVE_FORWARDING_MAX_REQUESTS = 200;
 export const LEAVE_RECIPIENT_NAME_MAX = 160;
 
 export const leaveRequestIdSchema = z.uuid("Invalid leave request id");
+export const leaveSubjectIdSchema = z.uuid("Invalid course id");
+
+/** Must stay in sync with `leave_requests_subject_count`. */
+export const LEAVE_SUBJECT_MAX = 20;
 export const leaveEvidenceIdSchema = z.uuid("Invalid evidence id");
 export const leaveForwardingIdSchema = z.uuid("Invalid forwarding id");
 
@@ -186,15 +190,30 @@ const leaveRequestFieldsSchema = z.object({
   documentIssueDate: optionalDateField,
 });
 
+/**
+ * Courses the absence covers. Empty is valid: older requests cover the whole
+ * class and a student may save a draft before choosing.
+ */
+const leaveSubjectIdsSchema = z
+  .array(leaveSubjectIdSchema)
+  .max(
+    LEAVE_SUBJECT_MAX,
+    `A request may cover at most ${LEAVE_SUBJECT_MAX} courses`,
+  );
+
 /** Creating a draft: only the class is mandatory. */
 export const leaveRequestCreateSchema = z
-  .object({ classId: classIdSchema })
+  .object({
+    classId: classIdSchema,
+    subjectIds: leaveSubjectIdsSchema.optional(),
+  })
   .and(leaveRequestFieldsSchema)
   .superRefine(refineDateRange);
 
-/** Editing a draft or a request returned for revision. */
-export const leaveRequestUpdateSchema =
-  leaveRequestFieldsSchema.superRefine(refineDateRange);
+/** Editing a draft; the covered courses can change until it is submitted. */
+export const leaveRequestUpdateSchema = leaveRequestFieldsSchema
+  .extend({ subjectIds: leaveSubjectIdsSchema.optional() })
+  .superRefine(refineDateRange);
 
 /** Everything the student must have filled in before submitting. */
 export const leaveSubmissionRequirementsSchema = z
@@ -257,9 +276,7 @@ export const leaveRequestReviewSchema = z.object({
     .transform((value) => (value && value.length > 0 ? value : null)),
 });
 
-export type LeaveRequestReviewInput = z.infer<
-  typeof leaveRequestReviewSchema
->;
+export type LeaveRequestReviewInput = z.infer<typeof leaveRequestReviewSchema>;
 
 /**
  * Evidence metadata registered after the object is stored.

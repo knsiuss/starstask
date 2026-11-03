@@ -5,7 +5,8 @@ import { sortAttendanceRoster } from "@starstask/shared";
 
 import {
   toAttendanceCellStatus,
-  type AttendanceMeetingDetail,
+  type AttendanceCorrectionAuditEntry,
+  AttendanceMeetingDetail,
   type AttendanceMeetingFailure,
   type AttendanceMeetingFailureOutcome,
   type AttendanceMeetingListItem,
@@ -31,6 +32,8 @@ type MeetingFailureRow =
   Database["public"]["Functions"]["attendance_meeting_failures"]["Returns"][number];
 type ClassRosterRow =
   Database["public"]["Functions"]["class_attendance_roster"]["Returns"][number];
+type CorrectionAuditRow =
+  Database["public"]["Functions"]["attendance_correction_audit_list"]["Returns"][number];
 
 type StudentMeetingRow = {
   id: string;
@@ -569,6 +572,57 @@ function mapClassRosterRow(row: ClassRosterRow): AttendanceRosterMember {
     nim: row.nim,
     displayName: row.display_name,
     joinedAt: row.joined_at,
+  };
+}
+
+/**
+ * Append-only correction audit for one class, optionally scoped to a subject.
+ * The database function re-checks manager access, so an unauthorized caller
+ * cannot enumerate corrections for a class they do not manage.
+ */
+export async function listCorrectionAudit(
+  classId: string,
+  subjectId: string | null = null,
+): Promise<AttendanceCorrectionAuditEntry[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc(
+    "attendance_correction_audit_list",
+    {
+      p_class_id: classId,
+      p_subject_id: subjectId,
+    },
+  );
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not load the correction audit",
+      error.code,
+    );
+  }
+
+  return (data ?? []).map(mapCorrectionAuditRow);
+}
+
+function mapCorrectionAuditRow(
+  row: CorrectionAuditRow,
+): AttendanceCorrectionAuditEntry {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    meetingNumber: row.meeting_number,
+    meetingDate: row.meeting_date,
+    studentId: row.student_id,
+    studentNim: row.student_nim,
+    studentName: row.student_name,
+    subjectId: row.subject_id,
+    subjectName: row.subject_name,
+    previousStatus: row.previous_status,
+    newStatus: row.new_status,
+    reason: row.reason,
+    physicallyVerified: row.physically_verified,
+    verificationMethod: row.verification_method,
+    adminName: row.admin_name,
+    createdAt: row.created_at,
   };
 }
 

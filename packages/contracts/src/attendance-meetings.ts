@@ -67,6 +67,10 @@ export const ATTENDANCE_MEETING_PHASE_LABELS: Record<
   finalized: "Finalized",
 };
 
+export const ATTENDANCE_MEETING_RADIUS_MIN = 25;
+export const ATTENDANCE_MEETING_RADIUS_MAX = 500;
+export const ATTENDANCE_MEETING_RADIUS_DEFAULT = 100;
+
 export const ATTENDANCE_MEETING_TITLE_MAX = 160;
 export const ATTENDANCE_MEETING_LOCATION_MAX = 200;
 export const ATTENDANCE_MEETING_NUMBER_MAX = 999;
@@ -113,9 +117,15 @@ export const attendanceMeetingCreateSchema = z
     radiusM: z.coerce
       .number()
       .int("Radius must be a whole number of metres")
-      .min(25, "Radius must be at least 25 metres")
-      .max(1_000, "Radius must be at most 1,000 metres")
-      .default(150),
+      .min(
+        ATTENDANCE_MEETING_RADIUS_MIN,
+        `Radius must be at least ${ATTENDANCE_MEETING_RADIUS_MIN} metres`,
+      )
+      .max(
+        ATTENDANCE_MEETING_RADIUS_MAX,
+        `Radius must be at most ${ATTENDANCE_MEETING_RADIUS_MAX} metres`,
+      )
+      .default(ATTENDANCE_MEETING_RADIUS_DEFAULT),
     title: z
       .string()
       .trim()
@@ -218,7 +228,11 @@ export const attendanceMeetingLocationChangeSchema = z
   .object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
-    radiusM: z.coerce.number().int().min(25).max(1_000),
+    radiusM: z.coerce
+      .number()
+      .int()
+      .min(ATTENDANCE_MEETING_RADIUS_MIN)
+      .max(ATTENDANCE_MEETING_RADIUS_MAX),
     reason: z
       .string()
       .trim()
@@ -241,10 +255,52 @@ export type AttendanceMeetingCloseInput = z.infer<
   typeof attendanceMeetingCloseSchema
 >;
 
+export const ATTENDANCE_CORRECTION_REASON_MIN = 3;
+export const ATTENDANCE_CORRECTION_REASON_MAX = 500;
+
+export const attendanceMeetingCorrectionSchema = z
+  .object({
+    userId: z.uuid("Choose a student"),
+    status: z.enum(
+      ["present", "late", "excused", "absent"],
+      "Choose a status",
+    ),
+    reason: z
+      .string()
+      .trim()
+      .min(
+        ATTENDANCE_CORRECTION_REASON_MIN,
+        `A correction reason of at least ${ATTENDANCE_CORRECTION_REASON_MIN} characters is required`,
+      )
+      .max(ATTENDANCE_CORRECTION_REASON_MAX),
+    /**
+     * Attestation that the admin physically saw the student in the attendance
+     * area. Required whenever the correction marks the member present; the
+     * server enforces the same rule.
+     */
+    physicallyVerified: z.boolean().default(false),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.status === "present" && !value.physicallyVerified) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Confirm that you physically verified the student at the attendance location",
+        path: ["physicallyVerified"],
+      });
+    }
+  });
+
+export type AttendanceMeetingCorrectionInput = z.infer<
+  typeof attendanceMeetingCorrectionSchema
+>;
+
 export const attendanceExportKindSchema = z.enum([
   "meeting",
   "recap",
   "template",
+  "report",
 ]);
 
 export type AttendanceExportKind = z.infer<typeof attendanceExportKindSchema>;

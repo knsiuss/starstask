@@ -55,6 +55,11 @@ type AssignmentFormProps = {
     department: string | null;
   }[];
   previousAssignments?: StarterAssignmentSource[];
+  /**
+   * When true a new submission enters the public archive at once instead of the
+   * review queue, so the copy must not promise an admin review.
+   */
+  publishesDirectly?: boolean;
 };
 
 /** Marks a stored course that no longer belongs to any of the user's classes. */
@@ -70,12 +75,25 @@ const FIELD_IDS: Record<string, string> = {
   attachments: "files",
 };
 
+/** Create-mode copy, chosen by whether the submission queues for review. */
+const QUEUED_COPY = {
+  submitLabel: "Submit for review",
+  footnote:
+    "A platform admin reviews new submissions before they appear publicly. If a request is rejected, edit it and save again to resubmit.",
+};
+const DIRECT_COPY = {
+  submitLabel: "Publish assignment",
+  footnote:
+    "Your submission appears in the public archive as soon as you save it, so check every field first.",
+};
+
 export function AssignmentForm({
   mode,
   assignmentId,
   initialValues,
   courseOptions,
   previousAssignments = [],
+  publishesDirectly = false,
 }: AssignmentFormProps) {
   const router = useRouter();
   const [values, setValues] = React.useState(() => {
@@ -106,6 +124,9 @@ export function AssignmentForm({
   );
   const [formMessage, setFormMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const createCopy = publishesDirectly ? DIRECT_COPY : QUEUED_COPY;
+  const submitLabel = mode === "edit" ? "Save changes" : createCopy.submitLabel;
 
   const update = (key: keyof AssignmentFormValues, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -775,10 +796,8 @@ export function AssignmentForm({
               />
               Saving...
             </>
-          ) : mode === "create" ? (
-            "Submit for review"
           ) : (
-            "Save changes"
+            submitLabel
           )}
         </Button>
         <Button
@@ -793,8 +812,7 @@ export function AssignmentForm({
 
       {mode === "create" ? (
         <p className="text-muted-foreground text-xs leading-relaxed">
-          A platform admin reviews new submissions before they appear publicly.
-          If a request is rejected, edit it and save again to resubmit.
+          {createCopy.footnote}
         </p>
       ) : null}
     </form>

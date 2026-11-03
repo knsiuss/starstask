@@ -18,7 +18,12 @@ import * as React from "react";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import {
+  CheckInResultDialog,
+  type CheckInResultFailure,
+  type CheckInResultSuccess,
+} from "@/components/attendance/check-in-result-dialog";
+import { LocationPermissionDialog } from "@/components/attendance/location-permission-dialog";
 import type {
   ActiveAttendanceSession,
   AttendanceCheckInStatus,
@@ -70,12 +75,17 @@ export function ActiveAttendanceSessionCard({
   mode?: "student" | "manager";
 }) {
   const router = useRouter();
-  const { toast } = useToast();
   const [checkIn, setCheckIn] = React.useState<SavedCheckIn | null>(
     session.checkIn,
   );
   const [isLocating, setIsLocating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [permissionOpen, setPermissionOpen] = React.useState(false);
+  const [resultSuccess, setResultSuccess] =
+    React.useState<CheckInResultSuccess | null>(null);
+  const [resultFailure, setResultFailure] =
+    React.useState<CheckInResultFailure | null>(null);
+  const pendingCheckIn = React.useRef(false);
 
   const subject = session.subjectName ?? session.courseName;
   const classLine = [session.className, session.classCode, session.semester]
@@ -92,7 +102,7 @@ export function ActiveAttendanceSessionCard({
     : session.startsAt;
 
   const checkInNow = async () => {
-    if (isLocating) {
+    if (isLocating || pendingCheckIn.current) {
       return;
     }
 
@@ -103,14 +113,19 @@ export function ActiveAttendanceSessionCard({
     );
 
     if (windowState !== "open") {
-      setError(
-        windowState === "before"
-          ? "Check-in has not opened yet."
-          : "Check-in for this session has closed.",
-      );
+      setResultFailure({
+        message:
+          windowState === "before"
+            ? "Check-in has not opened yet."
+            : "Check-in for this session has closed.",
+        distanceM: null,
+        radiusM: null,
+        canRetry: false,
+      });
       return;
     }
 
+    pendingCheckIn.current = true;
     setIsLocating(true);
     setError(null);
 
@@ -119,9 +134,13 @@ export function ActiveAttendanceSessionCard({
       const { latitude, longitude, accuracy } = position.coords;
 
       if (accuracy > SESSION_CHECKIN_ACCURACY_MAX_M) {
-        setError(
-          `Your location is only accurate to about ${Math.round(accuracy)} m. Move somewhere with a clearer signal and try again.`,
-        );
+        setResultFailure({
+          message: `Your location is only accurate to about ${Math.round(accuracy)} m. Move somewhere with a clearer signal and try again.`,
+          distanceM: null,
+          radiusM: session.radiusM,
+          canRetry: true,
+        });
+        setPermissionOpen(false);
         return;
       }
 
@@ -140,34 +159,61 @@ export function ActiveAttendanceSessionCard({
       } | null;
 
       if (!response.ok) {
-        setError(
-          describeCheckInFailure(body?.error?.code, body?.error?.message),
-        );
+        const retryable =
+          body?.error?.code !== "checkin_closed" &&
+          body?.error?.code !== "checkin_unavailable";
+        setResultFailure({
+          message: describeCheckInFailure(
+            body?.error?.code,
+            body?.error?.message,
+          ),
+          distanceM: null,
+          radiusM:
+            body?.error?.code === "checkin_too_far" ? session.radiusM : null,
+          canRetry: retryable,
+        });
+        setPermissionOpen(false);
         return;
       }
 
       const saved = body?.data?.checkIn;
 
-      if (saved) {
-        setCheckIn({
-          status: saved.status,
-          checkedInAt: saved.checkedInAt,
-          distanceM: saved.distanceM,
+      if (!saved) {
+        setResultFailure({
+          message:
+            "The server did not confirm your check-in. Try again before leaving the meeting point.",
+          distanceM: null,
+          radiusM: null,
+          canRetry: true,
         });
+        setPermissionOpen(false);
+        return;
       }
 
-      toast({
-        variant: "success",
-        title: "Attendance recorded successfully",
-        description:
-          saved?.status === "late"
-            ? "Recorded as late. The class admin can change it."
-            : "Recorded as present.",
+      setCheckIn({
+        status: saved.status,
+        checkedInAt: saved.checkedInAt,
+        distanceM: saved.distanceM,
+      });
+      setPermissionOpen(false);
+      setResultSuccess({
+        status: saved.status,
+        checkedInAt: saved.checkedInAt,
+        distanceM: saved.distanceM,
+        subjectName: subject,
+        meetingNumber: session.title || "Session",
       });
       router.refresh();
     } catch (caught) {
-      setError(describeGeolocationError(caught));
+      setResultFailure({
+        message: describeGeolocationError(caught),
+        distanceM: null,
+        radiusM: null,
+        canRetry: true,
+      });
+      setPermissionOpen(false);
     } finally {
+      pendingCheckIn.current = false;
       setIsLocating(false);
     }
   };
@@ -301,7 +347,10 @@ export function ActiveAttendanceSessionCard({
               <Button
                 type="button"
                 size="sm"
-                onClick={() => void checkInNow()}
+                onClick={() => {
+                  setError(null);
+                  setPermissionOpen(true);
+                }}
                 disabled={isLocating}
                 aria-busy={isLocating}
               >
@@ -333,6 +382,30 @@ export function ActiveAttendanceSessionCard({
           </Alert>
         ) : null}
       </div>
+
+      {mode === "student" ? (
+        <>
+          <LocationPermissionDialog
+            open={permissionOpen}
+            isRequesting={isLocating}
+            onCancel={() => setPermissionOpen(false)}
+            onEnable={() => void checkInNow()}
+          />
+          <CheckInResultDialog
+            success={resultSuccess}
+            failure={resultFailure}
+            onClose={() => {
+              setResultSuccess(null);
+              setResultFailure(null);
+            }}
+            onRetry={() => {
+              setResultFailure(null);
+              setPermissionOpen(true);
+            }}
+            isRetrying={isLocating}
+          />
+        </>
+      ) : null}
     </article>
   );
 }

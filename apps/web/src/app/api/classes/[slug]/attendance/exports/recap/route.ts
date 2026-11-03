@@ -5,6 +5,7 @@ import { fileDownload, handleRouteError } from "@/lib/api/responses";
 import {
   getClassAttendanceRecap,
   getClassAttendanceSubject,
+  listCorrectionAudit,
 } from "@/lib/db/attendance-meetings";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
@@ -59,6 +60,7 @@ export async function GET(
     }
 
     const recap = await getClassAttendanceRecap(found.id, subject.id);
+    const audits = await listCorrectionAudit(found.id, subject.id);
     const generatedAt = new Date();
     const exportContext: AttendanceExportContext = {
       classInfo: found,
@@ -70,7 +72,7 @@ export async function GET(
       generatedAt,
     };
 
-    const bytes = await buildRecapWorkbook(recap, exportContext);
+    const bytes = await buildRecapWorkbook(recap, exportContext, audits);
     const filename = buildRecapFilename({
       classCode: found.class_code,
       className: found.name,

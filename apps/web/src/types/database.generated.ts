@@ -471,6 +471,77 @@ export type Database = {
           },
         ];
       };
+      attendance_correction_audits: {
+        Row: {
+          admin_id: string | null;
+          class_id: string;
+          created_at: string;
+          id: string;
+          metadata: Json;
+          new_status: string;
+          physically_verified: boolean;
+          previous_status: string;
+          reason: string;
+          session_id: string;
+          student_id: string;
+          subject_id: string | null;
+          verification_method: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          admin_id?: string | null;
+          class_id: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          new_status: string;
+          physically_verified?: boolean;
+          previous_status: string;
+          reason: string;
+          session_id: string;
+          student_id: string;
+          subject_id?: string | null;
+          verification_method?: string;
+        };
+        Update: {
+          admin_id?: string | null;
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          new_status?: string;
+          physically_verified?: boolean;
+          previous_status?: string;
+          reason?: string;
+          session_id?: string;
+          student_id?: string;
+          subject_id?: string | null;
+          verification_method?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "attendance_correction_audits_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "attendance_correction_audits_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "attendance_correction_audits_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_logs: {
         Row: {
           action: string;
@@ -2005,6 +2076,7 @@ export type Database = {
       };
       leave_requests: {
         Row: {
+          subject_ids: string[];
           cancellation_note: string | null;
           cancelled_at: string | null;
           cancelled_by: string | null;
@@ -2052,6 +2124,7 @@ export type Database = {
           reference?: string;
           status?: string;
           student_id: string;
+          subject_ids?: string[];
           submitted_at?: string | null;
           updated_at?: string;
         };
@@ -2077,6 +2150,7 @@ export type Database = {
           reference?: string;
           status?: string;
           student_id?: string;
+          subject_ids?: string[];
           submitted_at?: string | null;
           updated_at?: string;
         };
@@ -2501,6 +2575,10 @@ export type Database = {
         Args: { p_class_id: string };
         Returns: boolean;
       };
+      can_publish_public_assignment: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       can_review_leave_request: {
         Args: { p_request_id: string };
         Returns: boolean;
@@ -2568,6 +2646,37 @@ export type Database = {
           outcome: string;
           user_id: string;
         }[];
+      };
+      attendance_correction_audit_list: {
+        Args: { p_class_id: string; p_subject_id?: string | null };
+        Returns: {
+          admin_name: string;
+          created_at: string;
+          id: string;
+          meeting_date: string | null;
+          meeting_number: number | null;
+          new_status: string;
+          physically_verified: boolean;
+          previous_status: string;
+          reason: string;
+          session_id: string;
+          student_id: string;
+          student_name: string;
+          student_nim: string | null;
+          subject_id: string | null;
+          subject_name: string | null;
+          verification_method: string;
+        }[];
+      };
+      record_attendance_correction: {
+        Args: {
+          p_session_id: string;
+          p_user_id: string;
+          p_status: string;
+          p_reason: string;
+          p_physically_verified?: boolean;
+        };
+        Returns: string;
       };
       class_attendance_meeting_list: {
         Args: { p_class_id: string };
@@ -3477,6 +3586,10 @@ export type Database = {
           p_avatar_url?: string | null;
           p_cover_url?: string | null;
         };
+        Returns: undefined;
+      };
+      set_leave_request_subjects: {
+        Args: { p_request_id: string; p_subject_ids: string[] };
         Returns: undefined;
       };
       set_my_declared_position: {

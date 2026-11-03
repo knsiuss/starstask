@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, LocateFixed, MapPin, PlusCircle } from "lucide-react";
+import { Link2, Loader2, LocateFixed, MapPin, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { describeGeolocationError, getCurrentPosition } from "@/lib/geo/position";
+import {
+  describeGeolocationError,
+  getCurrentPosition,
+} from "@/lib/geo/position";
 import {
   ATTENDANCE_MEETING_LATE_MAX,
   ATTENDANCE_MEETING_LOCATION_MAX,
@@ -104,6 +107,8 @@ export function AttendanceMeetingForm({
   const [opensTime, setOpensTime] = React.useState("");
   const [closesTime, setClosesTime] = React.useState("");
   const [location, setLocation] = React.useState("");
+  const [mapsLink, setMapsLink] = React.useState("");
+  const [isResolvingLink, setIsResolvingLink] = React.useState(false);
   const [lateAfterMinutes, setLateAfterMinutes] = React.useState("10");
   const [radiusM, setRadiusM] = React.useState("100");
   const [point, setPoint] = React.useState<CapturedPoint | null>(null);
@@ -137,6 +142,7 @@ export function AttendanceMeetingForm({
     setOpensTime("");
     setClosesTime("");
     setLocation("");
+    setMapsLink("");
     setLateAfterMinutes("10");
     setRadiusM("100");
     setPoint(null);
@@ -168,6 +174,57 @@ export function AttendanceMeetingForm({
     }
   };
 
+  /**
+   * Fills the point from a Google Maps share link.
+   *
+   * Resolution happens on the server, which only contacts Google's own hosts;
+   * the browser sends nothing but the link. A resolved point replaces a GPS
+   * capture because the organizer asked for that exact place.
+   */
+  const resolveMapsLink = async () => {
+    const url = mapsLink.trim();
+
+    if (!url || isResolvingLink) {
+      return;
+    }
+
+    setIsResolvingLink(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/geo/resolve-maps-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      const body = (await response.json().catch(() => null)) as {
+        data?: { latitude: number; longitude: number; name: string | null };
+        error?: { message?: string };
+      } | null;
+
+      if (!response.ok || !body?.data) {
+        setError(
+          body?.error?.message ??
+            "Could not read that link. Enter latitude and longitude manually.",
+        );
+        return;
+      }
+
+      setPoint(null);
+      setManualLatitude(String(body.data.latitude));
+      setManualLongitude(String(body.data.longitude));
+
+      if (!location.trim() && body.data.name) {
+        setLocation(body.data.name.slice(0, ATTENDANCE_MEETING_LOCATION_MAX));
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsResolvingLink(false);
+    }
+  };
+
   const coordinates = React.useMemo((): CapturedPoint | null => {
     if (manualLatitude.trim() === "" && manualLongitude.trim() === "") {
       return point;
@@ -195,8 +252,12 @@ export function AttendanceMeetingForm({
 
     const startsAtIso = meetingInstant(meetingDate, startTime);
     const endsAtIso = meetingInstant(meetingDate, endTime);
-    const opensAtIso = opensTime ? meetingInstant(meetingDate, opensTime) : null;
-    const closesAtIso = closesTime ? meetingInstant(meetingDate, closesTime) : null;
+    const opensAtIso = opensTime
+      ? meetingInstant(meetingDate, opensTime)
+      : null;
+    const closesAtIso = closesTime
+      ? meetingInstant(meetingDate, closesTime)
+      : null;
 
     if (!startsAtIso || !endsAtIso) {
       setError("Enter a valid start and end time.");
@@ -393,9 +454,7 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-opens-at">
-            Check-in opens (optional)
-          </Label>
+          <Label htmlFor="attendance-opens-at">Check-in opens (optional)</Label>
           <Input
             id="attendance-opens-at"
             type="time"
@@ -465,6 +524,48 @@ export function AttendanceMeetingForm({
           {fieldErrors.location ? (
             <p className="text-danger text-xs">{fieldErrors.location}</p>
           ) : null}
+        </div>
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="attendance-maps-link">
+            Google Maps link (optional)
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="attendance-maps-link"
+              inputMode="url"
+              value={mapsLink}
+              maxLength={2_048}
+              onChange={(event) => setMapsLink(event.target.value)}
+              placeholder="https://maps.app.goo.gl/…"
+              className="min-w-0 flex-1"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => void resolveMapsLink()}
+              disabled={isResolvingLink || isBusy || mapsLink.trim() === ""}
+              className="shrink-0"
+            >
+              {isResolvingLink ? (
+                <Loader2
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin"
+                />
+              ) : (
+                <Link2
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
+              )}
+              Use link
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-[11px] leading-relaxed">
+            Paste a share link from Google Maps and StarsTask fills the
+            coordinates. A pin link or a full maps.google.com URL works best.
+          </p>
         </div>
 
         <div className="space-y-1.5">

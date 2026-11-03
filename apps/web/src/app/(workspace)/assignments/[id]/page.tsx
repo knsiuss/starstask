@@ -203,8 +203,9 @@ export default async function AssignmentPage({
           variant="success"
           className="mt-4"
         >
-          Submitted for review. A platform admin checks new requests before they
-          appear in the public archive.
+          {isPublished
+            ? "Published. The brief is already in the public archive."
+            : "Submitted for review. A platform admin checks new requests before they appear in the public archive."}
         </Alert>
       ) : null}
       {query.updated ? (

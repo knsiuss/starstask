@@ -8,17 +8,16 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  ATTENDANCE_MEETING_LOCATION_REASON_MAX,
+  ATTENDANCE_MEETING_RADIUS_MAX,
+  ATTENDANCE_MEETING_RADIUS_MIN,
+  attendanceMeetingLocationChangeSchema,
+} from "@starstask/contracts";
 import {
   describeGeolocationError,
   getCurrentPosition,
 } from "@/lib/geo/position";
-import {
-  ATTENDANCE_MEETING_LOCATION_REASON_MAX,
-  attendanceMeetingLocationChangeSchema,
-} from "@starstask/contracts";
-
-const RADIUS_OPTIONS = [50, 100, 200] as const;
 
 type AttendanceMeetingLocationFormProps = {
   classSlug: string;
@@ -149,21 +148,17 @@ export function AttendanceMeetingLocationForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-new-radius">Allowed radius</Label>
-          <Select
+          <Label htmlFor="attendance-new-radius">Allowed radius (m)</Label>
+          <Input
             id="attendance-new-radius"
+            type="number"
+            inputMode="numeric"
+            min={ATTENDANCE_MEETING_RADIUS_MIN}
+            max={ATTENDANCE_MEETING_RADIUS_MAX}
+            step={1}
             value={radiusM}
             onChange={(event) => setRadiusM(event.target.value)}
-          >
-            {RADIUS_OPTIONS.map((option) => (
-              <option
-                key={option}
-                value={option}
-              >
-                {option} metres
-              </option>
-            ))}
-          </Select>
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="attendance-location-reason">Reason</Label>

@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import * as React from "react";
 
+import { AttendanceCorrectionDialog } from "@/components/attendance/attendance-correction-dialog";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,8 +96,14 @@ function compare(
 
 export function AttendanceMeetingTable({
   roster,
+  classSlug,
+  sessionId,
+  onCorrected,
 }: {
   roster: AttendanceMeetingRosterEntry[];
+  classSlug?: string;
+  sessionId?: string;
+  onCorrected?: () => void;
 }) {
   const [query, setQuery] = React.useState("");
   const [sortKey, setSortKey] = React.useState<SortKey>("roster");
@@ -189,21 +196,67 @@ export function AttendanceMeetingTable({
         <table className="w-full min-w-[52rem] text-sm">
           <thead className="bg-muted/50 text-muted-foreground">
             <tr className="text-left text-xs">
-              <th className="px-3 py-2 font-medium">No.</th>
-              <th className="px-3 py-2 font-medium">NIM</th>
-              <th className="px-3 py-2 font-medium">Name</th>
-              <th className="px-3 py-2 font-medium">Check-in</th>
-              <th className="px-3 py-2 font-medium">Distance</th>
-              <th className="px-3 py-2 font-medium">GPS accuracy</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Notes</th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                No.
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                NIM
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                Name
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                Check-in
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                Distance
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                GPS accuracy
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                Action
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-2 font-medium"
+              >
+                Notes
+              </th>
             </tr>
           </thead>
           <tbody className="divide-border divide-y">
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="text-muted-foreground px-3 py-8 text-center text-xs"
                 >
                   {roster.length === 0
@@ -247,6 +300,18 @@ export function AttendanceMeetingTable({
                     <Badge variant={STATUS_BADGE[entry.status]}>
                       {ATTENDANCE_MEETING_CELL_LABELS[entry.status]}
                     </Badge>
+                  </td>
+                  <td className="px-3 py-2">
+                    {classSlug && sessionId && entry.eligible ? (
+                      <AttendanceCorrectionDialog
+                        classSlug={classSlug}
+                        sessionId={sessionId}
+                        entry={entry}
+                        onDone={() => onCorrected?.()}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </td>
                   <td className="text-muted-foreground px-3 py-2 text-xs">
                     {[

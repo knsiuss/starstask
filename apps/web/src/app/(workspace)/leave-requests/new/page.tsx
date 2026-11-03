@@ -116,14 +116,12 @@ export default async function NewLeaveRequestPage({
     return {
       id: item.id,
       name: item.name,
-      courses:
-        courses.length > 0
-          ? courses.map((course) =>
-              course.code ? `${course.code} · ${course.name}` : course.name,
-            )
-          : item.course_name
-            ? [item.course_name]
-            : [],
+      // Only real courses are selectable: the covered courses are stored as
+      // `class_subjects` ids, so a class-level course name cannot be listed.
+      courses: courses.map((course) => ({
+        id: course.id,
+        name: course.code ? `${course.code} · ${course.name}` : course.name,
+      })),
     };
   });
 

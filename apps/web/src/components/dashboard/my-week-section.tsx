@@ -1,5 +1,8 @@
+"use client";
+
 import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
+import * as React from "react";
 
 import type { MyWeek, MyWeekItem, MyWeekItemKind } from "@/lib/db/dashboard";
 import { cn } from "@/lib/utils/cn";
@@ -7,6 +10,9 @@ import { WeekScroller } from "@/components/dashboard/week-scroller";
 import { APP_TIME_ZONE, toJakartaDateKey } from "@starstask/shared";
 
 const DAY_MS = 86_400_000;
+
+/** Mirrors MAX_WEEK_OFFSET in the dashboard page; the data layer clamps too. */
+const MAX_WEEK_OFFSET = 52;
 
 const KIND_BORDER: Record<MyWeekItemKind, string> = {
   assignment: "border-l-warning",
@@ -44,7 +50,46 @@ type MyWeekSectionProps = {
   week: MyWeek;
   nowIso: string;
   weekOffset: number;
+  /** Only class admins can create sessions; students get no add buttons. */
+  canScheduleSessions?: boolean;
 };
+
+/** Closes a native details menu on outside click or Escape. */
+function useDismissableMenu() {
+  const ref = React.useRef<HTMLDetailsElement>(null);
+
+  React.useEffect(() => {
+    const close = () => {
+      if (ref.current) {
+        ref.current.open = false;
+      }
+    };
+
+    const onPointerDown = (event: MouseEvent) => {
+      const el = ref.current;
+
+      if (el?.open && !el.contains(event.target as Node)) {
+        close();
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  return ref;
+}
 
 function weekHref(offset: number): string {
   return offset === 0 ? "/dashboard" : `/dashboard?week=${offset}`;
@@ -80,6 +125,7 @@ export function MyWeekSection({
   week,
   nowIso,
   weekOffset,
+  canScheduleSessions = false,
 }: MyWeekSectionProps) {
   const todayKey = toJakartaDateKey(new Date(nowIso));
   const weekStart = new Date(week.weekStartIso);
@@ -87,6 +133,9 @@ export function MyWeekSection({
   const currentWeekStart = new Date(
     weekStart.getTime() - weekOffset * 7 * DAY_MS,
   );
+  const menuRef = useDismissableMenu();
+  const atPrevBound = weekOffset <= -MAX_WEEK_OFFSET;
+  const atNextBound = weekOffset >= MAX_WEEK_OFFSET;
   const rangeLabel = `${dayMonthFormatter.format(weekStart)} – ${dayMonthFormatter.format(
     new Date(weekEnd.getTime() - 1),
   )}`;
@@ -116,7 +165,7 @@ export function MyWeekSection({
   return (
     <section
       aria-labelledby="my-week"
-      className="border-border bg-surface rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
+      className="border-border bg-surface rise-in rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
@@ -143,26 +192,47 @@ export function MyWeekSection({
           >
             Today
           </Link>
-          <Link
-            href={weekHref(weekOffset - 1)}
-            aria-label="Previous week"
-            className="border-border text-muted-foreground hover:bg-hover hover:text-foreground rounded-md border p-1.5 transition-colors"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </Link>
-          <Link
-            href={weekHref(weekOffset + 1)}
-            aria-label="Next week"
-            className="border-border text-muted-foreground hover:bg-hover hover:text-foreground rounded-md border p-1.5 transition-colors"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
+          {atPrevBound ? (
+            <span
+              aria-disabled="true"
+              className="border-border text-muted-foreground/50 cursor-not-allowed rounded-md border p-1.5"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </span>
+          ) : (
+            <Link
+              href={weekHref(weekOffset - 1)}
+              aria-label="Previous week"
+              className="border-border text-muted-foreground hover:bg-hover hover:text-foreground rounded-md border p-1.5 transition-colors"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Link>
+          )}
+          {atNextBound ? (
+            <span
+              aria-disabled="true"
+              className="border-border text-muted-foreground/50 cursor-not-allowed rounded-md border p-1.5"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+          ) : (
+            <Link
+              href={weekHref(weekOffset + 1)}
+              aria-label="Next week"
+              className="border-border text-muted-foreground hover:bg-hover hover:text-foreground rounded-md border p-1.5 transition-colors"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
 
           <span className="text-muted-foreground px-1 text-xs font-medium tabular-nums">
             {rangeLabel}
           </span>
 
-          <details className="relative">
+          <details
+            ref={menuRef}
+            className="relative"
+          >
             <summary className="border-border text-muted-foreground hover:bg-hover hover:text-foreground flex cursor-pointer list-none items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors [&::-webkit-details-marker]:hidden">
               Week
               <ChevronDown
@@ -289,13 +359,15 @@ export function MyWeekSection({
                     <p className="text-muted-foreground text-[10px]">
                       No events
                     </p>
-                    <Link
-                      href="/sessions/new"
-                      aria-label={`Add an event on ${dayMonthFormatter.format(day.date)}`}
-                      className="border-border text-muted-foreground hover:bg-hover hover:text-foreground flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Link>
+                    {canScheduleSessions ? (
+                      <Link
+                        href="/sessions/new"
+                        aria-label={`Add an event on ${dayMonthFormatter.format(day.date)}`}
+                        className="border-border text-muted-foreground hover:bg-hover hover:text-foreground flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Link>
+                    ) : null}
                   </div>
                 ) : null}
               </li>

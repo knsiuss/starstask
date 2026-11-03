@@ -9,6 +9,7 @@ import {
 } from "@starstask/contracts";
 
 import type {
+  AttendanceCorrectionAuditEntry,
   AttendanceMeetingDetail,
   AttendanceMeetingRosterEntry,
   AttendanceRecap,
@@ -75,6 +76,7 @@ export type AttendanceExportContext = {
 export async function buildMeetingWorkbook(
   detail: AttendanceMeetingDetail,
   context: AttendanceExportContext,
+  audits: AttendanceCorrectionAuditEntry[] = [],
 ): Promise<Uint8Array> {
   const workbook = createWorkbook(context.generatedAt);
   const sheet = workbook.addWorksheet(`Pertemuan ${detail.meetingNumber}`, {
@@ -184,6 +186,12 @@ export async function buildMeetingWorkbook(
   sheet.pageSetup.printTitlesRow = `${headerRowNumber}:${headerRowNumber}`;
   sheet.headerFooter.oddFooter = "&LStarsTask&C&P / &N&RAttendance report";
 
+  addCorrectionAuditSheet(
+    workbook,
+    audits.filter((entry) => entry.sessionId === detail.sessionId),
+    context,
+  );
+
   return workbookToBytes(workbook);
 }
 
@@ -191,6 +199,7 @@ export async function buildMeetingWorkbook(
 export async function buildRecapWorkbook(
   recap: AttendanceRecap,
   context: AttendanceExportContext,
+  audits: AttendanceCorrectionAuditEntry[] = [],
 ): Promise<Uint8Array> {
   const workbook = createWorkbook(context.generatedAt);
   const sheet = workbook.addWorksheet("Summary", {
@@ -319,7 +328,100 @@ export async function buildRecapWorkbook(
   sheet.views = [{ state: "frozen", ySplit: headerRowNumber }];
   sheet.pageSetup.printTitlesRow = `${headerRowNumber}:${headerRowNumber}`;
 
+  // Correction Audit sheet: every audited manual correction for the subject.
+  addCorrectionAuditSheet(workbook, audits, context);
+
   return workbookToBytes(workbook);
+}
+
+function addCorrectionAuditSheet(
+  workbook: ExcelJS.Workbook,
+  audits: AttendanceCorrectionAuditEntry[],
+  context: AttendanceExportContext,
+): void {
+  const sheet = workbook.addWorksheet("Correction Audit", {
+    pageSetup: landscapePageSetup(),
+  });
+
+  sheet.columns = [
+    { key: "no", width: 7 },
+    { key: "nim", width: 20 },
+    { key: "student", width: 28 },
+    { key: "meeting", width: 16 },
+    { key: "previous", width: 14 },
+    { key: "next", width: 14 },
+    { key: "admin", width: 24 },
+    { key: "reason", width: 40 },
+    { key: "method", width: 14 },
+    { key: "at", width: 24 },
+  ];
+
+  let row = addReportHeading(
+    sheet,
+    "Correction Audit",
+    `Manual corrections — ${subjectLabel(context.subject)}`,
+  );
+
+  row = addMetadataRows(sheet, row, 10, [
+    ["Exported at", formatDateTime(context.generatedAt.toISOString())],
+  ]);
+
+  const headerRowNumber = row;
+  const headerRow = sheet.getRow(headerRowNumber);
+  const headerValues = [
+    "No.",
+    "Student NIM",
+    "Student name",
+    "Meeting",
+    "Previous status",
+    "New status",
+    "Admin",
+    "Reason",
+    "Verification method",
+    "Corrected at",
+  ];
+  headerRow.values = headerValues;
+  styleHeaderRow(headerRow, headerValues.length);
+
+  const firstDataRow = headerRowNumber + 1;
+
+  audits.forEach((entry, index) => {
+    const dataRow = sheet.getRow(firstDataRow + index);
+    const values: (string | number)[] = [
+      index + 1,
+      entry.studentNim ?? "—",
+      entry.studentName,
+      entry.meetingNumber !== null ? `Pertemuan ${entry.meetingNumber}` : "—",
+      entry.previousStatus,
+      entry.newStatus,
+      entry.adminName,
+      entry.reason,
+      entry.physicallyVerified ? "physical" : entry.verificationMethod,
+      formatDateTime(entry.createdAt),
+    ];
+    dataRow.values = values;
+    styleDataRow(dataRow, values.length);
+  });
+
+  if (audits.length === 0) {
+    const emptyRow = sheet.getRow(firstDataRow);
+    emptyRow.getCell(1).value =
+      "No manual corrections recorded for this scope.";
+    sheet.mergeCells(firstDataRow, 1, firstDataRow, headerValues.length);
+    emptyRow.getCell(1).font = { italic: true, color: { argb: MUTED_TEXT } };
+  }
+
+  const lastDataRow = firstDataRow + audits.length - 1;
+
+  sheet.autoFilter = {
+    from: { row: headerRowNumber, column: 1 },
+    to: {
+      row: Math.max(lastDataRow, firstDataRow),
+      column: headerValues.length,
+    },
+  };
+  sheet.views = [{ state: "frozen", ySplit: headerRowNumber }];
+  sheet.pageSetup.printTitlesRow = `${headerRowNumber}:${headerRowNumber}`;
 }
 
 /**

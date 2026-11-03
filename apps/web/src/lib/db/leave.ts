@@ -29,6 +29,8 @@ export type LeaveRequestSummary = {
   classId: string;
   classSlug: string;
   className: string;
+  /** Courses the absence covers. Empty means the whole class. */
+  subjectIds: string[];
   leaveStartDate: string | null;
   leaveEndDate: string | null;
   reasonCategory: LeaveReasonCategory | null;
@@ -120,6 +122,7 @@ const LIST_COLUMNS = `
   reference,
   student_id,
   class_id,
+  subject_ids,
   leave_start_date,
   leave_end_date,
   reason_category,
@@ -147,6 +150,7 @@ type LeaveRowShape = {
   reference: string;
   student_id: string;
   class_id: string;
+  subject_ids: string[];
   leave_start_date: string | null;
   leave_end_date: string | null;
   reason_category: LeaveReasonCategory | null;
@@ -244,6 +248,7 @@ async function toSummaries(
     classId: row.class_id,
     classSlug: row.classes?.slug ?? "",
     className: row.classes?.name ?? "Class",
+    subjectIds: row.subject_ids ?? [],
     leaveStartDate: row.leave_start_date,
     leaveEndDate: row.leave_end_date,
     reasonCategory: row.reason_category,

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSessionUser } from "@/lib/auth/session";
 import { isFeatureEnabled } from "@/lib/config/features";
-import { getClassRole } from "@/lib/db/classes";
+import { getClassRole, listClassSubjectsByIds } from "@/lib/db/classes";
 import { getLeaveRequestById, listLeaveHistory } from "@/lib/db/leave";
 import { getEvidenceViews } from "@/features/leave/evidence-service";
 import {
@@ -110,10 +110,11 @@ export default async function LeaveRequestPage({
     notFound();
   }
 
-  const [evidence, history, query] = await Promise.all([
+  const [evidence, history, query, coveredCourses] = await Promise.all([
     getEvidenceViews(request.id),
     listLeaveHistory(request.id),
     searchParams,
+    listClassSubjectsByIds(request.subjectIds).catch(() => []),
   ]);
 
   const editable = isOwner && isLeaveRequestEditable(request.status);
@@ -297,6 +298,26 @@ export default async function LeaveRequestPage({
 
             <Card className="mt-3">
               <dl className="grid gap-4 text-sm">
+                <div>
+                  <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+                    Courses
+                  </dt>
+                  <dd className="mt-0.5">
+                    {coveredCourses.length > 0 ? (
+                      coveredCourses
+                        .map((course) =>
+                          course.code
+                            ? `${course.code} · ${course.name}`
+                            : course.name,
+                        )
+                        .join(", ")
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Whole class — no specific course
+                      </span>
+                    )}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-muted-foreground text-xs tracking-wide uppercase">
                     Reason

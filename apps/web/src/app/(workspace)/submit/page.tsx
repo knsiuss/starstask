@@ -5,6 +5,7 @@ import { AssignmentForm } from "@/components/forms/assignment-form";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { getSessionUser } from "@/lib/auth/session";
 import {
+  canPublishPublicAssignment,
   getMemberCourseOptions,
   listOwnedAssignmentTemplates,
 } from "@/lib/db/assignments";
@@ -39,10 +40,15 @@ export default async function SubmitAssignmentPage() {
     redirect(buildLoginPath("/submit"));
   }
 
-  const [courses, previousAssignments] = await Promise.all([
+  const [courses, previousAssignments, publishesDirectly] = await Promise.all([
     getMemberCourseOptions(session.user.id),
     listOwnedAssignmentTemplates(session.user.id).catch(() => []),
+    canPublishPublicAssignment().catch(() => false),
   ]);
+
+  const routingSentence = publishesDirectly
+    ? "Your submission appears in the public archive as soon as you save it."
+    : "Your submission becomes a request: a platform admin reviews it before it appears in the public archive.";
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -50,10 +56,9 @@ export default async function SubmitAssignmentPage() {
         Submit an assignment
       </h1>
       <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
-        Share the brief exactly as you received it. Your submission becomes a
-        request: a platform admin reviews it before it appears in the public
-        archive. Remove personal data such as student names, grades, or private
-        contact details before submitting.
+        Share the brief exactly as you received it. {routingSentence} Remove
+        personal data such as student names, grades, or private contact details
+        before submitting.
       </p>
 
       <div className="mt-8">
@@ -61,6 +66,7 @@ export default async function SubmitAssignmentPage() {
           mode="create"
           courseOptions={courses}
           previousAssignments={previousAssignments}
+          publishesDirectly={publishesDirectly}
           initialValues={{
             title: "",
             description: "",

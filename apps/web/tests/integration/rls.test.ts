@@ -123,8 +123,9 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
 
     pendingId = pending.id;
 
-    // Clients cannot set status (column not granted), so flip it with the
-    // service role to model a moderation queue.
+    // The fixture needs a published row that then falls into the queue. A client
+    // may insert `pending`, but only the table owner can move a `published` row
+    // back, because the status guard refuses that write.
     const { error: statusError } = await admin
       .from("assignments")
       .update({ status: "pending" })

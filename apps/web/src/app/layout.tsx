@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { ToastProvider } from "@/components/ui/toast";
 import { getSiteUrl } from "@/lib/env/public";
 
@@ -67,6 +68,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className="min-h-dvh antialiased">
         <a
           href="#main-content"

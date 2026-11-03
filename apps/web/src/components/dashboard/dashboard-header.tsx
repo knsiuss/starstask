@@ -145,7 +145,7 @@ export function DashboardHeader({
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/10"
+        className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/10 dark:from-[#0e1116]/90 dark:via-[#0e1116]/65 dark:to-[#0e1116]/10"
       />
 
       <div className="relative flex flex-col gap-5 px-5 py-7 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:py-8">

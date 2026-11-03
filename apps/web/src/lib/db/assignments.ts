@@ -499,6 +499,25 @@ export async function getOrCreateCourse(
   return { id: data.id, name: data.name, code: data.code };
 }
 
+/**
+ * Whether this author's public submission publishes straight away or queues for
+ * review. Wraps the same predicate the insert policy enforces, so the app never
+ * claims a status the database would refuse.
+ */
+export async function canPublishPublicAssignment(): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc(
+    "can_publish_public_assignment",
+    {},
+  );
+
+  if (error) {
+    throw new DataAccessError("Could not resolve permissions", error.code);
+  }
+
+  return data === true;
+}
+
 export async function insertAssignment(
   userId: string,
   input: AssignmentCreateInput,
@@ -519,9 +538,10 @@ export async function insertAssignment(
       deadline: input.deadline ?? null,
       tags: input.tags,
       reference_urls: input.referenceUrls,
-      // Public submissions are requests: a platform admin reviews them before
-      // `list_assignments` can return the row to other visitors.
-      status: "pending",
+      // A member's submission is a request a platform admin reviews before
+      // `list_assignments` returns it. Anyone who administers a class already
+      // publishes to that class, so their public brief goes live at once.
+      status: (await canPublishPublicAssignment()) ? "published" : "pending",
     })
     .select("id")
     .single();
