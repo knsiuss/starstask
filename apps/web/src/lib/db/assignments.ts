@@ -1,14 +1,15 @@
 import "server-only";
 
+import { cache } from "react";
+
 import type {
   AssignmentCreateInput,
-  AssignmentStatus,
   AssignmentUpdateInput,
   ListAssignmentsQuery,
   MyAssignmentsQuery,
 } from "@starstask/contracts";
 
-import type { Database, Json } from "@/types/database";
+import type { AssignmentStatusRow, Database, Json } from "@/types/database";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export class DataAccessError extends Error {
@@ -49,7 +50,9 @@ export type AssignmentDetail = {
   deadline: string | null;
   tags: string[];
   reference_urls: string[];
-  status: AssignmentStatus;
+  status: AssignmentStatusRow;
+  class_id: string | null;
+  rejection_reason: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -61,7 +64,7 @@ export type AssignmentDetail = {
 export type MyAssignment = {
   id: string;
   title: string;
-  status: AssignmentStatus;
+  status: AssignmentStatusRow;
   deadline: string | null;
   created_at: string;
   updated_at: string;
@@ -104,7 +107,9 @@ type AssignmentRecord = {
   deadline: string | null;
   tags: string[];
   reference_urls: Json;
-  status: AssignmentStatus;
+  status: AssignmentStatusRow;
+  class_id: string | null;
+  rejection_reason: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -133,6 +138,8 @@ const ASSIGNMENT_DETAIL_SELECT = `
   tags,
   reference_urls,
   status,
+  class_id,
+  rejection_reason,
   published_at,
   created_at,
   updated_at,
@@ -186,33 +193,37 @@ export async function listAssignments(
   };
 }
 
-export async function getAssignmentDetail(
-  id: string,
-): Promise<AssignmentDetail | null> {
-  const supabase = await createSupabaseServerClient();
+/**
+ * Cached for the lifetime of one render so `generateMetadata` and the page
+ * share the same read instead of fetching the assignment twice.
+ */
+export const getAssignmentDetail = cache(
+  async (id: string): Promise<AssignmentDetail | null> => {
+    const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
-    .from("assignments")
-    .select(ASSIGNMENT_DETAIL_SELECT)
-    .eq("id", id)
-    .maybeSingle<AssignmentRecord>();
+    const { data, error } = await supabase
+      .from("assignments")
+      .select(ASSIGNMENT_DETAIL_SELECT)
+      .eq("id", id)
+      .maybeSingle<AssignmentRecord>();
 
-  if (error) {
-    throw new DataAccessError("Could not load the assignment", error.code);
-  }
+    if (error) {
+      throw new DataAccessError("Could not load the assignment", error.code);
+    }
 
-  if (!data) {
-    return null;
-  }
+    if (!data) {
+      return null;
+    }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, avatar_url")
-    .eq("id", data.user_id)
-    .maybeSingle();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", data.user_id)
+      .maybeSingle();
 
-  return toAssignmentDetail(data, profile);
-}
+    return toAssignmentDetail(data, profile);
+  },
+);
 
 export async function getOwnedAssignment(
   id: string,
@@ -257,7 +268,7 @@ export async function getMyAssignments(
   const items = (data ?? []).map((row) => ({
     id: row.id,
     title: row.title,
-    status: row.status as AssignmentStatus,
+    status: row.status as AssignmentStatusRow,
     deadline: row.deadline,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -508,6 +519,9 @@ export async function insertAssignment(
       deadline: input.deadline ?? null,
       tags: input.tags,
       reference_urls: input.referenceUrls,
+      // Public submissions are requests: a platform admin reviews them before
+      // `list_assignments` can return the row to other visitors.
+      status: "pending",
     })
     .select("id")
     .single();
@@ -542,6 +556,30 @@ export async function updateAssignmentRecord(
   if (input.tags !== undefined) patch.tags = input.tags;
   if (input.referenceUrls !== undefined)
     patch.reference_urls = input.referenceUrls;
+
+  const { data: existing, error: readError } = await supabase
+    .from("assignments")
+    .select("id, status, class_id")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (readError) {
+    throw new DataAccessError("Could not load the assignment", readError.code);
+  }
+
+  if (!existing) {
+    return false;
+  }
+
+  // Editing a rejected public request sends it back for review; the previous
+  // rejection note no longer matches the updated content.
+  if (existing.status === "rejected" && existing.class_id === null) {
+    patch.status = "pending";
+    patch.rejection_reason = null;
+    patch.reviewed_by = null;
+    patch.reviewed_at = null;
+  }
 
   if (Object.keys(patch).length === 0) {
     return true;
@@ -618,26 +656,38 @@ export async function insertAttachmentRecords(
     mimeType: string;
     fileSize: number;
   }[],
-): Promise<void> {
+): Promise<AttachmentRecordSummary[]> {
   if (attachments.length === 0) {
-    return;
+    return [];
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("assignment_attachments").insert(
-    attachments.map((attachment) => ({
-      assignment_id: assignmentId,
-      storage_path: attachment.storagePath,
-      original_filename: attachment.originalFilename,
-      mime_type: attachment.mimeType,
-      file_size: attachment.fileSize,
-    })),
-  );
+  const { data, error } = await supabase
+    .from("assignment_attachments")
+    .insert(
+      attachments.map((attachment) => ({
+        assignment_id: assignmentId,
+        storage_path: attachment.storagePath,
+        original_filename: attachment.originalFilename,
+        mime_type: attachment.mimeType,
+        file_size: attachment.fileSize,
+      })),
+    )
+    .select("id, original_filename, mime_type, file_size");
 
   if (error) {
     throw new DataAccessError("Could not save attachment records", error.code);
   }
+
+  return data ?? [];
 }
+
+export type AttachmentRecordSummary = {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+};
 
 function toAssignmentDetail(
   record: AssignmentRecord,
@@ -663,6 +713,8 @@ function toAssignmentDetail(
     tags: record.tags,
     reference_urls: parseReferenceUrls(record.reference_urls),
     status: record.status,
+    class_id: record.class_id,
+    rejection_reason: record.rejection_reason,
     published_at: record.published_at,
     created_at: record.created_at,
     updated_at: record.updated_at,

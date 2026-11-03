@@ -60,6 +60,60 @@
   }
 }
 
+/* Diagonal hatch marking the part of a bar that lies before today. */
+.timeline-bar-past {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0,
+    transparent 5px,
+    rgb(0 0 0 / 0.09) 5px,
+    rgb(0 0 0 / 0.09) 10px
+  );
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+/* Toasts live in a fixed layer, so animating them never shifts page content. */
+.toast-enter {
+  animation: toast-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.toast-exit {
+  animation: toast-out 160ms ease-in forwards;
+}
+
+/* Horizontal strips (tab bars, filter chips) keep native swipe/drag scrolling
+   but render no scrollbar chrome, which otherwise reads as a broken control. */
+.no-scrollbar {
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 0.5rem;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

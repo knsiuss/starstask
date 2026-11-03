@@ -49,6 +49,7 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy).toContain(
       "img-src 'self' data: blob: https://example.supabase.co",
     );
+    expect(policy).toContain("frame-src 'self' https://example.supabase.co");
   });
 
   it("falls back to the Supabase wildcard for a non-https URL", () => {

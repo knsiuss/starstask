@@ -72,7 +72,7 @@ export default async function CourseAttendancePage({
           </p>
         </div>
         <Link
-          href={`/dashboard/classes/${found.slug}?tab=attendance&view=history`}
+          href={`/dashboard/classes/${found.slug}/attendance?view=history`}
           className="text-accent text-sm font-medium hover:underline"
         >
           Class attendance history

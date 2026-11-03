@@ -12,11 +12,11 @@ import {
   toJakartaDateKey,
 } from "./deadline";
 
-export const CALENDAR_VIEW_KINDS = ["month", "week", "day", "agenda"] as const;
+export const CALENDAR_VIEW_KINDS = ["month", "week", "day", "list"] as const;
 
 export type CalendarViewKind = (typeof CALENDAR_VIEW_KINDS)[number];
 
-export const AGENDA_WINDOW_DAYS = 30;
+export const LIST_WINDOW_DAYS = 30;
 
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -189,7 +189,7 @@ export function buildCalendarViewRange(
     dayCount = 1;
   } else {
     startKey = anchorKey;
-    dayCount = AGENDA_WINDOW_DAYS;
+    dayCount = LIST_WINDOW_DAYS;
   }
 
   const endKey = addDaysToDateKey(startKey, dayCount - 1);
@@ -206,7 +206,7 @@ export function buildCalendarViewRange(
   };
 }
 
-/** Moves the anchor by one page: a month, a week, a day, or an agenda window. */
+/** Moves the anchor by one page: a month, a week, a day, or a list window. */
 export function shiftCalendarAnchor(
   view: CalendarViewKind,
   anchorKey: string,
@@ -224,7 +224,7 @@ export function shiftCalendarAnchor(
     return addDaysToDateKey(anchorKey, delta);
   }
 
-  return addDaysToDateKey(anchorKey, AGENDA_WINDOW_DAYS * delta);
+  return addDaysToDateKey(anchorKey, LIST_WINDOW_DAYS * delta);
 }
 
 const dayLabelFormatter = new Intl.DateTimeFormat("en-GB", {

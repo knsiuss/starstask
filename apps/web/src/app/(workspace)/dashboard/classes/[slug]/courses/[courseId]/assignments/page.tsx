@@ -6,6 +6,7 @@ import { CourseWorkspaceHeader } from "@/components/classes/course-workspace-hea
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TabStrip } from "@/components/ui/tab-strip";
 import { requireCourseContext } from "@/features/classes/course-access";
 import {
   COURSE_ASSIGNMENT_FILTERS,
@@ -173,37 +174,18 @@ export default async function CourseAssignmentsPage({
         </div>
       </div>
 
-      <nav
-        aria-label="Assignment filters"
-        className="border-border mt-5 overflow-x-auto border-b"
-      >
-        <ul className="-mb-px flex min-w-max items-center gap-1">
-          {COURSE_ASSIGNMENT_FILTERS.map((entry) => {
-            const isActive = entry === filter;
-
-            return (
-              <li key={entry}>
-                <Link
-                  href={
-                    entry === "all"
-                      ? `${courseBase}/assignments`
-                      : `${courseBase}/assignments?filter=${entry}`
-                  }
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "inline-flex items-center border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-accent text-foreground"
-                      : "text-muted-foreground hover:text-foreground border-transparent",
-                  )}
-                >
-                  {COURSE_ASSIGNMENT_FILTER_LABELS[entry]}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <TabStrip
+        label="Assignment filters"
+        className="mt-5"
+        items={COURSE_ASSIGNMENT_FILTERS.map((entry) => ({
+          href:
+            entry === "all"
+              ? `${courseBase}/assignments`
+              : `${courseBase}/assignments?filter=${entry}`,
+          label: COURSE_ASSIGNMENT_FILTER_LABELS[entry],
+          active: entry === filter,
+        }))}
+      />
       <p className="text-muted-foreground mt-2 text-xs">
         {COURSE_ASSIGNMENT_FILTER_HELP[filter]}
       </p>

@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { cn } from "@/lib/utils/cn";
+import { TabStrip } from "@/components/ui/tab-strip";
 
 export const ATTENDANCE_TABS = ["check-in", "history"] as const;
 
@@ -36,32 +34,13 @@ export function AttendanceTabs({
   hrefFor = defaultTabHref,
 }: AttendanceTabsProps) {
   return (
-    <nav
-      aria-label="Attendance sections"
-      className="border-border overflow-x-auto border-b"
-    >
-      <ul className="-mb-px flex min-w-max items-center gap-1">
-        {ATTENDANCE_TABS.map((tab) => {
-          const isActive = tab === activeTab;
-
-          return (
-            <li key={tab}>
-              <Link
-                href={hrefFor(tab)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "border-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground border-transparent",
-                )}
-              >
-                {TAB_LABELS[tab]}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <TabStrip
+      label="Attendance sections"
+      items={ATTENDANCE_TABS.map((tab) => ({
+        href: hrefFor(tab),
+        label: TAB_LABELS[tab],
+        active: tab === activeTab,
+      }))}
+    />
   );
 }

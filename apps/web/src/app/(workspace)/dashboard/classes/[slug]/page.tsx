@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ClassAssignmentsTab } from "@/components/classes/class-assignments-tab";
-import { ClassAttendanceTab } from "@/components/classes/class-attendance-tab";
 import { ClassInfoTab } from "@/components/classes/class-info-tab";
 import { ClassMembersTab } from "@/components/classes/class-members-tab";
 import { ClassOverview } from "@/components/classes/class-overview";
@@ -19,26 +18,8 @@ import { StatusBadge } from "@/components/classes/status-badge";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import type { AttendanceCheckInView } from "@/lib/attendance/types";
-import type {
-  AttendanceMeetingListItem,
-  StudentAttendanceMeeting,
-} from "@/lib/attendance/meeting-types";
 import { getSessionUser } from "@/lib/auth/session";
 import { listAssignments } from "@/lib/db/assignments";
-import {
-  getAttendanceCheckInView,
-  getStudentAttendance,
-  type StudentAttendanceView,
-} from "@/lib/db/attendance";
-import {
-  getStudentAttendanceMeetingView,
-  listClassAttendanceMeetings,
-} from "@/lib/db/attendance-meetings";
-import {
-  getClassAttendance,
-  type ClassAttendanceView,
-} from "@/lib/db/class-attendance";
 import { listClassSchedule } from "@/lib/db/class-schedule";
 import { listMyClassSubmissions } from "@/lib/db/class-submissions";
 import {
@@ -50,10 +31,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { flattenSearchParams } from "@/lib/utils/search-params";
-import {
-  attendanceQuerySchema,
-  listAssignmentsQuerySchema,
-} from "@starstask/contracts";
+import { listAssignmentsQuerySchema } from "@starstask/contracts";
 import { pluralize } from "@starstask/shared";
 
 export const metadata: Metadata = {
@@ -118,6 +96,15 @@ export default async function ClassDashboardPage({
     redirect(`/dashboard/classes/${found.slug}/courses`);
   }
 
+  // Attendance owns a fixed-viewport workspace of its own, so the old inline
+  // tab links forward to that route and keep their sub-view.
+  if (flatQuery.tab === "attendance") {
+    const suffix =
+      flatQuery.view === "history" ? "?view=history" : "";
+
+    redirect(`/dashboard/classes/${found.slug}/attendance${suffix}`);
+  }
+
   const selectedSubjectId = flatQuery.subject;
   let activeTab: ClassTab = "overview";
 
@@ -128,36 +115,27 @@ export default async function ClassDashboardPage({
     activeTab = "assignments";
   }
 
-  const attendanceSubView =
-    flatQuery.view === "history" ? "history" : "check-in";
-
   const [members, subjects] = await Promise.all([
     listClassMembers(found.id),
     listClassSubjects(found.id),
   ]);
 
+  // The assignments tab narrows to one course of the class.
+  const usesSubjectFilter = activeTab === "assignments";
+
   const selectedSubject =
-    activeTab === "assignments" && selectedSubjectId
+    usesSubjectFilter && selectedSubjectId
       ? subjects.find((subject) => subject.id === selectedSubjectId)
       : undefined;
 
-  if (activeTab === "assignments" && selectedSubjectId && !selectedSubject) {
-    redirect(`/dashboard/classes/${found.slug}?tab=assignments`);
+  if (usesSubjectFilter && selectedSubjectId && !selectedSubject) {
+    redirect(`/dashboard/classes/${found.slug}?tab=${activeTab}`);
   }
 
   let overviewAssignments: AssignmentPage["items"] = [];
   let assignmentsPage: AssignmentPage | null = null;
   let classSubmissions: SubmissionList = [];
   let scheduleEntries: ScheduleList = [];
-  let classAttendance: ClassAttendanceView | null = null;
-  let ownAttendance: StudentAttendanceView | null = null;
-  let classCheckIn: AttendanceCheckInView | null = null;
-  let classMeetings: AttendanceMeetingListItem[] = [];
-  let memberMeetings: StudentAttendanceMeeting[] = [];
-  let memberIdentity: { fullName: string | null; nim: string | null } = {
-    fullName: null,
-    nim: null,
-  };
 
   if (activeTab === "overview") {
     const [recent, mine] = await Promise.all([
@@ -233,36 +211,6 @@ export default async function ClassDashboardPage({
     scheduleEntries = await listClassSchedule(found.id);
   }
 
-  if (activeTab === "attendance") {
-    const checkIn = getAttendanceCheckInView(session.user.id, new Date(), {
-      classId: found.id,
-    });
-
-    if (role.canManage) {
-      [classAttendance, classCheckIn, classMeetings] = await Promise.all([
-        getClassAttendance(found.id),
-        checkIn,
-        listClassAttendanceMeetings(found.id),
-      ]);
-    } else {
-      const [own, check, meetingView] = await Promise.all([
-        getStudentAttendance(
-          session.user.id,
-          attendanceQuerySchema.parse({ class: found.id }),
-        ),
-        checkIn,
-        getStudentAttendanceMeetingView(session.user.id),
-      ]);
-
-      ownAttendance = own;
-      classCheckIn = check;
-      memberMeetings = meetingView.meetings.filter(
-        (meeting) => meeting.classId === found.id,
-      );
-      memberIdentity = meetingView.identity;
-    }
-  }
-
   let roleLabel = "Member";
 
   if (role.isAdmin) {
@@ -272,13 +220,6 @@ export default async function ClassDashboardPage({
   }
 
   const hasElevatedRole = role.isAdmin || role.isPlatformAdmin;
-
-  const attendanceClassInfo = {
-    id: found.id,
-    slug: found.slug,
-    semester: found.semester,
-    academicYear: found.academic_year,
-  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -373,9 +314,12 @@ export default async function ClassDashboardPage({
         </Alert>
       ) : null}
 
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
+      <header className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight break-words">
+              {found.name}
+            </h1>
             <StatusBadge status={found.status} />
             <Badge variant={hasElevatedRole ? "accent" : "neutral"}>
               {role.isAdmin ? (
@@ -388,37 +332,28 @@ export default async function ClassDashboardPage({
             </Badge>
           </div>
 
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            {found.name}
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             <span className="text-foreground font-medium">
               {found.course_name}
             </span>
-            <span
-              aria-hidden="true"
-              className="mx-1.5"
-            >
-              ·
+            {found.class_code ? (
+              <>
+                <MetaDot />
+                <span>{found.class_code}</span>
+              </>
+            ) : null}
+            <MetaDot />
+            <span>
+              {found.semester} {found.academic_year}
             </span>
-            {found.class_code ? `${found.class_code} · ` : ""}
-            {found.semester} {found.academic_year}
-            <span
-              aria-hidden="true"
-              className="mx-1.5"
-            >
-              ·
+            <MetaDot />
+            <span>
+              {members.length} {pluralize(members.length, "member")}
             </span>
-            {members.length} {pluralize(members.length, "member")}
             {found.lecturer_name ? (
               <>
-                <span
-                  aria-hidden="true"
-                  className="mx-1.5"
-                >
-                  ·
-                </span>
-                {found.lecturer_name}
+                <MetaDot />
+                <span>{found.lecturer_name}</span>
               </>
             ) : null}
           </p>
@@ -487,34 +422,18 @@ export default async function ClassDashboardPage({
           entries={scheduleEntries}
         />
       ) : null}
-
-      {activeTab === "attendance" && classAttendance && classCheckIn ? (
-        <ClassAttendanceTab
-          role="manager"
-          classInfo={attendanceClassInfo}
-          activeView={attendanceSubView}
-          view={classAttendance}
-          checkInView={classCheckIn}
-          meetings={classMeetings}
-          subjects={subjects.map((subject) => ({
-            id: subject.id,
-            name: subject.name,
-            code: subject.code,
-          }))}
-        />
-      ) : null}
-
-      {activeTab === "attendance" && ownAttendance && classCheckIn ? (
-        <ClassAttendanceTab
-          role="member"
-          classInfo={attendanceClassInfo}
-          activeView={attendanceSubView}
-          view={ownAttendance}
-          checkInView={classCheckIn}
-          meetings={memberMeetings}
-          identity={memberIdentity}
-        />
-      ) : null}
     </div>
+  );
+}
+
+/** Separator between class metadata items; decorative, so hidden from readers. */
+function MetaDot() {
+  return (
+    <span
+      aria-hidden="true"
+      className="text-muted-foreground/60"
+    >
+      ·
+    </span>
   );
 }

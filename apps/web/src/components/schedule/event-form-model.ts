@@ -3,6 +3,7 @@ import type {
   CalendarEventStatus,
   OfficialCalendarEventType,
 } from "@starstask/contracts";
+import type { CalendarEvent } from "@/lib/db/calendar";
 
 export type CalendarFormEvent = {
   id: string;
@@ -30,6 +31,42 @@ export type CalendarSubjectChoice = {
   classId: string;
   name: string;
 };
+
+/**
+ * Which sources open in the edit dialog. Assignments are edited from their own
+ * page and absence notifications from the absence page, so neither is editable
+ * here even though both appear on the calendar.
+ */
+export function isFormEventType(
+  value: CalendarFormEvent["eventType"] | string,
+): value is CalendarFormEvent["eventType"] {
+  return (
+    value === "class_schedule" ||
+    value === "exam" ||
+    value === "academic_event" ||
+    value === "personal"
+  );
+}
+
+export function toFormEvent(event: CalendarEvent): CalendarFormEvent | null {
+  if (!isFormEventType(event.eventType) || !event.editable) {
+    return null;
+  }
+
+  return {
+    id: event.sourceId,
+    title: event.title,
+    description: event.description,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    location: event.location,
+    eventType: event.eventType,
+    classId: event.classId,
+    classSlug: event.classSlug,
+    subjectId: event.subjectId,
+    status: event.status,
+  };
+}
 
 export type EventFormValues = {
   title: string;

@@ -66,6 +66,8 @@ async function requireEditableOwnRequest(requestId: string) {
 export async function uploadEvidence(
   requestId: string,
   file: File,
+  /** `skipOcr` honours the student turning the Document Reader off. */
+  options?: { skipOcr?: boolean },
 ): Promise<{ evidenceId: string; originalFilename: string }> {
   const { session, request } = await requireEditableOwnRequest(requestId);
 
@@ -138,11 +140,13 @@ export async function uploadEvidence(
 
   // Best-effort OCR. A failure here must never fail the upload: manual entry is
   // always available, so the student is never blocked by a reader problem.
-  await runEvidenceOcr(data, {
-    requestId,
-    storagePath,
-    mimeType: validated.mimeType,
-  });
+  if (!options?.skipOcr) {
+    await runEvidenceOcr(data, {
+      requestId,
+      storagePath,
+      mimeType: validated.mimeType,
+    });
+  }
 
   return { evidenceId: data, originalFilename: validated.originalFilename };
 }

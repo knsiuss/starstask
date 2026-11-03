@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AssignmentCreateInput } from "@starstask/contracts";
 
-import { ApiError } from "@/lib/api/errors";
+import { ApiError, notFound } from "@/lib/api/errors";
 import {
   DataAccessError,
   deleteAssignmentRecord,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/assignments";
 import {
   ATTACHMENT_BUCKET,
+  assertAttachmentCount,
   buildStoragePath,
   validateAttachmentFile,
   type ValidatedAttachment,
@@ -109,6 +110,238 @@ export async function createAssignmentForUser(params: {
   }
 
   return { id: assignmentId };
+}
+
+export type AddedAttachment = {
+  id: string;
+  originalFilename: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+/**
+ * Adds attachments to an assignment the caller already owns.
+ *
+ * The upload always uses the caller's storage prefix and the row is written
+ * only after every file passed server-side validation. A failed insert removes
+ * the objects uploaded in the same request.
+ */
+export async function addAttachmentsToOwnedAssignment(params: {
+  userId: string;
+  assignmentId: string;
+  files: File[];
+}): Promise<AddedAttachment[]> {
+  if (params.files.length === 0) {
+    throw new ApiError(400, "missing_attachment", "Choose a file to attach.");
+  }
+
+  await assertOwnedAssignment(params.userId, params.assignmentId);
+  const supabase = await createSupabaseServerClient();
+  const { count, error: countReadError } = await supabase
+    .from("assignment_attachments")
+    .select("id", { count: "exact", head: true })
+    .eq("assignment_id", params.assignmentId);
+
+  if (countReadError) {
+    throw toApiError(countReadError, "Could not check the attachment limit.");
+  }
+
+  const countError = assertAttachmentCount((count ?? 0) + params.files.length);
+
+  if (countError) {
+    throw new ApiError(400, "too_many_attachments", countError, {
+      attachments: countError,
+    });
+  }
+
+  const validated: ValidatedAttachment[] = [];
+
+  for (const file of params.files) {
+    const result = await validateAttachmentFile(file);
+
+    if (!result.ok) {
+      throw new ApiError(400, "invalid_attachment", result.error, {
+        attachments: result.error,
+      });
+    }
+
+    validated.push(result.value);
+  }
+
+  const uploadedPaths: string[] = [];
+
+  try {
+    for (const attachment of validated) {
+      const storagePath = buildStoragePath(
+        params.userId,
+        params.assignmentId,
+        attachment.objectName,
+      );
+      const { error } = await supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .upload(storagePath, attachment.bytes, {
+          contentType: attachment.mimeType,
+          upsert: false,
+          cacheControl: "private, max-age=0",
+        });
+
+      if (error) {
+        throw new ApiError(
+          500,
+          "upload_failed",
+          "Could not upload the attachment.",
+        );
+      }
+
+      uploadedPaths.push(storagePath);
+    }
+
+    const records = await insertAttachmentRecords(
+      params.assignmentId,
+      validated.map((attachment, index) => ({
+        storagePath: uploadedPaths[index] ?? "",
+        originalFilename: attachment.originalFilename,
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize,
+      })),
+    );
+
+    return records.map((record) => ({
+      id: record.id,
+      originalFilename: record.original_filename,
+      mimeType: record.mime_type,
+      fileSize: record.file_size,
+    }));
+  } catch (error) {
+    await removeObjects(uploadedPaths);
+    throw toApiError(error, "Could not save the attachment.");
+  }
+}
+
+/** Renames the display name only; the storage object path is untouched. */
+export async function renameAttachmentForUser(params: {
+  userId: string;
+  assignmentId: string;
+  attachmentId: string;
+  filename: string;
+}): Promise<{ id: string; originalFilename: string }> {
+  const supabase = await createSupabaseServerClient();
+  await assertOwnedAssignment(params.userId, params.assignmentId);
+
+  const { data: existing, error: readError } = await supabase
+    .from("assignment_attachments")
+    .select("id, original_filename")
+    .eq("id", params.attachmentId)
+    .eq("assignment_id", params.assignmentId)
+    .maybeSingle();
+
+  if (readError) {
+    throw toApiError(readError, "Could not load the attachment.");
+  }
+
+  if (!existing) {
+    throw notFound();
+  }
+
+  if (
+    fileExtension(existing.original_filename) !== fileExtension(params.filename)
+  ) {
+    throw new ApiError(
+      422,
+      "invalid_attachment_name",
+      "Keep the original file extension.",
+      { filename: "Keep the original file extension." },
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("assignment_attachments")
+    .update({ original_filename: params.filename.trim() })
+    .eq("id", params.attachmentId)
+    .eq("assignment_id", params.assignmentId)
+    .select("id, original_filename")
+    .maybeSingle();
+
+  if (error) {
+    throw toApiError(error, "Could not rename the attachment.");
+  }
+
+  if (!data) {
+    throw notFound();
+  }
+
+  return { id: data.id, originalFilename: data.original_filename };
+}
+
+/** Removes an attachment from an assignment the caller owns. */
+export async function deleteAttachmentForUser(params: {
+  userId: string;
+  assignmentId: string;
+  attachmentId: string;
+}): Promise<boolean> {
+  await assertOwnedAssignment(params.userId, params.assignmentId);
+  const supabase = await createSupabaseServerClient();
+  const { data: existing, error: readError } = await supabase
+    .from("assignment_attachments")
+    .select("id, storage_path")
+    .eq("id", params.attachmentId)
+    .eq("assignment_id", params.assignmentId)
+    .maybeSingle();
+
+  if (readError) {
+    throw toApiError(readError, "Could not load the attachment.");
+  }
+
+  if (!existing) {
+    return false;
+  }
+
+  const { data: deleted, error: deleteError } = await supabase
+    .from("assignment_attachments")
+    .delete()
+    .eq("id", params.attachmentId)
+    .eq("assignment_id", params.assignmentId)
+    .select("id")
+    .maybeSingle();
+
+  if (deleteError) {
+    throw toApiError(deleteError, "Could not delete the attachment.");
+  }
+
+  if (!deleted) {
+    return false;
+  }
+
+  await removeObjects([existing.storage_path]);
+
+  return true;
+}
+
+async function assertOwnedAssignment(
+  userId: string,
+  assignmentId: string,
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("assignments")
+    .select("id")
+    .eq("id", assignmentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw toApiError(error, "Could not verify the assignment.");
+  }
+
+  if (!data) {
+    throw notFound();
+  }
+}
+
+function fileExtension(filename: string): string {
+  const separator = filename.lastIndexOf(".");
+
+  return separator > 0 ? filename.slice(separator + 1).toLowerCase() : "";
 }
 
 /** Deletes an owned assignment and its storage objects (best effort). */

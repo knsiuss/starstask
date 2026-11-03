@@ -101,6 +101,8 @@ the other.
 - Reviewers can read pending attachments through
   `assignment_attachments_reviewer_read` and the matching storage policy, scoped to their
   own class (or platform admin).
+- An assignment owner may update only `assignment_attachments.original_filename`; the
+  storage path stays immutable. Renaming never changes the file type or access grant.
 - Verification state changes run in `SECURITY DEFINER` functions that derive the actor
   from `auth.uid()`. Student functions require ownership and an editable status;
   `decide_class_verification` and `revoke_verified_class_admin` require

@@ -27,19 +27,20 @@ export default async function WorkspaceLayout({
 
   const isAuthenticated = session !== null;
   const displayName = session?.profile?.display_name ?? "StarsTask member";
-  // Admin navigation is cosmetic only; every admin route re-checks the role.
-  const platformAdmin = session ? await isPlatformAdmin() : false;
-  const classAdmin = session
-    ? await isClassAdminAnywhere(session.user.id)
-    : false;
+  // These lookups are independent, so they share one round-trip window instead
+  // of adding three sequential waits to every workspace navigation.
+  const [platformAdmin, classAdmin, unreadNotificationCount] =
+    await Promise.all([
+      // Admin navigation is cosmetic only; every admin route re-checks the role.
+      session ? isPlatformAdmin() : Promise.resolve(false),
+      session ? isClassAdminAnywhere(session.user.id) : Promise.resolve(false),
+      // A bell badge is presentation only; a count failure must not take the
+      // whole workspace down.
+      session ? countUnreadNotifications().catch(() => 0) : Promise.resolve(0),
+    ]);
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;
-  // A bell badge is presentation only; a count failure must not take the whole
-  // workspace down.
-  const unreadNotificationCount = session
-    ? await countUnreadNotifications().catch(() => 0)
-    : 0;
 
   return (
     <div className="bg-background lg:flex lg:min-h-dvh">

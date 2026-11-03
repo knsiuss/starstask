@@ -523,12 +523,31 @@ Actions: `unpublish`, `archive`, `restore`. `restore` needs no reason; the other
 do. `restore` is platform-admin only; a class admin cannot reverse a platform
 moderation decision.
 
+### `POST /api/assignments/[id]/attachments`
+
+Authenticated assignment owner. Multipart body with one `files` field (PDF, DOCX,
+PPTX, XLSX, PNG, or JPG, 10 MB maximum). Rejects a fourth attachment with
+`400 too_many_attachments`. Rate limit: 30 / hour.
+
+Response: `201` with the created attachment metadata. The storage object is
+removed again if the row cannot be written.
+
+### `PATCH /api/assignments/[id]/attachments/[attachmentId]`
+
+Authenticated assignment owner. Body `{ "filename": "Diagram final.png" }`.
+Changes only the display filename; the storage path and extension stay the
+same. Rejects path separators and a changed extension. Rate limit: 60 / hour.
+
 ### `DELETE /api/assignments/[id]/attachments/[attachmentId]`
 
-Class admin or platform admin. Body `{ "reason": "…" }`. Deletes the attachment
-row, then the storage object. Returns `503 storage_unavailable` when
-`SUPABASE_SERVICE_ROLE_KEY` is missing; the file is already unreachable through
-the app at that point.
+Two modes:
+
+- Assignment owner, no request body: deletes the attachment row and storage
+  object.
+- Class admin or platform admin, body `{ "reason": "…" }`: removes sensitive
+  content and records the reason in the audit trail. Returns `503
+storage_unavailable` when `SUPABASE_SERVICE_ROLE_KEY` is missing; the file is
+  already unreachable through the app at that point.
 
 ### `POST /api/assignments/[id]/reports`
 

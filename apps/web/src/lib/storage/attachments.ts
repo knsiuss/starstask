@@ -7,6 +7,8 @@ import {
   ASSIGNMENT_ATTACHMENTS_MAX,
 } from "@starstask/contracts";
 
+export { isInlinePreviewable } from "@/lib/storage/attachment-preview";
+
 export const ATTACHMENT_BUCKET = "assignment-attachments";
 export const SIGNED_URL_TTL_SECONDS = 15 * 60;
 
@@ -152,7 +154,10 @@ export function sanitizeFilename(rawName: string): string {
 }
 
 /** Compares a file's leading bytes against a known signature. */
-export function matchesSignature(bytes: Uint8Array, signature: number[]): boolean {
+export function matchesSignature(
+  bytes: Uint8Array,
+  signature: number[],
+): boolean {
   if (bytes.length < signature.length) {
     return false;
   }

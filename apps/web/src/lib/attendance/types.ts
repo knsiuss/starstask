@@ -16,6 +16,8 @@ export type ActiveAttendanceSession = {
   classCode: string | null;
   courseName: string;
   semester: string;
+  /** Course the session belongs to, when the session carries one. */
+  subjectId: string | null;
   subjectName: string | null;
   title: string;
   organizerName: string;

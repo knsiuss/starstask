@@ -39,6 +39,7 @@ export function ClassAttendanceMemberView({
   classId,
   meetings,
   identity,
+  selectedCourseId,
 }: {
   view: StudentAttendanceView;
   checkInView: AttendanceCheckInView;
@@ -47,8 +48,28 @@ export function ClassAttendanceMemberView({
   classId: string;
   meetings: StudentAttendanceMeeting[];
   identity: { fullName: string | null; nim: string | null };
+  /** When set, every section below is limited to this course. */
+  selectedCourseId: string | null;
 }) {
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/dashboard/classes/${classSlug}/attendance`;
+
+  const scopedMeetings = selectedCourseId
+    ? meetings.filter((meeting) => meeting.subjectId === selectedCourseId)
+    : meetings;
+  const scopedSessions = selectedCourseId
+    ? checkInView.activeSessions.filter(
+        (session) => session.subjectId === selectedCourseId,
+      )
+    : checkInView.activeSessions;
+  const scopedEntries = selectedCourseId
+    ? view.entries.filter((entry) => entry.subjectId === selectedCourseId)
+    : view.entries;
+  const scopedSubjects = selectedCourseId
+    ? view.bySubject.filter((group) => group.key === selectedCourseId)
+    : view.bySubject;
+  const fullHistoryHref = selectedCourseId
+    ? `/attendance?tab=history&class=${classId}&subject=${selectedCourseId}`
+    : `/attendance?tab=history&class=${classId}`;
 
   if (activeView === "history") {
     return (
@@ -56,7 +77,7 @@ export function ClassAttendanceMemberView({
         <AttendanceBreakdown
           title="By subject"
           description="Your sessions in this class."
-          groups={view.bySubject}
+          groups={scopedSubjects}
         />
 
         <section aria-labelledby="class-own-history">
@@ -69,12 +90,12 @@ export function ClassAttendanceMemberView({
                 Your history
               </h2>
               <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
-                {view.entries.length}{" "}
-                {pluralize(view.entries.length, "session")}
+                {scopedEntries.length}{" "}
+                {pluralize(scopedEntries.length, "session")}
               </span>
             </div>
             <Link
-              href={`/attendance?tab=history&class=${classId}`}
+              href={fullHistoryHref}
               className="text-accent text-sm underline-offset-4 hover:underline"
             >
               Open full history
@@ -84,19 +105,17 @@ export function ClassAttendanceMemberView({
             Only sessions that started after you joined this class are counted.
           </p>
           <div className="mt-3">
-            <AttendanceHistory entries={view.entries} />
+            <AttendanceHistory entries={scopedEntries} />
           </div>
         </section>
       </div>
     );
   }
 
-  const sessions = checkInView.activeSessions;
-
   return (
     <div className="grid gap-8">
       <StudentMeetingList
-        meetings={meetings}
+        meetings={scopedMeetings}
         identity={identity}
       />
 
@@ -108,9 +127,10 @@ export function ClassAttendanceMemberView({
           >
             Active attendance sessions
           </h2>
-          {sessions.length > 0 ? (
+          {scopedSessions.length > 0 ? (
             <p className="text-muted-foreground text-xs">
-              {sessions.length} {pluralize(sessions.length, "session")} open
+              {scopedSessions.length}{" "}
+              {pluralize(scopedSessions.length, "session")} open
             </p>
           ) : null}
         </div>
@@ -120,10 +140,10 @@ export function ClassAttendanceMemberView({
         </p>
 
         <div className="mt-3 grid gap-3">
-          {sessions.length === 0 ? (
+          {scopedSessions.length === 0 ? (
             <NoActiveSessions />
           ) : (
-            sessions.map((session) => (
+            scopedSessions.map((session) => (
               <ActiveAttendanceSessionCard
                 key={session.sessionId}
                 session={session}
@@ -143,11 +163,12 @@ export function ClassAttendanceMemberView({
               Recent attendance
             </h2>
             <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
-              {view.entries.length} {pluralize(view.entries.length, "session")}
+              {scopedEntries.length}{" "}
+              {pluralize(scopedEntries.length, "session")}
             </span>
           </div>
           <Link
-            href={`${base}?tab=attendance&view=history`}
+            href={`${base}?view=history`}
             className="text-accent text-sm underline-offset-4 hover:underline"
           >
             View history
@@ -156,7 +177,7 @@ export function ClassAttendanceMemberView({
 
         <div className="mt-3">
           <AttendanceHistory
-            entries={view.entries.slice(0, RECENT_ENTRY_LIMIT)}
+            entries={scopedEntries.slice(0, RECENT_ENTRY_LIMIT)}
           />
         </div>
       </section>

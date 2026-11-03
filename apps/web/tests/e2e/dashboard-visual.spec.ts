@@ -328,39 +328,53 @@ test.describe("dashboard visual capture", () => {
     await expect(
       page.getByRole("heading", { name: "My classes" }),
     ).toBeVisible();
+    await expect(page.locator("#dashboard-attendance")).toHaveCount(0);
+
     await expect(
       page.getByRole("heading", { name: "Priority tasks" }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Recent assignments" }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: "Notifications" }).first(),
-    ).toBeVisible();
+      page.getByRole("heading", { name: "Notifications" }),
+    ).toHaveCount(0);
 
-    // The week strip keeps fixed-width days: it scrolls sideways (opening at
-    // today) and every day column keeps the same height. Scroll positioning
-    // happens after hydration, so poll instead of reading once.
+    // Days share the row equally and never shrink below their readable floor,
+    // so a desktop width shows all seven without sideways scrolling.
     const scroller = page.locator("[data-week-scroller]");
 
-    await expect
-      .poll(() => scroller.evaluate((element) => element.scrollLeft))
-      .toBeGreaterThan(0);
-
-    const strip = await scroller.evaluate((element) => ({
+    const desktopStrip = await scroller.evaluate((element) => ({
       scrollWidth: element.scrollWidth,
       clientWidth: element.clientWidth,
     }));
 
-    expect(strip.scrollWidth).toBeGreaterThan(strip.clientWidth);
+    expect(desktopStrip.scrollWidth).toBe(desktopStrip.clientWidth);
 
-    const dayHeights = await page
+    const dayBoxes = await page
       .locator('section[aria-labelledby="my-week"] ol > li')
       .evaluateAll((elements) =>
-        elements.map((element) => element.getBoundingClientRect().height),
+        elements.map((element) => {
+          const box = element.getBoundingClientRect();
+          const scrollerBox = element
+            .closest("[data-week-scroller]")
+            ?.getBoundingClientRect();
+
+          return {
+            width: box.width,
+            height: box.height,
+            inside:
+              scrollerBox !== undefined &&
+              box.left >= scrollerBox.left - 1 &&
+              box.right <= scrollerBox.right + 1,
+          };
+        }),
       );
 
-    expect(new Set(dayHeights).size).toBe(1);
+    expect(dayBoxes).toHaveLength(7);
+    expect(dayBoxes.every((box) => box.inside)).toBe(true);
+    expect(new Set(dayBoxes.map((box) => Math.round(box.width))).size).toBe(1);
+    expect(new Set(dayBoxes.map((box) => Math.round(box.height))).size).toBe(1);
 
     await page.screenshot({
       path: resolve(outputDir, "dashboard-desktop.png"),
@@ -383,10 +397,50 @@ test.describe("dashboard visual capture", () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
+    await waitForHydration(page);
 
     await expect(
       page.getByRole("heading", { name: "My classes" }),
     ).toBeVisible();
+
+    // On a phone the days keep their floor width and the strip scrolls
+    // sideways, opening on today. Positioning runs after hydration, so poll.
+    await expect
+      .poll(() => scroller.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
+
+    const mobileStrip = await scroller.evaluate((element) => ({
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    }));
+
+    expect(mobileStrip.scrollWidth).toBeGreaterThan(mobileStrip.clientWidth);
+
+    // The live date and clock stay fully visible below the sticky topbar.
+    const heroClearance = await page.evaluate(() => {
+      const clock = document.querySelector("main header time");
+      const bar = document.querySelector("header[class*='sticky']");
+
+      if (!clock || !bar) {
+        return null;
+      }
+
+      const box = clock.getBoundingClientRect();
+
+      return {
+        top: box.top,
+        barBottom: bar.getBoundingClientRect().bottom,
+        width: Math.round(box.width),
+        scrollWidth: clock.scrollWidth,
+      };
+    });
+
+    if (!heroClearance) {
+      throw new Error("Dashboard clock or sticky topbar is missing.");
+    }
+
+    expect(heroClearance.top).toBeGreaterThanOrEqual(heroClearance.barBottom);
+    expect(heroClearance.width).toBe(heroClearance.scrollWidth);
 
     const mobileWidth = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,

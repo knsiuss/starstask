@@ -515,15 +515,15 @@ message, which can echo a row value.
 
 ## 11. UI
 
-| Route                                              | Purpose                                        |
-| -------------------------------------------------- | ---------------------------------------------- |
-| `/leave-requests`                                  | The student's own absence requests             |
-| `/leave-requests/new`                              | Create a draft (class picker if >1)            |
-| `/leave-requests/[id]`                             | Detail, evidence, history, OCR, review, cancel |
-| `/leave-requests/[id]/edit`                        | Edit a draft                                   |
-| `/dashboard/classes/[slug]/leave-requests`         | Class request list, filters, exports           |
-| `/dashboard/classes/[slug]/leave-requests/forward` | Batch selection and forwarding                 |
-| `/dashboard/classes/[slug]/leave-requests/history` | Forwarding history                             |
+| Route                                              | Purpose                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------ |
+| `/leave-requests`                                  | The student's own absence requests                                 |
+| `/leave-requests/new`                              | Create a draft (class picker if >1), attach evidence before saving |
+| `/leave-requests/[id]`                             | Detail, evidence, history, OCR, review, cancel                     |
+| `/leave-requests/[id]/edit`                        | Edit a draft                                                       |
+| `/dashboard/classes/[slug]/leave-requests`         | Class request list, filters, exports                               |
+| `/dashboard/classes/[slug]/leave-requests/forward` | Batch selection and forwarding                                     |
+| `/dashboard/classes/[slug]/leave-requests/history` | Forwarding history                                                 |
 
 Every page distinguishes loading, empty, filtered-empty, error, success, and
 partial-failure states. On a submitted request the class admin sees **Approve

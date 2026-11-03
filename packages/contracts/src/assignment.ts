@@ -62,6 +62,33 @@ export const ASSIGNMENT_TAG_MAX = 32;
 export const ASSIGNMENT_REFERENCES_MAX = 10;
 export const ASSIGNMENT_ATTACHMENTS_MAX = 3;
 export const ASSIGNMENT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+export const ATTACHMENT_FILENAME_MAX = 255;
+
+/**
+ * Renames only the display name. The storage object path never changes, so
+ * path separators and control characters stay out of the metadata.
+ */
+export const attachmentRenameSchema = z
+  .object({
+    filename: z
+      .string()
+      .trim()
+      .min(1, "Enter a file name")
+      .max(
+        ATTACHMENT_FILENAME_MAX,
+        `Use ${ATTACHMENT_FILENAME_MAX} characters or fewer`,
+      )
+      .refine(
+        (value) =>
+          !/[\\/\u0000-\u001f\u007f<>:"|?*]/.test(value) &&
+          value !== "." &&
+          value !== "..",
+        { message: "Use a plain file name without slashes or symbols" },
+      ),
+  })
+  .strict();
+
+export type AttachmentRenameInput = z.infer<typeof attachmentRenameSchema>;
 
 /** Extensions accepted by the upload endpoint, kept in sync with storage MIME rules. */
 export const ATTACHMENT_ALLOWED_EXTENSIONS = [

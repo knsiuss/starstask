@@ -205,7 +205,9 @@ export function MyWeekSection({
       </div>
 
       <WeekScroller>
-        <ol className="grid w-max auto-cols-[132px] grid-flow-col gap-2">
+        {/* Every day shares the row equally, but never below the width the
+            labels need, so narrow screens scroll instead of squeezing dates. */}
+        <ol className="grid grid-flow-col auto-cols-[minmax(7.5rem,1fr)] gap-2">
           {days.map((day) => {
             const isToday = day.key === todayKey;
             const items = itemsByDay.get(day.key) ?? [];
@@ -217,7 +219,9 @@ export function MyWeekSection({
                 key={day.key}
                 data-today={isToday ? "true" : undefined}
                 className={cn(
-                  "flex h-[224px] snap-start flex-col rounded-lg border p-1.5",
+                  // A floor, not a ceiling: grid stretch keeps every column the
+                  // same height while a busy day can grow instead of clipping.
+                  "flex min-h-56 snap-start flex-col rounded-lg border p-1.5",
                   isToday
                     ? "border-accent/25 bg-accent-soft/50"
                     : "border-border/70 bg-subtle/40",
@@ -247,12 +251,7 @@ export function MyWeekSection({
                   </p>
                 </div>
 
-                <ul
-                  className={cn(
-                    "mt-1.5 space-y-1.5",
-                    items.length > 0 ? "min-h-0 flex-1 overflow-hidden" : "",
-                  )}
-                >
+                <ul className="mt-1.5 space-y-1.5">
                   {visible.map((item) => (
                     <li key={item.key}>
                       <Link

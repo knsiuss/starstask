@@ -4,7 +4,7 @@ import { isoDateTimeWithOffsetSchema } from "./assignment";
 import { timeZoneSchema } from "./push";
 
 /** The four calendar surfaces share one query and one event list. */
-export const CALENDAR_VIEWS = ["month", "week", "day", "agenda"] as const;
+export const CALENDAR_VIEWS = ["month", "week", "day", "list"] as const;
 
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
 
@@ -73,6 +73,10 @@ const dateKeySchema = z
 /**
  * Filters are read from a GET form, so every value arrives as a string. The
  * page falls back to the defaults instead of rejecting hand-edited URLs.
+ *
+ * `subject` keeps the legacy single-select; the calendar page reads the raw
+ * `subject` keys itself so the multi-select checkboxes can submit repeated
+ * values. `mine` narrows assignments to the ones the caller uploaded.
  */
 export const calendarQuerySchema = z.object({
   view: z.enum(CALENDAR_VIEWS).default("month"),
@@ -80,6 +84,7 @@ export const calendarQuerySchema = z.object({
   type: z.enum(CALENDAR_EVENT_TYPES).default("all"),
   class: z.uuid("Invalid class filter").optional(),
   subject: z.uuid("Invalid subject filter").optional(),
+  mine: z.enum(["all", "mine"]).default("all"),
 });
 
 export type CalendarQuery = z.infer<typeof calendarQuerySchema>;

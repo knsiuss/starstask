@@ -1,27 +1,19 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { DashboardAttendanceSection } from "@/components/dashboard/dashboard-attendance-section";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
 import { MyWeekSection } from "@/components/dashboard/my-week-section";
-import { NotificationsSection } from "@/components/dashboard/notifications-section";
 import { PendingInvitationsSection } from "@/components/dashboard/pending-invitations-section";
-import { PriorityTasksSection } from "@/components/dashboard/priority-tasks-section";
-import { RecentTasksSection } from "@/components/dashboard/recent-tasks-section";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { getSessionUser } from "@/lib/auth/session";
-import { getStudentAttendance } from "@/lib/db/attendance";
 import {
   getDashboardOverview,
   getMyWeek,
-  listPriorityTasks,
   listStudentPendingInvitations,
 } from "@/lib/db/dashboard";
-import { countPendingLeaveRequests } from "@/lib/db/leave";
-import { listRecentNotifications } from "@/lib/db/notifications";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { pluralize } from "@starstask/shared";
@@ -99,26 +91,14 @@ export default async function DashboardPage({
   const query = await searchParams;
   const weekOffset = parseWeekOffset(query.week);
 
-  const [
-    overview,
-    pendingInvitations,
-    week,
-    priorityTasks,
-    notifications,
-    attendance,
-    pendingAbsences,
-  ] = await Promise.all([
+  const [overview, pendingInvitations, week] = await Promise.all([
     getDashboardOverview(session.user.id),
     listStudentPendingInvitations(session.user.id, session.user.email),
     getMyWeek(session.user.id, new Date(), weekOffset),
-    listPriorityTasks(session.user.id),
-    listRecentNotifications(5),
-    getStudentAttendance(session.user.id, { status: "all" }),
-    countPendingLeaveRequests(session.user.id),
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
       <DashboardHeader
         displayName={session.profile?.display_name ?? null}
         initialNowIso={overview.nowIso}
@@ -134,38 +114,14 @@ export default async function DashboardPage({
         <StatCards stats={overview.stats} />
       </div>
 
-      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-5">
-          <MyWeekSection
-            week={week}
-            nowIso={overview.nowIso}
-            weekOffset={weekOffset}
-          />
+      <div className="mt-5 space-y-5">
+        <MyWeekSection
+          week={week}
+          nowIso={overview.nowIso}
+          weekOffset={weekOffset}
+        />
 
-          <MyClassesSection classes={overview.classes} />
-        </div>
-
-        <aside
-          aria-label="At a glance"
-          className="min-w-0 space-y-5"
-        >
-          <DashboardAttendanceSection
-            summary={attendance.summary}
-            pendingAbsences={pendingAbsences}
-          />
-
-          <PriorityTasksSection
-            tasks={priorityTasks}
-            nowIso={overview.nowIso}
-          />
-
-          <RecentTasksSection tasks={overview.recentTasks} />
-
-          <NotificationsSection
-            notifications={notifications}
-            nowIso={overview.nowIso}
-          />
-        </aside>
+        <MyClassesSection classes={overview.classes} />
       </div>
     </div>
   );

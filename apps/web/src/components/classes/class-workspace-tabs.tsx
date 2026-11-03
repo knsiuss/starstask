@@ -1,11 +1,9 @@
-import Link from "next/link";
-
-import { cn } from "@/lib/utils/cn";
+import { TabStrip } from "@/components/ui/tab-strip";
 
 /**
- * The seven sections of one class group. "Courses" is a real route rather
- * than a query param because courses have their own nested pages underneath
- * it; the remaining tabs are `?tab=` views of the class page itself.
+ * The seven sections of one class group. "Courses" and "Attendance" are real
+ * routes rather than query params because they own nested pages / their own
+ * workspace; the remaining tabs are `?tab=` views of the class page itself.
  */
 export const CLASS_TABS = [
   "overview",
@@ -42,6 +40,10 @@ export function classTabHref(slug: string, tab: ClassTab): string {
     return `${base}/courses`;
   }
 
+  if (tab === "attendance") {
+    return `${base}/attendance`;
+  }
+
   return tab === "overview" ? base : `${base}?tab=${tab}`;
 }
 
@@ -56,32 +58,14 @@ export function ClassWorkspaceTabs({
   activeTab,
 }: ClassWorkspaceTabsProps) {
   return (
-    <nav
-      aria-label="Class sections"
-      className="border-border mt-5 overflow-x-auto border-b"
-    >
-      <ul className="-mb-px flex min-w-max items-center gap-1">
-        {CLASS_TABS.map((tab) => {
-          const isActive = tab === activeTab;
-
-          return (
-            <li key={tab}>
-              <Link
-                href={classTabHref(slug, tab)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "border-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground border-transparent",
-                )}
-              >
-                {CLASS_TAB_LABELS[tab]}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <TabStrip
+      label="Class sections"
+      className="mt-5"
+      items={CLASS_TABS.map((tab) => ({
+        href: classTabHref(slug, tab),
+        label: CLASS_TAB_LABELS[tab],
+        active: tab === activeTab,
+      }))}
+    />
   );
 }

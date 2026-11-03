@@ -30,6 +30,7 @@ describe("calendarQuerySchema", () => {
       view: "week",
       date: "2026-10-30",
       type: "exam",
+      mine: "all",
     });
   });
 

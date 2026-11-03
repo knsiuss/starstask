@@ -1,4 +1,4 @@
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight, FileText, Inbox } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -12,7 +12,11 @@ import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { requirePlatformAdmin } from "@/lib/auth/admin";
-import { listAdminAssignments, listAdminClassOptions } from "@/lib/db/admin";
+import {
+  listAdminAssignments,
+  listAdminClassOptions,
+  listAdminPublicAssignments,
+} from "@/lib/db/admin";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { flattenSearchParams } from "@/lib/utils/search-params";
 import { adminAssignmentQuerySchema } from "@starstask/contracts";
@@ -72,9 +76,10 @@ export default async function AdminAssignmentsPage({
   }
 
   const query = parsed.data;
-  const [result, classes] = await Promise.all([
+  const [result, classes, requests] = await Promise.all([
     listAdminAssignments(query),
     listAdminClassOptions(),
+    listAdminPublicAssignments(),
   ]);
 
   const hasActiveFilters =
@@ -105,6 +110,118 @@ export default async function AdminAssignmentsPage({
           classes={classes}
         />
       </div>
+
+      {requests.length > 0 ? (
+        <section
+          aria-labelledby="assignment-requests"
+          className="mt-6"
+        >
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2
+              id="assignment-requests"
+              className="inline-flex items-center gap-2 text-lg font-semibold tracking-tight"
+            >
+              <Inbox
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Assignment requests
+            </h2>
+            <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
+              {requests.length}
+            </span>
+          </div>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Public submissions waiting for a platform admin. Members cannot see
+            them until approved.
+          </p>
+
+          <div className="border-border bg-surface mt-3 overflow-hidden rounded-xl border">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="bg-subtle text-muted-foreground border-border border-b text-xs">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 font-medium"
+                    >
+                      Assignment
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 font-medium"
+                    >
+                      Submitter
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 font-medium"
+                    >
+                      Status
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 font-medium"
+                    >
+                      Updated
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-border divide-y">
+                  {requests.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-subtle/60"
+                    >
+                      <td className="max-w-[320px] px-4 py-3">
+                        <Link
+                          href={`/admin/assignments/${item.id}`}
+                          className="hover:text-accent font-medium underline-offset-4 hover:underline"
+                        >
+                          {item.title}
+                        </Link>
+                      </td>
+                      <td className="max-w-[200px] px-4 py-3">
+                        <AdminUserCell
+                          displayName={item.submitter.displayName}
+                          avatarUrl={item.submitter.avatarUrl}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={item.status} />
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 text-xs whitespace-nowrap">
+                        {formatDate(item.updatedAt)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="secondary"
+                        >
+                          <Link href={`/admin/assignments/${item.id}`}>
+                            {item.status === "pending" ? "Review" : "View"}
+                            <ArrowRight
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5"
+                            />
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">

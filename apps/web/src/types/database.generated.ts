@@ -3374,6 +3374,14 @@ export type Database = {
         Args: { p_decision: string; p_note?: string; p_request_id: string };
         Returns: string;
       };
+      review_public_assignment: {
+        Args: {
+          p_assignment_id: string;
+          p_decision: string;
+          p_reason?: string;
+        };
+        Returns: string;
+      };
       revise_class_application: {
         Args: {
           p_academic_year: string;

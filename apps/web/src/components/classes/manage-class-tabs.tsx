@@ -7,9 +7,8 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
 
-import { cn } from "@/lib/utils/cn";
+import { TabStrip } from "@/components/ui/tab-strip";
 
 export const MANAGE_TABS = [
   "overview",
@@ -55,36 +54,20 @@ type ManageClassTabsProps = {
 /** Real links keep each management section server-rendered and shareable. */
 export function ManageClassTabs({ slug, activeTab }: ManageClassTabsProps) {
   return (
-    <nav
-      aria-label="Manage sections"
-      className="border-border mt-6 overflow-x-auto border-b"
-    >
-      <ul className="-mb-px flex min-w-max items-center gap-1">
-        {MANAGE_TAB_ITEMS.map(({ tab, label, icon: Icon }) => {
-          const isActive = tab === activeTab;
-
-          return (
-            <li key={tab}>
-              <Link
-                href={manageTabHref(slug, tab)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "border-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground border-transparent",
-                )}
-              >
-                <Icon
-                  aria-hidden="true"
-                  className="h-4 w-4"
-                />
-                {label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <TabStrip
+      label="Manage sections"
+      className="mt-6"
+      items={MANAGE_TAB_ITEMS.map(({ tab, label, icon: Icon }) => ({
+        href: manageTabHref(slug, tab),
+        label,
+        active: tab === activeTab,
+        icon: (
+          <Icon
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+        ),
+      }))}
+    />
   );
 }

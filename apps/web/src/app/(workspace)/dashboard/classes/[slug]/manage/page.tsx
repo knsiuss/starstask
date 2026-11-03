@@ -223,7 +223,7 @@ export default async function ManageClassPage({
             classId={found.id}
             classSlug={found.slug}
             currentUserId={session.user.id}
-            canManageAdmins={platformAdmin}
+            canManageAdmins
           />
         ) : null}
 

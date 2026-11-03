@@ -1048,6 +1048,48 @@ async function countClassMembers(
   return counts;
 }
 
+export type ClassCourseSummary = {
+  id: string;
+  name: string;
+  code: string | null;
+};
+
+/**
+ * Active courses of several classes in a single query.
+ *
+ * A class can hold more than one course, and a caller that only has a list of
+ * classes would otherwise need one query per class just to name them.
+ */
+export async function listActiveCoursesByClass(
+  classIds: string[],
+): Promise<Map<string, ClassCourseSummary[]>> {
+  const courses = new Map<string, ClassCourseSummary[]>();
+
+  if (classIds.length === 0) {
+    return courses;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select("id, class_id, name, code")
+    .in("class_id", classIds)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new DataAccessError("Could not load class courses", error.code);
+  }
+
+  for (const row of data ?? []) {
+    const list = courses.get(row.class_id) ?? [];
+    list.push({ id: row.id, name: row.name, code: row.code });
+    courses.set(row.class_id, list);
+  }
+
+  return courses;
+}
+
 export async function listClassSubjects(
   classId: string,
   options?: { includeArchived?: boolean },

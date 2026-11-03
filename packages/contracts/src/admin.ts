@@ -26,6 +26,13 @@ const optionalSearch = z
 const pageField = z.coerce.number().int().min(1).max(500).default(1);
 const pageSizeField = z.coerce.number().int().min(1).max(50).default(20);
 
+const optionalReviewReason = z
+  .string()
+  .trim()
+  .max(2000)
+  .optional()
+  .transform((value) => (value === "" ? undefined : value));
+
 export const ADMIN_USER_ROLES = ["all", "platform_admin"] as const;
 export type AdminUserRole = (typeof ADMIN_USER_ROLES)[number];
 
@@ -43,8 +50,8 @@ export const adminUsersQuerySchema = z.object({
 export type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;
 
 /**
- * Statuses an admin assignment row can hold. `pending` is the legacy
- * pre-review state kept by the schema so old rows stay visible.
+ * Statuses an admin assignment row can hold. `pending` is the review state for
+ * class-less requests from the public submit form.
  */
 export const ADMIN_ASSIGNMENT_STATUSES = [
   "draft",
@@ -64,7 +71,7 @@ export const ADMIN_ASSIGNMENT_STATUS_LABELS: Record<
 > = {
   draft: "Draft",
   pending_review: "Pending review",
-  pending: "Pending (legacy)",
+  pending: "Pending approval",
   published: "Published",
   rejected: "Rejected",
   unpublished: "Unpublished",
@@ -111,6 +118,44 @@ export const adminAssignmentQuerySchema = z.object({
 });
 
 export type AdminAssignmentQuery = z.infer<typeof adminAssignmentQuerySchema>;
+
+/**
+ * Decision on a class-less assignment request. Members submit these through
+ * the public "Submit assignment" form; a platform admin publishes or rejects
+ * them before any other visitor can see the row.
+ */
+export const PUBLIC_ASSIGNMENT_REVIEW_DECISIONS = [
+  "approved",
+  "rejected",
+] as const;
+
+export type PublicAssignmentReviewDecision =
+  (typeof PUBLIC_ASSIGNMENT_REVIEW_DECISIONS)[number];
+
+export const publicAssignmentReviewSchema = z
+  .object({
+    decision: z.enum(PUBLIC_ASSIGNMENT_REVIEW_DECISIONS),
+    reason: optionalReviewReason,
+    confirmPublic: z.boolean().default(false),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.decision !== "rejected" ||
+      (value.reason !== undefined && value.reason.length >= 3),
+    {
+      message: "A rejection reason of at least 3 characters is required",
+      path: ["reason"],
+    },
+  )
+  .refine((value) => value.decision !== "approved" || value.confirmPublic, {
+    message: "Confirm that the submission and its attachments may be published",
+    path: ["confirmPublic"],
+  });
+
+export type PublicAssignmentReviewInput = z.infer<
+  typeof publicAssignmentReviewSchema
+>;
 
 export const adminApplicationsQuerySchema = z.object({
   search: optionalSearch,

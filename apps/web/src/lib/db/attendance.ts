@@ -466,6 +466,7 @@ type CheckInCandidateRow = {
   id: string;
   class_id: string;
   assignment_id: string | null;
+  subject_id: string | null;
   organizer_id: string;
   title: string;
   session_type: SessionType;
@@ -489,7 +490,7 @@ type CheckInSummaryRow = {
 };
 
 const CHECK_IN_SESSION_COLUMNS =
-  "id, class_id, assignment_id, organizer_id, title, session_type, location, starts_at, ends_at, time_zone, status";
+  "id, class_id, assignment_id, subject_id, organizer_id, title, session_type, location, starts_at, ends_at, time_zone, status";
 
 function emptyCheckInView(
   todayDateKey: string,
@@ -703,7 +704,14 @@ export async function getAttendanceCheckInView(
     }
   }
 
-  const subjectIds = [...new Set(subjectIdByAssignment.values())];
+  const subjectIds = [
+    ...new Set([
+      ...withLocation.flatMap((session) =>
+        session.subject_id ? [session.subject_id] : [],
+      ),
+      ...subjectIdByAssignment.values(),
+    ]),
+  ];
   const subjectNameById = new Map<string, string>();
 
   if (subjectIds.length > 0) {
@@ -744,9 +752,13 @@ export async function getAttendanceCheckInView(
         return [];
       }
 
-      const subjectId = session.assignment_id
-        ? (subjectIdByAssignment.get(session.assignment_id) ?? null)
-        : null;
+      // Attendance meetings carry their course directly; older sessions only
+      // reach a course through their assignment.
+      const subjectId =
+        session.subject_id ??
+        (session.assignment_id
+          ? (subjectIdByAssignment.get(session.assignment_id) ?? null)
+          : null);
       const checkIn = checkInBySession.get(session.id);
       const summary = summaryById.get(session.id);
 
@@ -759,6 +771,7 @@ export async function getAttendanceCheckInView(
           classCode: membership.class_code,
           courseName: membership.course_name,
           semester: membership.semester,
+          subjectId,
           subjectName: subjectId
             ? (subjectNameById.get(subjectId) ?? null)
             : null,

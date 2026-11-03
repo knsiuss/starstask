@@ -12,20 +12,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 type ReviewDecisionFormProps = {
-  classSlug: string;
-  submissionId: string;
+  endpoint: string;
+  approvedRedirect: string;
+  rejectedRedirect: string;
 };
 
 /**
  * Approve or reject one submission.
  *
  * Approval requires an explicit confirmation because it publishes the
- * assignment and its attachments to signed-in students. Rejection requires a
- * reason that the submitter can act on.
+ * assignment and its attachments. Rejection requires a reason that the
+ * submitter can act on. The caller supplies the API endpoint and the redirect
+ * for each outcome, so the same form serves class and public review queues.
  */
 export function ReviewDecisionForm({
-  classSlug,
-  submissionId,
+  endpoint,
+  approvedRedirect,
+  rejectedRedirect,
 }: ReviewDecisionFormProps) {
   const router = useRouter();
   const [decision, setDecision] = React.useState<"approved" | "rejected">(
@@ -69,14 +72,11 @@ export function ReviewDecisionForm({
     setIsBusy(true);
 
     try {
-      const response = await fetch(
-        `/api/classes/${classSlug}/submissions/${submissionId}/review`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed.data),
-        },
-      );
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
 
       const body = (await response.json().catch(() => null)) as {
         error?: { message?: string };
@@ -88,9 +88,7 @@ export function ReviewDecisionForm({
       }
 
       router.push(
-        `/dashboard/classes/${classSlug}/manage?reviewed=${
-          decision === "approved" ? "approved" : "rejected"
-        }`,
+        decision === "approved" ? approvedRedirect : rejectedRedirect,
       );
       router.refresh();
     } catch {

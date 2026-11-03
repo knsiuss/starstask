@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertAttachmentCount,
   buildStoragePath,
+  isInlinePreviewable,
   validateAttachmentFile,
 } from "@/lib/storage/attachments";
 
@@ -113,5 +114,26 @@ describe("buildStoragePath", () => {
     expect(buildStoragePath("user-1", "assignment-1", "file.pdf")).toBe(
       "user-1/assignment-1/file.pdf",
     );
+  });
+});
+
+describe("isInlinePreviewable", () => {
+  it("allows images and PDFs to render in the browser", () => {
+    expect(isInlinePreviewable("image/png")).toBe(true);
+    expect(isInlinePreviewable("image/jpeg")).toBe(true);
+    expect(isInlinePreviewable("application/pdf")).toBe(true);
+  });
+
+  it("keeps office documents as downloads only", () => {
+    expect(
+      isInlinePreviewable(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ),
+    ).toBe(false);
+    expect(
+      isInlinePreviewable(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ),
+    ).toBe(false);
   });
 });

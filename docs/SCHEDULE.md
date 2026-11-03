@@ -80,14 +80,37 @@ Asia/Jakarta (WIB).
 
 ## 5. Views and filters
 
-- **Month** — six-week Monday-first grid.
-- **Week** — Monday to Sunday columns.
-- **Day** — chronological rows.
-- **Agenda** — the next thirty days, grouped by day.
+Assignment bars span from publication (`created_at`) to the deadline. Events
+from other sources (sessions, timetable, official events, absence notices,
+personal events) render as shorter bars in the same lanes. The today column is
+marked with an accent line computed in Asia/Jakarta; the line follows the
+calendar as the page navigates, and the board ticks over the midnight boundary
+without a reload.
+
+- **Month** — six-week Monday-first grid; bars in up to three visible lanes.
+- **Week** — one Monday-to-Sunday row with the same lane logic.
+- **List** — a flat chronological list for the next thirty days.
+- **Day** — a single-day List window, kept for shared date links.
+
+The grid never grows without bound: bars beyond the lane budget are deferred to
+a `+N more` control that lists the full week.
 
 Filters: all events, class schedule, assignments, exams, academic events,
-personal events; plus class and subject. A subject filter excludes discussion
-sessions and personal events because neither carries a subject.
+personal events, and absence notifications; plus multi-select course filter
+("All courses" and per-course), a "Show only my assignments" switch, and the
+class filter. A subject filter excludes discussion sessions and personal events
+because neither carries a subject. Assignment bars are coloured by catalog
+course, so the same course keeps the same colour across classes.
+
+Published assignments from the viewer's classes appear automatically, plus
+published class-less assignments whose catalog course backs one of those
+classes' subjects (the same rule the class assignment list uses). Assignment
+rows are read live — publishing, editing, or archiving one is reflected on the
+next render; nothing is copied into a calendar table.
+
+The calendar also lists the next eight open assignments sorted by nearest
+deadline, with a personal completion toggle per row. That toggle is private
+bookkeeping and never represents a submission.
 
 ## 6. Code map
 
@@ -96,6 +119,7 @@ sessions and personal events because neither carries a subject.
 | Migration and RLS   | `supabase/migrations/20261029003900_academic_calendar.sql`                              |
 | Contracts           | `packages/contracts/src/calendar.ts`                                                    |
 | Range / recurrence  | `packages/shared/src/calendar.ts`                                                       |
+| Lane layout         | `apps/web/src/lib/schedule/timeline.ts`, `course-colors.ts`                             |
 | Aggregation         | `apps/web/src/lib/db/calendar.ts`                                                       |
 | Mutations           | `apps/web/src/lib/db/calendar-events.ts`                                                |
 | API                 | `apps/web/src/app/api/calendar/**`, `…/api/classes/[slug]/calendar-events/**`           |

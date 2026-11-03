@@ -39,6 +39,8 @@ Schema source of truth: `supabase/migrations/`.
 | `20261102102000_class_subject_code_unique.sql`       | Partial unique index: one course code per class group (case/trim-insensitive) |
 | `20261102110000_course_scoped_content.sql`           | Course materials, required course on class content, archived-course guard     |
 | `20261102120000_attendance_session_grants.sql`       | Restores `SELECT (checkin_radius_m)`; coordinate columns stay revoked         |
+| `20261103120000_class_course_shared_assignments.sql` | Class lists include public assignments in the class's catalog courses         |
+| `20261103130000_attachment_owner_rename.sql`         | Owner-only rename of `assignment_attachments.original_filename`               |
 
 Apply with `supabase db push` (remote) or `supabase db reset` (local). `seed.sql` is loaded
 only by `db reset` / `supabase start`; `db push` never applies it.
@@ -554,7 +556,7 @@ with `classId`/`slug`/`name`, `{status: "ambiguous", candidates: [...]}`, or
 | `profiles`                       | any row, columns `id, display_name, avatar_url`    | same, plus `onboarded_at`                  | none                             | own row, columns `display_name, avatar_url` | none               |
 | `courses`                        | all rows                                           | all rows                                   | none (RPC only)                  | none                                        | none               |
 | `assignments`                    | `status = 'published'`                             | published **or** own                       | own `user_id` only               | own only                                    | own only           |
-| `assignment_attachments`         | parent published                                   | parent published or own                    | own parent + own path prefix     | none                                        | own parent         |
+| `assignment_attachments`         | parent published                                   | parent published or own                    | own parent + own path prefix     | own parent, `original_filename` only        | own parent         |
 | `push_subscriptions`             | none                                               | own row (no endpoint/keys)                 | own `user_id` only               | own row, `device_label` only                | own row            |
 | `notification_preferences`       | none                                               | own row                                    | own `user_id` only               | own row, preference columns only            | none               |
 | `saved_assignments`              | none                                               | own rows                                   | own row for a visible assignment | none                                        | own rows           |

@@ -141,6 +141,72 @@ export async function listPlatformClasses(
   };
 }
 
+export type AdminPublicAssignmentListItem = {
+  id: string;
+  title: string;
+  status: AdminAssignmentStatus;
+  rejectionReason: string | null;
+  submitter: {
+    id: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+  deadline: string | null;
+};
+
+const ADMIN_PUBLIC_ASSIGNMENT_COLUMNS =
+  "id, title, status, rejection_reason, created_at, updated_at, deadline, user_id";
+
+/**
+ * Class-less assignment requests waiting for a platform admin.
+ *
+ * Reads the table directly: `assignments_platform_review_read` (added with the
+ * public review flow) lets a platform admin see pending and rejected rows that
+ * other visitors cannot.
+ */
+export async function listAdminPublicAssignments(
+  limit = 20,
+): Promise<AdminPublicAssignmentListItem[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("assignments")
+    .select(ADMIN_PUBLIC_ASSIGNMENT_COLUMNS)
+    .is("class_id", null)
+    .in("status", ["pending", "rejected"])
+    .order("status", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new DataAccessError("Could not load assignment requests", error.code);
+  }
+
+  const rows = data ?? [];
+  const profiles = await loadProfiles(rows.map((row) => row.user_id));
+
+  return rows.map((row) => {
+    const profile = profiles.get(row.user_id);
+
+    return {
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      rejectionReason: row.rejection_reason,
+      submitter: {
+        id: row.user_id,
+        displayName: profile?.display_name ?? "StarsTask member",
+        avatarUrl: profile?.avatar_url ?? null,
+      },
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      deadline: row.deadline,
+    };
+  });
+}
+
 export type AdminClassOption = {
   id: string;
   name: string;

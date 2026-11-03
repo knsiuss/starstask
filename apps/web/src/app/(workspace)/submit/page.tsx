@@ -50,8 +50,10 @@ export default async function SubmitAssignmentPage() {
         Submit an assignment
       </h1>
       <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
-        Share the brief exactly as you received it. Remove personal data such as
-        student names, grades, or private contact details before publishing.
+        Share the brief exactly as you received it. Your submission becomes a
+        request: a platform admin reviews it before it appears in the public
+        archive. Remove personal data such as student names, grades, or private
+        contact details before submitting.
       </p>
 
       <div className="mt-8">

@@ -28,6 +28,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isProduction ? "" : " 'unsafe-eval'"}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: ${supabaseOrigin} https://*.googleusercontent.com`,
+    `frame-src 'self' ${supabaseOrigin}`,
     "font-src 'self' data:",
     `connect-src 'self' ${supabaseOrigin} ${supabaseSocket}`,
     "worker-src 'self'",

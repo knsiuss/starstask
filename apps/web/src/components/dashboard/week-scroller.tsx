@@ -7,7 +7,7 @@ type WeekScrollerProps = {
 };
 
 /**
- * Fixed-width week strip that scrolls sideways instead of squeezing its days.
+ * Week strip that scrolls sideways instead of squeezing its days.
  *
  * The strip opens scrolled to today so the current day is visible on narrow
  * screens; the scroll runs once on mount and never fights a manual scroll.

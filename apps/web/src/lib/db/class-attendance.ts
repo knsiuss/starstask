@@ -38,6 +38,7 @@ type SessionSummaryRow = {
 type SessionMetaRow = {
   id: string;
   assignment_id: string | null;
+  subject_id: string | null;
   title: string;
   session_type: SessionType;
   starts_at: string;
@@ -58,6 +59,8 @@ export type ClassAttendanceMember = {
 export type ClassAttendanceSession = {
   id: string;
   title: string;
+  /** Course the session belongs to, when it carries one. */
+  subjectId: string | null;
   subjectName: string | null;
   sessionType: SessionType;
   startsAt: string;
@@ -188,7 +191,7 @@ export async function getClassAttendance(
     const { data: sessionRows, error: sessionError } = await supabase
       .from("discussion_sessions")
       .select(
-        "id, assignment_id, title, session_type, starts_at, ends_at, time_zone, status",
+        "id, assignment_id, subject_id, title, session_type, starts_at, ends_at, time_zone, status",
       )
       .in("id", sessionIds)
       .limit(1_000);
@@ -234,7 +237,14 @@ export async function getClassAttendance(
       }
     }
 
-    const subjectIds = [...new Set(subjectIdByAssignment.values())];
+    const subjectIds = [
+      ...new Set([
+        ...sessionRows.flatMap((row) =>
+          row.subject_id ? [row.subject_id] : [],
+        ),
+        ...subjectIdByAssignment.values(),
+      ]),
+    ];
     const subjectNames = new Map<string, string>();
 
     if (subjectIds.length > 0) {
@@ -264,9 +274,13 @@ export async function getClassAttendance(
       }
 
       const counts = toCounts(row);
-      const subjectId = meta.assignment_id
-        ? (subjectIdByAssignment.get(meta.assignment_id) ?? null)
-        : null;
+      // Attendance meetings carry their course directly; only older sessions
+      // reach a course through the assignment they were tied to.
+      const subjectId =
+        meta.subject_id ??
+        (meta.assignment_id
+          ? (subjectIdByAssignment.get(meta.assignment_id) ?? null)
+          : null);
       const subjectKey = subjectId ?? "none";
       const subjectGroup = subjectCounts.get(subjectKey) ?? {
         label: subjectId
@@ -282,6 +296,7 @@ export async function getClassAttendance(
         {
           id: meta.id,
           title: meta.title,
+          subjectId,
           subjectName: subjectId ? (subjectNames.get(subjectId) ?? null) : null,
           sessionType: meta.session_type,
           startsAt: meta.starts_at,

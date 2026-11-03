@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Ellipsis,
   Loader2,
   Search,
   ShieldCheck,
@@ -15,7 +16,13 @@ import { formatDate } from "@starstask/shared";
 import { AdminUserCell } from "@/components/admin/admin-user-cell";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
 export type ManagedMember = {
@@ -65,9 +72,13 @@ export function MemberManager({
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as {
-          error?: { message?: string };
+          error?: { code?: string; message?: string };
         } | null;
-        setError(body?.error?.message ?? "Could not update this member.");
+        setError(
+          body?.error?.code === "invalid_state"
+            ? "A class must keep at least one admin."
+            : (body?.error?.message ?? "Could not update this member."),
+        );
         return false;
       }
 
@@ -188,51 +199,61 @@ export function MemberManager({
                   <Badge variant="neutral">Member</Badge>
                 )}
 
-                {canManageAdmins ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void toggleAdmin(member)}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    aria-label={`Actions for ${member.display_name}`}
                     disabled={busyId === member.user_id}
-                    aria-label={
-                      member.is_admin
-                        ? `Revoke class admin from ${member.display_name}`
-                        : `Make ${member.display_name} a class admin`
-                    }
+                    className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent flex h-8 w-8 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50"
                   >
                     {busyId === member.user_id ? (
                       <Loader2
                         aria-hidden="true"
-                        className="h-3.5 w-3.5 animate-spin"
-                      />
-                    ) : member.is_admin ? (
-                      <ShieldOff
-                        aria-hidden="true"
-                        className="h-3.5 w-3.5"
+                        className="h-4 w-4 animate-spin"
                       />
                     ) : (
-                      <ShieldCheck
+                      <Ellipsis
                         aria-hidden="true"
-                        className="h-3.5 w-3.5"
+                        className="h-4 w-4"
                       />
                     )}
-                  </Button>
-                ) : null}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canManageAdmins ? (
+                      <DropdownMenuItem
+                        onSelect={() => void toggleAdmin(member)}
+                        className="flex items-center gap-2"
+                      >
+                        {member.is_admin ? (
+                          <ShieldOff
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                          />
+                        ) : (
+                          <ShieldCheck
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                          />
+                        )}
+                        {member.is_admin
+                          ? "Remove class admin"
+                          : "Make class admin"}
+                      </DropdownMenuItem>
+                    ) : null}
 
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => void remove(member.user_id)}
-                  disabled={busyId === member.user_id}
-                  aria-label={`Remove ${member.display_name} from the class`}
-                >
-                  <UserMinus
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                  />
-                </Button>
+                    {canManageAdmins ? <DropdownMenuSeparator /> : null}
+
+                    <DropdownMenuItem
+                      onSelect={() => void remove(member.user_id)}
+                      className="text-danger flex items-center gap-2"
+                    >
+                      <UserMinus
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      />
+                      Remove from class
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </li>
           ))}

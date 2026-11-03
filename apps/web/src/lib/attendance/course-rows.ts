@@ -131,3 +131,55 @@ export function buildCourseRows({
     )
     .sort((left, right) => left.name.localeCompare(right.name));
 }
+
+export type ClassCourseRow = {
+  subjectId: string;
+  code: string | null;
+  name: string;
+  counts: AttendanceSummaryCounts;
+  status: CourseAttendanceStatus;
+  /** Sessions belonging to this course, counted from stored rows. */
+  sessionCount: number;
+};
+
+/**
+ * One row per course of a single class, for the class attendance tab.
+ *
+ * The course list is the class's own `class_subjects` rows, so a course with no
+ * attendance yet still appears instead of silently disappearing. Counts come
+ * from the caller's per-subject aggregate, which is derived from stored
+ * check-ins; nothing here invents a target number of meetings.
+ */
+export function buildClassCourseRows({
+  subjects,
+  groups,
+  sessionCounts,
+}: {
+  subjects: readonly { id: string; name: string; code: string | null }[];
+  groups: readonly AttendanceGroupSummary[];
+  sessionCounts?: ReadonlyMap<string, number>;
+}): ClassCourseRow[] {
+  const countsBySubject = new Map(
+    groups.map((group) => [group.key, group.counts]),
+  );
+
+  return subjects
+    .map((subject) => {
+      const counts = countsBySubject.get(subject.id) ?? EMPTY_COUNTS;
+
+      return {
+        subjectId: subject.id,
+        code: subject.code,
+        name: subject.name,
+        counts,
+        status: courseAttendanceStatus(counts),
+        sessionCount: sessionCounts?.get(subject.id) ?? counts.eligible,
+      };
+    })
+    .sort((left, right) => {
+      const leftLabel = left.code ?? left.name;
+      const rightLabel = right.code ?? right.name;
+
+      return leftLabel.localeCompare(rightLabel);
+    });
+}

@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { cn } from "@/lib/utils/cn";
+import { TabStrip } from "@/components/ui/tab-strip";
 
 export const COURSE_TABS = [
   "overview",
@@ -54,32 +52,14 @@ export function CourseWorkspaceTabs({
   activeTab,
 }: CourseWorkspaceTabsProps) {
   return (
-    <nav
-      aria-label="Course sections"
-      className="border-border mt-5 overflow-x-auto border-b"
-    >
-      <ul className="-mb-px flex min-w-max items-center gap-1">
-        {COURSE_TABS.map((tab) => {
-          const isActive = tab === activeTab;
-
-          return (
-            <li key={tab}>
-              <Link
-                href={courseTabHref(slug, courseId, tab)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "border-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground border-transparent",
-                )}
-              >
-                {COURSE_TAB_LABELS[tab]}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <TabStrip
+      label="Course sections"
+      className="mt-5"
+      items={COURSE_TABS.map((tab) => ({
+        href: courseTabHref(slug, courseId, tab),
+        label: COURSE_TAB_LABELS[tab],
+        active: tab === activeTab,
+      }))}
+    />
   );
 }

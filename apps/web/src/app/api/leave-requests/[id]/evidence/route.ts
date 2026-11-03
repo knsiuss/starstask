@@ -65,7 +65,10 @@ export async function POST(request: Request, context: RouteContext) {
       throw new ApiError(400, "invalid_file", "Choose a file to upload.");
     }
 
-    const result = await uploadEvidence(parsedId.data, file);
+    const result = await uploadEvidence(parsedId.data, file, {
+      // The form sends "off" when the student disables the Document Reader.
+      skipOcr: formData.get("ocr") === "off",
+    });
 
     return apiSuccess(result, 201);
   } catch (error) {

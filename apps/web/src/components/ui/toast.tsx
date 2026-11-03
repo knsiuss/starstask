@@ -17,9 +17,14 @@ export type ToastOptions = {
   title: string;
   description?: string;
   variant?: ToastVariant;
-  /** Milliseconds before auto-dismiss. Errors default to longer. */
+  /**
+   * Milliseconds before auto-dismiss. Errors default to longer, and `0` keeps
+   * the toast open until the user dismisses it (for content that must be copied).
+   */
   duration?: number;
   action?: { label: string; onClick: () => void };
+  /** Extra body content, such as a link with a copy button. */
+  content?: React.ReactNode;
 };
 
 type ToastRecord = {
@@ -29,6 +34,7 @@ type ToastRecord = {
   variant: ToastVariant;
   duration: number;
   action?: ToastOptions["action"];
+  content?: React.ReactNode;
 };
 
 type ToastContextValue = {
@@ -40,6 +46,7 @@ const ToastContext = React.createContext<ToastContextValue | null>(null);
 
 const MAX_VISIBLE = 4;
 const DEFAULT_DURATION = 5_000;
+const EXIT_DURATION = 160;
 
 const VARIANT_STYLES: Record<
   ToastVariant,
@@ -58,18 +65,56 @@ const VARIANT_STYLES: Record<
  */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastRecord[]>([]);
+  const [exitingIds, setExitingIds] = React.useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const timers = React.useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const removalTimers = React.useRef(
+    new Map<string, ReturnType<typeof setTimeout>>(),
+  );
 
-  const dismiss = React.useCallback((id: string) => {
-    const timer = timers.current.get(id);
-
-    if (timer) {
-      clearTimeout(timer);
-    }
-
-    timers.current.delete(id);
+  const remove = React.useCallback((id: string) => {
     setToasts((current) => current.filter((item) => item.id !== id));
+    setExitingIds((current) => {
+      if (!current.has(id)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
   }, []);
+
+  const dismiss = React.useCallback(
+    (id: string) => {
+      // The exit animation is already scheduled, so ignore repeat calls.
+      if (removalTimers.current.has(id)) {
+        return;
+      }
+
+      const timer = timers.current.get(id);
+
+      if (timer) {
+        clearTimeout(timer);
+      }
+
+      timers.current.delete(id);
+      setExitingIds((current) => {
+        const next = new Set(current);
+        next.add(id);
+        return next;
+      });
+      removalTimers.current.set(
+        id,
+        setTimeout(() => {
+          removalTimers.current.delete(id);
+          remove(id);
+        }, EXIT_DURATION),
+      );
+    },
+    [remove],
+  );
 
   const toast = React.useCallback(
     (options: ToastOptions) => {
@@ -81,14 +126,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         variant: options.variant ?? "info",
         duration: options.duration ?? DEFAULT_DURATION,
         action: options.action,
+        content: options.content,
       };
 
       // Cap the stack so a burst of failures cannot cover the page.
       setToasts((current) => [...current, record].slice(-MAX_VISIBLE));
-      timers.current.set(
-        id,
-        setTimeout(() => dismiss(id), record.duration),
-      );
+
+      if (record.duration > 0) {
+        timers.current.set(
+          id,
+          setTimeout(() => dismiss(id), record.duration),
+        );
+      }
 
       return id;
     },
@@ -97,10 +146,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     const pendingTimers = timers.current;
+    const pendingRemovals = removalTimers.current;
 
     return () => {
       pendingTimers.forEach((timer) => clearTimeout(timer));
       pendingTimers.clear();
+      pendingRemovals.forEach((timer) => clearTimeout(timer));
+      pendingRemovals.clear();
     };
   }, []);
 
@@ -115,57 +167,65 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         // Sits above the mobile tab bar so feedback never hides a control.
         className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6"
       >
-        {toasts.map((item) => {
-          const { icon: Icon, iconClassName } = VARIANT_STYLES[item.variant];
+        {toasts
+          .slice()
+          .reverse()
+          .map((item) => {
+            const { icon: Icon, iconClassName } = VARIANT_STYLES[item.variant];
+            const isExiting = exitingIds.has(item.id);
 
-          return (
-            <div
-              key={item.id}
-              role={item.variant === "error" ? "alert" : "status"}
-              className="border-border bg-surface pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border p-4 shadow-lg"
-            >
-              <Icon
-                aria-hidden="true"
-                className={cn("mt-0.5 h-4 w-4 shrink-0", iconClassName)}
-              />
-
-              <div className="min-w-0 flex-1">
-                <p className="text-foreground text-sm font-medium">
-                  {item.title}
-                </p>
-                {item.description ? (
-                  <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
-                    {item.description}
-                  </p>
-                ) : null}
-                {item.action ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      item.action?.onClick();
-                      dismiss(item.id);
-                    }}
-                    className="text-accent focus-visible:outline-accent mt-2 rounded text-xs font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    {item.action.label}
-                  </button>
-                ) : null}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => dismiss(item.id)}
-                aria-label="Dismiss notification"
-                className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent -mt-1 -mr-1 rounded-md p-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+            return (
+              <div
+                key={item.id}
+                role={item.variant === "error" ? "alert" : "status"}
+                className={cn(
+                  "border-border bg-surface pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border p-4 shadow-lg",
+                  isExiting ? "toast-exit" : "toast-enter",
+                )}
               >
-                <X
+                <Icon
                   aria-hidden="true"
-                  className="h-3.5 w-3.5"
+                  className={cn("mt-0.5 h-4 w-4 shrink-0", iconClassName)}
                 />
-              </button>
-            </div>
-          );
-        })}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-foreground text-sm font-medium">
+                    {item.title}
+                  </p>
+                  {item.description ? (
+                    <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                      {item.description}
+                    </p>
+                  ) : null}
+                  {item.content}
+                  {item.action ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        item.action?.onClick();
+                        dismiss(item.id);
+                      }}
+                      className="text-accent focus-visible:outline-accent mt-2 rounded text-xs font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      {item.action.label}
+                    </button>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => dismiss(item.id)}
+                  aria-label="Dismiss notification"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent -mt-1 -mr-1 rounded-md p-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <X
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+                </button>
+              </div>
+            );
+          })}
       </div>
     </ToastContext.Provider>
   );

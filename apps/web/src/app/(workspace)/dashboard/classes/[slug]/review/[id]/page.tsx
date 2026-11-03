@@ -308,8 +308,9 @@ export default async function ReviewSubmissionPage({
             {isPending && !isOwnSubmission ? (
               <div className="mt-3">
                 <ReviewDecisionForm
-                  classSlug={found.slug}
-                  submissionId={submission.id}
+                  endpoint={`/api/classes/${found.slug}/submissions/${submission.id}/review`}
+                  approvedRedirect={`/dashboard/classes/${found.slug}/manage?reviewed=approved`}
+                  rejectedRedirect={`/dashboard/classes/${found.slug}/manage?reviewed=rejected`}
                 />
               </div>
             ) : null}

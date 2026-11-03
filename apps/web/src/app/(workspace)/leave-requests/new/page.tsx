@@ -3,12 +3,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LeaveForm } from "@/components/leave/leave-form";
+import {
+  LeaveForm,
+  type LeaveClassChoice,
+} from "@/components/leave/leave-form";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
-import { Card } from "@/components/ui/card";
 import { getSessionUser } from "@/lib/auth/session";
-import { listMyClasses } from "@/lib/db/classes";
+import {
+  listActiveCoursesByClass,
+  listMyClasses,
+  type ClassCourseSummary,
+} from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { flattenSearchParams } from "@/lib/utils/search-params";
@@ -21,7 +27,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const pageContainer = "mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 lg:px-10";
+const pageContainer =
+  "mx-auto w-full max-w-2xl px-4 pt-5 pb-10 sm:px-6 sm:pt-7 lg:px-10";
 
 /** A draft starts empty; every field is the student's to fill or confirm. */
 const EMPTY_INITIAL = {
@@ -56,53 +63,37 @@ export default async function NewLeaveRequestPage({
   const flat = flattenSearchParams(await searchParams);
   const requestedSlug = flat.class;
   const myClasses = await listMyClasses(session.user.id);
-
+  const [firstClass] = myClasses;
   const requested = requestedSlug
     ? myClasses.find((item) => item.slug === requestedSlug)
     : undefined;
+  // The request belongs to exactly one class; a student with several starts on
+  // the first one and can switch inside the form without losing what they wrote.
+  const selected = requested ?? firstClass;
 
-  // No class chosen and only one to choose from: skip the picker entirely.
-  const onlyClass = myClasses.length === 1 ? myClasses[0] : undefined;
-  const selected = requested ?? (!requestedSlug ? onlyClass : undefined);
+  if (!selected) {
+    return (
+      <div className={pageContainer}>
+        <BackLink />
 
-  return (
-    <div className={pageContainer}>
-      <Link
-        href="/leave-requests"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
-      >
-        <ArrowLeft
-          aria-hidden="true"
-          className="h-4 w-4"
-        />
-        Your absence requests
-      </Link>
+        <header className="mt-3">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            New absence request
+          </h1>
+        </header>
 
-      {requestedSlug && !requested ? (
-        <Alert
-          variant="error"
-          className="mt-4"
-        >
-          <p className="font-medium">That class is not one of yours.</p>
-          <p className="mt-1">
-            Pick one of your own classes below, or{" "}
-            <Link
-              href="/classes/discover"
-              className="underline"
-            >
-              browse classes
-            </Link>{" "}
-            to join it first.
+        <div className="border-border bg-surface mt-4 rounded-2xl border p-6 text-center">
+          <span className="bg-accent-soft text-accent mx-auto flex h-11 w-11 items-center justify-center rounded-xl">
+            <GraduationCap
+              aria-hidden="true"
+              className="h-5 w-5"
+            />
+          </span>
+          <p className="mt-3 text-sm font-semibold">
+            You are not in a class yet
           </p>
-        </Alert>
-      ) : null}
-
-      {myClasses.length === 0 ? (
-        <Card className="mt-6 p-8 text-center">
-          <p className="text-sm font-medium">You are not in a class yet</p>
-          <p className="text-muted-foreground mx-auto mt-1.5 max-w-md text-sm">
-            An absence request is always attached to a class, so join one before
-            creating a request.
+          <p className="text-muted-foreground mx-auto mt-1 max-w-xs text-xs leading-relaxed">
+            An absence request always belongs to a class, so join one first.
           </p>
           <Link
             href="/classes/discover"
@@ -110,88 +101,89 @@ export default async function NewLeaveRequestPage({
           >
             Browse classes
           </Link>
-        </Card>
-      ) : selected ? (
-        <>
-          <header className="mt-4">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
-              New absence request
-            </h1>
-            <p className="text-muted-foreground mt-1.5 text-sm">
-              For{" "}
-              <Link
-                href={`/dashboard/classes/${selected.slug}`}
-                className="text-foreground font-medium underline-offset-4 hover:underline"
-              >
-                {selected.name}
-              </Link>
-              . Save it as a draft now and finish it later — nothing is sent
-              until you submit.
-            </p>
-          </header>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="mt-6">
-            <LeaveForm
-              mode="create"
-              classId={selected.id}
-              initial={EMPTY_INITIAL}
-            />
-          </div>
+  const coursesByClass = await listActiveCoursesByClass(
+    myClasses.map((item) => item.id),
+  ).catch(() => new Map<string, ClassCourseSummary[]>());
 
-          <Card className="mt-8">
-            <h2 className="text-sm font-semibold">Before you submit</h2>
-            <ul className="text-muted-foreground mt-2 grid list-disc gap-1 pl-5 text-sm">
-              <li>
-                The absence start and end dates, as written on the document.
-              </li>
-              <li>A reason category and a short explanation.</li>
-              <li>
-                At least one supporting document — PDF, JPG, or PNG, up to 10
-                MB.
-              </li>
-              <li>
-                If your document has an issue date, record it separately. It is
-                not the same as the absence dates.
-              </li>
-            </ul>
-          </Card>
-        </>
-      ) : (
-        <>
-          <header className="mt-4">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
-              New absence request
-            </h1>
-            <p className="text-muted-foreground mt-1.5 text-sm">
-              Which class is this request for?
-            </p>
-          </header>
+  const classChoices: LeaveClassChoice[] = myClasses.map((item) => {
+    const courses = coursesByClass.get(item.id) ?? [];
 
-          <ul className="mt-6 grid gap-3">
-            {myClasses.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={`/leave-requests/new?class=${item.slug}`}
-                  className="border-border bg-card hover:border-accent/60 focus-visible:ring-ring flex items-start gap-3 rounded-xl border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                >
-                  <GraduationCap
-                    aria-hidden="true"
-                    className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-base font-semibold">
-                      {item.name}
-                    </span>
-                    <span className="text-muted-foreground block text-xs">
-                      {item.course_name} · {item.semester} {item.academic_year}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+    return {
+      id: item.id,
+      name: item.name,
+      courses:
+        courses.length > 0
+          ? courses.map((course) =>
+              course.code ? `${course.code} · ${course.name}` : course.name,
+            )
+          : item.course_name
+            ? [item.course_name]
+            : [],
+    };
+  });
+
+  return (
+    <div className={pageContainer}>
+      <BackLink />
+
+      <header className="mt-2">
+        <h1 className="text-[26px] leading-tight font-semibold tracking-tight sm:text-3xl">
+          New absence request
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Request permission for your absence.
+        </p>
+      </header>
+
+      {requestedSlug && !requested ? (
+        <Alert
+          variant="error"
+          className="mt-4"
+        >
+          <p className="text-[13px] font-medium">
+            That class is not one of yours — this request uses {selected.name}{" "}
+            instead.
+          </p>
+          <p className="mt-1 text-xs">
+            <Link
+              href="/classes/discover"
+              className="underline underline-offset-4"
+            >
+              Browse classes
+            </Link>{" "}
+            to join it first.
+          </p>
+        </Alert>
+      ) : null}
+
+      <div className="mt-4">
+        <LeaveForm
+          mode="create"
+          classId={selected.id}
+          classes={classChoices}
+          initial={EMPTY_INITIAL}
+        />
+      </div>
     </div>
+  );
+}
+
+function BackLink() {
+  return (
+    <Link
+      href="/leave-requests"
+      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-[13px] font-medium"
+    >
+      <ArrowLeft
+        aria-hidden="true"
+        className="h-4 w-4"
+      />
+      Absence Requests
+    </Link>
   );
 }

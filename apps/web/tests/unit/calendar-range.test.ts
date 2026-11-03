@@ -54,11 +54,9 @@ describe("buildCalendarViewRange", () => {
     ]);
   });
 
-  it("builds one day and a thirty-day agenda", () => {
+  it("builds one day and a thirty-day list window", () => {
     expect(buildCalendarViewRange("day", "2026-10-30").days).toHaveLength(1);
-    expect(buildCalendarViewRange("agenda", "2026-10-30").days).toHaveLength(
-      30,
-    );
+    expect(buildCalendarViewRange("list", "2026-10-30").days).toHaveLength(30);
   });
 });
 
@@ -72,8 +70,8 @@ describe("shiftCalendarAnchor", () => {
     expect(shiftCalendarAnchor("month", "2026-01-31", 1)).toBe("2026-02-28");
   });
 
-  it("moves the agenda by thirty days", () => {
-    expect(shiftCalendarAnchor("agenda", "2026-10-30", 1)).toBe("2026-11-29");
+  it("moves the list window by thirty days", () => {
+    expect(shiftCalendarAnchor("list", "2026-10-30", 1)).toBe("2026-11-29");
   });
 });
 

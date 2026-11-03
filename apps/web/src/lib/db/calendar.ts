@@ -8,11 +8,13 @@ import type {
 import { LEAVE_REASON_LABELS } from "@starstask/contracts";
 import {
   APP_TIME_ZONE_OFFSET,
+  calendarEventDateKey,
   dateSpanOverlapsWindow,
   expandWeeklyScheduleForDays,
   type CalendarRange,
 } from "@starstask/shared";
 
+import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { DataAccessError } from "@/lib/db/assignments";
 import { listMyClasses } from "@/lib/db/classes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -64,10 +66,35 @@ export type CalendarSubjectOption = {
   id: string;
   classId: string;
   name: string;
+  code: string | null;
+  courseId: string | null;
+  courseName: string | null;
+  courseCode: string | null;
+};
+
+export type CalendarAssignmentBar = {
+  id: string;
+  title: string;
+  /** YYYY-MM-DD in Asia/Jakarta. */
+  startKey: string;
+  /** YYYY-MM-DD in Asia/Jakarta. */
+  endKey: string;
+  href: string;
+  classId: string | null;
+  className: string | null;
+  classSlug: string | null;
+  /** Stable identity for colouring: catalog course when there is one. */
+  courseKey: string | null;
+  courseName: string | null;
+  courseCode: string | null;
+  isMine: boolean;
+  isCompleted: boolean;
 };
 
 export type CalendarData = {
   events: CalendarEvent[];
+  /** Assignments as span bars (created -> deadline), clipped by the window. */
+  assignments: CalendarAssignmentBar[];
   classes: CalendarClassOption[];
   subjects: CalendarSubjectOption[];
   /** False until the calendar migration has been applied to this database. */
@@ -139,7 +166,7 @@ export async function listCalendarEvents(
       ? { data: [], error: null }
       : await supabase
           .from("class_subjects")
-          .select("id, class_id, name")
+          .select("id, class_id, name, code, course_id")
           .in("class_id", allowedClassIds)
           .eq("status", "active")
           .order("name", { ascending: true })
@@ -152,15 +179,30 @@ export async function listCalendarEvents(
     );
   }
 
-  const subjects: CalendarSubjectOption[] = (subjectsResult.data ?? []).map(
-    (row) => ({ id: row.id, classId: row.class_id, name: row.name }),
-  );
-
-  const subjectLookup = new Map(
-    subjects.map((subject) => [subject.id, subject]),
-  );
+  const subjectRows = subjectsResult.data ?? [];
+  const subjectCourseIds = [
+    ...new Set(
+      subjectRows
+        .map((row) => row.course_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 
   const includeAssignments = matchesType(query, "assignment");
+  // Published assignments in the caller's classes, plus published class-less
+  // ones whose catalog course backs one of those classes' subjects. The
+  // class page already shows the latter; the calendar stays consistent with
+  // it and never widens what a member can read.
+  const assignmentScope = [
+    scopedClassIds.length > 0
+      ? `class_id.in.(${scopedClassIds.join(",")})`
+      : null,
+    subjectCourseIds.length > 0
+      ? `and(class_id.is.null,course_id.in.(${subjectCourseIds.join(",")}))`
+      : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(",");
   const includeSessions =
     matchesType(query, "class_schedule") && scopedClassIds.length > 0;
   const includeTimetable =
@@ -193,16 +235,20 @@ export async function listCalendarEvents(
     absenceResult,
     timetableResult,
   ] = await Promise.all([
-    includeAssignments
+    includeAssignments && assignmentScope.length > 0
       ? (() => {
           let builder = supabase
             .from("assignments")
-            .select("id, title, deadline, class_id, subject_id")
-            .in("class_id", scopedClassIds)
+            .select(
+              "id, title, deadline, class_id, subject_id, created_at, course_id, user_id",
+            )
             .eq("status", "published")
             .not("deadline", "is", null)
+            // Started before the window ends and not yet past its deadline
+            // by the window start: overlapping spans must stay visible.
             .gte("deadline", range.fromIso)
-            .lt("deadline", range.toIso)
+            .lt("created_at", range.toIso)
+            .or(assignmentScope)
             .order("deadline", { ascending: true })
             .limit(EVENT_LIMIT);
 
@@ -327,6 +373,96 @@ export async function listCalendarEvents(
     throw new DataAccessError(entry.message, entry.result.error.code);
   }
 
+  const courseIdsToLoad = [
+    ...new Set([
+      ...subjectCourseIds,
+      ...(assignmentsResult?.data ?? []).map((row) => row.course_id),
+    ]),
+  ];
+  const courseResult =
+    courseIdsToLoad.length === 0
+      ? { data: [], error: null }
+      : await supabase
+          .from("courses")
+          .select("id, name, code")
+          .in("id", courseIdsToLoad)
+          .limit(EVENT_LIMIT);
+
+  if (courseResult.error) {
+    throw new DataAccessError(
+      "Could not load course details",
+      courseResult.error.code,
+    );
+  }
+
+  type CatalogCourse = { name: string; code: string | null };
+  const courseCatalog = new Map<string, CatalogCourse>(
+    (courseResult.data ?? []).map((row) => [
+      row.id,
+      { name: row.name, code: row.code },
+    ]),
+  );
+
+  const subjects: CalendarSubjectOption[] = subjectRows.map((row) => {
+    const catalog = row.course_id
+      ? courseCatalog.get(row.course_id)
+      : undefined;
+
+    return {
+      id: row.id,
+      classId: row.class_id,
+      name: row.name,
+      code: row.code ?? catalog?.code ?? null,
+      courseId: row.course_id,
+      courseName: catalog?.name ?? null,
+      courseCode: catalog?.code ?? null,
+    };
+  });
+
+  const subjectLookup = new Map(
+    subjects.map((subject) => [subject.id, subject]),
+  );
+
+  const completions = await loadCompletionIds(
+    userId,
+    (assignmentsResult?.data ?? []).map((row) => row.id),
+  );
+
+  const assignments: CalendarAssignmentBar[] = [];
+
+  for (const row of assignmentsResult?.data ?? []) {
+    if (!row.deadline || !row.created_at) {
+      continue;
+    }
+
+    const subject = row.subject_id
+      ? subjectLookup.get(row.subject_id)
+      : undefined;
+    const catalog = subject?.courseId
+      ? courseCatalog.get(subject.courseId)
+      : courseCatalog.get(row.course_id);
+
+    assignments.push({
+      id: row.id,
+      title: row.title,
+      startKey: calendarEventDateKey(row.created_at),
+      endKey: calendarEventDateKey(row.deadline),
+      href: `/assignments/${row.id}`,
+      classId: row.class_id,
+      className: row.class_id
+        ? (classLookup.get(row.class_id)?.name ?? null)
+        : null,
+      classSlug: row.class_id
+        ? (classLookup.get(row.class_id)?.slug ?? null)
+        : null,
+      courseKey: subject?.courseId ?? row.course_id ?? row.subject_id ?? null,
+      courseName: subject?.name ?? catalog?.name ?? null,
+      courseCode: subject?.code ?? catalog?.code ?? null,
+      isMine: row.user_id === userId,
+      isCompleted: completions.has(row.id),
+    });
+  }
+
   const events: CalendarEvent[] = [];
 
   const classFields = (classId: string) => {
@@ -338,36 +474,6 @@ export async function listCalendarEvents(
       classSlug: found?.slug ?? null,
     };
   };
-
-  for (const row of assignmentsResult?.data ?? []) {
-    if (!row.deadline || !row.class_id) {
-      continue;
-    }
-
-    const subject = row.subject_id
-      ? subjectLookup.get(row.subject_id)
-      : undefined;
-    const fields = classFields(row.class_id);
-
-    events.push({
-      key: `assignment:${row.id}`,
-      sourceId: row.id,
-      eventType: "assignment",
-      title: row.title,
-      description: null,
-      startsAt: row.deadline,
-      endsAt: null,
-      location: null,
-      ...fields,
-      subjectId: row.subject_id,
-      subjectName: subject?.name ?? null,
-      status: "published",
-      owner: "assignment",
-      href: `/assignments/${row.id}`,
-      editable: false,
-      managedInClass: false,
-    });
-  }
 
   for (const row of sessionsResult?.data ?? []) {
     const fields = classFields(row.class_id);
@@ -524,7 +630,21 @@ export async function listCalendarEvents(
     return byStart !== 0 ? byStart : left.title.localeCompare(right.title);
   });
 
-  return { events, classes, subjects, storageReady };
+  // Bars are emitted in deadline order already (the query orders by it); a
+  // stable copy keeps the page independent of query order.
+  const orderedAssignments = [...assignments].sort((left, right) => {
+    const byEnd = left.endKey.localeCompare(right.endKey);
+
+    return byEnd !== 0 ? byEnd : left.title.localeCompare(right.title);
+  });
+
+  return {
+    events,
+    assignments: orderedAssignments,
+    classes,
+    subjects,
+    storageReady,
+  };
 }
 
 /**

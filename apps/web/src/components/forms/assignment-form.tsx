@@ -742,8 +742,8 @@ export function AssignmentForm({
           </>
         ) : (
           <p className="text-muted-foreground text-sm">
-            Attachments cannot be changed after submission. Delete and re-create
-            the assignment if you need to replace files.
+            Manage attachments from the assignment page. You can add, rename, or
+            delete files there without changing the assignment itself.
           </p>
         )}
       </fieldset>
@@ -776,7 +776,7 @@ export function AssignmentForm({
               Saving...
             </>
           ) : mode === "create" ? (
-            "Publish assignment"
+            "Submit for review"
           ) : (
             "Save changes"
           )}
@@ -790,6 +790,13 @@ export function AssignmentForm({
           Cancel
         </Button>
       </div>
+
+      {mode === "create" ? (
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          A platform admin reviews new submissions before they appear publicly.
+          If a request is rejected, edit it and save again to resubmit.
+        </p>
+      ) : null}
     </form>
   );
 }

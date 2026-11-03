@@ -148,7 +148,7 @@ export function DashboardHeader({
         className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/10"
       />
 
-      <div className="relative flex flex-col gap-5 px-5 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:py-7">
+      <div className="relative flex flex-col gap-5 px-5 py-7 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:py-8">
         <div className="min-w-0">
           <p className="text-muted-foreground text-sm font-medium">
             {greeting},
@@ -166,10 +166,10 @@ export function DashboardHeader({
           <p className="text-muted-foreground text-xs font-medium">
             {dateLabel}
           </p>
-          <p className="text-foreground text-[26px] leading-none font-semibold tracking-tight tabular-nums sm:text-[30px]">
+          <p className="text-foreground flex items-baseline gap-2 text-[26px] leading-none font-semibold tracking-tight tabular-nums sm:text-[30px]">
             <span className="sr-only">Current time: </span>
             <time dateTime={now.toISOString()}>{clockLabel}</time>
-            <span className="text-muted-foreground ml-2 align-middle text-xs font-medium">
+            <span className="text-muted-foreground text-xs font-medium">
               {zoneLabel}
             </span>
           </p>

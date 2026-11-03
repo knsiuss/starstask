@@ -267,11 +267,14 @@ data and is written to the audit log.
 
 `/attendance` is check-in first for students. It leads with today's present,
 late, and not-yet-checked-in counts and the sessions whose check-in window is
-open. A student presses **Check in**; the browser supplies a reading and the
-server decides whether it counts. The **History** tab keeps the read-only
-record, filters, breakdowns, and per-session details. A failed check-in is shown
-as an error (including the outside-area message) and is never silently turned
-into a present row.
+open. Upcoming meetings are listed too, with a disabled **Check in** that
+explains the class admin has not opened attendance yet. A student presses
+**Check in**; the browser supplies a reading and the server decides whether it
+counts. Class admins also get a **Class admin tools** shortcut to each class
+they manage. The **History** tab keeps the read-only record, filters,
+breakdowns, and per-session details. A failed check-in is shown as an error
+(including the outside-area message) and is never silently turned into a
+present row.
 
 The page and the class-admin summary use one policy everywhere (dashboard,
 student page, class-admin summary):
@@ -288,12 +291,15 @@ student page, class-admin summary):
 - Missing records are never silently filled in by a read.
 
 Each class workspace also has an **Attendance** tab with the same **Check-in**
-and **History** split as `/attendance`. Check-in lists only that class's open
-sessions and uses the same server-verified flow; History holds the class-scoped
-subject breakdown plus either the per-member table and session list (managers)
-or the student's own session history (members). Managers see every member's
-attendance; everyone else sees only their own. The older
-`/dashboard/classes/[slug]/attendance` URL redirects to the tab.
+and **History** split as `/attendance`. Check-in lists that class's open and
+upcoming meetings; an upcoming meeting shows a disabled **Check in** until a
+manager opens attendance. Managers can open a scheduled meeting directly from
+the meeting list, or open its dashboard for the roster and close/finalize
+controls. History holds the class-scoped subject breakdown plus either the
+per-member table and session list (managers) or the student's own session
+history (members). Managers see every member's attendance; everyone else sees
+only their own. The older `/dashboard/classes/[slug]/attendance` URL redirects
+to the tab.
 
 An approved absence request integrates here: `review_leave_request` marks the
 covered sessions `excused`, leaves existing `present` / `late` rows untouched,

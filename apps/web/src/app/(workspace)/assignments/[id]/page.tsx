@@ -155,6 +155,14 @@ export default async function AssignmentPage({
     isSafeHttpUrl(url),
   );
   const isPublished = assignment.status === "published";
+  const isRejected = assignment.status === "rejected";
+  const statusLabel = isPublished
+    ? "Published"
+    : isRejected
+      ? "Rejected"
+      : assignment.status === "pending"
+        ? "Pending approval"
+        : "Not published";
   const canonicalUrl = `${getSiteUrl().replace(/\/$/, "")}/assignments/${assignment.id}`;
   const whatsappUrl = buildWhatsAppShareUrl({
     title: assignment.title,
@@ -195,7 +203,8 @@ export default async function AssignmentPage({
           variant="success"
           className="mt-4"
         >
-          Assignment published. Signed-in students can now find it in search.
+          Submitted for review. A platform admin checks new requests before they
+          appear in the public archive.
         </Alert>
       ) : null}
       {query.updated ? (
@@ -204,6 +213,18 @@ export default async function AssignmentPage({
           className="mt-4"
         >
           Your changes have been saved.
+        </Alert>
+      ) : null}
+      {isOwner && isRejected && assignment.rejection_reason ? (
+        <Alert
+          variant="error"
+          className="mt-4"
+        >
+          <p className="font-medium">Your request needs changes</p>
+          <p className="mt-1">{assignment.rejection_reason}</p>
+          <p className="mt-2 text-xs">
+            Edit the assignment and save it to send it back for review.
+          </p>
         </Alert>
       ) : null}
 
@@ -229,8 +250,9 @@ export default async function AssignmentPage({
             <Badge>{assignment.assignment_type}</Badge>
           ) : null}
           {assignment.status === "pending" ? (
-            <Badge variant="warning">Pending review</Badge>
+            <Badge variant="warning">Pending approval</Badge>
           ) : null}
+          {isRejected ? <Badge variant="danger">Rejected</Badge> : null}
         </div>
 
         <h1 className="mt-3 text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl">
@@ -250,7 +272,8 @@ export default async function AssignmentPage({
               aria-hidden="true"
               className="h-4 w-4"
             />
-            Published {formatDate(publishedAt)}
+            {isPublished ? "Published" : "Submitted"}{" "}
+            {formatDate(isPublished ? publishedAt : assignment.created_at)}
           </span>
           {assignment.deadline ? (
             <span
@@ -358,7 +381,7 @@ export default async function AssignmentPage({
               )}
             </section>
 
-            {attachments.length > 0 ? (
+            {attachments.length > 0 || isOwner ? (
               <section
                 aria-labelledby="attachments-heading"
                 className="border-border border-t p-5 sm:p-6"
@@ -367,14 +390,19 @@ export default async function AssignmentPage({
                   id="attachments-heading"
                   className="text-base font-semibold"
                 >
-                  Attached files
+                  Attachments
+                  {attachments.length > 0 ? ` (${attachments.length})` : ""}
                 </h2>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Download links expire after 15 minutes. Files are scanned for
-                  type and size on upload.
+                  Images and PDFs preview here. Download links expire after 15
+                  minutes; files are checked for type and size on upload.
                 </p>
                 <div className="mt-3">
-                  <AttachmentList attachments={attachments} />
+                  <AttachmentList
+                    attachments={attachments}
+                    assignmentId={assignment.id}
+                    canManage={isOwner}
+                  />
                 </div>
               </section>
             ) : null}
@@ -517,8 +545,16 @@ export default async function AssignmentPage({
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">Status</dt>
                 <dd>
-                  <Badge variant={isPublished ? "success" : "warning"}>
-                    {isPublished ? "Published" : "Pending review"}
+                  <Badge
+                    variant={
+                      isPublished
+                        ? "success"
+                        : isRejected
+                          ? "danger"
+                          : "warning"
+                    }
+                  >
+                    {statusLabel}
                   </Badge>
                 </dd>
               </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildClassCourseRows,
   buildCourseRows,
   courseAttendanceStatus,
 } from "@/lib/attendance/course-rows";
@@ -115,5 +116,102 @@ describe("buildCourseRows", () => {
     expect(rows[0]?.subjectId).toBeNull();
     expect(rows[0]?.counts.percentage).toBe(50);
     expect(rows[0]?.status).toBe("at_risk");
+  });
+});
+
+const CLASS_SUBJECTS = [
+  { id: SUBJECTS[0]?.id ?? "", name: "Pemrograman Web", code: "TPLM002" },
+  { id: SUBJECTS[1]?.id ?? "", name: "Basis Data", code: "TPLM003" },
+];
+
+describe("buildClassCourseRows", () => {
+  const webCounts = summarizeAttendance([
+    "present",
+    "present",
+    "present",
+    "late",
+    "absent",
+  ]);
+
+  it("keeps a course that has no attendance yet", () => {
+    const rows = buildClassCourseRows({
+      subjects: CLASS_SUBJECTS,
+      groups: [
+        {
+          key: CLASS_SUBJECTS[0]?.id ?? "",
+          label: "Pemrograman Web",
+          secondaryLabel: "TPL 2024",
+          counts: webCounts,
+        },
+      ],
+    });
+
+    expect(rows.map((row) => row.code)).toEqual(["TPLM002", "TPLM003"]);
+
+    const data = rows.find((row) => row.code === "TPLM003");
+
+    expect(data?.counts.percentage).toBeNull();
+    expect(data?.sessionCount).toBe(0);
+    expect(data?.status).toBe("no_sessions");
+  });
+
+  it("counts the sessions that actually belong to each course", () => {
+    const rows = buildClassCourseRows({
+      subjects: CLASS_SUBJECTS,
+      groups: [
+        {
+          key: CLASS_SUBJECTS[0]?.id ?? "",
+          label: "Pemrograman Web",
+          secondaryLabel: "TPL 2024",
+          counts: webCounts,
+        },
+      ],
+    });
+
+    const web = rows.find((row) => row.code === "TPLM002");
+
+    expect(web?.sessionCount).toBe(5);
+    expect(web?.counts.attended).toBe(4);
+    expect(web?.counts.percentage).toBe(80);
+    expect(web?.status).toBe("good");
+  });
+
+  it("prefers a stored meeting count over the session total", () => {
+    const rows = buildClassCourseRows({
+      subjects: CLASS_SUBJECTS,
+      groups: [
+        {
+          key: CLASS_SUBJECTS[0]?.id ?? "",
+          label: "Pemrograman Web",
+          secondaryLabel: "TPL 2024",
+          counts: webCounts,
+        },
+      ],
+      sessionCounts: new Map<string, number>([
+        [CLASS_SUBJECTS[0]?.id ?? "", 10],
+      ]),
+    });
+
+    const web = rows.find((row) => row.code === "TPLM002");
+
+    expect(web?.sessionCount).toBe(10);
+    expect(web?.counts.percentage).toBe(80);
+  });
+
+  it("drops aggregates that are not a course of this class", () => {
+    const rows = buildClassCourseRows({
+      subjects: CLASS_SUBJECTS.slice(0, 1),
+      groups: [
+        {
+          key: "99999999-9999-4999-8999-999999999999",
+          label: "Another course",
+          secondaryLabel: "Other class",
+          counts: summarizeAttendance(["absent"]),
+        },
+      ],
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.counts.eligible).toBe(0);
   });
 });

@@ -5,6 +5,7 @@ import {
   adminAssignmentQuerySchema,
   adminClassesQuerySchema,
   adminUsersQuerySchema,
+  publicAssignmentReviewSchema,
 } from "@starstask/contracts";
 
 describe("admin user query", () => {
@@ -63,6 +64,41 @@ describe("admin assignment query", () => {
     ).toBe(false);
     expect(
       adminAssignmentQuerySchema.safeParse({ status: "deleted" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("public assignment review", () => {
+  it("requires an explicit confirmation before publishing", () => {
+    expect(
+      publicAssignmentReviewSchema.safeParse({ decision: "approved" }).success,
+    ).toBe(false);
+    expect(
+      publicAssignmentReviewSchema.safeParse({
+        decision: "approved",
+        confirmPublic: true,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("requires a rejection reason of at least three characters", () => {
+    expect(
+      publicAssignmentReviewSchema.safeParse({
+        decision: "rejected",
+        reason: "no",
+      }).success,
+    ).toBe(false);
+    expect(
+      publicAssignmentReviewSchema.safeParse({
+        decision: "rejected",
+        reason: "Remove the student names.",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects an unknown decision", () => {
+    expect(
+      publicAssignmentReviewSchema.safeParse({ decision: "published" }).success,
     ).toBe(false);
   });
 });

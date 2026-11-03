@@ -10,10 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import {
-  describeGeolocationError,
-  getCurrentPosition,
-} from "@/lib/geo/position";
+import { describeGeolocationError, getCurrentPosition } from "@/lib/geo/position";
 import {
   ATTENDANCE_MEETING_LATE_MAX,
   ATTENDANCE_MEETING_LOCATION_MAX,
@@ -21,10 +18,7 @@ import {
   ATTENDANCE_MEETING_TITLE_MAX,
   attendanceMeetingCreateSchema,
 } from "@starstask/contracts";
-import {
-  fromJakartaDateTimeInput,
-  toJakartaDateTimeInput,
-} from "@starstask/shared";
+import { fromJakartaDateTimeInput, toJakartaDateKey } from "@starstask/shared";
 
 const RADIUS_OPTIONS = [50, 100, 200] as const;
 
@@ -44,30 +38,71 @@ type AttendanceMeetingFormProps = {
   classId: string;
   classSlug: string;
   subjects: SubjectOption[];
-  onDone: () => void;
+  /** Called after a meeting is created. */
+  onDone?: () => void;
+  /**
+   * Secondary action. Without it the secondary button clears the fields
+   * instead of leaving the form.
+   */
+  onCancel?: () => void;
+  /** Drops the surrounding panel so the caller can provide its own frame. */
+  bare?: boolean;
 };
 
-function toDatePart(value: string): string {
-  return value.slice(0, 10);
+function addMinutes(time: string, minutes: number): string | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(time);
+
+  if (!match) {
+    return null;
+  }
+
+  const total = Number(match[1]) * 60 + Number(match[2]) + minutes;
+
+  if (total >= 24 * 60) {
+    return null;
+  }
+
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
 }
 
-/** Create form for one attendance meeting. The server re-validates everything. */
+/** Combines the meeting date and a wall-clock time into an ISO instant. */
+function meetingInstant(date: string, time: string): string | null {
+  if (!date || !time) {
+    return null;
+  }
+
+  return fromJakartaDateTimeInput(`${date}T${time}`);
+}
+
+/**
+ * Create form for one attendance meeting.
+ *
+ * The date and the times are entered separately because a meeting always
+ * happens on its own date; the server still receives full ISO instants.
+ */
 export function AttendanceMeetingForm({
   classId,
   classSlug,
   subjects,
   onDone,
+  onCancel,
+  bare = false,
 }: AttendanceMeetingFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [subjectId, setSubjectId] = React.useState(subjects[0]?.id ?? "");
   const [meetingNumber, setMeetingNumber] = React.useState("1");
   const [title, setTitle] = React.useState("");
-  const [meetingDate, setMeetingDate] = React.useState("");
-  const [startsAt, setStartsAt] = React.useState("");
-  const [endsAt, setEndsAt] = React.useState("");
-  const [opensAt, setOpensAt] = React.useState("");
-  const [closesAt, setClosesAt] = React.useState("");
+  const [meetingDate, setMeetingDate] = React.useState(() =>
+    toJakartaDateKey(new Date()),
+  );
+  const [startTime, setStartTime] = React.useState("");
+  const [endTime, setEndTime] = React.useState("");
+  const [opensTime, setOpensTime] = React.useState("");
+  const [closesTime, setClosesTime] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [lateAfterMinutes, setLateAfterMinutes] = React.useState("10");
   const [radiusM, setRadiusM] = React.useState("100");
@@ -82,21 +117,33 @@ export function AttendanceMeetingForm({
   );
 
   const updateStart = (value: string) => {
-    setStartsAt(value);
+    setStartTime(value);
 
-    if (value.length >= 16) {
-      setMeetingDate(toDatePart(value));
-    }
+    if (value && !endTime) {
+      const suggested = addMinutes(value, 60);
 
-    if (!endsAt && value.length >= 16) {
-      const start = new Date(`${value}:00+07:00`);
-
-      if (!Number.isNaN(start.getTime())) {
-        setEndsAt(
-          toJakartaDateTimeInput(new Date(start.getTime() + 60 * 60 * 1_000)),
-        );
+      if (suggested) {
+        setEndTime(suggested);
       }
     }
+  };
+
+  const clearForm = () => {
+    setMeetingNumber("1");
+    setTitle("");
+    setMeetingDate(toJakartaDateKey(new Date()));
+    setStartTime("");
+    setEndTime("");
+    setOpensTime("");
+    setClosesTime("");
+    setLocation("");
+    setLateAfterMinutes("10");
+    setRadiusM("100");
+    setPoint(null);
+    setManualLatitude("");
+    setManualLongitude("");
+    setFieldErrors({});
+    setError(null);
   };
 
   const captureLocation = async () => {
@@ -146,18 +193,18 @@ export function AttendanceMeetingForm({
     setError(null);
     setFieldErrors({});
 
-    const startsAtIso = fromJakartaDateTimeInput(startsAt);
-    const endsAtIso = fromJakartaDateTimeInput(endsAt);
-    const opensAtIso = opensAt ? fromJakartaDateTimeInput(opensAt) : null;
-    const closesAtIso = closesAt ? fromJakartaDateTimeInput(closesAt) : null;
+    const startsAtIso = meetingInstant(meetingDate, startTime);
+    const endsAtIso = meetingInstant(meetingDate, endTime);
+    const opensAtIso = opensTime ? meetingInstant(meetingDate, opensTime) : null;
+    const closesAtIso = closesTime ? meetingInstant(meetingDate, closesTime) : null;
 
     if (!startsAtIso || !endsAtIso) {
       setError("Enter a valid start and end time.");
       return;
     }
 
-    if ((opensAt && !opensAtIso) || (closesAt && !closesAtIso)) {
-      setError("Enter a valid attendance window or leave it blank.");
+    if ((opensTime && !opensAtIso) || (closesTime && !closesAtIso)) {
+      setError("Enter a valid check-in window or leave it blank.");
       return;
     }
 
@@ -172,7 +219,7 @@ export function AttendanceMeetingForm({
       classId,
       subjectId,
       meetingNumber,
-      meetingDate: meetingDate || toDatePart(startsAt),
+      meetingDate,
       startsAt: startsAtIso,
       endsAt: endsAtIso,
       opensAt: opensAtIso,
@@ -229,7 +276,8 @@ export function AttendanceMeetingForm({
         title: "Meeting created",
         description: "Open attendance when the class is ready to check in.",
       });
-      onDone();
+      clearForm();
+      onDone?.();
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -242,12 +290,12 @@ export function AttendanceMeetingForm({
     return (
       <Alert
         variant="warning"
-        className="mt-4"
+        className={bare ? "" : "mt-4"}
       >
-        <p className="text-sm font-medium">This class has no active subject</p>
+        <p className="text-sm font-medium">This class has no active course</p>
         <p className="mt-1 text-xs leading-relaxed">
-          Add a subject to the class first. Attendance meetings belong to one
-          subject so the recap can group them correctly.
+          Add a course to the class first. Attendance meetings belong to one
+          course so the recap can group them correctly.
         </p>
       </Alert>
     );
@@ -256,11 +304,15 @@ export function AttendanceMeetingForm({
   return (
     <form
       onSubmit={submit}
-      className="border-border bg-subtle mt-4 space-y-5 rounded-2xl border p-5"
+      className={
+        bare
+          ? "space-y-4"
+          : "border-border bg-subtle mt-4 space-y-5 rounded-2xl border p-5"
+      }
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="attendance-subject">Subject</Label>
+          <Label htmlFor="attendance-subject">Subject / Course</Label>
           <Select
             id="attendance-subject"
             value={subjectId}
@@ -313,11 +365,11 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-starts-at">Starts</Label>
+          <Label htmlFor="attendance-starts-at">Start time</Label>
           <Input
             id="attendance-starts-at"
-            type="datetime-local"
-            value={startsAt}
+            type="time"
+            value={startTime}
             onChange={(event) => updateStart(event.target.value)}
             aria-invalid={Boolean(fieldErrors.startsAt)}
           />
@@ -327,12 +379,12 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-ends-at">Ends</Label>
+          <Label htmlFor="attendance-ends-at">End time</Label>
           <Input
             id="attendance-ends-at"
-            type="datetime-local"
-            value={endsAt}
-            onChange={(event) => setEndsAt(event.target.value)}
+            type="time"
+            value={endTime}
+            onChange={(event) => setEndTime(event.target.value)}
             aria-invalid={Boolean(fieldErrors.endsAt)}
           />
           {fieldErrors.endsAt ? (
@@ -341,16 +393,15 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-opens-at">Check-in opens (optional)</Label>
+          <Label htmlFor="attendance-opens-at">
+            Check-in opens (optional)
+          </Label>
           <Input
             id="attendance-opens-at"
-            type="datetime-local"
-            value={opensAt}
-            onChange={(event) => setOpensAt(event.target.value)}
+            type="time"
+            value={opensTime}
+            onChange={(event) => setOpensTime(event.target.value)}
           />
-          <p className="text-muted-foreground text-[11px]">
-            Defaults to the start time when you open the meeting.
-          </p>
         </div>
 
         <div className="space-y-1.5">
@@ -359,14 +410,10 @@ export function AttendanceMeetingForm({
           </Label>
           <Input
             id="attendance-closes-at"
-            type="datetime-local"
-            value={closesAt}
-            onChange={(event) => setClosesAt(event.target.value)}
+            type="time"
+            value={closesTime}
+            onChange={(event) => setClosesTime(event.target.value)}
           />
-          <p className="text-muted-foreground text-[11px]">
-            Defaults to the end time. A check-in after the late deadline is
-            recorded as late.
-          </p>
         </div>
 
         <div className="space-y-1.5">
@@ -420,6 +467,26 @@ export function AttendanceMeetingForm({
           ) : null}
         </div>
 
+        <div className="space-y-1.5">
+          <Label htmlFor="attendance-latitude">Latitude</Label>
+          <Input
+            id="attendance-latitude"
+            inputMode="decimal"
+            value={manualLatitude}
+            onChange={(event) => setManualLatitude(event.target.value)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="attendance-longitude">Longitude</Label>
+          <Input
+            id="attendance-longitude"
+            inputMode="decimal"
+            value={manualLongitude}
+            onChange={(event) => setManualLongitude(event.target.value)}
+          />
+        </div>
+
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="attendance-title">Title (optional)</Label>
           <Input
@@ -427,72 +494,36 @@ export function AttendanceMeetingForm({
             value={title}
             maxLength={ATTENDANCE_MEETING_TITLE_MAX}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Defaults to the subject and meeting number"
+            placeholder="Defaults to the course and meeting number"
           />
         </div>
       </div>
 
-      <div className="border-border rounded-xl border p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="flex items-center gap-1.5 text-sm font-medium">
-              <MapPin
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Meeting point
-            </p>
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              Students must be inside the radius. Share your location from the
-              classroom, or enter the coordinates manually.
-            </p>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={() => void captureLocation()}
-            disabled={isLocating}
-          >
-            {isLocating ? (
-              <Loader2
-                aria-hidden="true"
-                className="h-4 w-4 animate-spin"
-              />
-            ) : (
-              <LocateFixed
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-            )}
-            Use my location
-          </Button>
-        </div>
-
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="attendance-latitude">Latitude</Label>
-            <Input
-              id="attendance-latitude"
-              inputMode="decimal"
-              value={manualLatitude}
-              onChange={(event) => setManualLatitude(event.target.value)}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => void captureLocation()}
+          disabled={isLocating}
+        >
+          {isLocating ? (
+            <Loader2
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin"
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="attendance-longitude">Longitude</Label>
-            <Input
-              id="attendance-longitude"
-              inputMode="decimal"
-              value={manualLongitude}
-              onChange={(event) => setManualLongitude(event.target.value)}
+          ) : (
+            <LocateFixed
+              aria-hidden="true"
+              className="h-4 w-4"
             />
-          </div>
-        </div>
+          )}
+          Use my location
+        </Button>
 
         {point?.accuracy ? (
-          <p className="text-muted-foreground mt-2 text-[11px]">
-            GPS accuracy when captured: about {Math.round(point.accuracy)} m.
+          <p className="text-muted-foreground text-[11px]">
+            GPS accuracy about {Math.round(point.accuracy)} m
           </p>
         ) : null}
       </div>
@@ -520,18 +551,40 @@ export function AttendanceMeetingForm({
               className="h-4 w-4"
             />
           )}
-          Create meeting
+          Create session
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={onDone}
-          disabled={isBusy}
-        >
-          Cancel
-        </Button>
+
+        {onCancel ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={isBusy}
+          >
+            Cancel
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={clearForm}
+            disabled={isBusy}
+          >
+            Clear
+          </Button>
+        )}
       </div>
+
+      <p className="text-muted-foreground flex items-start gap-1.5 text-[11px] leading-relaxed">
+        <MapPin
+          aria-hidden="true"
+          className="mt-0.5 h-3 w-3 shrink-0"
+        />
+        Students must check in inside the allowed radius. The meeting point is
+        verified on the server.
+      </p>
     </form>
   );
 }

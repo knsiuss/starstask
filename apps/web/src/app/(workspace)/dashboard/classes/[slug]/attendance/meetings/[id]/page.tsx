@@ -75,7 +75,7 @@ export default async function AttendanceMeetingPage({
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
-        href={`/dashboard/classes/${classRecord.slug}?tab=attendance`}
+        href={`/dashboard/classes/${classRecord.slug}/attendance`}
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
         <ArrowLeft

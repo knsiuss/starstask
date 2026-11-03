@@ -1,6 +1,22 @@
 "use client";
 
-import { FileText, Loader2, Sparkles, Trash2 } from "lucide-react";
+import {
+  AlignLeft,
+  Bookmark,
+  CalendarDays,
+  ChevronDown,
+  ClipboardCheck,
+  FileText,
+  GraduationCap,
+  Loader2,
+  Paperclip,
+  Send,
+  Sparkles,
+  Tags,
+  Trash2,
+  UploadCloud,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -10,12 +26,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils/cn";
 import { isFeatureEnabled } from "@/lib/config/features";
 import {
   LEAVE_EVIDENCE_MAX_BYTES,
   LEAVE_EVIDENCE_MAX_FILES,
   LEAVE_EXPLANATION_MAX,
-  LEAVE_EXPLANATION_MIN,
   LEAVE_REASON_CATEGORIES,
   LEAVE_REASON_LABELS,
   leaveRequestCreateSchema,
@@ -27,11 +43,21 @@ import {
 } from "@starstask/contracts";
 import { formatFileSize, formatLeaveDate } from "@starstask/shared";
 
+/** One class the student can file the request under. */
+export type LeaveClassChoice = {
+  id: string;
+  name: string;
+  /** Active courses of the class. A class can hold more than one. */
+  courses: string[];
+};
+
 type LeaveFormProps = {
   mode: "create" | "edit";
   classId: string;
   requestId?: string;
   status?: LeaveRequestStatus;
+  /** Classes offered in create mode; the form starts on `classId`. */
+  classes?: LeaveClassChoice[];
   initial: {
     leaveStartDate: string;
     leaveEndDate: string;
@@ -67,18 +93,23 @@ const SOURCE_LABELS: Record<LeaveFieldSource, string> = {
   ocr_corrected: "Corrected by you",
 };
 
+const CARD =
+  "rounded-2xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]";
+const FIELD = "mt-1.5 h-11 rounded-xl";
+
 /**
  * Create/edit form.
  *
- * OCR suggestions are shown beside the inputs and only ever fill a field when
- * the student clicks "Use". Nothing is applied automatically, and the confirmed
- * source of each field is recorded separately from its value.
+ * OCR suggestions are only ever shown in edit mode, where they come from an
+ * uploaded document; nothing is applied automatically and the confirmed source
+ * of each field is recorded separately from its value.
  */
 export function LeaveForm({
   mode,
   classId,
   requestId,
   status = "draft",
+  classes = [],
   initial,
   suggestion,
   fieldSources = {},
@@ -98,8 +129,17 @@ export function LeaveForm({
   // draft when the student retries after a failed upload.
   const [createdId, setCreatedId] = React.useState<string | null>(null);
   const [files, setFiles] = React.useState<File[]>([]);
+  // The absence itself is unchanged by turning the reader off; the document is
+  // simply not sent to the extraction provider.
+  const [readerEnabled, setReaderEnabled] = React.useState(true);
+  const [selectedClassId, setSelectedClassId] = React.useState(classId);
 
   const isEditable = status === "draft";
+  // A saved draft already belongs to a class; switching the picker afterwards
+  // would look like it moved the draft, which the update endpoint cannot do.
+  const classLocked = createdId !== null;
+  const selectedClass =
+    classes.find((item) => item.id === selectedClassId) ?? classes[0];
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -147,6 +187,10 @@ export function LeaveForm({
       const body = new FormData();
       body.append("file", file);
 
+      if (!readerEnabled) {
+        body.append("ocr", "off");
+      }
+
       const response = await fetch(`/api/leave-requests/${id}/evidence`, {
         method: "POST",
         body,
@@ -190,7 +234,7 @@ export function LeaveForm({
     if (mode === "create" && !createdId) {
       const parsed = leaveRequestCreateSchema.safeParse({
         ...payload,
-        classId,
+        classId: selectedClass?.id ?? classId,
       });
 
       if (!parsed.success) {
@@ -345,11 +389,20 @@ export function LeaveForm({
   const hasSuggestion =
     suggestion &&
     SUGGESTION_FIELDS.some((field) => Boolean(suggestion[field.key]));
+  const showReader = isFeatureEnabled("ocr");
+  // Only the edit form has a side column, so the create form stays one column
+  // on desktop instead of leaving an empty 320px lane beside it.
+  const hasAside = mode === "edit" && showReader;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div
+      className={cn(
+        "grid gap-4",
+        hasAside && "lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start",
+      )}
+    >
       <form
-        className="grid gap-5"
+        className="grid gap-3.5 pb-32 lg:pb-0"
         onSubmit={(event) => {
           event.preventDefault();
           void onSave();
@@ -367,78 +420,136 @@ export function LeaveForm({
           </Alert>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="leaveStartDate">Absence from</Label>
-            <Input
-              id="leaveStartDate"
-              type="date"
-              value={form.leaveStartDate}
-              onChange={(event) => update("leaveStartDate", event.target.value)}
-              aria-invalid={Boolean(fieldErrors.leaveStartDate)}
-              className="mt-1"
-              required
+        {mode === "create" && selectedClass ? (
+          <section className={CARD}>
+            <SectionHeader
+              icon={GraduationCap}
+              title="Class"
             />
-            {fieldErrors.leaveStartDate ? (
-              <p className="text-danger mt-1 text-xs">
-                {fieldErrors.leaveStartDate}
-              </p>
-            ) : null}
-          </div>
 
-          <div>
-            <Label htmlFor="leaveEndDate">Absence to</Label>
-            <Input
-              id="leaveEndDate"
-              type="date"
-              value={form.leaveEndDate}
-              onChange={(event) => update("leaveEndDate", event.target.value)}
-              aria-invalid={Boolean(fieldErrors.leaveEndDate)}
-              className="mt-1"
-              required
-            />
-            {fieldErrors.leaveEndDate ? (
-              <p className="text-danger mt-1 text-xs">
-                {fieldErrors.leaveEndDate}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="reasonCategory">Reason</Label>
-            <Select
-              id="reasonCategory"
-              value={form.reasonCategory}
-              onChange={(event) => update("reasonCategory", event.target.value)}
-              aria-invalid={Boolean(fieldErrors.reasonCategory)}
-              className="mt-1"
-              required
-            >
-              <option value="">Choose a reason</option>
-              {LEAVE_REASON_CATEGORIES.map((reason) => (
-                <option
-                  key={reason}
-                  value={reason}
+            {classes.length > 1 ? (
+              <>
+                <Label
+                  htmlFor="leaveClass"
+                  className="sr-only"
                 >
-                  {LEAVE_REASON_LABELS[reason]}
-                </option>
-              ))}
-            </Select>
-            {fieldErrors.reasonCategory ? (
-              <p className="text-danger mt-1 text-xs">
-                {fieldErrors.reasonCategory}
+                  Class
+                </Label>
+                <Select
+                  id="leaveClass"
+                  value={selectedClass.id}
+                  onChange={(event) => setSelectedClassId(event.target.value)}
+                  disabled={busy !== null || classLocked}
+                  className={cn(FIELD, "font-medium")}
+                >
+                  {classes.map((item) => (
+                    <option
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </>
+            ) : (
+              <p className="mt-2 text-sm font-medium">{selectedClass.name}</p>
+            )}
+
+            {classLocked ? (
+              <p className="text-muted-foreground mt-1 text-[11px]">
+                This draft is already filed under {selectedClass.name}.
               </p>
             ) : null}
+
+            {selectedClass.courses.length > 0 ? (
+              <div className="mt-3">
+                <p className="text-muted-foreground text-[11px] font-medium">
+                  {selectedClass.courses.length === 1
+                    ? "Course"
+                    : `Courses · ${selectedClass.courses.length}`}
+                </p>
+                <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                  {selectedClass.courses.map((course, index) => (
+                    <li
+                      key={`${index}-${course}`}
+                      className="border-border bg-subtle text-foreground rounded-lg border px-2.5 py-1 text-xs font-medium"
+                    >
+                      {course}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <p className="text-muted-foreground mt-3 text-[11px] leading-relaxed">
+              The request covers this class, so every course above is included.
+            </p>
+          </section>
+        ) : null}
+
+        <section className={CARD}>
+          <SectionHeader
+            icon={CalendarDays}
+            title="Absence period"
+          />
+
+          <div className="mt-3 grid grid-cols-1 gap-2.5 min-[350px]:grid-cols-2">
+            <div className="min-w-0">
+              <Label
+                htmlFor="leaveStartDate"
+                className="text-muted-foreground text-[11px] font-medium"
+              >
+                From
+              </Label>
+              <Input
+                id="leaveStartDate"
+                type="date"
+                value={form.leaveStartDate}
+                onChange={(event) =>
+                  update("leaveStartDate", event.target.value)
+                }
+                aria-invalid={Boolean(fieldErrors.leaveStartDate)}
+                className={cn(FIELD, "min-w-0 px-2.5")}
+                required
+              />
+              {fieldErrors.leaveStartDate ? (
+                <p className="text-danger mt-1 text-[11px]">
+                  {fieldErrors.leaveStartDate}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="min-w-0">
+              <Label
+                htmlFor="leaveEndDate"
+                className="text-muted-foreground text-[11px] font-medium"
+              >
+                To
+              </Label>
+              <Input
+                id="leaveEndDate"
+                type="date"
+                value={form.leaveEndDate}
+                onChange={(event) => update("leaveEndDate", event.target.value)}
+                aria-invalid={Boolean(fieldErrors.leaveEndDate)}
+                className={cn(FIELD, "min-w-0 px-2.5")}
+                required
+              />
+              {fieldErrors.leaveEndDate ? (
+                <p className="text-danger mt-1 text-[11px]">
+                  {fieldErrors.leaveEndDate}
+                </p>
+              ) : null}
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="documentIssueDate">
-              Document issue date{" "}
-              <span className="text-muted-foreground font-normal">
-                (optional)
-              </span>
+          <div className="mt-3">
+            <Label
+              htmlFor="documentIssueDate"
+              className="text-muted-foreground text-[11px] font-medium"
+            >
+              Document issue date · optional
             </Label>
             <Input
               id="documentIssueDate"
@@ -447,41 +558,112 @@ export function LeaveForm({
               onChange={(event) =>
                 update("documentIssueDate", event.target.value)
               }
-              className="mt-1"
+              className={cn(FIELD, "px-2.5")}
             />
-            <p className="text-muted-foreground mt-1 text-xs">
-              The date printed on the letter — not the absence dates and not the
-              submission date.
-            </p>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <Label htmlFor="explanation">Explanation</Label>
+        <section className={CARD}>
+          <SectionHeader
+            icon={Tags}
+            title="Reason"
+          />
+
+          <Label
+            htmlFor="reasonCategory"
+            className="sr-only"
+          >
+            Reason
+          </Label>
+          <Select
+            id="reasonCategory"
+            value={form.reasonCategory}
+            onChange={(event) => update("reasonCategory", event.target.value)}
+            aria-invalid={Boolean(fieldErrors.reasonCategory)}
+            className={FIELD}
+            required
+          >
+            <option value="">Choose a reason</option>
+            {LEAVE_REASON_CATEGORIES.map((reason) => (
+              <option
+                key={reason}
+                value={reason}
+              >
+                {LEAVE_REASON_LABELS[reason]}
+              </option>
+            ))}
+          </Select>
+          {fieldErrors.reasonCategory ? (
+            <p className="text-danger mt-1 text-[11px]">
+              {fieldErrors.reasonCategory}
+            </p>
+          ) : null}
+        </section>
+
+        <section className={CARD}>
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={AlignLeft}
+              title="Explanation"
+            />
+            <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+              {form.explanation.length} / {LEAVE_EXPLANATION_MAX}
+            </span>
+          </div>
+
+          <Label
+            htmlFor="explanation"
+            className="sr-only"
+          >
+            Explanation
+          </Label>
           <Textarea
             id="explanation"
             value={form.explanation}
             onChange={(event) => update("explanation", event.target.value)}
             aria-invalid={Boolean(fieldErrors.explanation)}
-            rows={5}
+            rows={4}
             maxLength={LEAVE_EXPLANATION_MAX}
-            className="mt-1"
-            placeholder="What your class admin needs to know. Avoid unnecessary medical detail."
+            className="mt-3 min-h-24 rounded-xl"
+            placeholder="Briefly explain your reason…"
             required
           />
-          <p className="text-muted-foreground mt-1 text-xs">
-            At least {LEAVE_EXPLANATION_MIN} characters.
-          </p>
           {fieldErrors.explanation ? (
-            <p className="text-danger mt-1 text-xs">
+            <p className="text-danger mt-1 text-[11px]">
               {fieldErrors.explanation}
             </p>
           ) : null}
-        </div>
+        </section>
 
         {mode === "create" ? (
-          <div>
-            <Label htmlFor="evidenceFiles">Supporting document</Label>
+          <section className={CARD}>
+            <div className="flex items-start justify-between gap-3">
+              <SectionHeader
+                icon={Paperclip}
+                title="Supporting document"
+              />
+              {files.length > 0 ? (
+                <span className="bg-muted text-muted-foreground shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium tabular-nums">
+                  {files.length} / {LEAVE_EVIDENCE_MAX_FILES}
+                </span>
+              ) : null}
+            </div>
+
+            <label
+              htmlFor="evidenceFiles"
+              className="border-input bg-subtle hover:border-accent/60 hover:bg-accent-soft/40 focus-within:outline-accent mt-3 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-5 text-center transition-colors focus-within:outline-2 focus-within:outline-offset-2"
+            >
+              <UploadCloud
+                aria-hidden="true"
+                className="text-accent h-6 w-6"
+              />
+              <span className="text-accent text-sm font-medium">
+                Tap to upload file
+              </span>
+              <span className="text-muted-foreground text-[11px]">
+                PDF, JPG, or PNG · max 10 MB
+              </span>
+            </label>
             <input
               id="evidenceFiles"
               type="file"
@@ -489,63 +671,189 @@ export function LeaveForm({
               accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
               onChange={onSelectFiles}
               disabled={busy !== null}
-              className="text-muted-foreground file:border-border file:bg-muted file:text-foreground hover:file:bg-muted/70 mt-1 w-full text-sm file:mr-3 file:rounded-md file:border file:px-3 file:py-1.5 file:text-sm"
-              aria-describedby="evidenceFiles-hint"
+              className="sr-only"
             />
-            <p
-              id="evidenceFiles-hint"
-              className="text-muted-foreground mt-1 text-xs"
-            >
-              PDF, JPG, or PNG · up to 10 MB each · at least one is required
-              before submitting.
-            </p>
 
             {files.length > 0 ? (
-              <ul className="mt-2 grid gap-2">
+              <ul className="mt-2.5 grid gap-1.5">
                 {files.map((file) => (
                   <li
                     key={`${file.name}-${file.size}-${file.lastModified}`}
-                    className="border-border flex items-center justify-between gap-2 rounded-lg border p-2.5"
+                    className="border-border bg-subtle flex items-center gap-2 rounded-xl border px-2.5 py-2"
                   >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <FileText
-                        aria-hidden="true"
-                        className="text-muted-foreground h-4 w-4 shrink-0"
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">
-                          {file.name}
-                        </span>
-                        <span className="text-muted-foreground block text-xs">
-                          {formatFileSize(file.size)}
-                        </span>
+                    <FileText
+                      aria-hidden="true"
+                      className="text-muted-foreground h-4 w-4 shrink-0"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-medium">
+                        {file.name}
+                      </span>
+                      <span className="text-muted-foreground block text-[11px]">
+                        {formatFileSize(file.size)}
                       </span>
                     </span>
 
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
                       onClick={() => removeFile(file)}
                       disabled={busy !== null}
                       aria-label={`Remove ${file.name}`}
+                      className="text-muted-foreground hover:text-danger hover:bg-danger-soft focus-visible:outline-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       <Trash2
                         aria-hidden="true"
                         className="h-4 w-4"
                       />
-                    </Button>
+                    </button>
                   </li>
                 ))}
               </ul>
             ) : null}
-          </div>
+          </section>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
+        {showReader && mode === "create" ? (
+          <section className="border-border bg-subtle flex items-start gap-3 rounded-2xl border p-4">
+            <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+              <Sparkles
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            </span>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-[15px] leading-6 font-semibold">
+                  Document Reader
+                </h2>
+                <span className="bg-accent-soft text-accent rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
+                  AI
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                {readerEnabled
+                  ? "Reads your PDF and suggests the absence dates. You confirm every value."
+                  : "Off. Nothing is extracted and you type the dates yourself."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={readerEnabled}
+              aria-label="Document Reader AI"
+              onClick={() => setReaderEnabled((current) => !current)}
+              className={cn(
+                "focus-visible:outline-accent relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                readerEnabled ? "bg-accent" : "bg-input",
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "bg-surface absolute h-5 w-5 rounded-full shadow-sm transition-transform",
+                  readerEnabled ? "translate-x-5" : "translate-x-0.5",
+                )}
+              />
+            </button>
+          </section>
+        ) : null}
+
+        {hasSuggestion && mode === "edit" ? (
+          <section className="border-border bg-subtle grid gap-2 rounded-2xl border p-4">
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <Sparkles
+                aria-hidden="true"
+                className="text-accent h-4 w-4"
+              />
+              Document Reader suggestions
+            </p>
+
+            {SUGGESTION_FIELDS.map((field) => {
+              const value = suggestion?.[field.key];
+
+              if (!value) {
+                return null;
+              }
+
+              const isDate =
+                field.key !== "studentName" && field.key !== "documentType";
+              const display = isDate ? formatLeaveDate(value) : value;
+              const source = sources[field.key];
+
+              return (
+                <div
+                  key={field.key}
+                  className="border-border bg-surface rounded-xl border p-2.5"
+                >
+                  <p className="text-muted-foreground text-[11px]">
+                    {field.label}
+                  </p>
+                  <p className="text-sm font-medium">{display}</p>
+
+                  {isDate ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        applySuggestion(field.key as keyof FormState, value)
+                      }
+                      className="text-accent mt-1 text-xs underline-offset-4 hover:underline"
+                    >
+                      Use this value
+                    </button>
+                  ) : null}
+
+                  {source ? (
+                    <p className="text-muted-foreground mt-1 text-[11px]">
+                      {SOURCE_LABELS[source]}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <p className="text-muted-foreground text-[11px]">
+              Read from the document, not verified. Check every value before
+              submitting.
+            </p>
+          </section>
+        ) : null}
+
+        <details className="group border-border bg-subtle rounded-2xl border px-4 py-3">
+          <summary className="flex cursor-pointer list-none items-center gap-2.5 [&::-webkit-details-marker]:hidden">
+            <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+              <ClipboardCheck
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            </span>
+            <span className="flex-1 text-[15px] leading-6 font-semibold">
+              Before you submit
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+            />
+          </summary>
+
+          <ul className="text-muted-foreground mt-2.5 grid list-disc gap-1 pl-11 text-xs leading-relaxed">
+            <li>Dates exactly as printed on the document.</li>
+            <li>A reason and a short explanation.</li>
+            {mode === "create" ? (
+              <li>At least one PDF, JPG, or PNG, up to 10 MB.</li>
+            ) : null}
+          </ul>
+        </details>
+
+        {/* Sits directly on top of the fixed mobile tab bar (3.75rem), so the
+            content scrolls behind it and never peeks through a gap. */}
+        <div className="bg-surface/95 border-border fixed inset-x-0 bottom-15 z-30 flex gap-2.5 border-t px-4 py-3 backdrop-blur lg:static lg:mt-1 lg:justify-end lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Button
             type="submit"
             variant="secondary"
+            size="lg"
+            className="h-11 flex-1 rounded-xl lg:flex-none lg:px-5"
             disabled={busy !== null || !isEditable}
           >
             {busy === "save" ? (
@@ -553,12 +861,19 @@ export function LeaveForm({
                 aria-hidden="true"
                 className="h-4 w-4 animate-spin"
               />
-            ) : null}
+            ) : (
+              <Bookmark
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            )}
             Save draft
           </Button>
 
           <Button
             type="button"
+            size="lg"
+            className="h-11 flex-[1.3] rounded-xl lg:flex-none lg:px-5"
             onClick={() => void onSubmit()}
             disabled={busy !== null || !isEditable}
           >
@@ -567,111 +882,76 @@ export function LeaveForm({
                 aria-hidden="true"
                 className="h-4 w-4 animate-spin"
               />
-            ) : null}
-            Submit
-          </Button>
-        </div>
-
-        <p className="text-muted-foreground text-xs">
-          Submitting sends the request to your class admin, who approves or
-          rejects it. An approved absence marks the covered sessions excused; it
-          never marks you present.
-        </p>
-      </form>
-
-      {isFeatureEnabled("ocr") ? (
-        <aside className="grid content-start gap-3">
-          <div className="border-border bg-muted/40 rounded-xl border p-4">
-            <p className="flex items-center gap-1.5 text-sm font-medium">
-              <Sparkles
+            ) : (
+              <Send
                 aria-hidden="true"
                 className="h-4 w-4"
               />
-              Document reader
+            )}
+            Submit request
+          </Button>
+        </div>
+      </form>
+
+      {hasAside ? (
+        <aside className="grid content-start gap-3">
+          <div className="border-border bg-subtle rounded-2xl border p-4">
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <Sparkles
+                aria-hidden="true"
+                className="text-accent h-4 w-4"
+              />
+              Document Reader
             </p>
 
-            {mode === "create" ? (
-              <p className="text-muted-foreground mt-1.5 text-xs">
-                Attach a PDF above. After you save, StarsTask reads it and shows
-                the suggested dates on the request page for you to confirm.
-              </p>
-            ) : null}
-
-            {mode === "edit" && ocrStatus === "not_run" ? (
-              <p className="text-muted-foreground mt-1.5 text-xs">
-                Upload a PDF and StarsTask will try to read the dates for you.
-                Everything it finds is a suggestion you must confirm.
+            {ocrStatus === "not_run" ? (
+              <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
+                Upload a PDF on the request page and StarsTask will try to read
+                the dates. Everything it finds stays a suggestion.
               </p>
             ) : null}
 
             {ocrStatus === "unsupported" ? (
-              <p className="text-muted-foreground mt-1.5 text-xs">
+              <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
                 This file could not be read automatically (it may be a scan).
                 Enter the details by hand — nothing is blocked.
               </p>
             ) : null}
 
             {ocrStatus === "failed" ? (
-              <p className="text-muted-foreground mt-1.5 text-xs">
+              <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
                 The document could not be read. Enter the details by hand.
               </p>
             ) : null}
 
-            {hasSuggestion ? (
-              <div className="mt-3 grid gap-2">
-                {SUGGESTION_FIELDS.map((field) => {
-                  const value = suggestion?.[field.key];
-
-                  if (!value) {
-                    return null;
-                  }
-
-                  const isDate =
-                    field.key !== "studentName" && field.key !== "documentType";
-                  const display = isDate ? formatLeaveDate(value) : value;
-                  const source = sources[field.key];
-
-                  return (
-                    <div
-                      key={field.key}
-                      className="border-border bg-background rounded-lg border p-2.5"
-                    >
-                      <p className="text-muted-foreground text-[11px]">
-                        {field.label}
-                      </p>
-                      <p className="text-sm font-medium">{display}</p>
-
-                      {field.key !== "studentName" &&
-                      field.key !== "documentType" ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            applySuggestion(field.key as keyof FormState, value)
-                          }
-                          className="text-accent mt-1 text-xs underline-offset-4 hover:underline"
-                        >
-                          Use this value
-                        </button>
-                      ) : null}
-
-                      {source ? (
-                        <p className="text-muted-foreground mt-1 text-[11px]">
-                          {SOURCE_LABELS[source]}
-                        </p>
-                      ) : null}
-                    </div>
-                  );
-                })}
-
-                <p className="text-muted-foreground text-[11px]">
-                  Read from the document, not verified. Check every value before
-                  submitting.
-                </p>
-              </div>
+            {ocrStatus === "succeeded" ? (
+              <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
+                Suggestions below come from your document. Accept only the ones
+                that match it.
+              </p>
             ) : null}
           </div>
         </aside>
       ) : null}
+    </div>
+  );
+}
+
+type SectionHeaderProps = {
+  icon: LucideIcon;
+  title: string;
+};
+
+function SectionHeader({ icon: Icon, title }: SectionHeaderProps) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+        <Icon
+          aria-hidden="true"
+          className="h-4 w-4"
+        />
+      </span>
+      <h2 className="text-[15px] leading-6 font-semibold">{title}</h2>
     </div>
   );
 }

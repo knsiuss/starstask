@@ -154,7 +154,7 @@ export default async function AttendancePage({
                   variant="secondary"
                 >
                   <Link
-                    href={`/dashboard/classes/${classItem.slug}?tab=attendance`}
+                    href={`/dashboard/classes/${classItem.slug}/attendance`}
                   >
                     Manage {classItem.name}
                   </Link>

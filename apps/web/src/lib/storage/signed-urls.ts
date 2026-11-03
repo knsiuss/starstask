@@ -9,10 +9,12 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
- * Creates short-lived download URLs for attachments.
+ * Creates short-lived view and download URLs for attachments.
  *
- * The bucket is private. The signed URL only succeeds when the storage policy
- * lets the signed-in user read the assignment or its attachments for review.
+ * The inline URL lets images render and PDFs open in the browser's viewer; the
+ * download URL forces a file save. The bucket is private, and a signed URL only
+ * succeeds when the storage policy lets the signed-in user read the assignment
+ * or the submission under review.
  */
 export async function getAttachmentViews(
   attachments: AssignmentAttachment[],
@@ -22,17 +24,23 @@ export async function getAttachmentViews(
   }
 
   const supabase = await createSupabaseServerClient();
+  const bucket = supabase.storage.from(ATTACHMENT_BUCKET);
 
   return Promise.all(
     attachments.map(async (attachment) => {
-      const { data, error } = await supabase.storage
-        .from(ATTACHMENT_BUCKET)
-        .createSignedUrl(attachment.storage_path, SIGNED_URL_TTL_SECONDS, {
-          download: attachment.original_filename,
-        });
+      const [preview, download] = await Promise.all([
+        bucket.createSignedUrl(attachment.storage_path, SIGNED_URL_TTL_SECONDS),
+        bucket.createSignedUrl(
+          attachment.storage_path,
+          SIGNED_URL_TTL_SECONDS,
+          { download: attachment.original_filename },
+        ),
+      ]);
 
-      if (error) {
-        console.error("[storage] signed url failed", { code: error.name });
+      if (preview.error || download.error) {
+        console.error("[storage] signed url failed", {
+          code: preview.error?.name ?? download.error?.name,
+        });
       }
 
       return {
@@ -40,7 +48,8 @@ export async function getAttachmentViews(
         originalFilename: attachment.original_filename,
         mimeType: attachment.mime_type,
         fileSize: attachment.file_size,
-        signedUrl: data?.signedUrl ?? null,
+        previewUrl: preview.data?.signedUrl ?? null,
+        downloadUrl: download.data?.signedUrl ?? null,
       };
     }),
   );

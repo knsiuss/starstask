@@ -31,6 +31,8 @@ type EventFormDialogProps = {
   subjects?: CalendarSubjectChoice[];
   triggerLabel: React.ReactNode;
   triggerClassName?: string;
+  /** Layout for placements that need absolute positioning (the calendar board). */
+  triggerStyle?: React.CSSProperties;
   triggerVariant?: NonNullable<React.ComponentProps<typeof Button>["variant"]>;
   triggerSize?: NonNullable<React.ComponentProps<typeof Button>["size"]>;
   ariaLabel?: string;
@@ -51,6 +53,7 @@ export function EventFormDialog({
   subjects = [],
   triggerLabel,
   triggerClassName,
+  triggerStyle,
   triggerVariant = "primary",
   triggerSize = "md",
   ariaLabel,
@@ -70,6 +73,7 @@ export function EventFormDialog({
             buttonVariants({ variant: triggerVariant, size: triggerSize }),
             triggerClassName,
           )}
+          style={triggerStyle}
         >
           {triggerLabel}
         </button>

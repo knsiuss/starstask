@@ -2678,6 +2678,14 @@ export interface Database {
         };
         Returns: string;
       };
+      review_public_assignment: {
+        Args: {
+          p_assignment_id: string;
+          p_decision: string;
+          p_reason?: string | null;
+        };
+        Returns: string;
+      };
       publish_class_assignment: {
         Args: { p_assignment_id: string };
         Returns: boolean;

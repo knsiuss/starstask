@@ -55,7 +55,7 @@ These decisions are deliberate and must not be reversed by a UI change alone:
 | Review submissions in a class               |   no    |   no   |     own     |      any       |
 | Submit an assignment for review             |   no    |  yes   |     yes     |      yes       |
 | Moderate published assignments              |   no    |   no   |     own     |      any       |
-| Assign or revoke class admins               |   no    |   no   |     no      |      yes       |
+| Assign or revoke class admins               |   no    |   no   |     own     |      yes       |
 | Archive or restore a class                  |   no    |   no   |     own     |      any       |
 | Permanently delete an empty class           |   no    |   no   |     own     |      any       |
 | Read the platform audit trail               |   no    |   no   |  own class  |      all       |
@@ -165,6 +165,12 @@ and are never reassigned automatically.
 A course that already has records cannot be deleted; it must be archived so the
 academic history is preserved. Only an empty course can be deleted.
 
+**Recent assignments** and the class **Assignments** tab also list published
+public assignments that use a catalog course the class offers, so work posted
+through the public repository for the same course stays visible beside the
+class's own content. Those rows remain class-less public entries; only content
+posted through the class or its course menu becomes class-scoped.
+
 Course workspace routes:
 
 - `/dashboard/classes/[slug]/courses/[courseId]` — course overview
@@ -182,7 +188,9 @@ memberships. **Settings** edits the course name, code, lecturer, and description
 and archives or reactivates the course; a non-manager who opens it gets a
 not-found response. The course header's contextual menu creates an assignment,
 uploads a material, or creates an announcement with the current course already
-selected, and links to the settings page.
+selected, links to the settings page, and deletes an empty course after a
+confirmation. When the course has records the API refuses the delete with
+`course_has_records` and the dialog points to archiving in the course settings.
 
 The assignments tab filters **All**, **Upcoming** (deadline ahead),
 **In progress** (no deadline and not marked done by the caller), **Submitted**
@@ -216,9 +224,11 @@ policy, and every change is recorded in the audit trail.
   **Content**, and **Settings** tabs. Overview shows database-backed counters,
   recent audit activity, and class appearance. Courses holds course creation,
   editing, and archive/reactivate actions plus links into each course workspace.
-  Members holds roster search and role actions; Invites holds link creation and
-  revocation; Content holds searchable published, pending, unpublished, and
-  archived submissions; Settings shows read-only class metadata with an explicit
+  Members holds roster search plus a per-member action menu that grants or
+  revokes the class admin role and removes the member; the database keeps at
+  least one admin per class. Invites holds link creation and revocation; Content
+  holds searchable published, pending, unpublished, and archived submissions;
+  Settings shows read-only class metadata with an explicit
   Edit step, lifecycle controls, and the dependency-aware deletion dialog.
 - `/admin/classes/[slug]` is the Platform Admin view focused on roles and status.
 

@@ -68,6 +68,8 @@ const FAILURE_LABELS: Record<AttendanceMeetingFailureOutcome, string> = {
 type AttendanceMeetingDashboardProps = {
   classSlug: string;
   initialDetail: AttendanceMeetingDetail;
+  /** Lets a host (e.g. the attendance workspace panel) drop the top margin. */
+  className?: string;
 };
 
 function summaryTime(value: string | null, fallback: string): string {
@@ -81,6 +83,7 @@ function summaryTime(value: string | null, fallback: string): string {
 export function AttendanceMeetingDashboard({
   classSlug,
   initialDetail,
+  className,
 }: AttendanceMeetingDashboardProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -178,7 +181,7 @@ export function AttendanceMeetingDashboard({
   const counts = detail.counts;
 
   return (
-    <div className="mt-6">
+    <div className={className ?? "mt-6"}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
