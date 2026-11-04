@@ -36,7 +36,6 @@ import {
   ATTENDANCE_STATUS_LABELS,
   CHECKIN_POSITION_MAX_AGE_MS,
   SESSION_CHECKIN_ACCURACY_MAX_M,
-  getAttendanceLateDeadline,
 } from "@starstask/contracts";
 import {
   formatSessionDate,
@@ -146,10 +145,6 @@ function StudentMeetingCard({
   const pendingCheckIn = React.useRef(false);
 
   const identityReady = Boolean(identity.fullName && identity.nim);
-  const lateDeadline = getAttendanceLateDeadline(
-    meeting.startsAt,
-    meeting.lateAfterMinutes,
-  );
   const hasCheckInTime = checkIn !== null;
   const isOpenPhase = meeting.phase === "open";
 
@@ -388,12 +383,6 @@ function StudentMeetingCard({
                   TIME_ZONE,
                 )}{" "}
                 {timeZoneLabel(TIME_ZONE)}
-                {lateDeadline !== null
-                  ? ` · late after ${formatSessionTime(
-                      new Date(lateDeadline).toISOString(),
-                      TIME_ZONE,
-                    )}`
-                  : ""}
               </dd>
             </div>
             <div className="flex items-center gap-1.5">
@@ -432,6 +421,21 @@ function StudentMeetingCard({
                 <p className="text-muted-foreground mt-0.5 text-[11px]">
                   About {Math.round(checkIn.distanceM)} m from the meeting point
                 </p>
+              ) : null}
+              {isOpenPhase ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() => {
+                    setError(null);
+                    setIsOpen((current) => !current);
+                  }}
+                  aria-expanded={isOpen}
+                >
+                  {isOpen ? "Hide check-in" : "Check in again"}
+                </Button>
               ) : null}
             </div>
           ) : isOpenPhase && identityReady ? (

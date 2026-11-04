@@ -197,7 +197,35 @@ export async function buildMeetingWorkbook(
   return workbookToBytes(workbook);
 }
 
-/** Semester recap matrix with one column per meeting. */
+const SHEET_CELL_CODES: Record<AttendanceMeetingCellStatus, string> = {
+  present: "✓",
+  late: "T",
+  excused: "I",
+  sick: "S",
+  absent: "A",
+  not_recorded: "NR",
+  not_applicable: "—",
+};
+
+const SHEET_CELL_LABELS_ID: Record<string, string> = {
+  present: "Hadir",
+  late: "Terlambat",
+  excused: "Izin",
+  sick: "Sakit",
+  absent: "Alfa (Tidak Hadir)",
+};
+
+const meetingDateLabel = new Intl.DateTimeFormat("id-ID", {
+  day: "2-digit",
+  month: "short",
+  timeZone: TIME_ZONE,
+});
+
+/**
+ * Semester attendance sheet, styled after the campus printout: students are
+ * rows, meetings are columns that grow to the right, and each cell is a text
+ * code (✓ I S A T). Totals use the sheet formula H / total meetings.
+ */
 export async function buildRecapWorkbook(
   recap: AttendanceRecap,
   context: AttendanceExportContext,
@@ -207,107 +235,264 @@ export async function buildRecapWorkbook(
   const sheet = workbook.addWorksheet("Summary", {
     pageSetup: landscapePageSetup(),
   });
+  const meetingCount = recap.meetings.length;
+  const totalColumns = 3 + meetingCount + 6;
+  const firstMeetingColumn = 4;
+  const firstTotalColumn = 4 + meetingCount;
 
   sheet.columns = [
     { key: "no", width: 7 },
-    { key: "nim", width: 20 },
-    { key: "name", width: 32 },
-    ...recap.meetings.map(() => ({ width: 11 })),
+    { key: "nim", width: 18 },
+    { key: "name", width: 30 },
+    ...recap.meetings.map(() => ({ width: 9 })),
     { width: 7 },
     { width: 7 },
     { width: 7 },
     { width: 7 },
     { width: 7 },
-    { width: 7 },
-    { width: 14 },
+    { width: 12 },
   ];
 
-  let row = addReportHeading(
-    sheet,
-    "Semester Attendance Recap",
-    subjectLabel(context.subject),
+  const darkFill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: HEADER_FILL },
+  } as const;
+  const thinBorder = {
+    top: { style: "thin", color: { argb: BORDER_COLOR } },
+    left: { style: "thin", color: { argb: BORDER_COLOR } },
+    bottom: { style: "thin", color: { argb: BORDER_COLOR } },
+    right: { style: "thin", color: { argb: BORDER_COLOR } },
+  } as const;
+
+  // Title bar.
+  sheet.mergeCells(1, 1, 1, totalColumns);
+  const titleCell = sheet.getRow(1).getCell(1);
+  titleCell.value = "★ StarsTask — Absensi Mata Kuliah";
+  titleCell.font = { size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+  titleCell.fill = darkFill;
+  titleCell.alignment = { vertical: "middle" };
+  sheet.getRow(1).height = 26;
+
+  // Course block (left) and summary stats (right), from real class data.
+  const courseRow = sheet.getRow(3);
+  sheet.mergeCells(3, 1, 3, 3);
+  courseRow.getCell(1).value = subjectLabel(context.subject);
+  courseRow.getCell(1).font = { size: 16, bold: true };
+  sheet.mergeCells(4, 1, 4, 3);
+  courseRow.getCell(1).value = context.subject.name;
+  courseRow.getCell(1).font = { size: 11, color: { argb: MUTED_TEXT } };
+
+  const infoRows = [5, 6, 7];
+  const infoValues = [
+    `Kelas  : ${context.classInfo.class_code ?? context.classInfo.name}`,
+    `Dosen  : ${subjectLecturer(context)}`,
+    `Semester  : ${context.subject.semester} ${context.subject.academicYear}`,
+  ];
+  infoRows.forEach((rowNumber, index) => {
+    sheet.mergeCells(rowNumber, 1, rowNumber, 3);
+    sheet.getRow(rowNumber).getCell(1).value = infoValues[index];
+  });
+
+  const percentages = recap.students.map((student) =>
+    meetingCount === 0
+      ? null
+      : Math.round((student.totals.present / meetingCount) * 1_000) / 10,
   );
+  const presentPercentages = percentages.filter(
+    (value): value is number => value !== null,
+  );
+  const average =
+    presentPercentages.length === 0
+      ? null
+      : presentPercentages.reduce((sum, value) => sum + value, 0) /
+        presentPercentages.length;
 
-  row = addMetadataRows(sheet, row, 3 + recap.meetings.length + 7, [
-    ["Class", context.classInfo.name],
-    ["Class code", context.classInfo.class_code ?? "—"],
-    ["Subject", subjectLabel(context.subject)],
-    ["Lecturer", subjectLecturer(context)],
-    ["Semester", context.subject.semester],
-    ["Academic year", context.subject.academicYear],
-    ["Meetings", String(recap.meetings.length)],
-    ["Exported at", formatDateTime(context.generatedAt.toISOString())],
-  ]);
-
-  const headerRowNumber = row;
-  const headerRow = sheet.getRow(headerRowNumber);
-  const headerValues: (string | number)[] = [
-    "No.",
-    "NIM",
-    "Student name",
-    ...recap.meetings.map((meeting) => `Pertemuan ${meeting.meetingNumber}`),
-    "P",
-    "L",
-    "I",
-    "S",
-    "A",
-    "NR",
-    "Attendance %",
+  const stats: [string, string | number][] = [
+    ["Jumlah Mahasiswa", recap.students.length],
+    ["Total Pertemuan", meetingCount],
+    [
+      "Rata-rata Kehadiran",
+      average === null ? "—" : `${average.toFixed(1).replace(".", ",")}%`,
+    ],
   ];
-  headerRow.values = headerValues;
-  styleHeaderRow(headerRow, headerValues.length);
+  const statsStartColumn = Math.max(4, totalColumns - 5);
 
-  const firstDataRow = headerRowNumber + 1;
+  stats.forEach(([label, value], index) => {
+    const column = statsStartColumn + index * 2;
+    const labelRow = sheet.getRow(3);
+    const valueRow = sheet.getRow(4);
+    sheet.mergeCells(3, column, 3, column + 1);
+    sheet.mergeCells(4, column, 4, column + 1);
+    labelRow.getCell(column).value = label;
+    labelRow.getCell(column).font = {
+      size: 9,
+      color: { argb: MUTED_TEXT },
+    };
+    valueRow.getCell(column).value = value;
+    valueRow.getCell(column).font = { size: 16, bold: true };
+    // Light card fill behind each stat, like the printed reference.
+    for (const statRow of [labelRow, valueRow]) {
+      statRow.getCell(column).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF1F5F9" },
+      };
+      statRow.getCell(column + 1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF1F5F9" },
+      };
+    }
+  });
+
+  // Two-row header: group row + meeting numbers/dates.
+  const groupRowNumber = 9;
+  const headerRowNumber = 10;
+  const groupRow = sheet.getRow(groupRowNumber);
+  const headerRow = sheet.getRow(headerRowNumber);
+  const fixedHeaders = ["No.", "NIM", "Nama Mahasiswa"];
+  const totalHeaders = ["H", "I", "S", "A", "T", "%"];
+
+  fixedHeaders.forEach((label, index) => {
+    const column = index + 1;
+    sheet.mergeCells(groupRowNumber, column, headerRowNumber, column);
+    groupRow.getCell(column).value = label;
+  });
+
+  if (meetingCount > 0) {
+    sheet.mergeCells(
+      groupRowNumber,
+      firstMeetingColumn,
+      groupRowNumber,
+      firstMeetingColumn + meetingCount - 1,
+    );
+    groupRow.getCell(firstMeetingColumn).value = "Pertemuan";
+    groupRow.getCell(firstMeetingColumn).alignment = {
+      horizontal: "center",
+    };
+    recap.meetings.forEach((meeting, index) => {
+      const column = firstMeetingColumn + index;
+      headerRow.getCell(column).value = meeting.meetingNumber;
+      headerRow.getCell(column).alignment = { horizontal: "center" };
+      const dateRow = sheet.getRow(headerRowNumber + 1);
+      dateRow.getCell(column).value = meetingDateLabel.format(
+        new Date(meeting.startsAt),
+      );
+      dateRow.getCell(column).alignment = { horizontal: "center" };
+      dateRow.getCell(column).font = {
+        size: 9,
+        color: { argb: MUTED_TEXT },
+      };
+    });
+  }
+
+  totalHeaders.forEach((label, index) => {
+    const column = firstTotalColumn + index;
+    sheet.mergeCells(groupRowNumber, column, headerRowNumber, column);
+    groupRow.getCell(column).value = label;
+  });
+
+  for (const row of [groupRow, headerRow]) {
+    row.height = 20;
+    for (let column = 1; column <= totalColumns; column += 1) {
+      const cell = row.getCell(column);
+      cell.fill = darkFill;
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+      cell.border = thinBorder;
+    }
+  }
+  sheet.getRow(headerRowNumber + 1).height = 14;
+  for (let column = 1; column <= totalColumns; column += 1) {
+    const cell = sheet.getRow(headerRowNumber + 1).getCell(column);
+    cell.fill = darkFill;
+    cell.border = thinBorder;
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+  }
+  // Fixed header names stay left-aligned under the dark fill.
+  fixedHeaders.forEach((_, index) => {
+    const cell = groupRow.getCell(index + 1);
+    cell.alignment = { horizontal: "left", vertical: "middle" };
+  });
+
+  const firstDataRow = headerRowNumber + 2;
 
   recap.students.forEach((student, index) => {
     const dataRow = sheet.getRow(firstDataRow + index);
-    const values: (string | number | null)[] = [
+    const percentage =
+      meetingCount === 0
+        ? null
+        : Math.round((student.totals.present / meetingCount) * 1_000) / 10;
+    const values: (string | number)[] = [
       index + 1,
       student.nim ?? "—",
       student.fullName,
       ...recap.meetings.map(
         (meeting) =>
-          ATTENDANCE_MEETING_CELL_SYMBOLS[
+          SHEET_CELL_CODES[
             student.cells[meeting.sessionId] ?? "not_applicable"
           ],
       ),
       student.totals.present,
-      student.totals.late,
       student.totals.excused,
       student.totals.sick,
       student.totals.absent,
-      student.totals.notRecorded,
-      student.totals.percentage === null ? "—" : student.totals.percentage,
+      student.totals.late,
+      percentage === null ? "—" : percentage,
     ];
     dataRow.values = values;
-    styleDataRow(dataRow, values.length);
+    dataRow.height = 18;
+
+    for (let column = 1; column <= totalColumns; column += 1) {
+      const cell = dataRow.getCell(column);
+      cell.border = thinBorder;
+      cell.font = { size: 11 };
+      // Subtle striping on the identity/total cells; meeting cells keep
+      // their status fill below.
+      if (index % 2 === 1) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF8FAFC" },
+        };
+      }
+    }
+
+    dataRow.getCell(1).alignment = { horizontal: "center" };
 
     recap.meetings.forEach((meeting, meetingIndex) => {
       const status = student.cells[meeting.sessionId] ?? "not_applicable";
-      const cell = dataRow.getCell(4 + meetingIndex);
+      const cell = dataRow.getCell(firstMeetingColumn + meetingIndex);
       cell.alignment = { horizontal: "center", vertical: "middle" };
       cell.fill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: STATUS_FILLS[status] },
       };
-      cell.font = { bold: status === "present" };
+      cell.font = { bold: status === "present", size: 11 };
     });
 
-    for (
-      let column = 4 + recap.meetings.length;
-      column < values.length;
-      column += 1
-    ) {
+    for (let column = firstTotalColumn; column < totalColumns; column += 1) {
       dataRow.getCell(column).alignment = {
         horizontal: "center",
         vertical: "middle",
       };
     }
 
-    const percentageCell = dataRow.getCell(values.length);
+    const percentageCell = dataRow.getCell(totalColumns);
     percentageCell.alignment = { horizontal: "right", vertical: "middle" };
     percentageCell.numFmt = '0.0"%"';
+    percentageCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFDCFCE7" },
+    };
+    percentageCell.font = { bold: true, size: 11 };
   });
 
   const lastDataRow = firstDataRow + recap.students.length - 1;
@@ -315,23 +500,72 @@ export async function buildRecapWorkbook(
   if (recap.students.length === 0) {
     const emptyRow = sheet.getRow(firstDataRow);
     emptyRow.getCell(1).value = "No registered students in this class yet.";
-    sheet.mergeCells(firstDataRow, 1, firstDataRow, headerValues.length);
+    sheet.mergeCells(firstDataRow, 1, firstDataRow, totalColumns);
     emptyRow.getCell(1).font = { italic: true, color: { argb: MUTED_TEXT } };
   }
 
-  const legendRow = Math.max(lastDataRow, firstDataRow) + 2;
-  const noteRow = addLegend(sheet, legendRow, headerValues.length);
-  addAttendanceNote(sheet, noteRow, headerValues.length);
+  // Legend + notes, matching the printed sheet.
+  const legendRowNumber = Math.max(lastDataRow, firstDataRow) + 2;
+  sheet.mergeCells(legendRowNumber, 1, legendRowNumber, totalColumns);
+  sheet.getRow(legendRowNumber).getCell(1).value = "Keterangan Kode Absen:";
+  sheet.getRow(legendRowNumber).getCell(1).font = { bold: true, size: 11 };
+
+  const legendStatuses = [
+    "present",
+    "excused",
+    "sick",
+    "absent",
+    "late",
+  ] as const;
+  const legendRow = sheet.getRow(legendRowNumber + 1);
+  let legendColumn = 1;
+
+  for (const status of legendStatuses) {
+    const codeCell = legendRow.getCell(legendColumn);
+    codeCell.value = SHEET_CELL_CODES[status];
+    codeCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: STATUS_FILLS[status] },
+    };
+    codeCell.font = { bold: true, size: 11 };
+    codeCell.alignment = { horizontal: "center" };
+    codeCell.border = thinBorder;
+    legendColumn += 1;
+    legendRow.getCell(legendColumn).value = `= ${SHEET_CELL_LABELS_ID[status]}`;
+    legendRow.getCell(legendColumn).font = { size: 11 };
+    legendColumn += 2;
+  }
+
+  const noteRowNumber = legendRowNumber + 3;
+  sheet.mergeCells(noteRowNumber, 1, noteRowNumber, totalColumns);
+  sheet.getRow(noteRowNumber).getCell(1).value = "Catatan:";
+  sheet.getRow(noteRowNumber).getCell(1).font = { bold: true, size: 11 };
+  sheet.mergeCells(noteRowNumber + 1, 1, noteRowNumber + 1, totalColumns);
+  sheet.getRow(noteRowNumber + 1).getCell(1).value =
+    "• H = Hadir, I = Izin, S = Sakit, A = Alfa, T = Terlambat.";
+  sheet.mergeCells(noteRowNumber + 2, 1, noteRowNumber + 2, totalColumns);
+  sheet.getRow(noteRowNumber + 2).getCell(1).value =
+    "• Persentase = (H / Total Pertemuan) × 100%.";
+  sheet.mergeCells(noteRowNumber + 3, 1, noteRowNumber + 3, totalColumns);
+  sheet.getRow(noteRowNumber + 3).getCell(1).value =
+    `• Exported at ${formatDateTime(context.generatedAt.toISOString())} via StarsTask.`;
+  for (let offset = 1; offset <= 3; offset += 1) {
+    sheet.getRow(noteRowNumber + offset).getCell(1).font = { size: 10 };
+  }
 
   sheet.autoFilter = {
-    from: { row: headerRowNumber, column: 1 },
+    from: { row: groupRowNumber, column: 1 },
     to: {
       row: Math.max(lastDataRow, firstDataRow),
-      column: headerValues.length,
+      column: totalColumns,
     },
   };
-  sheet.views = [{ state: "frozen", ySplit: headerRowNumber }];
-  sheet.pageSetup.printTitlesRow = `${headerRowNumber}:${headerRowNumber}`;
+  sheet.views = [{ state: "frozen", ySplit: firstDataRow }];
+  sheet.pageSetup.printTitlesRow = `${groupRowNumber}:${headerRowNumber + 1}`;
+  sheet.pageSetup.fitToPage = true;
+  sheet.pageSetup.fitToWidth = 1;
+  sheet.pageSetup.fitToHeight = 0;
 
   // Correction Audit sheet: every audited manual correction for the subject.
   addCorrectionAuditSheet(workbook, audits, context);
@@ -665,8 +899,11 @@ function addMetadataRows(
     const row = sheet.getRow(startRow + index);
     row.getCell(1).value = label;
     row.getCell(1).font = { bold: true, color: { argb: MUTED_TEXT } };
-    row.getCell(2).value = value;
-    sheet.mergeCells(startRow + index, 2, startRow + index, columnCount);
+    // The first data column is narrow ("No."), so the label spans it plus
+    // the next column; the value starts after that.
+    sheet.mergeCells(startRow + index, 1, startRow + index, 2);
+    row.getCell(3).value = value;
+    sheet.mergeCells(startRow + index, 3, startRow + index, columnCount);
   });
 
   return startRow + rows.length + 1;
@@ -685,8 +922,9 @@ function addTotalsBlock(
     const row = sheet.getRow(startRow + 1 + index);
     row.getCell(1).value = label;
     row.getCell(1).font = { bold: true, color: { argb: MUTED_TEXT } };
-    row.getCell(2).value = value;
-    row.getCell(2).alignment = { horizontal: "left" };
+    sheet.mergeCells(startRow + 1 + index, 1, startRow + 1 + index, 2);
+    row.getCell(3).value = value;
+    row.getCell(3).alignment = { horizontal: "left" };
   });
 }
 

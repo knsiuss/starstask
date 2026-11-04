@@ -285,8 +285,8 @@ export function AttendanceMeetingDashboard({
               <dt className="sr-only">Check-in window</dt>
               <dd>
                 Check-in {summaryTime(detail.opensAt, detail.startsAt)}–
-                {summaryTime(detail.closesAt, detail.endsAt)} · late after{" "}
-                {detail.lateAfterMinutes} minutes
+                {summaryTime(detail.closesAt, detail.endsAt)} · present until
+                close
               </dd>
             </div>
             <div className="flex items-center gap-1.5">

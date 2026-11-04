@@ -10,11 +10,9 @@ export function describeCheckInFailure(
 ): string {
   switch (code) {
     case "checkin_too_far":
-      // The server includes the measured distance and the allowed radius.
-      return (
-        fallbackMessage ??
-        "You are outside the permitted attendance area. The server did not return the distance; move closer and try again."
-      );
+      // Intentionally generic: students are not told the distance or the
+      // radius, only to go to their class meeting point.
+      return "Please go to your class meeting point and try again.";
     case "checkin_not_open":
       return "Attendance has not been opened for this meeting yet. Wait for your class admin to open it.";
     case "checkin_closed":

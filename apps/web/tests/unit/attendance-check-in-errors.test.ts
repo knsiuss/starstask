@@ -4,16 +4,16 @@ import { describeCheckInFailure } from "@/lib/attendance/check-in-errors";
 import { describeGeolocationError } from "@/lib/geo/position";
 
 describe("describeCheckInFailure", () => {
-  it("explains that the student is outside the permitted area", () => {
+  it("sends the student to their class without disclosing numbers", () => {
     expect(describeCheckInFailure("checkin_too_far", undefined)).toBe(
-      "You are outside the permitted attendance area. The server did not return the distance; move closer and try again.",
+      "Please go to your class meeting point and try again.",
     );
     expect(
       describeCheckInFailure(
         "checkin_too_far",
-        "You are 42 m from the meeting point.",
+        "You are 42 m from the meeting point. The allowed radius is 200 m.",
       ),
-    ).toBe("You are 42 m from the meeting point.");
+    ).toBe("Please go to your class meeting point and try again.");
   });
 
   it("distinguishes a window that has not opened from one that closed", () => {

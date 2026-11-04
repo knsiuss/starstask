@@ -115,26 +115,6 @@ export function CheckInResultDialog({
             </div>
             <DialogTitle className="mt-4">Check-in Unsuccessful</DialogTitle>
             <DialogDescription>{failure.message}</DialogDescription>
-            {failure.distanceM !== null || failure.radiusM !== null ? (
-              <dl className="mt-3 space-y-1 text-sm">
-                {failure.distanceM !== null ? (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Your distance</dt>
-                    <dd className="font-medium tabular-nums">
-                      {Math.round(failure.distanceM)} m
-                    </dd>
-                  </div>
-                ) : null}
-                {failure.radiusM !== null ? (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Allowed radius</dt>
-                    <dd className="font-medium tabular-nums">
-                      {failure.radiusM} m
-                    </dd>
-                  </div>
-                ) : null}
-              </dl>
-            ) : null}
             <div className="mt-6 flex flex-wrap gap-2">
               {failure.canRetry ? (
                 <Button

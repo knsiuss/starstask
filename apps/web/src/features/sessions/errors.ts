@@ -68,7 +68,7 @@ const CODE_MAP: Record<
   SS105: {
     status: 422,
     code: "checkin_too_far",
-    message: "You are outside the check-in radius.",
+    message: "Please go to your class meeting point and try again.",
   },
   SS106: {
     status: 422,

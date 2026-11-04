@@ -413,7 +413,7 @@ describe("per-meeting workbook", () => {
     totalLabels.forEach((label, index) => {
       const row = sheet.getRow(totalsRow + 1 + index);
       expect(row.getCell(1).value).toBe(label);
-      totals.set(label, row.getCell(2).value);
+      totals.set(label, row.getCell(3).value);
     });
 
     expect(totals.get("Registered students")).toBe(3);
@@ -435,57 +435,64 @@ describe("per-meeting workbook", () => {
 });
 
 describe("semester recap workbook", () => {
-  it("exports a matrix with P/L/I/S/A/NR symbols and numeric percentages", async () => {
+  it("exports a matrix with sheet codes (✓ I S A T) and numeric percentages", async () => {
     const recap = recapFixture();
     const workbook = await loadWorkbook(
       await buildRecapWorkbook(recap, context),
     );
     const sheet = requireSheet(workbook, "Summary");
     const headerRow = findHeaderRow(sheet);
-    const width = 3 + recap.meetings.length + 7;
+    const width = 3 + recap.meetings.length + 6;
+    const dataRow = headerRow + 3;
 
     expect(rowValues(sheet, headerRow, width)).toEqual([
       "No.",
       "NIM",
-      "Student name",
-      "Pertemuan 1",
-      "Pertemuan 2",
-      "P",
-      "L",
+      "Nama Mahasiswa",
+      "Pertemuan",
+      "Pertemuan",
+      "H",
       "I",
       "S",
       "A",
-      "NR",
-      "Attendance %",
+      "T",
+      "%",
     ]);
+    expect(rowValues(sheet, headerRow + 1, width).slice(3, 5)).toEqual([1, 2]);
 
-    const ani = rowValues(sheet, headerRow + 1, width);
+    const ani = rowValues(sheet, dataRow, width);
     expect(ani.slice(0, 3)).toEqual([1, "221001", "Ani Putri"]);
-    expect(ani.slice(3, 5)).toEqual(["P", "A"]);
-    expect(ani.slice(5)).toEqual([1, 0, 0, 0, 1, 0, 50]);
+    expect(ani.slice(3, 5)).toEqual(["✓", "A"]);
+    expect(ani.slice(5)).toEqual([1, 0, 0, 1, 0, 50]);
 
-    const budi = rowValues(sheet, headerRow + 2, width);
+    const budi = rowValues(sheet, dataRow + 1, width);
     expect(budi.slice(0, 3)).toEqual([2, "221002", "Budi Santoso"]);
-    expect(budi.slice(3, 5)).toEqual(["L", "I"]);
-    expect(budi.slice(5)).toEqual([0, 1, 1, 0, 0, 0, 100]);
+    expect(budi.slice(3, 5)).toEqual(["T", "I"]);
+    expect(budi.slice(5)).toEqual([0, 1, 0, 0, 1, 0]);
 
-    const citra = rowValues(sheet, headerRow + 3, width);
+    const citra = rowValues(sheet, dataRow + 2, width);
     expect(citra.slice(0, 3)).toEqual([3, "221003", "Citra Dewi"]);
     // Not recorded is NR and must never be exported as an absence.
     expect(citra.slice(3, 5)).toEqual(["NR", "NR"]);
-    expect(citra.slice(5)).toEqual([0, 0, 0, 0, 0, 2, 0]);
+    expect(citra.slice(5)).toEqual([0, 0, 0, 0, 0, 0]);
 
-    const percentageCell = sheet.getRow(headerRow + 1).getCell(width);
+    const percentageCell = sheet.getRow(dataRow).getCell(width);
     expect(percentageCell.numFmt).toBe('0.0"%"');
 
     expect(sheet.autoFilter).toBe(
-      expectedFilterRange(headerRow, width, headerRow + recap.students.length),
+      expectedFilterRange(
+        headerRow,
+        width,
+        dataRow + recap.students.length - 1,
+      ),
     );
     expect(sheet.views[0]).toMatchObject({
       state: "frozen",
-      ySplit: headerRow,
+      ySplit: dataRow,
     });
-    expect(sheet.pageSetup.printTitlesRow).toBe(`${headerRow}:${headerRow}`);
+    expect(sheet.pageSetup.printTitlesRow).toBe(
+      `${headerRow}:${headerRow + 2}`,
+    );
   });
 });
 

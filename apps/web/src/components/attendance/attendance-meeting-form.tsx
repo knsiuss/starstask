@@ -528,7 +528,10 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-late-after">Late after (minutes)</Label>
+          <Label htmlFor="attendance-late-after">
+            Late after (minutes) — legacy, unused: check-in is present until
+            close
+          </Label>
           <Input
             id="attendance-late-after"
             type="number"

@@ -243,6 +243,13 @@ authority:
    the future (see Freshness below),
 6. the haversine distance is within `checkin_radius_m` (25-1,000 m).
 
+Every check-in inside the open window records `present` — there is no
+late threshold anymore. `late` survives only as a manual status an
+organizer can set via correction/sheet. A retry while the meeting is open
+updates the existing row (fresh distance, accuracy, and check-in time), so a
+student with a bad first fix can simply check in again; an
+organizer-reviewed manual row still wins over a student retry.
+
 ### Attendance Sheet
 
 One course renders as one spreadsheet (`AttendanceSheet` on the course
