@@ -323,7 +323,7 @@ export default async function SchedulePage({
           </div>
         </div>
 
-        <aside className="space-y-5">
+        <aside className="space-y-5 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
           <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
             <MiniCalendar
               anchorKey={anchorKey}

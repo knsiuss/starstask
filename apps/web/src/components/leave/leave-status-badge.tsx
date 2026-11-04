@@ -12,6 +12,7 @@ const VARIANTS: Record<
   submitted: "accent",
   approved: "success",
   rejected: "warning",
+  revision_requested: "warning",
   forwarded: "success",
   cancelled: "neutral",
 };

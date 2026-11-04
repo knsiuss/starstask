@@ -1165,18 +1165,13 @@ export async function listClassSubjects(
     }
   }
 
-  const subjectIds = subjects.map((s) => s.id);
-  const taskCountResults = await Promise.all(
-    subjectIds.map((subjectId) =>
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("subject_id", subjectId)
-        .eq("status", "published"),
-    ),
-  );
+  // Counts include published public assignments of the same catalog courses:
+  // the public submit form has no class context, so those rows carry only
+  // `course_id`. Counting only `subject_id` made every course report zero
+  // for that work; `countPublishedAssignmentsBySubject` already merges both.
+  const taskCounts = await countPublishedAssignmentsBySubject(classId);
 
-  return subjects.map((subject, index) => ({
+  return subjects.map((subject) => ({
     id: subject.id,
     class_id: subject.class_id,
     course_id: subject.course_id,
@@ -1187,7 +1182,7 @@ export async function listClassSubjects(
     status: subject.status as ClassStatus,
     created_at: subject.created_at,
     updated_at: subject.updated_at,
-    task_count: taskCountResults[index]?.count ?? 0,
+    task_count: taskCounts.get(subject.id) ?? 0,
   }));
 }
 

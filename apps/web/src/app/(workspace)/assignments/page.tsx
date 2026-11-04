@@ -1,60 +1,76 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { AssignmentFilters } from "@/components/assignments/assignment-filters";
-import { ExploreAssignmentRow } from "@/components/assignments/explore-assignment-row";
-import { ExploreEmptyState } from "@/components/assignments/explore-empty-state";
 import { Pagination } from "@/components/assignments/pagination";
+import { OverviewSidebar } from "@/components/assignments/workspace/overview-sidebar";
+import { RequestCard } from "@/components/assignments/workspace/request-card";
+import { RequestPublicationDialog } from "@/components/assignments/workspace/request-publication-dialog";
+import { ReviewRequestDialog } from "@/components/assignments/workspace/review-request-dialog";
+import { ScheduleCard } from "@/components/assignments/workspace/schedule-card";
+import { ScheduleFilterBar } from "@/components/assignments/workspace/schedule-filter-bar";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { buildAssignmentsHref } from "@/lib/assignments/urls";
-import { requireAssignmentPageSession } from "@/lib/auth/assignment-access";
-import { loadCompletionIds } from "@/lib/db/assignment-completions";
-import { listAssignments } from "@/lib/db/assignments";
-import { listMyClasses } from "@/lib/db/classes";
+import { getSessionUser } from "@/lib/auth/session";
+import {
+  getWorkspaceOverview,
+  getWorkspaceScope,
+  listManagedRequests,
+  listMyRequests,
+  listWorkspaceSchedule,
+} from "@/lib/db/assignment-workspace";
 import { isSupabaseConfigured } from "@/lib/env/public";
-import { formatCount, pluralize } from "@starstask/shared";
-import { listAssignmentsQuerySchema } from "@starstask/contracts";
+import { buildLoginPath } from "@/lib/security/redirect";
+import { flattenSearchParams } from "@/lib/utils/search-params";
+import { cn } from "@/lib/utils/cn";
+import { assignmentWorkspaceQuerySchema } from "@starstask/contracts";
 
 export const metadata: Metadata = {
   title: "Assignments",
-  description:
-    "Search university assignments shared by students, by title, course, or tag.",
-  alternates: { canonical: "/assignments" },
+  description: "Class tasks, schedules, and publication requests.",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-const pageContainer =
-  "mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10";
+const BASE_PATH = "/assignments";
 
-type AssignmentsPageProps = {
+type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function AssignmentsPage({
   searchParams,
-}: AssignmentsPageProps) {
-  const rawParams = await searchParams;
-  const flatParams = flattenParams(rawParams);
-  const loginPath = buildAssignmentsHref(flatParams);
-  const session = await requireAssignmentPageSession(loginPath);
+}: PageProps) {
+  if (!isSupabaseConfigured()) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+        <SetupNotice />
+      </div>
+    );
+  }
 
-  const parsed = listAssignmentsQuerySchema.safeParse(flatParams);
+  const session = await getSessionUser();
+
+  if (!session) {
+    redirect(buildLoginPath(BASE_PATH));
+  }
+
+  const parsed = assignmentWorkspaceQuerySchema.safeParse(
+    flattenSearchParams(await searchParams),
+  );
 
   if (!parsed.success) {
     return (
-      <div className={pageContainer}>
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <Alert variant="error">
           <p className="font-medium">Those filters are not valid.</p>
           <p className="mt-1">
             <Link
-              href="/assignments"
+              href={BASE_PATH}
               className="underline"
             >
-              Reset the filters
+              Reset the list
             </Link>{" "}
             and try again.
           </p>
@@ -63,164 +79,331 @@ export default async function AssignmentsPage({
     );
   }
 
-  if (!isSupabaseConfigured()) {
-    return (
-      <div className={pageContainer}>
-        <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
-        <div className="mt-6">
-          <SetupNotice />
-        </div>
-      </div>
-    );
+  const query = parsed.data;
+  const scope = await getWorkspaceScope(session.user.id);
+
+  const [schedule, overview, myRequests, managedRequests] = await Promise.all([
+    listWorkspaceSchedule(scope, query),
+    getWorkspaceOverview(scope),
+    listMyRequests(session.user.id, scope),
+    listManagedRequests(scope),
+  ]);
+
+  // A stale page number should land on real results, not an empty list.
+  if (query.page > schedule.totalPages) {
+    const target = new URLSearchParams({ tab: query.tab });
+
+    if (query.search) {
+      target.set("search", query.search);
+    }
+
+    if (query.class) {
+      target.set("class", query.class);
+    }
+
+    if (query.status !== "all") {
+      target.set("status", query.status);
+    }
+
+    if (query.sort !== "newest") {
+      target.set("sort", query.sort);
+    }
+
+    if (schedule.totalPages > 1) {
+      target.set("page", String(schedule.totalPages));
+    }
+
+    redirect(`${BASE_PATH}?${target.toString()}`);
   }
 
-  const query = parsed.data;
-  const filterParams = {
-    search: query.search,
-    course: query.course,
-    class: query.class,
-    semester: query.semester,
-    type: query.type,
-    tag: query.tag,
-    sort: query.sort,
-    pageSize: String(query.pageSize),
-  };
+  const manages = scope.managesAnyClass;
+  const pendingCount = managedRequests.filter(
+    (item) => item.displayStatus === "pending",
+  ).length;
+  const requestsCount = manages
+    ? pendingCount + myRequests.length
+    : myRequests.length;
 
-  const result = await listAssignments(query);
-  const items = session
-    ? await withCompletionMarks(session.user.id, result.items)
-    : result.items;
-
-  const hasActiveFilters = Boolean(
-    query.search ||
-    query.course ||
-    query.class ||
-    query.semester ||
-    query.type ||
-    query.tag ||
-    query.sort !== "newest",
-  );
-
-  const resetHref = buildAssignmentsHref({});
-  const nowIso = new Date().toISOString();
-  const hasResults = items.length > 0;
+  const tabHref = (tab: "schedule" | "requests") =>
+    tab === "schedule" ? BASE_PATH : `${BASE_PATH}?tab=requests`;
 
   return (
-    <div className={pageContainer}>
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="flex items-baseline gap-2.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
-          <span className="text-muted-foreground text-sm tabular-nums">
-            {formatCount(result.total)} {pluralize(result.total, "task")}
-          </span>
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Assignments</h1>
+          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
+            {manages
+              ? "Manage class tasks, schedules, and publication requests."
+              : "Keep track of tasks and deadlines across your classes."}
+          </p>
         </div>
-        <Button
-          asChild
-          variant="secondary"
-          size="sm"
-        >
-          <Link href="/submit">Submit assignment</Link>
-        </Button>
+        {scope.classes.length > 0 ? (
+          <RequestPublicationDialog
+            classes={scope.classes}
+            mode={manages ? "create" : "request"}
+          />
+        ) : null}
       </header>
 
-      <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <AssignmentFilters query={query} />
-        {hasActiveFilters ? (
-          <Link
-            href={resetHref}
-            className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
-          >
-            Reset
-          </Link>
-        ) : null}
-      </div>
+      <nav
+        aria-label="Assignments sections"
+        className="no-scrollbar mt-6 flex gap-1 overflow-x-auto border-b border-border"
+      >
+        {(
+          [
+            { value: "schedule", label: "Task Schedule", count: schedule.total },
+            {
+              value: "requests",
+              label: manages ? "Publication Requests" : "My Requests",
+              count: requestsCount,
+            },
+          ] as const
+        ).map((tab) => {
+          const active = query.tab === tab.value;
 
-      <div className="mt-5">
-        {hasResults ? (
-          <ul className="divide-border border-border divide-y border-y">
-            {items.map((assignment) => (
-              <ExploreAssignmentRow
-                key={assignment.id}
-                assignment={assignment}
-                nowIso={nowIso}
+          return (
+            <Link
+              key={tab.value}
+              href={tabHref(tab.value)}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2",
+                active
+                  ? "border-accent text-accent"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                  active
+                    ? "bg-accent-soft text-accent"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {tab.count}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          {query.tab === "schedule" ? (
+            <>
+              <ScheduleFilterBar
+                search={query.search}
+                classId={query.class}
+                status={query.status}
+                sort={query.sort}
+                classes={scope.classes}
+                managesAnyClass={manages}
               />
-            ))}
-          </ul>
-        ) : (
-          <ExploreEmptyState
-            hasActiveFilters={hasActiveFilters}
-            resetHref={resetHref}
-          />
-        )}
-      </div>
+              <div className="mt-5">
+                {schedule.items.length === 0 ? (
+                  <EmptyState
+                    title={
+                      scope.classIds.length === 0
+                        ? "No assignments yet."
+                        : "No assignments match these filters."
+                    }
+                    description={
+                      scope.classIds.length === 0
+                        ? "Published class tasks will appear here."
+                        : "Try a different search or filter to see the rest of your class tasks."
+                    }
+                    action={
+                      scope.classIds.length === 0 ? (
+                        <Link
+                          href="/classes/join"
+                          className="text-accent hover:text-accent-hover text-sm font-semibold"
+                        >
+                          Join a class
+                        </Link>
+                      ) : undefined
+                    }
+                  />
+                ) : (
+                  <ul className="space-y-3">
+                    {schedule.items.map((item) => (
+                      <ScheduleCard
+                        key={item.id}
+                        item={item}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <Pagination
+                basePath={BASE_PATH}
+                page={schedule.page}
+                totalPages={schedule.totalPages}
+                params={{
+                  tab: "schedule",
+                  search: query.search,
+                  class: query.class,
+                  status: query.status === "all" ? undefined : query.status,
+                  sort: query.sort === "newest" ? undefined : query.sort,
+                }}
+              />
+            </>
+          ) : (
+            <RequestsSection
+              manages={manages}
+              myRequests={myRequests}
+              managedRequests={managedRequests}
+            />
+          )}
+        </div>
 
-      <Pagination
-        basePath="/assignments"
-        page={result.page}
-        totalPages={result.totalPages}
-        params={filterParams}
-      />
+        <OverviewSidebar overview={overview} />
+      </div>
     </div>
   );
 }
 
-function flattenParams(
-  params: Record<string, string | string[] | undefined>,
-): Record<string, string> {
-  const flat: Record<string, string> = {};
-
-  for (const [key, value] of Object.entries(params)) {
-    const candidate =
-      typeof value === "string"
-        ? value
-        : Array.isArray(value) && typeof value[0] === "string"
-          ? value[0]
-          : undefined;
-
-    // Links can carry an empty value (for example `?tag=`); dropping those keeps
-    // the schema treating them as absent.
-    if (candidate) {
-      flat[key] = candidate;
+function RequestsSection({
+  manages,
+  myRequests,
+  managedRequests,
+}: {
+  manages: boolean;
+  myRequests: Awaited<ReturnType<typeof listMyRequests>>;
+  managedRequests: Awaited<ReturnType<typeof listManagedRequests>>;
+}) {
+  if (!manages) {
+    if (myRequests.length === 0) {
+      return (
+        <EmptyState
+          title="You haven't submitted any publication requests yet."
+          description="Requests you send to a class admin will be tracked here."
+        />
+      );
     }
+
+    return (
+      <ul className="space-y-3">
+        {myRequests.map((request) => (
+          <RequestCard
+            key={request.id}
+            request={request}
+            mode="student"
+          />
+        ))}
+      </ul>
+    );
   }
 
-  return flat;
+  const toReview = managedRequests.filter(
+    (item) => item.displayStatus === "pending",
+  );
+  const decided = managedRequests.filter(
+    (item) => item.displayStatus !== "pending",
+  );
+
+  return (
+    <div className="space-y-8">
+      <section aria-labelledby="requests-to-review">
+        <h2
+          id="requests-to-review"
+          className="text-foreground text-base font-semibold tracking-tight"
+        >
+          Requests to review
+          <span className="bg-accent-soft text-accent ml-2 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums">
+            {toReview.length}
+          </span>
+        </h2>
+        <div className="mt-3">
+          {toReview.length === 0 ? (
+            <EmptyState
+              title="No publication requests yet."
+              description="Student requests will appear here when submitted."
+            />
+          ) : (
+            <ul className="space-y-3">
+              {toReview.map((request) => (
+                <RequestCard
+                  key={request.id}
+                  request={request}
+                  mode="admin"
+                  reviewAction={
+                    <ReviewRequestDialog
+                      assignmentId={request.id}
+                      classSlug={request.class_slug}
+                      title={request.title}
+                    />
+                  }
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {decided.length > 0 ? (
+        <section aria-labelledby="requests-decided">
+          <h2
+            id="requests-decided"
+            className="text-foreground text-base font-semibold tracking-tight"
+          >
+            Recently decided
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {decided.map((request) => (
+              <RequestCard
+                key={request.id}
+                request={request}
+                mode="admin"
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {myRequests.length > 0 ? (
+        <section aria-labelledby="requests-mine">
+          <h2
+            id="requests-mine"
+            className="text-foreground text-base font-semibold tracking-tight"
+          >
+            My requests
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {myRequests.map((request) => (
+              <RequestCard
+                key={request.id}
+                request={request}
+                mode="student"
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
+  );
 }
 
-/**
- * Attaches the caller's own completion mark to listings of their classes.
- *
- * The public listing also shows assignments from classes the caller is not in;
- * marking those would always be refused by the database policy, so the toggle
- * is only rendered where `completed` is present.
- */
-async function withCompletionMarks(
-  userId: string,
-  items: Awaited<ReturnType<typeof listAssignments>>["items"],
-) {
-  const memberships = await listMyClasses(userId);
-  const classIds = new Set(
-    memberships
-      .filter((membership) => membership.status === "active")
-      .map((membership) => membership.id),
-  );
-  const markable = items.filter(
-    (item) => item.class_id !== null && classIds.has(item.class_id),
-  );
-
-  if (markable.length === 0) {
-    return items;
-  }
-
-  const completedIds = await loadCompletionIds(
-    userId,
-    markable.map((item) => item.id),
-  );
-  const markableIds = new Set(markable.map((item) => item.id));
-
-  return items.map((item) =>
-    markableIds.has(item.id)
-      ? { ...item, completed: completedIds.has(item.id) }
-      : item,
+function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="border-border bg-surface flex flex-col items-center rounded-xl border border-dashed px-6 py-14 text-center">
+      <h2 className="text-foreground text-base font-semibold tracking-tight">
+        {title}
+      </h2>
+      <p className="text-muted-foreground mt-1.5 max-w-md text-sm leading-relaxed">
+        {description}
+      </p>
+      {action ? <div className="mt-4">{action}</div> : null}
+    </div>
   );
 }

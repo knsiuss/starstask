@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronRight, House } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -8,17 +8,17 @@ import { ClassInfoTab } from "@/components/classes/class-info-tab";
 import { ClassMembersTab } from "@/components/classes/class-members-tab";
 import { ClassOverview } from "@/components/classes/class-overview";
 import { ClassScheduleTab } from "@/components/classes/class-schedule-tab";
+import { ClassIdentityHeader } from "@/components/classes/overview/class-identity-header";
 import { ClassWorkspaceActions } from "@/components/classes/class-workspace-actions";
 import {
   ClassWorkspaceTabs,
   isClassTab,
   type ClassTab,
 } from "@/components/classes/class-workspace-tabs";
-import { StatusBadge } from "@/components/classes/status-badge";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { getSessionUser } from "@/lib/auth/session";
+import { getClassOverviewData } from "@/lib/db/class-overview";
 import { listAssignments } from "@/lib/db/assignments";
 import { listClassSchedule } from "@/lib/db/class-schedule";
 import { listMyClassSubmissions } from "@/lib/db/class-submissions";
@@ -32,7 +32,6 @@ import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { flattenSearchParams } from "@/lib/utils/search-params";
 import { listAssignmentsQuerySchema } from "@starstask/contracts";
-import { pluralize } from "@starstask/shared";
 
 export const metadata: Metadata = {
   title: "Class dashboard",
@@ -99,8 +98,7 @@ export default async function ClassDashboardPage({
   // Attendance owns a fixed-viewport workspace of its own, so the old inline
   // tab links forward to that route and keep their sub-view.
   if (flatQuery.tab === "attendance") {
-    const suffix =
-      flatQuery.view === "history" ? "?view=history" : "";
+    const suffix = flatQuery.view === "history" ? "?view=history" : "";
 
     redirect(`/dashboard/classes/${found.slug}/attendance${suffix}`);
   }
@@ -132,26 +130,14 @@ export default async function ClassDashboardPage({
     redirect(`/dashboard/classes/${found.slug}?tab=${activeTab}`);
   }
 
-  let overviewAssignments: AssignmentPage["items"] = [];
+  let overviewData: Awaited<ReturnType<typeof getClassOverviewData>> | null =
+    null;
   let assignmentsPage: AssignmentPage | null = null;
   let classSubmissions: SubmissionList = [];
   let scheduleEntries: ScheduleList = [];
 
   if (activeTab === "overview") {
-    const [recent, mine] = await Promise.all([
-      listAssignments(
-        listAssignmentsQuerySchema.parse({
-          class: found.id,
-          sort: "newest",
-          page: 1,
-          pageSize: 5,
-        }),
-      ),
-      listMyClassSubmissions(session.user.id, found.id, 5),
-    ]);
-
-    overviewAssignments = recent.items;
-    classSubmissions = mine;
+    overviewData = await getClassOverviewData(found.id, session.user.id);
   }
 
   if (activeTab === "assignments") {
@@ -222,20 +208,20 @@ export default async function ClassDashboardPage({
   const hasElevatedRole = role.isAdmin || role.isPlatformAdmin;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
       <nav
         aria-label="Breadcrumb"
         className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm"
       >
         <Link
           href="/dashboard"
-          className="hover:text-foreground inline-flex items-center gap-1"
+          className="hover:text-foreground inline-flex items-center gap-1.5"
         >
-          <ArrowLeft
+          <House
             aria-hidden="true"
             className="h-3.5 w-3.5"
           />
-          Dashboard
+          Home
         </Link>
         <ChevronRight
           className="text-muted-foreground/60 h-3.5 w-3.5"
@@ -257,7 +243,7 @@ export default async function ClassDashboardPage({
               href={`/dashboard/classes/${found.slug}`}
               className="hover:text-foreground"
             >
-              {found.name}
+              {found.class_code ?? found.name}
             </Link>
             <ChevronRight
               className="text-muted-foreground/60 h-3.5 w-3.5"
@@ -268,7 +254,9 @@ export default async function ClassDashboardPage({
             </span>
           </>
         ) : (
-          <span className="text-foreground font-medium">{found.name}</span>
+          <span className="text-foreground font-medium">
+            {found.class_code ?? found.name}
+          </span>
         )}
       </nav>
 
@@ -314,68 +302,32 @@ export default async function ClassDashboardPage({
         </Alert>
       ) : null}
 
-      <header className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight break-words">
-              {found.name}
-            </h1>
-            <StatusBadge status={found.status} />
-            <Badge variant={hasElevatedRole ? "accent" : "neutral"}>
-              {role.isAdmin ? (
-                <ShieldCheck
-                  aria-hidden="true"
-                  className="h-3 w-3"
-                />
-              ) : null}
-              {roleLabel}
-            </Badge>
-          </div>
+      <div className="mt-4">
+        <ClassIdentityHeader
+          classSummary={found}
+          memberCount={members.length}
+          roleLabel={roleLabel}
+          hasElevatedRole={hasElevatedRole}
+        />
+      </div>
 
-          <p className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <span className="text-foreground font-medium">
-              {found.course_name}
-            </span>
-            {found.class_code ? (
-              <>
-                <MetaDot />
-                <span>{found.class_code}</span>
-              </>
-            ) : null}
-            <MetaDot />
-            <span>
-              {found.semester} {found.academic_year}
-            </span>
-            <MetaDot />
-            <span>
-              {members.length} {pluralize(members.length, "member")}
-            </span>
-            {found.lecturer_name ? (
-              <>
-                <MetaDot />
-                <span>{found.lecturer_name}</span>
-              </>
-            ) : null}
-          </p>
-        </div>
-
+      <div className="mt-4">
         <ClassWorkspaceActions
           classSlug={found.slug}
           canManage={role.canManage}
           isActive={found.status === "active"}
         />
-      </header>
+      </div>
 
       <ClassWorkspaceTabs
         slug={found.slug}
         activeTab={activeTab}
       />
 
-      {activeTab === "overview" ? (
+      {activeTab === "overview" && overviewData ? (
         <ClassOverview
-          classSummary={found}
-          recentAssignments={overviewAssignments}
-          submissions={classSubmissions}
+          classSlug={found.slug}
+          data={overviewData}
           canManage={role.canManage}
         />
       ) : null}
@@ -423,17 +375,5 @@ export default async function ClassDashboardPage({
         />
       ) : null}
     </div>
-  );
-}
-
-/** Separator between class metadata items; decorative, so hidden from readers. */
-function MetaDot() {
-  return (
-    <span
-      aria-hidden="true"
-      className="text-muted-foreground/60"
-    >
-      ·
-    </span>
   );
 }

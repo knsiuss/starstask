@@ -1,4 +1,15 @@
+import {
+  BookOpen,
+  CalendarDays,
+  CircleCheck,
+  ClipboardList,
+  Info,
+  LayoutGrid,
+  Users,
+} from "lucide-react";
+
 import { TabStrip } from "@/components/ui/tab-strip";
+import type { ReactNode } from "react";
 
 /**
  * The seven sections of one class group. "Courses" and "Attendance" are real
@@ -25,6 +36,51 @@ export const CLASS_TAB_LABELS: Record<ClassTab, string> = {
   schedule: "Schedule",
   attendance: "Attendance",
   info: "Class Info",
+};
+
+const CLASS_TAB_ICONS: Record<ClassTab, ReactNode> = {
+  overview: (
+    <LayoutGrid
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
+  courses: (
+    <BookOpen
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
+  assignments: (
+    <ClipboardList
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
+  members: (
+    <Users
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
+  schedule: (
+    <CalendarDays
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
+  attendance: (
+    <CircleCheck
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
+  info: (
+    <Info
+      aria-hidden="true"
+      className="h-4 w-4"
+    />
+  ),
 };
 
 export function isClassTab(value: string | undefined): value is ClassTab {
@@ -64,6 +120,7 @@ export function ClassWorkspaceTabs({
       items={CLASS_TABS.map((tab) => ({
         href: classTabHref(slug, tab),
         label: CLASS_TAB_LABELS[tab],
+        icon: CLASS_TAB_ICONS[tab],
         active: tab === activeTab,
       }))}
     />

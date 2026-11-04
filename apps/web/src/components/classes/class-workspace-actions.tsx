@@ -6,6 +6,7 @@ import {
   ClipboardList,
   ExternalLink,
   GraduationCap,
+  Info,
   Mail,
   MoreHorizontal,
   PlusCircle,
@@ -32,7 +33,8 @@ type ClassWorkspaceActionsProps = {
 
 /**
  * Primary class actions plus a secondary menu. Every entry points at an
- * existing route; nothing here is a placeholder.
+ * existing route; nothing here is a placeholder. Actions follow the member's
+ * role in this class only — the routes re-check authorization server-side.
  */
 export function ClassWorkspaceActions({
   classSlug,
@@ -42,15 +44,16 @@ export function ClassWorkspaceActions({
   const base = `/dashboard/classes/${classSlug}`;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-2">
       {canManage ? (
         <>
           <Button
             asChild
+            variant="secondary"
             size="sm"
           >
             <Link href={`${base}/manage`}>
-              <ClipboardCheck
+              <Settings
                 aria-hidden="true"
                 className="h-4 w-4"
               />
@@ -61,7 +64,6 @@ export function ClassWorkspaceActions({
             <Button
               asChild
               size="sm"
-              variant="secondary"
             >
               <Link href={`${base}/submit`}>
                 <PlusCircle
@@ -75,6 +77,19 @@ export function ClassWorkspaceActions({
         </>
       ) : (
         <>
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+          >
+            <Link href={`${base}?tab=info`}>
+              <Info
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              View Class Information
+            </Link>
+          </Button>
           {isActive ? (
             <Button
               asChild
@@ -85,23 +100,10 @@ export function ClassWorkspaceActions({
                   aria-hidden="true"
                   className="h-4 w-4"
                 />
-                Submit assignment
+                Request Assignment Publication
               </Link>
             </Button>
           ) : null}
-          <Button
-            asChild
-            size="sm"
-            variant="secondary"
-          >
-            <Link href={`/leave-requests/new?class=${classSlug}`}>
-              <ClipboardList
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Request absence
-            </Link>
-          </Button>
         </>
       )}
 
@@ -184,7 +186,23 @@ export function ClassWorkspaceActions({
                 </Link>
               </DropdownMenuItem>
             </>
-          ) : null}
+          ) : (
+            <>
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/leave-requests/new?class=${classSlug}`}
+                  className="flex items-center gap-2"
+                >
+                  <ClipboardList
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+                  Request absence
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
 
           <DropdownMenuItem asChild>
             <Link

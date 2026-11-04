@@ -45,7 +45,7 @@ export function StatCards({ stats }: StatCardsProps) {
       value: stats.totalTasks,
       icon: ClipboardList,
       tone: "accent",
-      href: "/dashboard/assignments",
+      href: "/assignments",
       delta: stats.newThisWeek,
     },
     {
@@ -54,7 +54,7 @@ export function StatCards({ stats }: StatCardsProps) {
       value: stats.dueSoon,
       icon: CalendarClock,
       tone: "warning",
-      href: "/dashboard/assignments?due=soon",
+      href: "/assignments?due=soon",
     },
     {
       label: "Past deadline",
@@ -62,7 +62,7 @@ export function StatCards({ stats }: StatCardsProps) {
       value: stats.pastDeadline,
       icon: TriangleAlert,
       tone: "danger",
-      href: "/dashboard/assignments?due=overdue",
+      href: "/assignments?due=overdue",
     },
     {
       label: "My classes",

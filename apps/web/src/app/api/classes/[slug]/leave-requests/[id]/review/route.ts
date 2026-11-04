@@ -53,7 +53,7 @@ export async function POST(request: Request, context: RouteContext) {
       throw new ApiError(
         422,
         "validation_error",
-        "Choose approve or reject, and keep the note under 2000 characters.",
+        "Choose a review decision. Rejection and revision requests need a note of at least 3 characters.",
         toFieldErrors(parsed.error),
       );
     }

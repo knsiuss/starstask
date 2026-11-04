@@ -42,9 +42,9 @@ describe("attendanceQuerySchema", () => {
   });
 
   it("rejects an unknown status", () => {
-    expect(
-      attendanceQuerySchema.safeParse({ status: "skipped" }).success,
-    ).toBe(false);
+    expect(attendanceQuerySchema.safeParse({ status: "skipped" }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -62,7 +62,9 @@ describe("leaveRequestReviewSchema", () => {
   });
 
   it("normalises an empty note to null and rejects an unknown decision", () => {
-    expect(leaveRequestReviewSchema.parse({ decision: "approved", note: "" }).note).toBeNull();
+    expect(
+      leaveRequestReviewSchema.parse({ decision: "approved", note: "" }).note,
+    ).toBeNull();
     expect(
       leaveRequestReviewSchema.safeParse({ decision: "pending" }).success,
     ).toBe(false);
@@ -73,6 +75,31 @@ describe("leaveRequestReviewSchema", () => {
       leaveRequestReviewSchema.safeParse({
         decision: "approved",
         note: "x".repeat(2_001),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a revision decision with an explanatory note", () => {
+    expect(
+      leaveRequestReviewSchema.parse({
+        decision: "revision_requested",
+        note: "Fix the absence dates.",
+      }).decision,
+    ).toBe("revision_requested");
+  });
+
+  it("requires a note for reject and revision decisions", () => {
+    expect(
+      leaveRequestReviewSchema.safeParse({ decision: "rejected" }).success,
+    ).toBe(false);
+    expect(
+      leaveRequestReviewSchema.safeParse({ decision: "revision_requested" })
+        .success,
+    ).toBe(false);
+    expect(
+      leaveRequestReviewSchema.safeParse({
+        decision: "rejected",
+        note: "ab",
       }).success,
     ).toBe(false);
   });

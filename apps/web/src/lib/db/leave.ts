@@ -219,6 +219,7 @@ const STORED_STATUS_MAP: Record<string, LeaveRequestStatus> = {
   submitted: "submitted",
   approved: "approved",
   rejected: "rejected",
+  revision_requested: "revision_requested",
   forwarded: "forwarded",
   cancelled: "cancelled",
   needs_revision: "submitted",
@@ -310,8 +311,11 @@ async function listLeaveRequests(
     query = query.eq("class_id", options.classId);
   }
 
+  // The generated DB types predate `revision_requested`; the cast keeps the
+  // request contracts as the source of truth until types are regenerated after
+  // the migration is applied. The value is passed through unchanged.
   if (options.status && options.status !== "all") {
-    query = query.eq("status", options.status);
+    query = query.eq("status", options.status as "submitted");
   } else if (options.classId) {
     // A reviewer queue never shows drafts: they are still private to the student.
     query = query.neq("status", "draft");
@@ -385,6 +389,47 @@ export async function countPendingLeaveRequests(
   }
 
   return count ?? 0;
+}
+
+export type LeaveRequestStatusCounts = Pick<
+  Record<LeaveRequestStatus, number>,
+  "submitted" | "approved" | "rejected" | "draft"
+>;
+
+/** Headline counts for the student's own requests, per status. */
+export async function countLeaveRequestsByStatus(
+  studentId: string,
+): Promise<LeaveRequestStatusCounts> {
+  const statuses = ["submitted", "approved", "rejected", "draft"] as const;
+  const supabase = await createSupabaseServerClient();
+
+  const results = await Promise.all(
+    statuses.map((status) =>
+      supabase
+        .from("leave_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .eq("status", status),
+    ),
+  );
+
+  const counts = {} as LeaveRequestStatusCounts;
+
+  for (const [index, result] of results.entries()) {
+    if (result.error) {
+      throw new DataAccessError("Could not count absences", result.error.code);
+    }
+
+    const status = statuses[index];
+
+    if (!status) {
+      continue;
+    }
+
+    counts[status] = result.count ?? 0;
+  }
+
+  return counts;
 }
 
 /** The reviewer queue for one class. */
@@ -746,4 +791,296 @@ export async function listEvidenceForRequests(
   }
 
   return grouped;
+}
+
+export type ManagedLeaveListOptions = {
+  classId?: string;
+  subjectId?: string;
+  status?: LeaveRequestStatus | "all";
+  from?: string;
+  to?: string;
+  search?: string;
+  sort?: "newest" | "oldest" | "upcoming";
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * Cross-class reviewer queue for the Action Center absence tab.
+ *
+ * Scoped to the managed class ids only; the query never widens beyond them and
+ * never includes drafts. Empty managed list returns an empty page without
+ * querying, so a non-admin caller sees nothing rather than an error.
+ */
+export async function listManagedLeaveRequests(
+  managedClassIds: string[],
+  options: ManagedLeaveListOptions,
+): Promise<PaginatedResult<LeaveRequestSummary>> {
+  const emptyPage = {
+    items: [],
+    total: 0,
+    page: options.page,
+    pageSize: options.pageSize,
+    totalPages: 1,
+  } as PaginatedResult<LeaveRequestSummary>;
+
+  if (managedClassIds.length === 0) {
+    return emptyPage;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const from = (options.page - 1) * options.pageSize;
+
+  let query = supabase
+    .from("leave_requests")
+    .select(LIST_COLUMNS, { count: "exact" })
+    .in("class_id", managedClassIds)
+    .neq("status", "draft");
+
+  if (options.classId && managedClassIds.includes(options.classId)) {
+    query = query.eq("class_id", options.classId);
+  }
+
+  // Covered-course filter. An empty `subject_ids` means the request covers the
+  // whole class, so it stays visible under no course filter; once a course is
+  // picked, only requests that explicitly cover it match.
+  if (options.subjectId) {
+    query = query.contains("subject_ids", [options.subjectId]);
+  }
+
+  if (options.status && options.status !== "all") {
+    query = query.eq("status", options.status as "submitted");
+  }
+
+  if (options.from) {
+    query = query.gte("leave_start_date", options.from);
+  }
+
+  if (options.to) {
+    query = query.lte("leave_end_date", options.to);
+  }
+
+  if (options.search) {
+    const studentIds = await findStudentIds(options.search);
+
+    if (studentIds.length === 0) {
+      return emptyPage;
+    }
+
+    query = query.in("student_id", studentIds);
+  }
+
+  // Sort maps to a server column; "upcoming" is the soonest absence start that
+  // is still ahead of today, approximated by leave_start_date ascending with
+  // nulls last (Postgres puts nulls last by default for ascending).
+  if (options.sort === "oldest") {
+    query = query.order("created_at", { ascending: true });
+  } else if (options.sort === "upcoming") {
+    query = query.order("leave_start_date", { ascending: true });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  const { data, error, count } = await query.range(
+    from,
+    from + options.pageSize - 1,
+  );
+
+  if (error) {
+    throw new DataAccessError("Could not load absence requests", error.code);
+  }
+
+  return {
+    items: await toSummaries((data ?? []) as unknown as LeaveRowShape[]),
+    total: count ?? 0,
+    page: options.page,
+    pageSize: options.pageSize,
+    totalPages: Math.max(1, Math.ceil((count ?? 0) / options.pageSize)),
+  };
+}
+
+export type AffectedSession = {
+  id: string;
+  subjectId: string | null;
+  courseName: string;
+  courseCode: string | null;
+  meetingNumber: number | null;
+  meetingDate: string | null;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+};
+
+/**
+ * Sessions the absence actually covers, derived server-side from the request's
+ * class, date range, and covered courses.
+ *
+ * This mirrors the attendance consequence of approval (`review_leave_request`):
+ * sessions in the class within the Jakarta date range, starting after the
+ * student joined, skipping cancelled ones, filtered to the covered courses
+ * when the request names them. Meeting numbers are per course, so callers must
+ * group by course rather than assuming one number means one date.
+ */
+export async function listAffectedSessions(
+  request: LeaveRequestSummary,
+): Promise<AffectedSession[]> {
+  if (!request.leaveStartDate || !request.leaveEndDate) {
+    return [];
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("class_members")
+    .select("joined_at")
+    .eq("class_id", request.classId)
+    .eq("user_id", request.studentId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw new DataAccessError(
+      "Could not load class membership",
+      membershipError.code,
+    );
+  }
+
+  const joinedAt = membership?.joined_at ?? null;
+
+  let query = supabase
+    .from("discussion_sessions")
+    .select(
+      "id, subject_id, meeting_number, meeting_date, title, starts_at, ends_at, status",
+    )
+    .eq("class_id", request.classId)
+    .neq("status", "cancelled")
+    .order("starts_at", { ascending: true })
+    .limit(500);
+
+  if (request.subjectIds.length > 0) {
+    query = query.in("subject_id", request.subjectIds);
+  }
+
+  if (joinedAt) {
+    query = query.gte("starts_at", joinedAt);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new DataAccessError("Could not load affected sessions", error.code);
+  }
+
+  // Date-window check happens in code because the Jakarta calendar date of a
+  // timestamptz cannot be expressed as a simple gte/lte filter on starts_at.
+  return (data ?? []).flatMap((row) => {
+    const startDate = jakartaDateKey(row.starts_at);
+
+    if (
+      startDate < request.leaveStartDate! ||
+      startDate > request.leaveEndDate!
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id: row.id,
+        subjectId: row.subject_id,
+        courseName: "",
+        courseCode: null,
+        meetingNumber: row.meeting_number,
+        meetingDate: row.meeting_date,
+        title: row.title,
+        startsAt: row.starts_at,
+        endsAt: row.ends_at,
+        status: row.status,
+      },
+    ];
+  });
+}
+
+/**
+ * Fills in course names/codes for affected sessions from the class catalog.
+ */
+export async function enrichAffectedSessions(
+  classId: string,
+  sessions: AffectedSession[],
+): Promise<AffectedSession[]> {
+  const subjectIds = [
+    ...new Set(
+      sessions
+        .map((session) => session.subjectId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  if (subjectIds.length === 0) {
+    return sessions;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select("id, name, code")
+    .eq("class_id", classId)
+    .in("id", subjectIds);
+
+  if (error) {
+    throw new DataAccessError("Could not load courses", error.code);
+  }
+
+  const catalog = new Map(
+    (data ?? []).map((row) => [row.id, { name: row.name, code: row.code }]),
+  );
+
+  return sessions.map((session) => {
+    const course = session.subjectId
+      ? catalog.get(session.subjectId)
+      : undefined;
+
+    return {
+      ...session,
+      courseName: course?.name ?? "Whole class",
+      courseCode: course?.code ?? null,
+    };
+  });
+}
+
+function jakartaDateKey(timestamp: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(timestamp));
+}
+
+/**
+ * Count of requests returned for revision across the managed classes.
+ *
+ * Used by the Action Center summary cards next to the pending counts, so the
+ * number always comes from the same rows the absence tab lists.
+ */
+export async function countRevisionLeaveRequests(
+  managedClassIds: string[],
+): Promise<number> {
+  if (managedClassIds.length === 0) {
+    return 0;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { count, error } = await supabase
+    .from("leave_requests")
+    .select("id", { count: "exact", head: true })
+    .in("class_id", managedClassIds)
+    // Generated DB types are regenerated after the revision migration is
+    // applied; the cast passes the new status through unchanged.
+    .eq("status", "revision_requested" as "submitted");
+
+  if (error) {
+    throw new DataAccessError("Could not count revision requests", error.code);
+  }
+
+  return count ?? 0;
 }

@@ -90,6 +90,62 @@
   }
 }
 
+/* Native select dropdowns: slim accent scrollbar and a soft highlight instead
+   of the default browser chrome. */
+select {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) transparent;
+}
+
+select::-webkit-scrollbar {
+  width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+select::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 999px;
+  border: 2px solid var(--color-surface);
+}
+
+select option {
+  background-color: var(--color-surface);
+  color: var(--color-foreground);
+}
+
+select option:hover,
+select option:focus {
+  background-color: var(--color-accent-soft);
+}
+
+select option:checked {
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* Slim accent scrollbar for long scroll regions (modal bodies, panels). */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) transparent;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 999px;
+  border: 2px solid var(--color-surface);
+}
+
 /* Diagonal hatch marking the part of a bar that lies before today. */
 .timeline-bar-past {
   background-image: repeating-linear-gradient(

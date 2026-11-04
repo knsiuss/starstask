@@ -6,12 +6,16 @@ import { redirect } from "next/navigation";
 import { Pagination } from "@/components/assignments/pagination";
 import { LeaveFilters } from "@/components/leave/leave-filters";
 import { LeaveRequestList } from "@/components/leave/leave-request-list";
+import { LeaveStats } from "@/components/leave/leave-stats";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth/session";
 import { listMyClasses } from "@/lib/db/classes";
-import { listLeaveRequestsForStudent } from "@/lib/db/leave";
+import {
+  countLeaveRequestsByStatus,
+  listLeaveRequestsForStudent,
+} from "@/lib/db/leave";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { flattenSearchParams } from "@/lib/utils/search-params";
@@ -78,7 +82,7 @@ export default async function LeaveRequestsPage({
 
   const query = parsed.data;
 
-  const [result, myClasses] = await Promise.all([
+  const [result, myClasses, counts] = await Promise.all([
     listLeaveRequestsForStudent(session.user.id, {
       status: query.status ?? "all",
       from: query.from,
@@ -87,6 +91,7 @@ export default async function LeaveRequestsPage({
       pageSize: query.pageSize,
     }),
     listMyClasses(session.user.id),
+    countLeaveRequestsByStatus(session.user.id),
   ]);
 
   const hasActiveFilters =
@@ -149,6 +154,10 @@ export default async function LeaveRequestsPage({
           </p>
         </Alert>
       ) : null}
+
+      <div className="mt-6">
+        <LeaveStats counts={counts} />
+      </div>
 
       <div className="mt-6">
         <LeaveFilters

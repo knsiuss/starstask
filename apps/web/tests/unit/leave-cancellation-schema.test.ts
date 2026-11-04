@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   LEAVE_CANCELLATION_NOTE_MAX,
   LEAVE_REQUEST_STATUSES,
-  LEAVE_REVIEW_DECISIONS,
   LEAVE_REVIEW_NOTE_MAX,
   LEAVE_STATUS_LABELS,
   isLeaveRequestCancellable,
@@ -16,9 +15,9 @@ import {
 /**
  * Cancellation, review, and status rules.
  *
- * A class admin now records an explicit approval or rejection. Cancellation is
- * administrative rather than a decision. These tests pin both payload shapes
- * and the transition helpers the UI relies on.
+ * A class admin now records an explicit approval, rejection, or revision
+ * request. Cancellation is administrative rather than a decision. These tests
+ * pin both payload shapes and the transition helpers the UI relies on.
  */
 
 describe("leaveCancellationSchema", () => {
@@ -79,10 +78,21 @@ describe("leaveCancellationSchema", () => {
 });
 
 describe("leaveRequestReviewSchema", () => {
-  it("accepts both decisions", () => {
-    for (const decision of LEAVE_REVIEW_DECISIONS) {
+  it("accepts every decision", () => {
+    expect(
+      leaveRequestReviewSchema.safeParse({ decision: "approved" }).success,
+    ).toBe(true);
+
+    for (const decision of ["rejected", "revision_requested"] as const) {
+      expect(
+        leaveRequestReviewSchema.safeParse({
+          decision,
+          note: "Please revise and resubmit.",
+        }).success,
+      ).toBe(true);
+      // A rejection or revision must explain what to fix.
       expect(leaveRequestReviewSchema.safeParse({ decision }).success).toBe(
-        true,
+        false,
       );
     }
   });
@@ -137,22 +147,25 @@ describe("leaveRequestReviewSchema", () => {
 });
 
 describe("absence status model", () => {
-  it("has explicit approval and rejection statuses", () => {
+  it("has explicit approval, rejection, and revision statuses", () => {
     expect([...LEAVE_REQUEST_STATUSES]).toEqual([
       "draft",
       "submitted",
       "approved",
       "rejected",
+      "revision_requested",
       "forwarded",
       "cancelled",
     ]);
     expect(LEAVE_STATUS_LABELS.approved).toBe("Approved");
     expect(LEAVE_STATUS_LABELS.rejected).toBe("Rejected");
+    expect(LEAVE_STATUS_LABELS.revision_requested).toBe("Revision Requested");
     expect(LEAVE_STATUS_LABELS.submitted).toBe("Pending");
   });
 
-  it("only edits a draft", () => {
+  it("edits a draft or a request returned for revision", () => {
     expect(isLeaveRequestEditable("draft")).toBe(true);
+    expect(isLeaveRequestEditable("revision_requested")).toBe(true);
 
     for (const status of [
       "submitted",
@@ -172,6 +185,7 @@ describe("absence status model", () => {
       "draft",
       "approved",
       "rejected",
+      "revision_requested",
       "forwarded",
       "cancelled",
     ] as const) {
@@ -182,6 +196,7 @@ describe("absence status model", () => {
   it("stops cancelling once a request is decided or forwarded", () => {
     expect(isLeaveRequestCancellable("draft")).toBe(true);
     expect(isLeaveRequestCancellable("submitted")).toBe(true);
+    expect(isLeaveRequestCancellable("revision_requested")).toBe(true);
 
     for (const status of [
       "approved",

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDeadline,
   formatDeadlineInTimeZone,
+  formatTimeRemaining,
   fromJakartaDateTimeInput,
   getDeadlineState,
   toJakartaDateKey,
@@ -83,6 +84,28 @@ describe("formatDeadline", () => {
 
   it("returns a stable marker for invalid input", () => {
     expect(formatDeadline("nope")).toBe("Invalid date");
+  });
+});
+
+describe("formatTimeRemaining", () => {
+  it("labels today, tomorrow, and later days in Jakarta time", () => {
+    expect(formatTimeRemaining("2026-10-29T15:00:00.000Z", NOW)).toBe(
+      "Due today",
+    );
+    expect(formatTimeRemaining("2026-10-29T17:01:00.000Z", NOW)).toBe(
+      "Due tomorrow",
+    );
+    expect(formatTimeRemaining("2026-11-01T03:00:00.000Z", NOW)).toBe(
+      "In 3 days",
+    );
+  });
+
+  it("labels passed deadlines as overdue and empty input as blank", () => {
+    expect(formatTimeRemaining("2026-10-29T02:00:00.000Z", NOW)).toBe(
+      "Overdue",
+    );
+    expect(formatTimeRemaining(null, NOW)).toBe("");
+    expect(formatTimeRemaining("not-a-date", NOW)).toBe("");
   });
 });
 

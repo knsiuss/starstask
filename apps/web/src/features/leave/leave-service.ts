@@ -131,11 +131,13 @@ export async function cancelLeaveRequest(
 }
 
 /**
- * Approves or rejects a submitted request.
+ * Approves, rejects, or returns a submitted request for revision.
  *
  * Approval is recorded in the request history and marks the sessions covered by
  * the absence as excused; it never turns an absence into attendance. A rejected
- * request leaves attendance untouched. The database checks that the caller
+ * request leaves attendance untouched. A revision request changes no attendance
+ * and sends the request back to the student for edit and resubmit; both paths
+ * require a note of at least 3 characters. The database checks that the caller
  * manages the request's class.
  */
 export async function reviewLeaveRequest(

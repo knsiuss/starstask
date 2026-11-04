@@ -1,4 +1,10 @@
-import { ArrowRight, ExternalLink } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronRight,
+  FileText,
+  Paperclip,
+} from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -7,26 +13,17 @@ import type {
   CourseMaterialKind,
   CourseMaterialView,
 } from "@starstask/contracts";
-import { formatDate } from "@starstask/shared";
+import { formatDate, formatTimeRemaining } from "@starstask/shared";
 
-import type { ClassScheduleEntry } from "@/lib/db/class-schedule";
+import type { GroupedUpcomingAssignments } from "@/features/classes/course-assignment-filters";
 import type { CourseAssignmentSummary } from "@/lib/db/classes";
+import { cn } from "@/lib/utils/cn";
 
 const MATERIAL_KIND_LABELS: Record<CourseMaterialKind, string> = {
   document: "Document",
   video: "Video",
   link: "Link",
   other: "Other",
-};
-
-const DAY_LABELS: Record<number, string> = {
-  1: "Mon",
-  2: "Tue",
-  3: "Wed",
-  4: "Thu",
-  5: "Fri",
-  6: "Sat",
-  7: "Sun",
 };
 
 type CourseOverviewProps = {
@@ -36,9 +33,9 @@ type CourseOverviewProps = {
   academicYear: string;
   announcements: CourseAssignmentSummary[];
   recentAssignments: CourseAssignmentSummary[];
-  upcomingAssignments: CourseAssignmentSummary[];
+  upcomingAssignments: GroupedUpcomingAssignments<CourseAssignmentSummary>;
   materials: CourseMaterialView[];
-  scheduleEntries: ClassScheduleEntry[];
+  now?: Date;
 };
 
 type ActivityItem = {
@@ -58,21 +55,12 @@ export function CourseOverview({
   courseBase,
   course,
   semester,
-  academicYear,
   announcements,
   recentAssignments,
   upcomingAssignments,
   materials,
-  scheduleEntries,
+  now = new Date(),
 }: CourseOverviewProps) {
-  const weeklySlots = [...scheduleEntries]
-    .sort(
-      (first, second) =>
-        first.day_of_week - second.day_of_week ||
-        first.start_time.localeCompare(second.start_time),
-    )
-    .slice(0, 5);
-
   const activity: ActivityItem[] = [
     ...announcements.map((announcement) => ({
       id: `announcement-${announcement.id}`,
@@ -99,14 +87,18 @@ export function CourseOverview({
     .sort((first, second) => second.at.localeCompare(first.at))
     .slice(0, 6);
 
+  const hasUpcoming =
+    upcomingAssignments.dueSoon.length > 0 ||
+    upcomingAssignments.later.length > 0;
+
   return (
-    <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="space-y-4">
+    <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] xl:gap-6">
+      <div className="min-w-0 space-y-4">
         <SectionCard
           title="Recent announcements"
           action={{
             href: `${courseBase}/announcements`,
-            label: "All announcements",
+            label: "View all",
           }}
         >
           {announcements.length === 0 ? (
@@ -116,12 +108,12 @@ export function CourseOverview({
               {announcements.map((announcement) => (
                 <li
                   key={announcement.id}
-                  className="py-2.5 first:pt-0 last:pb-0"
+                  className="py-3 first:pt-1 last:pb-1"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <Link
                       href={`/assignments/${announcement.id}`}
-                      className="text-accent text-sm font-medium underline-offset-4 hover:underline"
+                      className="text-accent min-w-0 truncate text-sm font-medium underline-offset-4 hover:underline"
                     >
                       {announcement.title}
                     </Link>
@@ -144,165 +136,144 @@ export function CourseOverview({
 
         <SectionCard
           title="Upcoming assignments"
+          description="Assignments that will be due soon."
           action={{
             href: `${courseBase}/assignments`,
-            label: "All assignments",
+            label: "View all assignments",
           }}
         >
-          {upcomingAssignments.length === 0 ? (
-            <EmptyLine>No upcoming deadlines in this course.</EmptyLine>
+          {hasUpcoming ? (
+            <div className="space-y-4">
+              <AssignmentGroup
+                label="Due soon"
+                assignments={upcomingAssignments.dueSoon}
+                now={now}
+              />
+              <AssignmentGroup
+                label="Later"
+                assignments={upcomingAssignments.later}
+                now={now}
+              />
+            </div>
           ) : (
-            <ul className="divide-border divide-y">
-              {upcomingAssignments.map((assignment) => (
-                <li
-                  key={assignment.id}
-                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5 first:pt-0 last:pb-0"
-                >
-                  <Link
-                    href={`/assignments/${assignment.id}`}
-                    className="text-accent text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    {assignment.title}
-                  </Link>
-                  <span className="text-muted-foreground text-xs">
-                    Due{" "}
-                    {formatDate(assignment.deadline ?? assignment.created_at)}
-                    {assignment.attachment_count > 0
-                      ? ` · ${attachmentCount(assignment.attachment_count)}`
-                      : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <EmptyLine>No upcoming deadlines in this course.</EmptyLine>
           )}
         </SectionCard>
 
-        <SectionCard
-          title="Recently published materials"
-          action={{ href: `${courseBase}/materials`, label: "All materials" }}
-        >
-          {materials.length === 0 ? (
-            <EmptyLine>No learning material in this course yet.</EmptyLine>
-          ) : (
-            <ul className="divide-border divide-y">
-              {materials.slice(0, 3).map((material) => (
-                <li
-                  key={material.id}
-                  className="py-2.5 first:pt-0 last:pb-0"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="text-sm font-medium">
-                        {material.title}
+        <div className="grid gap-4 md:grid-cols-2">
+          <SectionCard
+            title="Recently published materials"
+            action={{
+              href: `${courseBase}/materials`,
+              label: "View all materials",
+            }}
+          >
+            {materials.length === 0 ? (
+              <EmptyLine>No learning material in this course yet.</EmptyLine>
+            ) : (
+              <ul className="divide-border divide-y">
+                {materials.slice(0, 3).map((material) => (
+                  <li
+                    key={material.id}
+                    className="py-3 first:pt-1 last:pb-1"
+                  >
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-sm font-medium">
+                          {material.title}
+                        </span>
+                        <span className="bg-muted text-muted-foreground shrink-0 rounded px-1 py-0.5 text-[10px]">
+                          {MATERIAL_KIND_LABELS[material.kind]}
+                        </span>
                       </span>
-                      <span className="bg-muted text-muted-foreground rounded px-1 py-0.5 text-[10px]">
-                        {MATERIAL_KIND_LABELS[material.kind]}
+                      <span className="text-muted-foreground shrink-0 text-xs">
+                        {formatDate(material.created_at)}
                       </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Recent course activity">
+            {activity.length === 0 ? (
+              <EmptyLine>
+                Nothing has been published in this course yet.
+              </EmptyLine>
+            ) : (
+              <ul className="divide-border divide-y">
+                {activity.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-baseline justify-between gap-3 py-3 first:pt-1 last:pb-1"
+                  >
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span className="bg-accent/10 text-accent shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                        {item.kind}
+                      </span>
+                      <Link
+                        href={item.href}
+                        className="min-w-0 truncate text-sm underline-offset-4 hover:underline"
+                      >
+                        {item.title}
+                      </Link>
                     </span>
                     <span className="text-muted-foreground shrink-0 text-xs">
-                      {formatDate(material.created_at)}
+                      {formatDate(item.at)}
                     </span>
-                  </div>
-                  {material.resource_url ? (
-                    <a
-                      href={material.resource_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent mt-0.5 inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                    >
-                      Open resource
-                      <ExternalLink
-                        aria-hidden="true"
-                        className="h-3 w-3"
-                      />
-                    </a>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Recent course activity">
-          {activity.length === 0 ? (
-            <EmptyLine>
-              Nothing has been published in this course yet.
-            </EmptyLine>
-          ) : (
-            <ul className="divide-border divide-y">
-              {activity.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5 first:pt-0 last:pb-0"
-                >
-                  <span className="min-w-0">
-                    <span className="text-muted-foreground mr-2 text-[10px] font-medium tracking-wide uppercase">
-                      {item.kind}
-                    </span>
-                    <Link
-                      href={item.href}
-                      className="text-sm underline-offset-4 hover:underline"
-                    >
-                      {item.title}
-                    </Link>
-                  </span>
-                  <span className="text-muted-foreground shrink-0 text-xs">
-                    {formatDate(item.at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </div>
       </div>
 
-      <aside className="space-y-4">
+      <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
         <SideCard title="Course information">
-          <dl className="mt-3 space-y-2 text-sm">
+          <dl className="mt-3 space-y-2.5 text-sm">
             <InfoRow
               label="Code"
               value={course.code ?? "Not set"}
             />
             <InfoRow
-              label="Term"
-              value={`${semester} ${academicYear}`}
+              label="Semester"
+              value={semester || "Not set"}
             />
             <InfoRow
               label="Lecturer"
               value={course.lecturer_name ?? "Not set"}
             />
-            <InfoRow
-              label="Status"
-              value={course.status === "active" ? "Active" : "Archived"}
-            />
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-muted-foreground text-xs">Status</dt>
+              <dd>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                    course.status === "active"
+                      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      course.status === "active"
+                        ? "bg-emerald-500"
+                        : "bg-muted-foreground",
+                    )}
+                  />
+                  {course.status === "active" ? "Active" : "Archived"}
+                </span>
+              </dd>
+            </div>
           </dl>
         </SideCard>
 
-        <SideCard title="Schedule">
-          {weeklySlots.length === 0 ? (
-            <p className="text-muted-foreground mt-2 text-xs">
-              No weekly slot saved for this course.
-            </p>
-          ) : (
-            <ul className="mt-2 space-y-1.5">
-              {weeklySlots.map((slot) => (
-                <li
-                  key={slot.id}
-                  className="text-muted-foreground text-xs"
-                >
-                  <span className="text-foreground font-medium">
-                    {DAY_LABELS[slot.day_of_week] ?? "Day"}
-                  </span>{" "}
-                  {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
-                  {slot.room ? ` · ${slot.room}` : ""}
-                </li>
-              ))}
-            </ul>
-          )}
-        </SideCard>
-
         <SideCard title="Quick links">
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-2">
             {[
               { href: `${courseBase}/assignments`, label: "Assignments" },
               { href: `${courseBase}/materials`, label: "Materials" },
@@ -312,13 +283,13 @@ export function CourseOverview({
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent flex items-center justify-between rounded-lg px-2 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  <ArrowRight
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                  />
                   {link.label}
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="h-4 w-4 shrink-0"
+                  />
                 </Link>
               </li>
             ))}
@@ -329,23 +300,109 @@ export function CourseOverview({
   );
 }
 
+function AssignmentGroup({
+  label,
+  assignments,
+  now,
+}: {
+  label: string;
+  assignments: CourseAssignmentSummary[];
+  now: Date;
+}) {
+  if (assignments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h3 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+        {label}
+      </h3>
+      <ul className="divide-border mt-1 divide-y">
+        {assignments.map((assignment) => (
+          <li key={assignment.id}>
+            <Link
+              href={`/assignments/${assignment.id}`}
+              className="group hover:bg-muted/60 focus-visible:outline-accent -mx-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-3 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <span className="bg-muted text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                <FileText
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
+              </span>
+              <span className="min-w-0 flex-1 basis-48">
+                <span className="block truncate text-sm font-semibold">
+                  {assignment.title}
+                </span>
+                {assignment.source_label ? (
+                  <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+                    {assignment.source_label}
+                  </span>
+                ) : null}
+              </span>
+              <span className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="flex items-center gap-1.5 text-xs">
+                  <CalendarDays
+                    aria-hidden="true"
+                    className="text-muted-foreground h-3.5 w-3.5"
+                  />
+                  <span className="font-medium">
+                    Due {formatDate(assignment.deadline ?? now)}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {formatTimeRemaining(assignment.deadline, now)}
+                  </span>
+                </span>
+                {assignment.attachment_count > 0 ? (
+                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <Paperclip
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5"
+                    />
+                    {assignment.attachment_count}{" "}
+                    {assignment.attachment_count === 1 ? "file" : "files"}
+                  </span>
+                ) : null}
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+              />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function SectionCard({
   title,
+  description,
   action,
   children,
 }: {
   title: string;
+  description?: string;
   action?: { href: string; label: string };
   children: ReactNode;
 }) {
   return (
     <section className="border-border bg-surface rounded-xl border p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+          {description ? (
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              {description}
+            </p>
+          ) : null}
+        </div>
         {action ? (
           <Link
             href={action.href}
-            className="text-accent inline-flex items-center gap-1 text-xs font-medium hover:underline"
+            className="text-accent inline-flex shrink-0 items-center gap-1 text-xs font-medium hover:underline"
           >
             {action.label}
             <ArrowRight
@@ -379,9 +436,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function EmptyLine({ children }: { children: ReactNode }) {
-  return <p className="text-muted-foreground py-1 text-xs">{children}</p>;
-}
-
-function attachmentCount(count: number): string {
-  return `${count} ${count === 1 ? "attachment" : "attachments"}`;
+  return (
+    <p className="text-muted-foreground py-4 text-center text-xs">{children}</p>
+  );
 }

@@ -279,6 +279,39 @@ export function fromJakartaDateTimeInput(value: string): string | null {
     : null;
 }
 
+/** Short relative label for a deadline ahead, e.g. `Due tomorrow` or `In 3 days`. */
+export function formatTimeRemaining(
+  deadline: Date | string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!deadline) {
+    return "";
+  }
+
+  const deadlineDate =
+    typeof deadline === "string" ? new Date(deadline) : deadline;
+
+  if (Number.isNaN(deadlineDate.getTime())) {
+    return "";
+  }
+
+  if (deadlineDate.getTime() <= now.getTime()) {
+    return "Overdue";
+  }
+
+  const dayDifference = getJakartaDayDifference(deadlineDate, now);
+
+  if (dayDifference <= 0) {
+    return "Due today";
+  }
+
+  if (dayDifference === 1) {
+    return "Due tomorrow";
+  }
+
+  return `In ${dayDifference} days`;
+}
+
 export function deadlineStateLabel(state: DeadlineState): string {
   switch (state) {
     case "none":

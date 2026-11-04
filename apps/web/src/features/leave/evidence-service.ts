@@ -44,7 +44,7 @@ async function requireEditableOwnRequest(requestId: string) {
     throw forbidden();
   }
 
-  if (request.status !== "draft") {
+  if (request.status !== "draft" && request.status !== "revision_requested") {
     throw new ApiError(
       409,
       "not_editable",

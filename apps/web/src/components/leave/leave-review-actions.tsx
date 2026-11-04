@@ -35,6 +35,16 @@ export function LeaveReviewActions({
   const [error, setError] = useState<string | null>(null);
 
   async function decide(decision: LeaveReviewDecision) {
+    if (
+      (decision === "rejected" || decision === "revision_requested") &&
+      note.trim().length < 3
+    ) {
+      setError(
+        "Add a note of at least 3 characters so the student knows what to do.",
+      );
+      return;
+    }
+
     setPending(decision);
     setError(null);
 
@@ -77,7 +87,9 @@ export function LeaveReviewActions({
       <div>
         <Label htmlFor="reviewNote">
           Note{" "}
-          <span className="text-muted-foreground font-normal">(optional)</span>
+          <span className="text-muted-foreground font-normal">
+            (required for reject and revision)
+          </span>
         </Label>
         <Textarea
           id="reviewNote"
@@ -86,7 +98,7 @@ export function LeaveReviewActions({
           rows={3}
           maxLength={LEAVE_REVIEW_NOTE_MAX}
           className="mt-1"
-          placeholder="Anything the student should know about this decision."
+          placeholder="Anything the student should know about this decision. Rejection and revision require at least 3 characters."
           disabled={pending !== null}
         />
       </div>
@@ -94,21 +106,22 @@ export function LeaveReviewActions({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
+          variant="secondary"
           disabled={pending !== null}
-          onClick={() => void decide("approved")}
+          onClick={() => void decide("revision_requested")}
         >
-          {pending === "approved" ? (
+          {pending === "revision_requested" ? (
             <Loader2
               aria-hidden="true"
               className="h-4 w-4 animate-spin"
             />
           ) : (
-            <Check
+            <X
               aria-hidden="true"
               className="h-4 w-4"
             />
           )}
-          Approve absence
+          Request revision
         </Button>
         <Button
           type="button"
@@ -129,11 +142,31 @@ export function LeaveReviewActions({
           )}
           Reject
         </Button>
+        <Button
+          type="button"
+          disabled={pending !== null}
+          onClick={() => void decide("approved")}
+        >
+          {pending === "approved" ? (
+            <Loader2
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin"
+            />
+          ) : (
+            <Check
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
+          )}
+          Approve absence
+        </Button>
       </div>
 
       <p className="text-muted-foreground text-xs">
         Approving marks the sessions covered by these dates as excused. It never
-        marks the student present. The student is notified either way.
+        marks the student present. Requesting revision returns the request to
+        the student without changing attendance, and the student is notified
+        either way.
       </p>
     </div>
   );

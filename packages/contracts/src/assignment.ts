@@ -306,6 +306,64 @@ export type MemberAssignmentsQuery = z.infer<
   typeof memberAssignmentsQuerySchema
 >;
 
+/** Tabs of the member assignments workspace (`/assignments`). */
+export const ASSIGNMENT_WORKSPACE_TABS = ["schedule", "requests"] as const;
+
+export type AssignmentWorkspaceTab = (typeof ASSIGNMENT_WORKSPACE_TABS)[number];
+
+/**
+ * Status filter for the Task Schedule tab. `upcoming`/`overdue` are
+ * deadline-based filters over published rows only; the rest map directly onto
+ * the `assignments.status` column.
+ */
+export const ASSIGNMENT_SCHEDULE_STATUSES = [
+  "all",
+  "published",
+  "upcoming",
+  "overdue",
+  "no_deadline",
+  "draft",
+  "pending_review",
+  "rejected",
+] as const;
+
+export type AssignmentScheduleStatus =
+  (typeof ASSIGNMENT_SCHEDULE_STATUSES)[number];
+
+/** Legacy due-date param from older dashboard links; mapped onto `status`. */
+const DUE_TO_STATUS: Record<string, AssignmentScheduleStatus> = {
+  soon: "upcoming",
+  overdue: "overdue",
+};
+
+/** Query for the role-aware member assignments workspace. */
+export const assignmentWorkspaceQuerySchema = z
+  .object({
+    tab: z.enum(ASSIGNMENT_WORKSPACE_TABS).default("schedule"),
+    search: z
+      .string()
+      .trim()
+      .max(100, "Search must be 100 characters or fewer")
+      .optional()
+      .transform((value) => (value === "" ? undefined : value)),
+    class: z.uuid("Invalid class id").optional(),
+    status: z.enum(ASSIGNMENT_SCHEDULE_STATUSES).default("all"),
+    due: z.enum(MEMBER_ASSIGNMENT_DUE_FILTERS).optional(),
+    sort: z.enum(ASSIGNMENT_SORTS).default("newest"),
+    page: z.coerce.number().int().min(1).max(500).default(1),
+    pageSize: z.coerce.number().int().min(1).max(24).default(12),
+  })
+  .transform((query) => ({
+    ...query,
+    status: query.due
+      ? (DUE_TO_STATUS[query.due] ?? query.status)
+      : query.status,
+  }));
+
+export type AssignmentWorkspaceQuery = z.infer<
+  typeof assignmentWorkspaceQuerySchema
+>;
+
 /** Normalizes tags: trims, drops empties, de-duplicates case-insensitively. */
 export function normalizeTags(tags: readonly string[]): string[] {
   const seen = new Set<string>();

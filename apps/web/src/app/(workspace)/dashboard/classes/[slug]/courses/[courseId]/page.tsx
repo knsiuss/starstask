@@ -4,7 +4,8 @@ import { CourseOverview } from "@/components/classes/course-overview";
 import { CourseWorkspaceHeader } from "@/components/classes/course-workspace-header";
 import { Alert } from "@/components/ui/alert";
 import { requireCourseContext } from "@/features/classes/course-access";
-import { listClassSchedule } from "@/lib/db/class-schedule";
+import { groupUpcomingAssignments } from "@/features/classes/course-assignment-filters";
+import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { listCourseAssignments } from "@/lib/db/classes";
 import { listCourseMaterials } from "@/lib/db/course-materials";
 
@@ -28,12 +29,13 @@ type CoursePageProps = {
 export default async function CourseOverviewPage({ params }: CoursePageProps) {
   const { slug, courseId } = await params;
   const {
+    session,
     class: found,
     role,
     course,
   } = await requireCourseContext(slug, courseId);
 
-  const [assignments, announcements, materials, schedule] = await Promise.all([
+  const [assignments, announcements, materials] = await Promise.all([
     listCourseAssignments(found.id, course.id, {
       contentType: "lecturer_assignment",
       limit: 50,
@@ -43,22 +45,18 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
       limit: 3,
     }),
     listCourseMaterials(found.id, course.id),
-    listClassSchedule(found.id),
   ]);
 
   const now = new Date();
-  const upcomingAssignments = assignments
-    .filter(
-      (assignment) =>
-        assignment.deadline !== null &&
-        new Date(assignment.deadline).getTime() >= now.getTime(),
-    )
-    .sort(
-      (first, second) =>
-        new Date(first.deadline ?? 0).getTime() -
-        new Date(second.deadline ?? 0).getTime(),
-    )
-    .slice(0, 4);
+  const completedIds = await loadCompletionIds(
+    session.user.id,
+    assignments.map((assignment) => assignment.id),
+  );
+  const upcomingGroups = groupUpcomingAssignments(
+    assignments,
+    completedIds,
+    now,
+  );
 
   const courseBase = `/dashboard/classes/${found.slug}/courses/${course.id}`;
 
@@ -92,11 +90,9 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
         academicYear={found.academic_year}
         announcements={announcements}
         recentAssignments={assignments.slice(0, 6)}
-        upcomingAssignments={upcomingAssignments}
+        upcomingAssignments={upcomingGroups}
         materials={materials}
-        scheduleEntries={schedule.filter(
-          (entry) => entry.subject_id === course.id,
-        )}
+        now={now}
       />
     </div>
   );

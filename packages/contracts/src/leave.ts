@@ -19,6 +19,7 @@ export const LEAVE_REQUEST_STATUSES = [
   "submitted",
   "approved",
   "rejected",
+  "revision_requested",
   "forwarded",
   "cancelled",
 ] as const;
@@ -38,6 +39,7 @@ export const LEAVE_STATUS_LABELS: Record<LeaveRequestStatus, string> = {
   submitted: "Pending",
   approved: "Approved",
   rejected: "Rejected",
+  revision_requested: "Revision Requested",
   forwarded: "Forwarded",
   cancelled: "Cancelled",
 };
@@ -49,13 +51,17 @@ export const LEAVE_REASON_LABELS: Record<LeaveReasonCategory, string> = {
 };
 
 /** Statuses a student may still edit. */
-export const EDITABLE_LEAVE_STATUSES = ["draft"] as const;
+export const EDITABLE_LEAVE_STATUSES = ["draft", "revision_requested"] as const;
 
 /** The only status that may be included in a forwarding package. */
 export const FORWARDABLE_LEAVE_STATUSES = ["submitted"] as const;
 
 /** A request may be cancelled until it has been forwarded. */
-export const CANCELLABLE_LEAVE_STATUSES = ["draft", "submitted"] as const;
+export const CANCELLABLE_LEAVE_STATUSES = [
+  "draft",
+  "submitted",
+  "revision_requested",
+] as const;
 
 export const LEAVE_EVIDENCE_MIME_TYPES = [
   "application/pdf",
@@ -253,28 +259,49 @@ export const leaveCancellationSchema = z.object({
 
 export type LeaveCancellationInput = z.infer<typeof leaveCancellationSchema>;
 
-export const LEAVE_REVIEW_DECISIONS = ["approved", "rejected"] as const;
+export const LEAVE_REVIEW_DECISIONS = [
+  "approved",
+  "rejected",
+  "revision_requested",
+] as const;
 
 export type LeaveReviewDecision = (typeof LEAVE_REVIEW_DECISIONS)[number];
 
 export const LEAVE_REVIEW_NOTE_MAX = 2_000;
 
 /**
- * A class admin's decision on a submitted request. The note is optional, is
- * kept in the request history, and is never copied into a push payload.
+ * A class admin's decision on a submitted request. The note is optional for
+ * approval, but a rejection or a revision request must explain why — the
+ * student has to know what to fix. Notes are kept in the request history and
+ * are never copied into a push payload.
  */
-export const leaveRequestReviewSchema = z.object({
-  decision: z.enum(LEAVE_REVIEW_DECISIONS, "Choose approve or reject"),
-  note: z
-    .string()
-    .trim()
-    .max(
-      LEAVE_REVIEW_NOTE_MAX,
-      `Keep the note under ${LEAVE_REVIEW_NOTE_MAX} characters`,
-    )
-    .nullish()
-    .transform((value) => (value && value.length > 0 ? value : null)),
-});
+export const leaveRequestReviewSchema = z
+  .object({
+    decision: z.enum(LEAVE_REVIEW_DECISIONS, "Choose a review decision"),
+    note: z
+      .string()
+      .trim()
+      .max(
+        LEAVE_REVIEW_NOTE_MAX,
+        `Keep the note under ${LEAVE_REVIEW_NOTE_MAX} characters`,
+      )
+      .nullish()
+      .transform((value) => (value && value.length > 0 ? value : null)),
+  })
+  .superRefine((value, context) => {
+    if (
+      (value.decision === "rejected" ||
+        value.decision === "revision_requested") &&
+      (!value.note || value.note.length < 3)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["note"],
+        message:
+          "Explain the decision in at least 3 characters so the student knows what to do.",
+      });
+    }
+  });
 
 export type LeaveRequestReviewInput = z.infer<typeof leaveRequestReviewSchema>;
 
@@ -404,7 +431,7 @@ export const leaveRequestListQuerySchema = z.object({
 export type LeaveRequestListQuery = z.infer<typeof leaveRequestListQuerySchema>;
 
 export function isLeaveRequestEditable(status: LeaveRequestStatus): boolean {
-  return status === "draft";
+  return status === "draft" || status === "revision_requested";
 }
 
 export function isLeaveRequestForwardable(status: LeaveRequestStatus): boolean {
@@ -412,5 +439,9 @@ export function isLeaveRequestForwardable(status: LeaveRequestStatus): boolean {
 }
 
 export function isLeaveRequestCancellable(status: LeaveRequestStatus): boolean {
-  return status === "draft" || status === "submitted";
+  return (
+    status === "draft" ||
+    status === "submitted" ||
+    status === "revision_requested"
+  );
 }
