@@ -40,10 +40,13 @@ export function getCurrentPosition(): Promise<
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        // Spread would lose the prototype getters (`coords`, `timestamp`),
+        // so copy the fields explicitly.
         resolve({
-          ...position,
+          coords: position.coords,
+          timestamp: position.timestamp,
           capturedAt: position.timestamp,
-        } as unknown as GeolocationPosition & { capturedAt: number });
+        } as GeolocationPosition & { capturedAt: number });
       },
       reject,
       {
