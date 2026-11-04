@@ -11,6 +11,7 @@ const VARIANTS: Record<
   present: "success",
   late: "warning",
   excused: "accent",
+  sick: "accent",
   absent: "danger",
   pending: "neutral",
   unrecorded: "neutral",

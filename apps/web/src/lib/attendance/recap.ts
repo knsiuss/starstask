@@ -68,6 +68,7 @@ export function buildAttendanceRecap(input: {
       let present = 0;
       let late = 0;
       let excused = 0;
+      let sick = 0;
       let absent = 0;
       let notRecorded = 0;
 
@@ -92,6 +93,9 @@ export function buildAttendanceRecap(input: {
         } else if (status === "excused") {
           excused += 1;
           outcomes.push("excused");
+        } else if (status === "sick") {
+          sick += 1;
+          outcomes.push("sick");
         } else if (status === "absent") {
           absent += 1;
           outcomes.push("absent");
@@ -113,6 +117,7 @@ export function buildAttendanceRecap(input: {
           present,
           late,
           excused,
+          sick,
           absent,
           notRecorded,
           attended: summary.attended,

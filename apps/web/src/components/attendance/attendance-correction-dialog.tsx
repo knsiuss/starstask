@@ -37,6 +37,7 @@ const CORRECTION_STATUSES = [
   "present",
   "late",
   "excused",
+  "sick",
   "absent",
 ] as const;
 
@@ -61,13 +62,20 @@ export function AttendanceCorrectionDialog({
   const [physicallyVerified, setPhysicallyVerified] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
-  const [history, setHistory] = React.useState<AttendanceCorrectionAuditEntry[]>([]);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
+    {},
+  );
+  const [history, setHistory] = React.useState<
+    AttendanceCorrectionAuditEntry[]
+  >([]);
 
-  const currentStatus = (entry.status as AttendanceMeetingCellStatus | string) ?? "not_recorded";
+  const currentStatus =
+    (entry.status as AttendanceMeetingCellStatus | string) ?? "not_recorded";
   const currentLabel =
     currentStatus in ATTENDANCE_MEETING_CELL_LABELS
-      ? ATTENDANCE_MEETING_CELL_LABELS[currentStatus as keyof typeof ATTENDANCE_MEETING_CELL_LABELS]
+      ? ATTENDANCE_MEETING_CELL_LABELS[
+          currentStatus as keyof typeof ATTENDANCE_MEETING_CELL_LABELS
+        ]
       : currentStatus;
 
   React.useEffect(() => {
@@ -76,14 +84,20 @@ export function AttendanceCorrectionDialog({
     setFieldErrors({});
     let cancelled = false;
 
-    fetch(`/api/classes/${classSlug}/attendance/meetings/${sessionId}/corrections`, {
-      cache: "no-store",
-    })
+    fetch(
+      `/api/classes/${classSlug}/attendance/meetings/${sessionId}/corrections`,
+      {
+        cache: "no-store",
+      },
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((body) => {
         if (!cancelled && Array.isArray(body?.data)) {
           setHistory(
-            body.data.filter((item: AttendanceCorrectionAuditEntry) => item.studentId === entry.userId),
+            body.data.filter(
+              (item: AttendanceCorrectionAuditEntry) =>
+                item.studentId === entry.userId,
+            ),
           );
         }
       })
@@ -156,7 +170,10 @@ export function AttendanceCorrectionDialog({
         Correct
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+      >
         <DialogContent>
           <DialogTitle>Manual correction — {entry.fullName}</DialogTitle>
           <DialogDescription>
@@ -170,7 +187,10 @@ export function AttendanceCorrectionDialog({
             Current status: <span className="font-medium">{currentLabel}</span>
           </p>
 
-          <form onSubmit={(e) => void submit(e)} className="mt-4 space-y-4">
+          <form
+            onSubmit={(e) => void submit(e)}
+            className="mt-4 space-y-4"
+          >
             <div className="space-y-1.5">
               <Label htmlFor="correction-status">New status</Label>
               <Select
@@ -180,7 +200,10 @@ export function AttendanceCorrectionDialog({
                 aria-invalid={Boolean(fieldErrors.status)}
               >
                 {CORRECTION_STATUSES.map((option) => (
-                  <option key={option} value={option}>
+                  <option
+                    key={option}
+                    value={option}
+                  >
                     {ATTENDANCE_MEETING_CELL_LABELS[option] ?? option}
                   </option>
                 ))}
@@ -220,7 +243,9 @@ export function AttendanceCorrectionDialog({
               </label>
             ) : null}
             {fieldErrors.physicallyVerified ? (
-              <p className="text-danger text-xs">{fieldErrors.physicallyVerified}</p>
+              <p className="text-danger text-xs">
+                {fieldErrors.physicallyVerified}
+              </p>
             ) : null}
 
             {error ? (
@@ -230,10 +255,17 @@ export function AttendanceCorrectionDialog({
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" disabled={isSaving}>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSaving}
+              >
                 {isSaving ? (
                   <>
-                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    <Loader2
+                      aria-hidden="true"
+                      className="h-4 w-4 animate-spin"
+                    />
                     Saving…
                   </>
                 ) : (
@@ -258,8 +290,8 @@ export function AttendanceCorrectionDialog({
               <ul className="mt-2 space-y-1 text-xs">
                 {history.map((item) => (
                   <li key={item.id}>
-                    {item.previousStatus} → {item.newStatus} by {item.adminName}:{" "}
-                    {item.reason}
+                    {item.previousStatus} → {item.newStatus} by {item.adminName}
+                    : {item.reason}
                   </li>
                 ))}
               </ul>

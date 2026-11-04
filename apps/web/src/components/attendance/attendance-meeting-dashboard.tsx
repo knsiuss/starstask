@@ -17,6 +17,7 @@ import * as React from "react";
 
 import { AttendanceMeetingLocationForm } from "@/components/attendance/attendance-meeting-location-form";
 import { AttendanceMeetingTable } from "@/components/attendance/attendance-meeting-table";
+import { AttendanceShareLinkButton } from "@/components/attendance/attendance-share-link";
 import { Alert } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,8 @@ export function AttendanceMeetingDashboard({
 
   // Server re-renders (e.g. router.refresh after a location change) pass
   // fresh props; without this the client state would keep showing stale data.
-  const [prevInitialDetail, setPrevInitialDetail] = React.useState(initialDetail);
+  const [prevInitialDetail, setPrevInitialDetail] =
+    React.useState(initialDetail);
 
   if (initialDetail !== prevInitialDetail) {
     setPrevInitialDetail(initialDetail);
@@ -454,6 +456,11 @@ export function AttendanceMeetingDashboard({
               Meeting .xlsx
             </a>
           </Button>
+
+          <AttendanceShareLinkButton
+            sessionId={detail.sessionId}
+            meetingNumber={detail.meetingNumber}
+          />
         </div>
       </div>
 

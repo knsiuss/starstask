@@ -70,6 +70,7 @@ export const SESSION_CHECKIN_STATUSES = [
   "present",
   "late",
   "excused",
+  "sick",
   "absent",
 ] as const;
 
@@ -82,6 +83,7 @@ export const SESSION_CHECKIN_STATUS_LABELS: Record<
   present: "Present",
   late: "Late",
   excused: "Excused",
+  sick: "Sick",
   absent: "Absent",
 };
 

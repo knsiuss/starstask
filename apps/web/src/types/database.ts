@@ -113,7 +113,8 @@ export type SessionVisibilityRow = "class_members" | "public";
 
 export type RsvpStatusRow = "going" | "maybe" | "not_going";
 
-export type SessionCheckInStatusRow = "present" | "late" | "excused" | "absent";
+export type SessionCheckInStatusRow =
+  "present" | "late" | "excused" | "sick" | "absent";
 
 export type SessionCheckInMethodRow = "geo" | "manual" | "system";
 
@@ -3070,6 +3071,7 @@ export interface Database {
           present_count: number;
           late_count: number;
           excused_count: number;
+          sick_count: number;
           absent_count: number;
           not_recorded_count: number;
           failed_count: number;

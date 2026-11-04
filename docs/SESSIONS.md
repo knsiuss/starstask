@@ -243,6 +243,30 @@ authority:
    the future (see Freshness below),
 6. the haversine distance is within `checkin_radius_m` (25-1,000 m).
 
+### Attendance Sheet
+
+One course renders as one spreadsheet (`AttendanceSheet` on the course
+attendance page, manager only). Rows are students, columns are meetings, and
+cells are text codes — ✓ present, I excused, S sick, A absent, T late — with
+subtle fills. Codes map to the standardized stored values
+(`present|excused|sick|absent|late`); `SHEET_LABELS` localizes display per
+campus (`id` Hadir/Izin/Sakit/Alfa/Terlambat, `en` Present/Excused/Sick/
+Absent/Late). Cell edits go through the audited correction endpoint (reason
+auto-filled, present still requires the physical-verification attestation),
+and a per-column "All ✓" marks a whole meeting present. Totals use the sheet
+formula H / total meetings × 100. Students keep their own view; the sheet is
+manager-only. On mobile the table scrolls horizontally with sticky
+No/NIM/Name columns.
+
+### Shareable check-in link
+
+The meeting dashboard has **Copy check-in link**: the class admin shares
+`/attendance/checkin/[sessionId]` to the group. The link is not a public
+bypass — it lives in the workspace, so the student must sign in, and GPS,
+identity, radius, and window are still enforced on the server. The page only
+narrows the existing student meeting view to that one meeting; a student who
+is not eligible (closed meeting, not enrolled) gets a friendly notice.
+
 ### Freshness
 
 A browser may cache a fix, so the client sends the reading's own timestamp

@@ -90,6 +90,7 @@ const CHECK_IN_STATUSES = new Set<AttendanceCheckInStatus>([
   "present",
   "late",
   "excused",
+  "sick",
   "absent",
 ]);
 
@@ -130,6 +131,7 @@ export function mapAttendanceMeetingRow(
       present: row.present_count,
       late: row.late_count,
       excused: row.excused_count,
+      sick: row.sick_count ?? 0,
       absent: row.absent_count,
       notRecorded: row.not_recorded_count,
       failed: row.failed_count,

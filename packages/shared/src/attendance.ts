@@ -1,10 +1,11 @@
 export type AttendanceOutcome =
-  "present" | "late" | "excused" | "absent" | "pending" | "unrecorded";
+  "present" | "late" | "excused" | "sick" | "absent" | "pending" | "unrecorded";
 
 export type AttendanceSummaryCounts = {
   present: number;
   late: number;
   excused: number;
+  sick: number;
   absent: number;
   unrecorded: number;
   pending: number;
@@ -22,8 +23,8 @@ export type AttendanceSummaryCounts = {
  *
  * - Denominator: present + late + absent + not recorded. A missing record is
  *   never silently counted as present.
- * - Excused sessions are left out of the denominator: an approved absence is
- *   neither attendance nor an unexplained miss.
+ * - Excused and sick sessions are left out of the denominator: an approved
+ *   absence is neither attendance nor an unexplained miss.
  * - Pending (not yet finished) sessions are not counted at all.
  * - Late attendance counts as attended. The number of late sessions is still
  *   reported separately so the policy can tighten later without changing the
@@ -36,6 +37,7 @@ export function summarizeAttendance(
     present: 0,
     late: 0,
     excused: 0,
+    sick: 0,
     absent: 0,
     unrecorded: 0,
     pending: 0,
@@ -53,7 +55,7 @@ export function summarizeAttendance(
 
 export type AttendanceCountsInput = Pick<
   AttendanceSummaryCounts,
-  "present" | "late" | "excused" | "absent" | "unrecorded" | "pending"
+  "present" | "late" | "excused" | "sick" | "absent" | "unrecorded" | "pending"
 >;
 
 /**
@@ -84,7 +86,8 @@ export function formatAttendancePercentage(percentage: number | null): string {
   return `${Number.isInteger(percentage) ? percentage : percentage.toFixed(1)}%`;
 }
 
-export type CheckInDayStatus = "present" | "late" | "excused" | "absent";
+export type CheckInDayStatus =
+  "present" | "late" | "excused" | "sick" | "absent";
 
 export type CheckInDaySession = {
   /** ISO instant when the check-in window opens. */

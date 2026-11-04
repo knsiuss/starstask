@@ -25,6 +25,7 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceDisplayStatus, string> =
     present: "Present",
     late: "Late",
     excused: "Excused",
+    sick: "Sick",
     absent: "Absent",
     pending: "Pending",
     unrecorded: "Not recorded",
@@ -70,6 +71,7 @@ export function isRecordedAttendanceStatus(
     status === "present" ||
     status === "late" ||
     status === "excused" ||
+    status === "sick" ||
     status === "absent"
   );
 }

@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ClassAttendanceMeetings } from "@/components/attendance/class-attendance-meetings";
+import { AttendanceSheet } from "@/components/attendance/attendance-sheet";
 import { StudentMeetingList } from "@/components/attendance/student-meeting-list";
 import { CourseWorkspaceHeader } from "@/components/classes/course-workspace-header";
 import { Alert } from "@/components/ui/alert";
 import { requireCourseContext } from "@/features/classes/course-access";
 import {
+  getClassAttendanceRecap,
   getStudentAttendanceMeetingView,
   listClassAttendanceMeetings,
 } from "@/lib/db/attendance-meetings";
@@ -44,6 +46,9 @@ export default async function CourseAttendancePage({
   const memberView = role.canManage
     ? null
     : await getStudentAttendanceMeetingView(session.user.id);
+  const recap = role.canManage
+    ? await getClassAttendanceRecap(found.id, course.id)
+    : null;
   const memberMeetings = (memberView?.meetings ?? []).filter(
     (meeting) =>
       meeting.classId === found.id && meeting.subjectId === course.id,
@@ -90,6 +95,17 @@ export default async function CourseAttendancePage({
       ) : null}
 
       <div className="mt-5">
+        {role.canManage && recap ? (
+          <AttendanceSheet
+            classSlug={found.slug}
+            recap={recap}
+            courseName={course.name}
+            courseCode={course.code}
+            className={found.name}
+            semester={found.semester}
+            academicYear={found.academic_year}
+          />
+        ) : null}
         {role.canManage ? (
           course.status === "active" ? (
             <ClassAttendanceMeetings

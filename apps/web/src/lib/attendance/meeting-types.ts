@@ -12,6 +12,7 @@ export type AttendanceMeetingCounts = {
   present: number;
   late: number;
   excused: number;
+  sick: number;
   absent: number;
   notRecorded: number;
   failed: number;
@@ -165,6 +166,7 @@ export type AttendanceRecapTotals = {
   present: number;
   late: number;
   excused: number;
+  sick: number;
   absent: number;
   notRecorded: number;
   attended: number;

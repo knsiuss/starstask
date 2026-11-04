@@ -53,6 +53,7 @@ const STATUS_BADGE: Record<
   present: "success",
   late: "warning",
   excused: "accent",
+  sick: "accent",
   absent: "danger",
 };
 

@@ -21,7 +21,7 @@ import {
 } from "@/lib/geo/position";
 
 type CheckInRecord = {
-  status: "present" | "late" | "excused" | "absent";
+  status: "present" | "late" | "excused" | "sick" | "absent";
   checkedInAt: string;
   /** Null when an organizer recorded the row without a reading. */
   distanceM: number | null;

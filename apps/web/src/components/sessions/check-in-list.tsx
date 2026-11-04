@@ -10,6 +10,7 @@ const STATUS_VARIANTS: Record<SessionCheckInStatus, BadgeProps["variant"]> = {
   present: "success",
   late: "warning",
   excused: "accent",
+  sick: "accent",
   absent: "danger",
 };
 

@@ -32,6 +32,7 @@ function meeting(
       present: 1,
       late: 0,
       excused: 0,
+      sick: 0,
       absent: 1,
       notRecorded: 1,
       failed: 0,

@@ -81,6 +81,7 @@ const EMPTY_COUNTS: AttendanceCountsInput = {
   present: 0,
   late: 0,
   excused: 0,
+  sick: 0,
   absent: 0,
   unrecorded: 0,
   pending: 0,
@@ -98,6 +99,7 @@ function toCounts(row: {
     present: Number(row.present_count),
     late: Number(row.late_count),
     excused: Number(row.excused_count),
+    sick: 0,
     absent: Number(row.absent_count),
     unrecorded: Number(row.unrecorded_count),
     pending: Number(row.pending_count),
@@ -111,6 +113,7 @@ function addCounts(
   target.present += source.present;
   target.late += source.late;
   target.excused += source.excused;
+  target.sick += source.sick;
   target.absent += source.absent;
   target.unrecorded += source.unrecorded;
   target.pending += source.pending;

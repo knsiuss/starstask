@@ -65,7 +65,8 @@ export type SessionCheckIn = {
   reviewedAt: string | null;
 };
 
-export type SessionCheckInStatus = "present" | "late" | "excused" | "absent";
+export type SessionCheckInStatus =
+  "present" | "late" | "excused" | "sick" | "absent";
 
 export type SessionCheckInMethod = "geo" | "manual" | "system";
 

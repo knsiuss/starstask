@@ -1,6 +1,7 @@
 import type { SessionType } from "@starstask/contracts";
 
-export type AttendanceCheckInStatus = "present" | "late" | "excused" | "absent";
+export type AttendanceCheckInStatus =
+  "present" | "late" | "excused" | "sick" | "absent";
 
 /**
  * One in-person session the student may check in to right now.

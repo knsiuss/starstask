@@ -25,6 +25,7 @@ const STATUS_FILLS: Record<AttendanceMeetingCellStatus, string> = {
   present: "FFDCFCE7",
   late: "FFFEF3C7",
   excused: "FFDBEAFE",
+  sick: "FFCFFAFE",
   absent: "FFFEE2E2",
   not_recorded: "FFF1F5F9",
   not_applicable: "FFF8FAFC",
@@ -173,6 +174,7 @@ export async function buildMeetingWorkbook(
     ["Present", detail.counts.present],
     ["Late", detail.counts.late],
     ["Excused", detail.counts.excused],
+    ["Sick", detail.counts.sick],
     ["Absent", detail.counts.absent],
     ["Not recorded", detail.counts.notRecorded],
     ["Failed verification attempts", detail.counts.failed],
@@ -216,6 +218,7 @@ export async function buildRecapWorkbook(
     { width: 7 },
     { width: 7 },
     { width: 7 },
+    { width: 7 },
     { width: 14 },
   ];
 
@@ -225,7 +228,7 @@ export async function buildRecapWorkbook(
     subjectLabel(context.subject),
   );
 
-  row = addMetadataRows(sheet, row, 3 + recap.meetings.length + 6, [
+  row = addMetadataRows(sheet, row, 3 + recap.meetings.length + 7, [
     ["Class", context.classInfo.name],
     ["Class code", context.classInfo.class_code ?? "—"],
     ["Subject", subjectLabel(context.subject)],
@@ -246,6 +249,7 @@ export async function buildRecapWorkbook(
     "P",
     "L",
     "I",
+    "S",
     "A",
     "NR",
     "Attendance %",
@@ -270,6 +274,7 @@ export async function buildRecapWorkbook(
       student.totals.present,
       student.totals.late,
       student.totals.excused,
+      student.totals.sick,
       student.totals.absent,
       student.totals.notRecorded,
       student.totals.percentage === null ? "—" : student.totals.percentage,
@@ -519,10 +524,10 @@ export async function buildChecklistWorkbook(
         sheet.getRow(dataRow).getCell(column).dataValidation = {
           type: "list",
           allowBlank: true,
-          formulae: ['"P,L,I,A"'],
+          formulae: ['"P,L,I,S,A"'],
           showErrorMessage: true,
           errorTitle: "Use a checklist code",
-          error: "Choose P, L, I, or A.",
+          error: "Choose P, L, I, S, or A.",
         };
       }
     }
@@ -697,12 +702,14 @@ function addLegend(
         ["present", "P = Present"],
         ["late", "L = Late"],
         ["excused", "I = Excused / approved absence"],
+        ["sick", "S = Sick"],
         ["absent", "A = Absent"],
       ]
     : [
         ["present", "P = Present"],
         ["late", "L = Late"],
         ["excused", "I = Excused / approved absence"],
+        ["sick", "S = Sick"],
         ["absent", "A = Absent"],
         ["not_recorded", "NR = Not recorded (not finalized)"],
         [

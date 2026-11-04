@@ -73,6 +73,7 @@ function meetingListItem(
       present: 1,
       late: 0,
       excused: 0,
+      sick: 0,
       absent: 1,
       notRecorded: 1,
       failed: 2,
@@ -403,6 +404,7 @@ describe("per-meeting workbook", () => {
       "Present",
       "Late",
       "Excused",
+      "Sick",
       "Absent",
       "Not recorded",
       "Failed verification attempts",
@@ -433,14 +435,14 @@ describe("per-meeting workbook", () => {
 });
 
 describe("semester recap workbook", () => {
-  it("exports a matrix with P/L/I/A/NR symbols and numeric percentages", async () => {
+  it("exports a matrix with P/L/I/S/A/NR symbols and numeric percentages", async () => {
     const recap = recapFixture();
     const workbook = await loadWorkbook(
       await buildRecapWorkbook(recap, context),
     );
     const sheet = requireSheet(workbook, "Summary");
     const headerRow = findHeaderRow(sheet);
-    const width = 3 + recap.meetings.length + 6;
+    const width = 3 + recap.meetings.length + 7;
 
     expect(rowValues(sheet, headerRow, width)).toEqual([
       "No.",
@@ -451,6 +453,7 @@ describe("semester recap workbook", () => {
       "P",
       "L",
       "I",
+      "S",
       "A",
       "NR",
       "Attendance %",
@@ -459,18 +462,18 @@ describe("semester recap workbook", () => {
     const ani = rowValues(sheet, headerRow + 1, width);
     expect(ani.slice(0, 3)).toEqual([1, "221001", "Ani Putri"]);
     expect(ani.slice(3, 5)).toEqual(["P", "A"]);
-    expect(ani.slice(5)).toEqual([1, 0, 0, 1, 0, 50]);
+    expect(ani.slice(5)).toEqual([1, 0, 0, 0, 1, 0, 50]);
 
     const budi = rowValues(sheet, headerRow + 2, width);
     expect(budi.slice(0, 3)).toEqual([2, "221002", "Budi Santoso"]);
     expect(budi.slice(3, 5)).toEqual(["L", "I"]);
-    expect(budi.slice(5)).toEqual([0, 1, 1, 0, 0, 100]);
+    expect(budi.slice(5)).toEqual([0, 1, 1, 0, 0, 0, 100]);
 
     const citra = rowValues(sheet, headerRow + 3, width);
     expect(citra.slice(0, 3)).toEqual([3, "221003", "Citra Dewi"]);
     // Not recorded is NR and must never be exported as an absence.
     expect(citra.slice(3, 5)).toEqual(["NR", "NR"]);
-    expect(citra.slice(5)).toEqual([0, 0, 0, 0, 2, 0]);
+    expect(citra.slice(5)).toEqual([0, 0, 0, 0, 0, 2, 0]);
 
     const percentageCell = sheet.getRow(headerRow + 1).getCell(width);
     expect(percentageCell.numFmt).toBe('0.0"%"');
@@ -487,7 +490,7 @@ describe("semester recap workbook", () => {
 });
 
 describe("manual checklist workbook", () => {
-  it("keeps fillable cells empty with P/L/I/A validation and a reference sheet", async () => {
+  it("keeps fillable cells empty with P/L/I/S/A validation and a reference sheet", async () => {
     const recap = recapFixture();
     const workbook = await loadWorkbook(
       await buildChecklistWorkbook(recap, context),
@@ -521,7 +524,7 @@ describe("manual checklist workbook", () => {
 
     const firstFillableCell = sheet.getRow(headerRow + 1).getCell(4);
     expect(firstFillableCell.dataValidation?.type).toBe("list");
-    expect(firstFillableCell.dataValidation?.formulae).toEqual(['"P,L,I,A"']);
+    expect(firstFillableCell.dataValidation?.formulae).toEqual(['"P,L,I,S,A"']);
 
     const existing = requireSheet(workbook, "Existing records");
     const existingHeader = findHeaderRow(existing);

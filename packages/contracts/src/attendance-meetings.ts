@@ -18,6 +18,7 @@ export const ATTENDANCE_MEETING_CELL_STATUSES = [
   "present",
   "late",
   "excused",
+  "sick",
   "absent",
   "not_recorded",
   "not_applicable",
@@ -33,12 +34,13 @@ export const ATTENDANCE_MEETING_CELL_LABELS: Record<
   present: "Present",
   late: "Late",
   excused: "Excused",
+  sick: "Sick",
   absent: "Absent",
   not_recorded: "Not recorded",
   not_applicable: "Not applicable",
 };
 
-/** Symbols used by the semester recap: P / L / I / A / NR. */
+/** Symbols used by the semester recap: P / L / I / S / A / NR. */
 export const ATTENDANCE_MEETING_CELL_SYMBOLS: Record<
   AttendanceMeetingCellStatus,
   string
@@ -46,6 +48,7 @@ export const ATTENDANCE_MEETING_CELL_SYMBOLS: Record<
   present: "P",
   late: "L",
   excused: "I",
+  sick: "S",
   absent: "A",
   not_recorded: "NR",
   not_applicable: "—",
@@ -280,7 +283,10 @@ export const ATTENDANCE_CORRECTION_REASON_MAX = 500;
 export const attendanceMeetingCorrectionSchema = z
   .object({
     userId: z.uuid("Choose a student"),
-    status: z.enum(["present", "late", "excused", "absent"], "Choose a status"),
+    status: z.enum(
+      ["present", "late", "excused", "sick", "absent"],
+      "Choose a status",
+    ),
     reason: z
       .string()
       .trim()
