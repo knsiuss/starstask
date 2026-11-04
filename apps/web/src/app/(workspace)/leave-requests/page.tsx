@@ -1,4 +1,4 @@
-import { Info, PlusCircle } from "lucide-react";
+import { CalendarDays, Info, PlusCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const pageContainer = "mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 lg:px-10";
+const pageContainer = "mx-auto w-full max-w-6xl px-3 py-5 sm:px-8 lg:px-10";
 
 type LeaveRequestsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -87,6 +87,7 @@ export default async function LeaveRequestsPage({
       status: query.status ?? "all",
       from: query.from,
       to: query.to,
+      search: query.q,
       page: query.page,
       pageSize: query.pageSize,
     }),
@@ -97,7 +98,8 @@ export default async function LeaveRequestsPage({
   const hasActiveFilters =
     (query.status !== undefined && query.status !== "all") ||
     Boolean(query.from) ||
-    Boolean(query.to);
+    Boolean(query.to) ||
+    Boolean(query.q);
 
   // With a single class there is nothing to choose, so the button can go
   // straight to the form; with several, the form asks which class first.
@@ -109,15 +111,21 @@ export default async function LeaveRequestsPage({
   return (
     <div className={pageContainer}>
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
-            Absence requests
-          </h1>
-          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
-            Put your absence document and its dates in one place, then send it
-            to your class admin for approval. An approved absence becomes
-            excused; it is never counted as attendance.
-          </p>
+        <div className="flex items-start gap-4">
+          <span
+            aria-hidden="true"
+            className="bg-accent-soft text-accent flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+          >
+            <CalendarDays className="h-6 w-6" />
+          </span>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
+              Absence Requests
+            </h1>
+            <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
+              Submit and track your absence requests for class activities.
+            </p>
+          </div>
         </div>
         {myClasses.length > 0 ? (
           <Button
@@ -129,7 +137,7 @@ export default async function LeaveRequestsPage({
                 aria-hidden="true"
                 className="h-4 w-4"
               />
-              New request
+              New Request
             </Link>
           </Button>
         ) : null}
@@ -190,8 +198,9 @@ export default async function LeaveRequestsPage({
           requests={result.items}
           hrefFor={(request) => `/leave-requests/${request.id}`}
           emptyTitle="No absence requests yet"
-          emptyBody="Start one with your absence document in hand. You can save it as a draft and finish it later."
+          emptyBody="You haven't submitted any absence requests. Create a new request to get started."
           filtered={hasActiveFilters}
+          newHref={myClasses.length > 0 ? newHref : undefined}
         />
       </div>
 
@@ -203,11 +212,12 @@ export default async function LeaveRequestsPage({
           status: query.status,
           from: query.from,
           to: query.to,
+          q: query.q,
           pageSize: String(query.pageSize),
         }}
       />
 
-      <p className="text-muted-foreground mt-8 flex items-start gap-1.5 text-xs">
+      <p className="border-border bg-surface text-muted-foreground mt-5 flex items-start gap-1.5 rounded-xl border px-4 py-3 text-xs leading-relaxed">
         <Info
           aria-hidden="true"
           className="mt-0.5 h-3.5 w-3.5 shrink-0"

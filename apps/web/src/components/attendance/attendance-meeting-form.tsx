@@ -110,7 +110,7 @@ export function AttendanceMeetingForm({
   const [mapsLink, setMapsLink] = React.useState("");
   const [isResolvingLink, setIsResolvingLink] = React.useState(false);
   const [lateAfterMinutes, setLateAfterMinutes] = React.useState("10");
-  const [radiusM, setRadiusM] = React.useState("100");
+  const [radiusM, setRadiusM] = React.useState("200");
   const [point, setPoint] = React.useState<CapturedPoint | null>(null);
   const [manualLatitude, setManualLatitude] = React.useState("");
   const [manualLongitude, setManualLongitude] = React.useState("");
@@ -144,7 +144,7 @@ export function AttendanceMeetingForm({
     setLocation("");
     setMapsLink("");
     setLateAfterMinutes("10");
-    setRadiusM("100");
+    setRadiusM("200");
     setPoint(null);
     setManualLatitude("");
     setManualLongitude("");

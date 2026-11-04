@@ -188,7 +188,7 @@ export default async function ClassLeaveRequestsPage({
             to: query.to,
             q: query.q,
           }}
-          showSearch
+          searchPlaceholder="Search by nickname..."
         />
       </div>
 

@@ -1,16 +1,21 @@
 "use client";
 
-import { Camera, Check, Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import {
   maskNim,
+  myProfileSchema,
   profileOnboardingSchema,
   toFieldErrors,
   type ClassJoinResult,
+  type MyProfile,
 } from "@starstask/contracts";
 
+import { JoinClassStep } from "@/components/onboarding/join-class-step";
+import { OnboardingWelcome } from "@/components/onboarding/onboarding-welcome";
+import { shouldShowJoinStep } from "@/lib/onboarding/init-flow";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,9 +67,21 @@ export function ProfileOnboardingForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
   const [completed, setCompleted] = React.useState<{
+    profile: MyProfile | null;
     classJoin: ClassJoinResult | null;
     classNameAtSave: string;
   } | null>(null);
+
+  const [step, setStep] = React.useState<"welcome" | "join">("welcome");
+
+  const goToWorkspace = React.useCallback(() => {
+    router.push(nextPath);
+    router.refresh();
+  }, [nextPath, router]);
+
+  const handleSessionExpired = React.useCallback(() => {
+    router.push(`/login?next=${encodeURIComponent(nextPath)}`);
+  }, [nextPath, router]);
 
   const previewUrl = React.useMemo(
     () => (avatarFile ? URL.createObjectURL(avatarFile) : null),
@@ -136,7 +153,10 @@ export function ProfileOnboardingForm({
       });
 
       const body = (await response.json().catch(() => null)) as {
-        data?: { classJoin?: ClassJoinResult | null };
+        data?: {
+          profile?: unknown;
+          classJoin?: ClassJoinResult | null;
+        };
         error?: { message?: string; fieldErrors?: Record<string, string> };
       } | null;
 
@@ -151,7 +171,10 @@ export function ProfileOnboardingForm({
         return;
       }
 
+      const parsedProfile = myProfileSchema.safeParse(body?.data?.profile);
+
       setCompleted({
+        profile: parsedProfile.success ? parsedProfile.data : null,
         classJoin: body?.data?.classJoin ?? null,
         classNameAtSave: parsed.data.className ?? "",
       });
@@ -162,14 +185,32 @@ export function ProfileOnboardingForm({
     }
   };
 
+  if (completed && step === "join") {
+    return <JoinClassStep onSkip={goToWorkspace} />;
+  }
+
   if (completed) {
+    const joinSuccessNote =
+      completed.classJoin &&
+      (completed.classJoin.status === "joined" ||
+        completed.classJoin.status === "already_member")
+        ? completed.classJoin.status === "joined"
+          ? `Joined ${completed.classJoin.name}.`
+          : `You're already in ${completed.classJoin.name}.`
+        : null;
+
     return (
-      <CompletionPanel
-        classJoin={completed.classJoin}
-        classNameAtSave={completed.classNameAtSave}
-        onContinue={() => {
-          router.push(nextPath);
-          router.refresh();
+      <OnboardingWelcome
+        onboardedAt={completed.profile?.onboardedAt ?? null}
+        successNote={joinSuccessNote}
+        onSessionExpired={handleSessionExpired}
+        onReady={() => {
+          if (shouldShowJoinStep(completed.classJoin)) {
+            setStep("join");
+            return;
+          }
+
+          goToWorkspace();
         }}
       />
     );
@@ -371,106 +412,8 @@ export function ProfileOnboardingForm({
   );
 }
 
-function CompletionPanel({
-  classJoin,
-  classNameAtSave,
-  onContinue,
-}: {
-  classJoin: ClassJoinResult | null;
-  classNameAtSave: string;
-  onContinue: () => void;
-}) {
-  return (
-    <div className="border-border bg-surface w-full max-w-xl rounded-lg border p-6 shadow-[0_1px_2px_rgba(9,9,11,0.04)] sm:p-8">
-      <div className="flex items-center gap-2">
-        <span className="bg-success-soft text-success flex h-8 w-8 items-center justify-center rounded-full">
-          <Check
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-        </span>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Your profile is ready
-        </h1>
-      </div>
-
-      <div className="mt-5">
-        <ClassOutcome
-          classJoin={classJoin}
-          classNameAtSave={classNameAtSave}
-        />
-      </div>
-
-      <div className="mt-8">
-        <Button
-          type="button"
-          size="lg"
-          className="w-full"
-          onClick={onContinue}
-        >
-          Continue to StarsTask
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function ClassOutcome({
-  classJoin,
-  classNameAtSave,
-}: {
-  classJoin: ClassJoinResult | null;
-  classNameAtSave: string;
-}) {
-  if (!classNameAtSave) {
-    return (
-      <Alert variant="info">
-        Saved. You did not enter a class, so we did not join you to one. You can
-        join later from My Classes.
-      </Alert>
-    );
-  }
-
-  switch (classJoin?.status) {
-    case "joined":
-      return (
-        <Alert variant="success">
-          Joined <strong>{classJoin.name}</strong>. Open My Classes to see its
-          assignments.
-        </Alert>
-      );
-    case "already_member":
-      return (
-        <Alert variant="info">
-          You are already a member of <strong>{classJoin.name}</strong>.
-        </Alert>
-      );
-    case "blocked_by_policy":
-      return (
-        <Alert variant="info">
-          Found <strong>{classJoin.name}</strong>, but this class joins by
-          invitation only. Ask a class admin for an invite link.
-        </Alert>
-      );
-    case "ambiguous":
-      return (
-        <Alert variant="warning">
-          More than one class matches <strong>{classNameAtSave}</strong>, so we
-          did not join any of them:{" "}
-          {classJoin.candidates.map((candidate) => candidate.name).join(", ")}.
-          Ask a class admin for an invite link to the right one.
-        </Alert>
-      );
-    default:
-      return (
-        <Alert variant="info">
-          Saved. <strong>{classNameAtSave}</strong> is recorded as your class.
-          Class workspaces join by invite link, so ask a class admin when you
-          are ready.
-        </Alert>
-      );
-  }
-}
+// CompletionPanel/ClassOutcome now live in the Welcome success rendering;
+// the dedicated join step reuses JoinClassForm for retry/skip paths.
 
 function Field({
   id,

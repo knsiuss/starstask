@@ -330,19 +330,27 @@ async function listLeaveRequests(
   }
 
   if (options.search) {
-    const studentIds = await findStudentIds(options.search);
+    const term = options.search.replace(/[%_]/g, "");
 
-    if (studentIds.length === 0) {
-      return {
-        items: [],
-        total: 0,
-        page: options.page,
-        pageSize: options.pageSize,
-        totalPages: 0,
-      };
+    if (options.studentId) {
+      // A student's own search matches their reference numbers; the
+      // nickname lookup below is for reviewer queues.
+      query = query.ilike("reference", `%${term}%`);
+    } else {
+      const studentIds = await findStudentIds(term);
+
+      if (studentIds.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page: options.page,
+          pageSize: options.pageSize,
+          totalPages: 0,
+        };
+      }
+
+      query = query.in("student_id", studentIds);
     }
-
-    query = query.in("student_id", studentIds);
   }
 
   const { data, error, count } = await query

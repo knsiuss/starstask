@@ -221,6 +221,8 @@ select option:checked {
   animation: skeleton-shimmer 1.8s ease-in-out infinite;
 }
 
+/* Skeleton shimmer handled by .skeleton above. */
+
 /* Gentle entrance for dashboard sections; --rise-delay staggers them. */
 @keyframes rise-in {
   from {
@@ -230,6 +232,201 @@ select option:checked {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Onboarding motions (Welcome & Initialization, Motions 01–04). */
+@keyframes st-brand-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes st-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes st-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(36px) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-2deg);
+  }
+}
+@keyframes st-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-42px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes st-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(42px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes st-orbit-reveal {
+  from {
+    stroke-dashoffset: 600;
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+@keyframes st-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes st-float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes st-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+@keyframes st-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+@keyframes st-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+@keyframes st-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes st-screen-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.st-brand-reveal {
+  animation: st-brand-reveal 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.st-fade-up {
+  animation: st-fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.st-enter-up {
+  animation: st-enter-up 1000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.st-enter-left {
+  animation: st-enter-left 1000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.st-enter-right {
+  animation: st-enter-right 1000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.st-orbit {
+  stroke-dasharray: 600;
+  animation: st-orbit-reveal 1200ms ease-out 400ms both;
+}
+.st-float {
+  animation: st-float 4.5s ease-in-out infinite;
+}
+.st-float-slow {
+  animation: st-float-slow 6s ease-in-out infinite;
+}
+.st-twinkle {
+  animation: st-twinkle 3s ease-in-out infinite;
+}
+.st-glow {
+  animation: st-glow 5s ease-in-out infinite;
+}
+.st-progress-track {
+  overflow: hidden;
+}
+.st-progress-bar {
+  animation: st-progress-slide 1.4s ease-in-out infinite;
+}
+.st-check-pop {
+  animation: st-check-pop 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.st-screen-fade {
+  animation: st-screen-fade 600ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-brand-reveal,
+  .st-fade-up,
+  .st-enter-up,
+  .st-enter-left,
+  .st-enter-right,
+  .st-orbit,
+  .st-float,
+  .st-float-slow,
+  .st-twinkle,
+  .st-glow,
+  .st-progress-bar,
+  .st-check-pop,
+  .st-screen-fade {
+    animation: none !important;
   }
 }
 

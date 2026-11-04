@@ -49,6 +49,8 @@ type ScheduleEntryFormProps = {
     value: ScheduleEntryValues[Key],
   ) => void;
   onReset: () => void;
+  /** Sidebar variant: two-column fields and a full-width submit button. */
+  compact?: boolean;
 };
 
 export function ScheduleEntryForm({
@@ -61,11 +63,16 @@ export function ScheduleEntryForm({
   onSubmit,
   onChange,
   onReset,
+  compact = false,
 }: ScheduleEntryFormProps) {
   return (
     <form
       onSubmit={onSubmit}
-      className="border-border bg-surface mt-5 rounded-lg border p-4"
+      className={
+        compact
+          ? undefined
+          : "border-border bg-surface mt-5 rounded-lg border p-4"
+      }
     >
       <h3 className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight">
         <PlusCircle
@@ -84,7 +91,13 @@ export function ScheduleEntryForm({
         </Alert>
       ) : null}
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        className={
+          compact
+            ? "mt-3 grid gap-3 sm:grid-cols-2"
+            : "mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        }
+      >
         <div>
           <Label htmlFor="schedule-subject">Subject</Label>
           <Select
@@ -187,6 +200,7 @@ export function ScheduleEntryForm({
         <Button
           type="submit"
           disabled={busyId !== null}
+          className={compact ? "w-full" : undefined}
         >
           {busyId === "new" || (editingId && busyId === editingId) ? (
             <Loader2

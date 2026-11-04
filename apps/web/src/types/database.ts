@@ -1785,6 +1785,28 @@ export interface Database {
         };
         Relationships: [];
       };
+      leave_lecturer_outcomes: {
+        Row: {
+          id: string;
+          request_id: string;
+          outcome: string;
+          recorded_by: string;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          request_id: string;
+          outcome: string;
+          recorded_by: string;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          note?: string | null;
+        };
+        Relationships: [];
+      };
       leave_requests: {
         Row: {
           id: string;
@@ -1903,6 +1925,8 @@ export interface Database {
           action: string;
           note: string | null;
           metadata: Json;
+          previous_status: string | null;
+          next_status: string | null;
           created_at: string;
         };
         Insert: {
@@ -1912,6 +1936,8 @@ export interface Database {
           action: string;
           note?: string | null;
           metadata?: Json;
+          previous_status?: string | null;
+          next_status?: string | null;
           created_at?: string;
         };
         Update: {
@@ -2273,6 +2299,9 @@ export interface Database {
           end_time: string;
           room: string | null;
           lecturer_name: string | null;
+          period: string | null;
+          start_date: string | null;
+          end_date: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -2286,6 +2315,9 @@ export interface Database {
           end_time: string;
           room?: string | null;
           lecturer_name?: string | null;
+          period?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -2297,6 +2329,9 @@ export interface Database {
           end_time?: string;
           room?: string | null;
           lecturer_name?: string | null;
+          period?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
           updated_at?: string;
         };
         Relationships: [

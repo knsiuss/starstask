@@ -30,7 +30,7 @@ describe("attendanceMeetingCreateSchema", () => {
     const parsed = attendanceMeetingCreateSchema.parse(baseMeeting);
 
     expect(parsed.lateAfterMinutes).toBe(10);
-    expect(parsed.radiusM).toBe(100);
+    expect(parsed.radiusM).toBe(200);
     expect(parsed.title).toBeUndefined();
   });
 

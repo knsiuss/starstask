@@ -144,8 +144,6 @@ export function pushWorkspacePanel(
 }
 
 /** Removes the topmost panel, revealing the one below it. */
-export function popWorkspacePanel(
-  panels: WorkspacePanel[],
-): WorkspacePanel[] {
+export function popWorkspacePanel(panels: WorkspacePanel[]): WorkspacePanel[] {
   return panels.slice(0, -1);
 }

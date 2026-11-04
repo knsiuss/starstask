@@ -151,11 +151,33 @@ magic bytes; the browser's declared MIME type is ignored.
 
 ## 5. UI states
 
-The form shows: loading while saving, per-field validation errors, a saving button state, a
-success panel, and one class result — joined, already a member, no match, ambiguous, or
-blocked by policy. Session expiry, network failure, and database failure surface as a
-retryable message. A profile can be complete without a class; the result says so plainly
-rather than implying membership.
+The flow after sign-in is three steps:
+
+1. **Account setup (form):** photo (optional, PNG/JPEG ≤ 2 MB, server-validated),
+   full name, nickname, NIM, university, and optional class name.
+2. **Welcome & initialization:** after a successful save, the Welcome screen
+   runs real operations — Initialize (save response proves `onboarded_at`),
+   Sync Data (authenticated `GET /api/my-assignments`), Almost Ready
+   (`router.refresh()` re-verifies the server onboarding gate). The
+   indeterminate progress bar never shows a percentage; a failure shows an
+   error with Retry (and Continue anyway, since synced data is non-essential),
+   and a 401 returns to `/login`. Completion shows "Your workspace is ready."
+   and auto-advances.
+3. **Join your class (when needed):** shown only when the save attempt left
+   the student without a class (empty, `no_match`, `ambiguous`, or
+   `blocked_by_policy`). It wraps the existing `JoinClassForm` (same
+   `POST /api/classes/join` backend) with a Skip for now button. `joined` /
+   `already_member` skips this step.
+
+The form shows per-field validation errors and a saving state; session
+expiry, network failure, and database failure surface as a retryable message.
+A profile can be complete without a class; the result says so plainly rather
+than implying membership.
+
+Returning users never see the Welcome screen: the server-side completion
+gates in `/login` and the workspace layout send complete profiles straight to
+the workspace, and page loads render server-side without a full-screen
+loader.
 
 ## 6. Manual setup
 

@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -7,6 +7,11 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.18";
+  };
   graphql_public: {
     Tables: {
       [_ in never]: never;
@@ -41,18 +46,17 @@ export type Database = {
           created_at: string;
           event_type: string;
           id: number;
-          metadata: NonNullable<Json>;
+          metadata: Json;
           resource_id: string | null;
           resource_type: string;
         };
-        ComputedFields: never;
         Insert: {
           actor_id?: string | null;
           class_id?: string | null;
           created_at?: string;
           event_type: string;
           id?: number;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
           resource_id?: string | null;
           resource_type: string;
         };
@@ -62,7 +66,7 @@ export type Database = {
           created_at?: string;
           event_type?: string;
           id?: number;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
           resource_id?: string | null;
           resource_type?: string;
         };
@@ -85,7 +89,6 @@ export type Database = {
           method: string | null;
           route_path: string | null;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           error_digest?: string | null;
@@ -114,7 +117,6 @@ export type Database = {
           original_filename: string;
           storage_path: string;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           created_at?: string;
@@ -149,7 +151,6 @@ export type Database = {
           completed_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           completed_at?: string;
@@ -185,7 +186,6 @@ export type Database = {
           status: string;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           class_id: string;
@@ -240,7 +240,6 @@ export type Database = {
           reason: string | null;
           reviewer_id: string | null;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           created_at?: string;
@@ -277,9 +276,8 @@ export type Database = {
           editor_id: string | null;
           id: string;
           revision: number;
-          snapshot: NonNullable<Json>;
+          snapshot: Json;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           change_kind?: string;
@@ -289,7 +287,7 @@ export type Database = {
           editor_id?: string | null;
           id?: string;
           revision: number;
-          snapshot?: NonNullable<Json>;
+          snapshot?: Json;
         };
         Update: {
           assignment_id?: string;
@@ -300,7 +298,7 @@ export type Database = {
           editor_id?: string | null;
           id?: string;
           revision?: number;
-          snapshot?: NonNullable<Json>;
+          snapshot?: Json;
         };
         Relationships: [
           {
@@ -334,7 +332,7 @@ export type Database = {
           id: string;
           lecturer_name: string | null;
           published_at: string | null;
-          reference_urls: NonNullable<Json>;
+          reference_urls: Json;
           rejection_reason: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -349,7 +347,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           academic_year?: string | null;
           archived_at?: string | null;
@@ -364,12 +361,12 @@ export type Database = {
           id?: string;
           lecturer_name?: string | null;
           published_at?: string | null;
-          reference_urls?: NonNullable<Json>;
+          reference_urls?: Json;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           revision?: number;
-          search_vector?: never;
+          search_vector?: unknown;
           semester?: string | null;
           source_label?: string | null;
           status?: string;
@@ -393,12 +390,12 @@ export type Database = {
           id?: string;
           lecturer_name?: string | null;
           published_at?: string | null;
-          reference_urls?: NonNullable<Json>;
+          reference_urls?: Json;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           revision?: number;
-          search_vector?: never;
+          search_vector?: unknown;
           semester?: string | null;
           source_label?: string | null;
           status?: string;
@@ -432,45 +429,6 @@ export type Database = {
           },
         ];
       };
-      attendance_verification_attempts: {
-        Row: {
-          accuracy_m: number | null;
-          created_at: string;
-          distance_m: number | null;
-          id: string;
-          outcome: string;
-          session_id: string;
-          user_id: string;
-        };
-        ComputedFields: never;
-        Insert: {
-          accuracy_m?: number | null;
-          created_at?: string;
-          distance_m?: number | null;
-          id?: string;
-          outcome: string;
-          session_id: string;
-          user_id: string;
-        };
-        Update: {
-          accuracy_m?: number | null;
-          created_at?: string;
-          distance_m?: number | null;
-          id?: string;
-          outcome?: string;
-          session_id?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "attendance_verification_attempts_session_id_fkey";
-            columns: ["session_id"];
-            isOneToOne: false;
-            referencedRelation: "discussion_sessions";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       attendance_correction_audits: {
         Row: {
           admin_id: string | null;
@@ -487,7 +445,6 @@ export type Database = {
           subject_id: string | null;
           verification_method: string;
         };
-        ComputedFields: never;
         Insert: {
           admin_id?: string | null;
           class_id: string;
@@ -520,13 +477,6 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "attendance_correction_audits_session_id_fkey";
-            columns: ["session_id"];
-            isOneToOne: false;
-            referencedRelation: "discussion_sessions";
-            referencedColumns: ["id"];
-          },
-          {
             foreignKeyName: "attendance_correction_audits_class_id_fkey";
             columns: ["class_id"];
             isOneToOne: false;
@@ -534,10 +484,55 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "attendance_correction_audits_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "attendance_correction_audits_subject_id_fkey";
             columns: ["subject_id"];
             isOneToOne: false;
             referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      attendance_verification_attempts: {
+        Row: {
+          accuracy_m: number | null;
+          created_at: string;
+          distance_m: number | null;
+          id: string;
+          outcome: string;
+          session_id: string;
+          user_id: string;
+        };
+        Insert: {
+          accuracy_m?: number | null;
+          created_at?: string;
+          distance_m?: number | null;
+          id?: string;
+          outcome: string;
+          session_id: string;
+          user_id: string;
+        };
+        Update: {
+          accuracy_m?: number | null;
+          created_at?: string;
+          distance_m?: number | null;
+          id?: string;
+          outcome?: string;
+          session_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "attendance_verification_attempts_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions";
             referencedColumns: ["id"];
           },
         ];
@@ -551,9 +546,8 @@ export type Database = {
           entity_id: string | null;
           entity_type: string;
           id: number;
-          metadata: NonNullable<Json>;
+          metadata: Json;
         };
-        ComputedFields: never;
         Insert: {
           action: string;
           actor_id?: string | null;
@@ -562,7 +556,7 @@ export type Database = {
           entity_id?: string | null;
           entity_type: string;
           id?: never;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
         };
         Update: {
           action?: string;
@@ -572,7 +566,7 @@ export type Database = {
           entity_id?: string | null;
           entity_type?: string;
           id?: never;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
         };
         Relationships: [
           {
@@ -593,7 +587,6 @@ export type Database = {
           reason: string | null;
           user_id: string | null;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           event_type: string;
@@ -619,7 +612,6 @@ export type Database = {
           class_id: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           assigned_at?: string;
           assigned_by?: string | null;
@@ -651,7 +643,6 @@ export type Database = {
           note: string | null;
           reviewer_id: string;
         };
-        ComputedFields: never;
         Insert: {
           application_id: string;
           created_at?: string;
@@ -701,7 +692,6 @@ export type Database = {
           supporting_info: string | null;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           academic_year: string;
           applicant_id: string;
@@ -774,7 +764,6 @@ export type Database = {
           updated_at: string;
           visibility: string;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           created_at?: string;
@@ -832,24 +821,29 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           day_of_week: number;
+          end_date: string | null;
           end_time: string;
           id: string;
           lecturer_name: string | null;
+          period: string | null;
           room: string | null;
+          start_date: string | null;
           start_time: string;
           subject_id: string;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           created_at?: string;
           created_by?: string | null;
           day_of_week: number;
+          end_date?: string | null;
           end_time: string;
           id?: string;
           lecturer_name?: string | null;
+          period?: string | null;
           room?: string | null;
+          start_date?: string | null;
           start_time: string;
           subject_id: string;
           updated_at?: string;
@@ -859,10 +853,13 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           day_of_week?: number;
+          end_date?: string | null;
           end_time?: string;
           id?: string;
           lecturer_name?: string | null;
+          period?: string | null;
           room?: string | null;
+          start_date?: string | null;
           start_time?: string;
           subject_id?: string;
           updated_at?: string;
@@ -891,7 +888,6 @@ export type Database = {
           invitation_id: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           accepted_at?: string;
           id?: string;
@@ -921,7 +917,6 @@ export type Database = {
           invitation_id: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           declined_at?: string;
           id?: string;
@@ -958,7 +953,6 @@ export type Database = {
           token_hash: string;
           used_count: number;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           created_at?: string;
@@ -1002,7 +996,6 @@ export type Database = {
           joined_via: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           joined_at?: string;
@@ -1039,7 +1032,6 @@ export type Database = {
           status: string;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           code?: string | null;
@@ -1096,7 +1088,6 @@ export type Database = {
           storage_path: string;
           uploaded_by: string | null;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           file_size: number;
@@ -1147,7 +1138,6 @@ export type Database = {
           submitted_at: string | null;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           created_at?: string;
@@ -1194,19 +1184,18 @@ export type Database = {
           actor_id: string | null;
           created_at: string;
           id: string;
-          metadata: NonNullable<Json>;
+          metadata: Json;
           new_status: string | null;
           note: string | null;
           previous_status: string | null;
           request_id: string;
         };
-        ComputedFields: never;
         Insert: {
           action: string;
           actor_id?: string | null;
           created_at?: string;
           id?: string;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
           new_status?: string | null;
           note?: string | null;
           previous_status?: string | null;
@@ -1217,7 +1206,7 @@ export type Database = {
           actor_id?: string | null;
           created_at?: string;
           id?: string;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
           new_status?: string | null;
           note?: string | null;
           previous_status?: string | null;
@@ -1258,14 +1247,13 @@ export type Database = {
           status: string;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           academic_year: string;
           archived_at?: string | null;
           archived_by?: string | null;
           avatar_url?: string | null;
           class_code?: string | null;
-          class_code_normalized?: never;
+          class_code_normalized?: string | null;
           course_id: string;
           course_name: string;
           cover_url?: string | null;
@@ -1274,7 +1262,7 @@ export type Database = {
           description: string;
           id?: string;
           institution?: string | null;
-          institution_normalized?: never;
+          institution_normalized?: string | null;
           join_policy?: string;
           lecturer_name?: string | null;
           name: string;
@@ -1289,7 +1277,7 @@ export type Database = {
           archived_by?: string | null;
           avatar_url?: string | null;
           class_code?: string | null;
-          class_code_normalized?: never;
+          class_code_normalized?: string | null;
           course_id?: string;
           course_name?: string;
           cover_url?: string | null;
@@ -1298,7 +1286,7 @@ export type Database = {
           description?: string;
           id?: string;
           institution?: string | null;
-          institution_normalized?: never;
+          institution_normalized?: string | null;
           join_policy?: string;
           lecturer_name?: string | null;
           name?: string;
@@ -1330,7 +1318,6 @@ export type Database = {
           title: string;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           created_at?: string;
@@ -1382,15 +1369,14 @@ export type Database = {
           normalized_code: string | null;
           normalized_name: string | null;
         };
-        ComputedFields: never;
         Insert: {
           code?: string | null;
           created_at?: string;
           department?: string | null;
           id?: string;
           name: string;
-          normalized_code?: never;
-          normalized_name?: never;
+          normalized_code?: string | null;
+          normalized_name?: string | null;
         };
         Update: {
           code?: string | null;
@@ -1398,8 +1384,8 @@ export type Database = {
           department?: string | null;
           id?: string;
           name?: string;
-          normalized_code?: never;
-          normalized_name?: never;
+          normalized_code?: string | null;
+          normalized_name?: string | null;
         };
         Relationships: [];
       };
@@ -1411,7 +1397,6 @@ export type Database = {
           id: number;
           incident_id: string;
         };
-        ComputedFields: never;
         Insert: {
           author_id?: string | null;
           body: string;
@@ -1448,7 +1433,6 @@ export type Database = {
           updated_at: string;
           updated_by: string | null;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -1494,7 +1478,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           accuracy_m?: number | null;
           checked_in_at?: string;
@@ -1561,7 +1544,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           attempt_count?: number;
           created_at?: string;
@@ -1611,7 +1593,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           id?: string;
@@ -1674,7 +1655,6 @@ export type Database = {
           updated_at: string;
           visibility: string;
         };
-        ComputedFields: never;
         Insert: {
           agenda?: string | null;
           assignment_id?: string | null;
@@ -1760,6 +1740,13 @@ export type Database = {
             referencedRelation: "classes";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "discussion_sessions_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
         ];
       };
       feedback_entries: {
@@ -1773,7 +1760,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           category: string;
           created_at?: string;
@@ -1810,7 +1796,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           access_token_ciphertext: string;
           calendar_id?: string;
@@ -1854,7 +1839,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           attempt_count?: number;
           calendar_id?: string;
@@ -1893,6 +1877,41 @@ export type Database = {
           },
         ];
       };
+      leave_lecturer_outcomes: {
+        Row: {
+          created_at: string;
+          id: string;
+          note: string | null;
+          outcome: string;
+          recorded_by: string;
+          request_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          outcome: string;
+          recorded_by: string;
+          request_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          outcome?: string;
+          recorded_by?: string;
+          request_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "leave_lecturer_outcomes_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "leave_requests";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       leave_request_evidence: {
         Row: {
           created_at: string;
@@ -1907,7 +1926,6 @@ export type Database = {
           storage_path: string;
           uploaded_by: string | null;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           file_size: number;
@@ -1952,7 +1970,6 @@ export type Database = {
           request_id: string;
           student_display_name: string;
         };
-        ComputedFields: never;
         Insert: {
           forwarding_id: string;
           leave_end_date: string;
@@ -1998,7 +2015,6 @@ export type Database = {
           report_reference: string;
           request_count: number;
         };
-        ComputedFields: never;
         Insert: {
           class_id: string;
           created_at?: string;
@@ -2041,18 +2057,21 @@ export type Database = {
           actor_id: string | null;
           created_at: string;
           id: string;
-          metadata: NonNullable<Json>;
+          metadata: Json;
+          next_status: string | null;
           note: string | null;
+          previous_status: string | null;
           request_id: string;
         };
-        ComputedFields: never;
         Insert: {
           action: string;
           actor_id?: string | null;
           created_at?: string;
           id?: string;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
+          next_status?: string | null;
           note?: string | null;
+          previous_status?: string | null;
           request_id: string;
         };
         Update: {
@@ -2060,8 +2079,10 @@ export type Database = {
           actor_id?: string | null;
           created_at?: string;
           id?: string;
-          metadata?: NonNullable<Json>;
+          metadata?: Json;
+          next_status?: string | null;
           note?: string | null;
+          previous_status?: string | null;
           request_id?: string;
         };
         Relationships: [
@@ -2076,7 +2097,6 @@ export type Database = {
       };
       leave_requests: {
         Row: {
-          subject_ids: string[];
           cancellation_note: string | null;
           cancelled_at: string | null;
           cancelled_by: string | null;
@@ -2084,7 +2104,7 @@ export type Database = {
           created_at: string;
           document_issue_date: string | null;
           explanation: string | null;
-          field_sources: NonNullable<Json>;
+          field_sources: Json;
           forwarded_at: string | null;
           id: string;
           leave_end_date: string | null;
@@ -2098,10 +2118,10 @@ export type Database = {
           reference: string;
           status: string;
           student_id: string;
+          subject_ids: string[];
           submitted_at: string | null;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           cancellation_note?: string | null;
           cancelled_at?: string | null;
@@ -2110,7 +2130,7 @@ export type Database = {
           created_at?: string;
           document_issue_date?: string | null;
           explanation?: string | null;
-          field_sources?: NonNullable<Json>;
+          field_sources?: Json;
           forwarded_at?: string | null;
           id?: string;
           leave_end_date?: string | null;
@@ -2136,7 +2156,7 @@ export type Database = {
           created_at?: string;
           document_issue_date?: string | null;
           explanation?: string | null;
-          field_sources?: NonNullable<Json>;
+          field_sources?: Json;
           forwarded_at?: string | null;
           id?: string;
           leave_end_date?: string | null;
@@ -2180,7 +2200,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           attempt_count?: number;
@@ -2230,14 +2249,13 @@ export type Database = {
           kind: string;
           last_error_category: string | null;
           next_attempt_at: string;
-          payload: NonNullable<Json>;
+          payload: Json;
           read_at: string | null;
           sent_at: string | null;
           status: string;
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           attempt_count?: number;
           created_at?: string;
@@ -2246,7 +2264,7 @@ export type Database = {
           kind: string;
           last_error_category?: string | null;
           next_attempt_at?: string;
-          payload?: NonNullable<Json>;
+          payload?: Json;
           read_at?: string | null;
           sent_at?: string | null;
           status?: string;
@@ -2261,7 +2279,7 @@ export type Database = {
           kind?: string;
           last_error_category?: string | null;
           next_attempt_at?: string;
-          payload?: NonNullable<Json>;
+          payload?: Json;
           read_at?: string | null;
           sent_at?: string | null;
           status?: string;
@@ -2282,7 +2300,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           push_enabled?: boolean;
@@ -2321,7 +2338,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           description?: string | null;
@@ -2356,7 +2372,6 @@ export type Database = {
           granted_by: string | null;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           granted_at?: string;
           granted_by?: string | null;
@@ -2384,7 +2399,6 @@ export type Database = {
           university: string | null;
           updated_at: string;
         };
-        ComputedFields: never;
         Insert: {
           avatar_url?: string | null;
           bio?: string | null;
@@ -2428,7 +2442,6 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           auth: string;
           created_at?: string;
@@ -2461,7 +2474,6 @@ export type Database = {
           key: string;
           window_started_at: string;
         };
-        ComputedFields: never;
         Insert: {
           hits?: number;
           key: string;
@@ -2481,7 +2493,6 @@ export type Database = {
           id: string;
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           assignment_id: string;
           created_at?: string;
@@ -2558,6 +2569,61 @@ export type Database = {
         Args: { object_name: string };
         Returns: string;
       };
+      attendance_correction_audit_list: {
+        Args: { p_class_id: string; p_subject_id?: string };
+        Returns: {
+          admin_name: string;
+          created_at: string;
+          id: string;
+          meeting_date: string;
+          meeting_number: number;
+          new_status: string;
+          physically_verified: boolean;
+          previous_status: string;
+          reason: string;
+          session_id: string;
+          student_id: string;
+          student_name: string;
+          student_nim: string;
+          subject_id: string;
+          subject_name: string;
+          verification_method: string;
+        }[];
+      };
+      attendance_meeting_failures: {
+        Args: { p_session_id: string };
+        Returns: {
+          accuracy_m: number;
+          created_at: string;
+          display_name: string;
+          distance_m: number;
+          outcome: string;
+          user_id: string;
+        }[];
+      };
+      attendance_meeting_roster: {
+        Args: { p_session_id: string };
+        Returns: {
+          accuracy_m: number;
+          checked_in_at: string;
+          display_name: string;
+          distance_m: number;
+          eligible: boolean;
+          full_name: string;
+          identity_verified: boolean;
+          joined_at: string;
+          method: string;
+          nim: string;
+          note: string;
+          reviewed_at: string;
+          status: string;
+          user_id: string;
+        }[];
+      };
+      attendance_normalize_identity: {
+        Args: { p_value: string };
+        Returns: string;
+      };
       become_class_representative: {
         Args: { p_class_id: string };
         Returns: string;
@@ -2575,10 +2641,7 @@ export type Database = {
         Args: { p_class_id: string };
         Returns: boolean;
       };
-      can_publish_public_assignment: {
-        Args: Record<PropertyKey, never>;
-        Returns: boolean;
-      };
+      can_publish_public_assignment: { Args: never; Returns: boolean };
       can_review_leave_request: {
         Args: { p_request_id: string };
         Returns: boolean;
@@ -2597,15 +2660,6 @@ export type Database = {
         Returns: undefined;
       };
       cancel_session_rsvp: { Args: { p_session_id: string }; Returns: boolean };
-      check_in_discussion_session: {
-        Args: {
-          p_accuracy_m: number;
-          p_latitude: number;
-          p_longitude: number;
-          p_session_id: string;
-        };
-        Returns: Json;
-      };
       check_in_attendance_meeting: {
         Args: {
           p_accuracy_m: number;
@@ -2617,178 +2671,14 @@ export type Database = {
         };
         Returns: Json;
       };
-      attendance_meeting_roster: {
-        Args: { p_session_id: string };
-        Returns: {
-          accuracy_m: number | null;
-          checked_in_at: string | null;
-          display_name: string | null;
-          distance_m: number | null;
-          eligible: boolean;
-          full_name: string;
-          identity_verified: boolean;
-          joined_at: string;
-          method: string | null;
-          nim: string | null;
-          note: string | null;
-          reviewed_at: string | null;
-          status: string;
-          user_id: string;
-        }[];
-      };
-      attendance_meeting_failures: {
-        Args: { p_session_id: string };
-        Returns: {
-          accuracy_m: number | null;
-          created_at: string;
-          display_name: string | null;
-          distance_m: number | null;
-          outcome: string;
-          user_id: string;
-        }[];
-      };
-      attendance_correction_audit_list: {
-        Args: { p_class_id: string; p_subject_id?: string | null };
-        Returns: {
-          admin_name: string;
-          created_at: string;
-          id: string;
-          meeting_date: string | null;
-          meeting_number: number | null;
-          new_status: string;
-          physically_verified: boolean;
-          previous_status: string;
-          reason: string;
-          session_id: string;
-          student_id: string;
-          student_name: string;
-          student_nim: string | null;
-          subject_id: string | null;
-          subject_name: string | null;
-          verification_method: string;
-        }[];
-      };
-      record_attendance_correction: {
+      check_in_discussion_session: {
         Args: {
-          p_session_id: string;
-          p_user_id: string;
-          p_status: string;
-          p_reason: string;
-          p_physically_verified?: boolean;
-        };
-        Returns: string;
-      };
-      class_attendance_meeting_list: {
-        Args: { p_class_id: string };
-        Returns: {
-          absent_count: number;
-          attendance_closed_at: string | null;
-          attendance_closes_at: string | null;
-          attendance_finalized_at: string | null;
-          attendance_opened_at: string | null;
-          attendance_opens_at: string | null;
-          ends_at: string;
-          excused_count: number;
-          expected_count: number;
-          failed_count: number;
-          late_after_minutes: number;
-          late_count: number;
-          location: string | null;
-          meeting_date: string | null;
-          meeting_number: number;
-          not_recorded_count: number;
-          present_count: number;
-          radius_m: number;
-          session_id: string;
-          starts_at: string;
-          subject_code: string | null;
-          subject_id: string;
-          subject_name: string;
-          title: string;
-        }[];
-      };
-      class_attendance_recap: {
-        Args: { p_class_id: string; p_subject_id: string };
-        Returns: {
-          attendance_closed_at: string | null;
-          attendance_closes_at: string | null;
-          attendance_finalized_at: string | null;
-          attendance_opened_at: string | null;
-          attendance_opens_at: string | null;
-          eligible: boolean;
-          ends_at: string;
-          full_name: string;
-          joined_at: string;
-          location: string | null;
-          meeting_date: string | null;
-          meeting_number: number;
-          nim: string | null;
-          session_id: string;
-          starts_at: string;
-          status: string;
-          title: string;
-          user_id: string;
-        }[];
-      };
-      class_attendance_roster: {
-        Args: { p_class_id: string };
-        Returns: {
-          display_name: string | null;
-          full_name: string;
-          joined_at: string;
-          nim: string | null;
-          user_id: string;
-        }[];
-      };
-      close_attendance_meeting: {
-        Args: { p_finalize?: boolean; p_session_id: string };
-        Returns: number;
-      };
-      create_attendance_meeting: {
-        Args: {
-          p_class_id: string;
-          p_closes_at: string;
-          p_ends_at: string;
-          p_late_after_minutes?: number;
-          p_latitude?: number | null;
-          p_location: string;
-          p_longitude?: number | null;
-          p_meeting_date: string;
-          p_meeting_number: number;
-          p_opens_at: string;
-          p_radius_m?: number;
-          p_starts_at: string;
-          p_subject_id: string;
-          p_title?: string | null;
-        };
-        Returns: string;
-      };
-      log_attendance_export: {
-        Args: {
-          p_class_id: string;
-          p_kind: string;
-          p_session_id: string | null;
-          p_subject_id: string | null;
-        };
-        Returns: undefined;
-      };
-      open_attendance_meeting: {
-        Args: { p_session_id: string };
-        Returns: boolean;
-      };
-      reopen_attendance_meeting: {
-        Args: { p_session_id: string };
-        Returns: number;
-      };
-      update_attendance_meeting_location: {
-        Args: {
+          p_accuracy_m: number;
           p_latitude: number;
           p_longitude: number;
-          p_radius_m: number;
-          p_reason: string;
           p_session_id: string;
         };
-        Returns: boolean;
+        Returns: Json;
       };
       claim_notification_deliveries: {
         Args: { p_limit?: number; p_now: string };
@@ -2840,6 +2730,35 @@ export type Database = {
           user_id: string;
         }[];
       };
+      class_attendance_meeting_list: {
+        Args: { p_class_id: string };
+        Returns: {
+          absent_count: number;
+          attendance_closed_at: string;
+          attendance_closes_at: string;
+          attendance_finalized_at: string;
+          attendance_opened_at: string;
+          attendance_opens_at: string;
+          ends_at: string;
+          excused_count: number;
+          expected_count: number;
+          failed_count: number;
+          late_after_minutes: number;
+          late_count: number;
+          location: string;
+          meeting_date: string;
+          meeting_number: number;
+          not_recorded_count: number;
+          present_count: number;
+          radius_m: number;
+          session_id: string;
+          starts_at: string;
+          subject_code: string;
+          subject_id: string;
+          subject_name: string;
+          title: string;
+        }[];
+      };
       class_attendance_member_summary: {
         Args: { p_class_id: string };
         Returns: {
@@ -2850,6 +2769,33 @@ export type Database = {
           pending_count: number;
           present_count: number;
           unrecorded_count: number;
+          user_id: string;
+        }[];
+      };
+      class_attendance_recap: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: {
+          eligible: boolean;
+          full_name: string;
+          joined_at: string;
+          location: string;
+          meeting_date: string;
+          meeting_number: number;
+          nim: string;
+          session_id: string;
+          starts_at: string;
+          status: string;
+          title: string;
+          user_id: string;
+        }[];
+      };
+      class_attendance_roster: {
+        Args: { p_class_id: string };
+        Returns: {
+          display_name: string;
+          full_name: string;
+          joined_at: string;
+          nim: string;
           user_id: string;
         }[];
       };
@@ -2869,6 +2815,10 @@ export type Database = {
       clear_discussion_session_checkin_location: {
         Args: { p_session_id: string };
         Returns: boolean;
+      };
+      close_attendance_meeting: {
+        Args: { p_finalize?: boolean; p_session_id: string };
+        Returns: number;
       };
       complete_leave_forwarding: {
         Args: {
@@ -2920,6 +2870,25 @@ export type Database = {
       consume_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number };
         Returns: boolean;
+      };
+      create_attendance_meeting: {
+        Args: {
+          p_class_id: string;
+          p_closes_at: string;
+          p_ends_at: string;
+          p_late_after_minutes?: number;
+          p_latitude?: number;
+          p_location: string;
+          p_longitude?: number;
+          p_meeting_date: string;
+          p_meeting_number: number;
+          p_opens_at: string;
+          p_radius_m?: number;
+          p_starts_at: string;
+          p_subject_id: string;
+          p_title?: string;
+        };
+        Returns: string;
       };
       create_class_invitation: {
         Args: {
@@ -3019,10 +2988,7 @@ export type Database = {
         Args: { p_endpoint: string };
         Returns: boolean;
       };
-      developer_applied_migrations: {
-        Args: Record<PropertyKey, never>;
-        Returns: Json;
-      };
+      developer_applied_migrations: { Args: never; Returns: Json };
       developer_class_metrics: {
         Args: { p_limit?: number };
         Returns: {
@@ -3056,10 +3022,7 @@ export type Database = {
           total_users: number;
         }[];
       };
-      developer_database_health: {
-        Args: Record<PropertyKey, never>;
-        Returns: Json;
-      };
+      developer_database_health: { Args: never; Returns: Json };
       discard_class_verification: {
         Args: { p_request_id: string };
         Returns: string[];
@@ -3123,13 +3086,10 @@ export type Database = {
         }[];
       };
       get_invitation_preview: { Args: { p_token: string }; Returns: Json };
-      get_my_declared_position: {
-        Args: Record<PropertyKey, never>;
-        Returns: string;
-      };
-      get_my_profile: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_my_declared_position: { Args: never; Returns: string };
+      get_my_profile: { Args: never; Returns: Json };
       get_platform_admin_overview: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           active_classes: number;
           approved_applications: number;
@@ -3155,7 +3115,7 @@ export type Database = {
         Args: { p_request_id: string };
         Returns: boolean;
       };
-      is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_platform_admin: { Args: never; Returns: boolean };
       join_class_by_name: { Args: { p_class_name: string }; Returns: Json };
       leave_request_class_id: {
         Args: { p_request_id: string };
@@ -3188,7 +3148,6 @@ export type Database = {
           course_code: string;
           course_id: string;
           course_name: string;
-          cover_url: string | null;
           created_at: string;
           deadline: string;
           description: string;
@@ -3221,7 +3180,6 @@ export type Database = {
           academic_year: string;
           class_code: string;
           course_name: string;
-          cover_url: string | null;
           created_at: string;
           description: string;
           id: string;
@@ -3292,7 +3250,6 @@ export type Database = {
           archived_at: string;
           class_code: string;
           course_name: string;
-          cover_url: string | null;
           created_at: string;
           description: string;
           id: string;
@@ -3347,6 +3304,25 @@ export type Database = {
           user_id: string;
         }[];
       };
+      log_attendance_export: {
+        Args: {
+          p_class_id: string;
+          p_kind: string;
+          p_session_id: string;
+          p_subject_id: string;
+        };
+        Returns: undefined;
+      };
+      log_attendance_verification: {
+        Args: {
+          p_accuracy_m?: number;
+          p_distance_m?: number;
+          p_outcome: string;
+          p_session_id: string;
+          p_user_id: string;
+        };
+        Returns: undefined;
+      };
       mark_notification_events_read: {
         Args: { p_ids?: string[] };
         Returns: number;
@@ -3378,6 +3354,10 @@ export type Database = {
         };
         Returns: number;
       };
+      open_attendance_meeting: {
+        Args: { p_session_id: string };
+        Returns: boolean;
+      };
       publish_class_assignment: {
         Args: { p_assignment_id: string };
         Returns: boolean;
@@ -3401,6 +3381,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      record_attendance_correction: {
+        Args: {
+          p_physically_verified?: boolean;
+          p_reason: string;
+          p_session_id: string;
+          p_status: string;
+          p_user_id: string;
+        };
+        Returns: string;
+      };
       record_audit: {
         Args: {
           p_action: string;
@@ -3418,6 +3408,10 @@ export type Database = {
           p_status: string;
           p_user_id: string;
         };
+        Returns: string;
+      };
+      record_leave_lecturer_outcome: {
+        Args: { p_note?: string; p_outcome: string; p_request_id: string };
         Returns: string;
       };
       record_leave_request_ocr: {
@@ -3453,6 +3447,10 @@ export type Database = {
       remove_leave_request_evidence: {
         Args: { p_evidence_id: string };
         Returns: string;
+      };
+      reopen_attendance_meeting: {
+        Args: { p_session_id: string };
+        Returns: number;
       };
       report_assignment: {
         Args: { p_assignment_id: string; p_note?: string; p_reason: string };
@@ -3562,6 +3560,14 @@ export type Database = {
         Args: { p_class_id: string; p_policy: string };
         Returns: boolean;
       };
+      set_class_media: {
+        Args: {
+          p_avatar_url?: string;
+          p_class_id: string;
+          p_cover_url?: string;
+        };
+        Returns: undefined;
+      };
       set_class_status: {
         Args: { p_class_id: string; p_status: string };
         Returns: boolean;
@@ -3579,19 +3585,11 @@ export type Database = {
         Args: { p_session_id: string; p_status: string };
         Returns: boolean;
       };
-      set_my_avatar_url: { Args: { p_avatar_url: string }; Returns: undefined };
-      set_class_media: {
-        Args: {
-          p_class_id: string;
-          p_avatar_url?: string | null;
-          p_cover_url?: string | null;
-        };
-        Returns: undefined;
-      };
       set_leave_request_subjects: {
         Args: { p_request_id: string; p_subject_ids: string[] };
         Returns: undefined;
       };
+      set_my_avatar_url: { Args: { p_avatar_url: string }; Returns: undefined };
       set_my_declared_position: {
         Args: { p_position: string };
         Returns: string;
@@ -3623,6 +3621,16 @@ export type Database = {
       submit_leave_request: {
         Args: { p_request_id: string };
         Returns: undefined;
+      };
+      update_attendance_meeting_location: {
+        Args: {
+          p_latitude: number;
+          p_longitude: number;
+          p_radius_m: number;
+          p_reason: string;
+          p_session_id: string;
+        };
+        Returns: boolean;
       };
       update_class_metadata: {
         Args: {

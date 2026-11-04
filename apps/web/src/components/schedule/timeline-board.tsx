@@ -11,6 +11,7 @@ import {
   MAX_VISIBLE_LANES,
   diffDays,
   layoutWeekRow,
+  shiftKey,
   splitIntoWeeks,
   type PositionedItem,
   type TimelineItem,
@@ -47,6 +48,11 @@ type TimelineBoardProps = {
   todayKey: string;
   classes: CalendarClassOption[];
   subjects: CalendarSubjectOption[];
+  /**
+   * Mobile month view: date cells show indicators instead of full
+   * spanning bars, and each cell links to the list view for that date.
+   */
+  compact?: boolean;
 };
 
 /**
@@ -62,9 +68,11 @@ export function TimelineBoard({
   todayKey: serverTodayKey,
   classes,
   subjects,
+  compact = false,
 }: TimelineBoardProps) {
   const todayKey = useJakartaToday(serverTodayKey);
   const weeks = splitIntoWeeks(days);
+  const markedKeys = React.useMemo(() => buildMarkedDayKeys(items), [items]);
   const [moreContext, setMoreContext] = React.useState<{
     weekStartKey: string;
     hidden: TimelineItem[];
@@ -88,6 +96,8 @@ export function TimelineBoard({
             todayKey={todayKey}
             isWeekView={view === "week"}
             showTopBorder={index > 0}
+            compact={compact}
+            markedKeys={markedKeys}
             onMore={(hidden) =>
               setMoreContext({ weekStartKey: rowStartKey, hidden })
             }
@@ -126,6 +136,21 @@ function useJakartaToday(initialKey: string): string {
   return todayKey;
 }
 
+/** Days touched by at least one item, used by the compact dot indicators. */
+function buildMarkedDayKeys(items: readonly TimelineItem[]): Set<string> {
+  const marked = new Set<string>();
+
+  for (const item of items) {
+    const span = diffDays(item.startKey, item.endKey);
+
+    for (let offset = 0; offset <= span; offset += 1) {
+      marked.add(shiftKey(item.startKey, offset));
+    }
+  }
+
+  return marked;
+}
+
 function WeekdayHeader() {
   return (
     <div className="border-border bg-subtle grid grid-cols-7 border-b">
@@ -149,6 +174,8 @@ type WeekRowProps = {
   todayKey: string;
   isWeekView: boolean;
   showTopBorder: boolean;
+  compact: boolean;
+  markedKeys: ReadonlySet<string>;
   onMore: (hidden: TimelineItem[]) => void;
   classes: CalendarClassOption[];
   subjects: CalendarSubjectOption[];
@@ -162,6 +189,8 @@ function WeekRow({
   todayKey,
   isWeekView,
   showTopBorder,
+  compact,
+  markedKeys,
   onMore,
   classes,
   subjects,
@@ -184,50 +213,54 @@ function WeekRow({
             key={day.dateKey}
             day={day}
             todayKey={todayKey}
+            compact={compact}
+            marked={markedKeys.has(day.dateKey)}
           />
         ))}
       </div>
 
-      <div
-        className="relative"
-        style={{ height: `${Math.max(height, emptyStateMin)}px` }}
-      >
-        {layout.items.length === 0 ? (
-          <div className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center text-xs">
-            —
-          </div>
-        ) : null}
+      {compact ? null : (
+        <div
+          className="relative"
+          style={{ height: `${Math.max(height, emptyStateMin)}px` }}
+        >
+          {layout.items.length === 0 ? (
+            <div className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center text-xs">
+              —
+            </div>
+          ) : null}
 
-        {layout.items.map((item) => (
-          <Bar
-            key={item.id}
-            item={item}
-            rowStartKey={rowStartKey}
-            rowEndKey={rowEndKey}
+          {layout.items.map((item) => (
+            <Bar
+              key={item.id}
+              item={item}
+              rowStartKey={rowStartKey}
+              rowEndKey={rowEndKey}
+              todayKey={todayKey}
+              classes={classes}
+              subjects={subjects}
+            />
+          ))}
+
+          {needsMore ? (
+            <button
+              type="button"
+              onClick={() => onMore(layout.hidden)}
+              className="text-accent hover:bg-accent-soft focus-visible:outline-accent absolute right-2 z-10 rounded-full px-2.5 py-1 text-[11px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{
+                top: 6 + MAX_VISIBLE_LANES * (LANE_HEIGHT + LANE_GAP),
+              }}
+            >
+              +{layout.hidden.length} more
+            </button>
+          ) : null}
+
+          <TodayLine
+            week={week}
             todayKey={todayKey}
-            classes={classes}
-            subjects={subjects}
           />
-        ))}
-
-        {needsMore ? (
-          <button
-            type="button"
-            onClick={() => onMore(layout.hidden)}
-            className="text-accent hover:bg-accent-soft focus-visible:outline-accent absolute right-2 z-10 rounded-full px-2.5 py-1 text-[11px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
-            style={{
-              top: 6 + MAX_VISIBLE_LANES * (LANE_HEIGHT + LANE_GAP),
-            }}
-          >
-            +{layout.hidden.length} more
-          </button>
-        ) : null}
-
-        <TodayLine
-          week={week}
-          todayKey={todayKey}
-        />
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -235,20 +268,18 @@ function WeekRow({
 function DayCell({
   day,
   todayKey,
+  compact,
+  marked,
 }: {
   day: CalendarDayCell;
   todayKey: string;
+  compact: boolean;
+  marked: boolean;
 }) {
   const isToday = day.dateKey === todayKey;
 
-  return (
-    <div
-      className={cn(
-        "border-border/60 border-l py-2 pr-2 text-right first:border-l-0",
-        !day.inMonth && "opacity-55",
-        isToday && "bg-[#eef6fd]",
-      )}
-    >
+  const inner = (
+    <>
       <span
         className={cn(
           "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
@@ -258,8 +289,36 @@ function DayCell({
       >
         {day.dayOfMonth}
       </span>
-    </div>
+      {compact && marked ? (
+        <span
+          aria-hidden="true"
+          className="mt-1 block h-1 w-1 rounded-full mx-auto"
+          style={{ background: isToday ? SKY : "#45639e" }}
+        />
+      ) : null}
+    </>
   );
+
+  const className = cn(
+    "border-border/60 border-l py-2 pr-2 text-center sm:text-right first:border-l-0",
+    !day.inMonth && "opacity-55",
+    isToday && "bg-[#eef6fd]",
+    compact && "block min-h-14",
+  );
+
+  if (compact) {
+    return (
+      <Link
+        href={`/schedule?view=list&date=${day.dateKey}`}
+        aria-label={`${day.dateKey}${isToday ? ", today" : ""}${marked ? ", has events" : ""}`}
+        className={className}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{inner}</div>;
 }
 
 function TodayLine({

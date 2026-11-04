@@ -12,23 +12,38 @@ import {
 /**
  * Filter bar submitted as a GET form, so the filtered view is a real URL that
  * can be bookmarked, shared, and server-rendered without client state.
+ *
+ * On the student's own page the search matches reference numbers; on the
+ * reviewer queue it matches student nicknames (showSearch narrows the label).
  */
 export function LeaveFilters({
   action,
   values,
-  showSearch = false,
+  searchPlaceholder = "Search requests...",
 }: {
   action: string;
   values: { status?: string; from?: string; to?: string; q?: string };
-  showSearch?: boolean;
+  searchPlaceholder?: string;
 }) {
   return (
     <form
       action={action}
       method="get"
-      className="border-border bg-card grid grid-cols-2 gap-3 rounded-xl border p-3 sm:p-4 lg:grid-cols-5"
+      className="border-border bg-surface grid grid-cols-2 gap-3 rounded-2xl border p-3 sm:p-4 lg:grid-cols-5"
     >
       <div className="col-span-2 min-w-0 lg:col-span-1">
+        <Label htmlFor="q">Search</Label>
+        <Input
+          id="q"
+          name="q"
+          type="search"
+          placeholder={searchPlaceholder}
+          defaultValue={values.q ?? ""}
+          className="mt-1"
+        />
+      </div>
+
+      <div className="col-span-2 min-w-0 sm:col-span-1">
         <Label htmlFor="status">Status</Label>
         <Select
           id="status"
@@ -71,20 +86,6 @@ export function LeaveFilters({
           className="mt-1"
         />
       </div>
-
-      {showSearch ? (
-        <div className="col-span-2 min-w-0 lg:col-span-1">
-          <Label htmlFor="q">Student</Label>
-          <Input
-            id="q"
-            name="q"
-            type="search"
-            placeholder="Nickname"
-            defaultValue={values.q ?? ""}
-            className="mt-1"
-          />
-        </div>
-      ) : null}
 
       <div className="col-span-2 flex items-center gap-2 lg:col-span-1 lg:items-end lg:justify-end">
         <Button

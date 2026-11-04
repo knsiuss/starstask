@@ -19,6 +19,9 @@ export type ClassScheduleEntry = {
   end_time: string;
   room: string | null;
   lecturer_name: string | null;
+  period: string | null;
+  start_date: string | null;
+  end_date: string | null;
 };
 
 export type WeeklyScheduleEntry = ClassScheduleEntry & {
@@ -38,7 +41,7 @@ export async function listClassSchedule(
   const { data, error } = await supabase
     .from("class_course_schedules")
     .select(
-      "id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
+      "id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, period, start_date, end_date, class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
     )
     .eq("class_id", classId)
     .order("day_of_week", { ascending: true })
@@ -66,6 +69,9 @@ export async function listClassSchedule(
         end_time: row.end_time.slice(0, 5),
         room: row.room,
         lecturer_name: row.lecturer_name,
+        period: row.period,
+        start_date: row.start_date,
+        end_date: row.end_date,
       },
     ];
   });
@@ -112,6 +118,9 @@ export async function createClassScheduleEntry(
       end_time: input.endTime,
       room: input.room ?? null,
       lecturer_name: input.lecturerName ?? null,
+      period: input.period ?? null,
+      start_date: input.startDate ?? null,
+      end_date: input.endDate ?? null,
       created_by: userId,
     })
     .select("id")
@@ -142,6 +151,9 @@ export async function updateClassScheduleEntry(
       end_time: input.endTime,
       room: input.room ?? null,
       lecturer_name: input.lecturerName ?? null,
+      period: input.period ?? null,
+      start_date: input.startDate ?? null,
+      end_date: input.endDate ?? null,
     })
     .eq("id", scheduleId)
     .eq("class_id", classId);
@@ -196,7 +208,7 @@ export async function listMyWeeklySchedule(
   const { data, error } = await supabase
     .from("class_course_schedules")
     .select(
-      "id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, classes!class_course_schedules_class_id_fkey ( name, slug ), class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
+      "id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, period, start_date, end_date, classes!class_course_schedules_class_id_fkey ( name, slug ), class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
     )
     .in("class_id", classIds)
     .order("day_of_week", { ascending: true })
@@ -228,8 +240,81 @@ export async function listMyWeeklySchedule(
         end_time: row.end_time.slice(0, 5),
         room: row.room,
         lecturer_name: row.lecturer_name,
+        period: row.period,
+        start_date: row.start_date,
+        end_date: row.end_date,
         class_name: klass.name,
         class_slug: klass.slug,
+      },
+    ];
+  });
+}
+
+/**
+ * Inserts the confirmed rows of one PDF import as a single statement, so a
+ * failure leaves nothing behind instead of half a timetable. Every subject
+ * is verified against the class before the insert.
+ */
+export async function createClassScheduleEntries(
+  classId: string,
+  userId: string,
+  inputs: ClassScheduleCreateInput[],
+): Promise<ClassScheduleEntry[]> {
+  for (const subjectId of new Set(inputs.map((input) => input.subjectId))) {
+    await requireSubjectInClass(classId, subjectId);
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("class_course_schedules")
+    .insert(
+      inputs.map((input) => ({
+        class_id: classId,
+        subject_id: input.subjectId,
+        day_of_week: input.dayOfWeek,
+        start_time: input.startTime,
+        end_time: input.endTime,
+        room: input.room ?? null,
+        lecturer_name: input.lecturerName ?? null,
+        period: input.period ?? null,
+        start_date: input.startDate ?? null,
+        end_date: input.endDate ?? null,
+        created_by: userId,
+      })),
+    )
+    .select(
+      "id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, period, start_date, end_date, class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
+    );
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not import the schedule entries",
+      error.code,
+    );
+  }
+
+  return (data ?? []).flatMap((row) => {
+    const subject = row.class_subjects;
+
+    if (!subject) {
+      return [];
+    }
+
+    return [
+      {
+        id: row.id,
+        subject_id: row.subject_id,
+        subject_name: subject.name,
+        subject_lecturer_name: subject.lecturer_name,
+        day_of_week: row.day_of_week,
+        start_time: row.start_time.slice(0, 5),
+        end_time: row.end_time.slice(0, 5),
+        room: row.room,
+        lecturer_name: row.lecturer_name,
+        period: row.period,
+        start_date: row.start_date,
+        end_date: row.end_date,
       },
     ];
   });

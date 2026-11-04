@@ -372,6 +372,8 @@ export default async function ClassDashboardPage({
             lecturer_name: subject.lecturer_name,
           }))}
           entries={scheduleEntries}
+          memberCount={members.length}
+          canCreateCourses={role.canManage}
         />
       ) : null}
     </div>

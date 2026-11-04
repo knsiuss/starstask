@@ -5,6 +5,7 @@ import {
   CLASS_SCHEDULE_DAYS,
   type ClassScheduleDay,
 } from "@starstask/contracts";
+import { formatDate } from "@starstask/shared";
 
 import { Button } from "@/components/ui/button";
 import type { ClassScheduleEntry } from "@/lib/db/class-schedule";
@@ -32,7 +33,7 @@ export function ScheduleEntryGroups({
   if (grouped.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No class hours saved yet. Add the first slot below.
+        No class hours saved yet. Add the first slot using the form.
       </p>
     );
   }
@@ -65,6 +66,17 @@ export function ScheduleEntryGroups({
                         "No lecturer set"}
                       {entry.lecturer_name ? " (from this entry)" : ""}
                     </p>
+                    {entry.period || entry.start_date || entry.end_date ? (
+                      <p className="text-muted-foreground mt-0.5 text-xs">
+                        {entry.period ? `Period ${entry.period}` : ""}
+                        {entry.period && (entry.start_date || entry.end_date)
+                          ? " · "
+                          : ""}
+                        {entry.start_date ? formatDate(entry.start_date) : ""}
+                        {entry.start_date && entry.end_date ? " – " : ""}
+                        {entry.end_date ? formatDate(entry.end_date) : ""}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button

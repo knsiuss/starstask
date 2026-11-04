@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const CLASS_SCHEDULE_ROOM_MAX = 120;
 export const CLASS_SCHEDULE_LECTURER_MAX = 120;
+export const CLASS_SCHEDULE_PERIOD_MAX = 20;
 
 /** ISO weekday: 1 = Monday .. 7 = Sunday. */
 export const CLASS_SCHEDULE_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
@@ -34,6 +35,14 @@ const optionalScheduleText = (max: number) =>
     .nullable()
     .transform((value) => (value === "" || value === null ? undefined : value));
 
+/** ISO calendar date (`YYYY-MM-DD`) for semester range bounds. */
+const optionalScheduleDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the YYYY-MM-DD format")
+  .optional()
+  .nullable()
+  .transform((value) => (value === "" || value === null ? undefined : value));
+
 /**
  * Create and update are full replacements, matching the session schemas: the
  * form always submits every control, so an omitted optional field clears it.
@@ -45,11 +54,18 @@ const classScheduleFields = {
   endTime: scheduleTimeSchema,
   room: optionalScheduleText(CLASS_SCHEDULE_ROOM_MAX),
   lecturerName: optionalScheduleText(CLASS_SCHEDULE_LECTURER_MAX),
+  // Semester range carried by timetable documents (PERIODE / TGL MULAI /
+  // TGL SELESAI). Manual slots leave these unset.
+  period: optionalScheduleText(CLASS_SCHEDULE_PERIOD_MAX),
+  startDate: optionalScheduleDate,
+  endDate: optionalScheduleDate,
 };
 
 type ScheduleWindowFields = {
   startTime: string;
   endTime: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 function refineScheduleWindow(
@@ -62,6 +78,15 @@ function refineScheduleWindow(
       code: "custom",
       message: "The end time must be after the start time",
       path: ["endTime"],
+    });
+  }
+
+  // ISO dates compare correctly as strings too.
+  if (value.startDate && value.endDate && value.endDate < value.startDate) {
+    context.addIssue({
+      code: "custom",
+      message: "The end date must not be before the start date",
+      path: ["endDate"],
     });
   }
 }
@@ -82,4 +107,16 @@ export const classScheduleUpdateSchema = z
 
 export type ClassScheduleUpdateInput = z.infer<
   typeof classScheduleUpdateSchema
+>;
+
+/** Bound for one PDF import; a timetable has tens of rows, not hundreds. */
+export const CLASS_SCHEDULE_BATCH_MAX = 50;
+
+export const classScheduleBatchCreateSchema = z
+  .array(classScheduleCreateSchema)
+  .min(1, "Choose at least one slot to import")
+  .max(CLASS_SCHEDULE_BATCH_MAX);
+
+export type ClassScheduleBatchCreateInput = z.infer<
+  typeof classScheduleBatchCreateSchema
 >;

@@ -85,6 +85,12 @@ export const calendarQuerySchema = z.object({
   class: z.uuid("Invalid class filter").optional(),
   subject: z.uuid("Invalid subject filter").optional(),
   mine: z.enum(["all", "mine"]).default("all"),
+  /**
+   * `history=1` reveals expired items (past-due assignments and ended
+   * events) that the default calendar deliberately hides. Records are
+   * never deleted — this only toggles their presentation.
+   */
+  history: z.literal("1").optional(),
 });
 
 export type CalendarQuery = z.infer<typeof calendarQuerySchema>;

@@ -11,7 +11,6 @@ import { AttendanceProgressCard } from "@/components/attendance/attendance-progr
 import { AttendanceQuickActions } from "@/components/attendance/attendance-quick-actions";
 import { AttendanceSessionPanel } from "@/components/attendance/attendance-session-panel";
 import { ClassAttendanceCourses } from "@/components/attendance/class-attendance-courses";
-import { ClassAttendanceHistoryTable } from "@/components/attendance/class-attendance-history-table";
 import { ClassAttendanceMembers } from "@/components/attendance/class-attendance-members";
 import { ClassAttendanceSessions } from "@/components/attendance/class-attendance-sessions";
 import {
@@ -139,13 +138,6 @@ export function ClassAttendanceWorkspace({
 
           <AttendanceActiveSessions
             meetings={meetings}
-            onOpenSession={openSession}
-          />
-
-          <ClassAttendanceHistoryTable
-            classSlug={classSlug}
-            meetings={meetings}
-            subjects={subjects}
             onOpenSession={openSession}
           />
         </div>

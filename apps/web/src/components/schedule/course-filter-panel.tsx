@@ -20,6 +20,7 @@ type CourseFilterPanelProps = {
   dateKey: string;
   type: string;
   classFilter: string | undefined;
+  history: string | undefined;
 };
 
 /**
@@ -35,6 +36,7 @@ export function CourseFilterPanel({
   dateKey,
   type,
   classFilter,
+  history,
 }: CourseFilterPanelProps) {
   const allChecked = selected === null;
 
@@ -72,6 +74,13 @@ export function CourseFilterPanel({
           type="hidden"
           name="class"
           value={classFilter}
+        />
+      ) : null}
+      {history === "1" ? (
+        <input
+          type="hidden"
+          name="history"
+          value="1"
         />
       ) : null}
 

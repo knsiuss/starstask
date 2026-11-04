@@ -57,141 +57,202 @@ export function UpcomingAssignments({
           Nothing matches the current filters.
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-border border-b text-left text-[11px] font-medium tracking-[0.06em] uppercase">
-                <th
-                  scope="col"
-                  className="w-12 px-4 py-2.5"
-                >
-                  <span className="sr-only">Mark done</span>
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2.5"
-                >
-                  Title
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2.5"
-                >
-                  Course
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2.5"
-                >
-                  Start
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2.5"
-                >
-                  Deadline
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2.5"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="w-16 px-4 py-2.5 text-right"
-                >
-                  <span className="sr-only">Open</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-border divide-y">
-              {visible.map((assignment) => {
-                const palette = courseColorFor(
-                  assignment.courseKey ?? "unassigned",
-                );
-                const today = toJakartaDateKey(new Date());
-                const isCompleted = assignment.isCompleted;
-                const isOverdue = !isCompleted && assignment.endKey < today;
-
-                return (
-                  <tr
-                    key={assignment.id}
-                    className={cn(
-                      "align-middle",
-                      isCompleted && "bg-subtle/60",
-                    )}
+        <>
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-border border-b text-left text-[11px] font-medium tracking-[0.06em] uppercase">
+                  <th
+                    scope="col"
+                    className="w-12 px-4 py-2.5"
                   >
-                    <td className="px-4 py-2.5">
-                      <CompletionToggle
-                        assignmentId={assignment.id}
-                        completed={isCompleted}
-                        title={assignment.title}
-                      />
-                    </td>
-                    <td className="max-w-[260px] px-3 py-2.5">
-                      <Link
-                        href={assignment.href}
-                        className="hover:text-accent line-clamp-1 font-medium"
-                        title={assignment.title}
-                      >
-                        {assignment.title}
-                      </Link>
-                    </td>
-                    <td className="max-w-[170px] px-3 py-2.5">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span
-                          aria-hidden="true"
-                          className="h-2 w-2 shrink-0 rounded-full"
-                          style={{ background: palette.dot }}
-                        />
-                        <span className="min-w-0">
-                          <span className="block truncate text-xs font-medium">
-                            {assignment.courseName ?? "—"}
-                          </span>
-                          {assignment.courseCode ? (
-                            <span className="text-muted-foreground block text-[10px] tabular-nums">
-                              {assignment.courseCode}
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                    </td>
-                    <td className="text-muted-foreground px-3 py-2.5 text-xs tabular-nums">
-                      {formatShortDate(assignment.startKey)}
-                    </td>
-                    <td
+                    <span className="sr-only">Mark done</span>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-2.5"
+                  >
+                    Title
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-2.5"
+                  >
+                    Course
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-2.5"
+                  >
+                    Start
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-2.5"
+                  >
+                    Deadline
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-2.5"
+                  >
+                    Status
+                  </th>
+                  <th
+                    scope="col"
+                    className="w-16 px-4 py-2.5 text-right"
+                  >
+                    <span className="sr-only">Open</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-border divide-y">
+                {visible.map((assignment) => {
+                  const palette = courseColorFor(
+                    assignment.courseKey ?? "unassigned",
+                  );
+                  const today = toJakartaDateKey(new Date());
+                  const isCompleted = assignment.isCompleted;
+                  const isOverdue = !isCompleted && assignment.endKey < today;
+
+                  return (
+                    <tr
+                      key={assignment.id}
                       className={cn(
-                        "px-3 py-2.5 text-xs font-medium tabular-nums",
-                        isOverdue ? "text-danger" : "text-foreground",
+                        "align-middle",
+                        isCompleted && "bg-subtle/60",
                       )}
                     >
-                      {formatShortDate(assignment.endKey)}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <StatusBadge
-                        completed={isCompleted}
-                        overdue={isOverdue}
-                      />
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <Link
-                        href={assignment.href}
-                        aria-label={`Open ${assignment.title}`}
-                        className="text-accent hover:bg-accent-soft focus-visible:outline-accent inline-flex h-8 w-8 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
-                      >
-                        <ArrowUpRight
-                          aria-hidden="true"
-                          className="h-4 w-4"
+                      <td className="px-4 py-2.5">
+                        <CompletionToggle
+                          assignmentId={assignment.id}
+                          completed={isCompleted}
+                          title={assignment.title}
                         />
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="max-w-[260px] px-3 py-2.5">
+                        <Link
+                          href={assignment.href}
+                          className="hover:text-accent line-clamp-1 font-medium"
+                          title={assignment.title}
+                        >
+                          {assignment.title}
+                        </Link>
+                      </td>
+                      <td className="max-w-[170px] px-3 py-2.5">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span
+                            aria-hidden="true"
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ background: palette.dot }}
+                          />
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-medium">
+                              {assignment.courseName ?? "—"}
+                            </span>
+                            {assignment.courseCode ? (
+                              <span className="text-muted-foreground block text-[10px] tabular-nums">
+                                {assignment.courseCode}
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="text-muted-foreground px-3 py-2.5 text-xs tabular-nums">
+                        {formatShortDate(assignment.startKey)}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-3 py-2.5 text-xs font-medium tabular-nums",
+                          isOverdue ? "text-danger" : "text-foreground",
+                        )}
+                      >
+                        {formatShortDate(assignment.endKey)}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <StatusBadge
+                          completed={isCompleted}
+                          overdue={isOverdue}
+                        />
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <Link
+                          href={assignment.href}
+                          aria-label={`Open ${assignment.title}`}
+                          className="text-accent hover:bg-accent-soft focus-visible:outline-accent inline-flex h-8 w-8 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+                        >
+                          <ArrowUpRight
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                          />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <ul className="space-y-3 p-4 md:hidden">
+            {visible.map((assignment) => {
+              const palette = courseColorFor(
+                assignment.courseKey ?? "unassigned",
+              );
+              const cardToday = toJakartaDateKey(new Date());
+              const cardCompleted = assignment.isCompleted;
+              const cardOverdue =
+                !cardCompleted && assignment.endKey < cardToday;
+
+              return (
+                <li
+                  key={assignment.id}
+                  className="border-border bg-subtle rounded-xl border p-4"
+                >
+                  <Link
+                    href={assignment.href}
+                    className="hover:text-accent block truncate text-sm font-medium"
+                    title={assignment.title}
+                  >
+                    {assignment.title}
+                  </Link>
+                  <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-xs">
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: palette.dot }}
+                    />
+                    {assignment.courseName ?? "—"}
+                    {assignment.courseCode ? ` · ${assignment.courseCode}` : ""}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs tabular-nums">
+                    {formatShortDate(assignment.startKey)} →{" "}
+                    <span
+                      className={
+                        cardOverdue ? "text-danger font-medium" : undefined
+                      }
+                    >
+                      {formatShortDate(assignment.endKey)}
+                    </span>
+                  </p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <StatusBadge
+                      completed={cardCompleted}
+                      overdue={cardOverdue}
+                    />
+                    <CompletionToggle
+                      assignmentId={assignment.id}
+                      completed={cardCompleted}
+                      title={assignment.title}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </section>
   );

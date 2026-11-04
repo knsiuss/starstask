@@ -2,6 +2,7 @@ import {
   CalendarClock,
   ChevronLeft,
   ChevronRight,
+  History,
   PlusCircle,
   UserRound,
 } from "lucide-react";
@@ -11,6 +12,8 @@ import { redirect } from "next/navigation";
 
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { EventFormDialog } from "@/components/schedule/event-form-dialog";
+import { FilterDrawer } from "@/components/schedule/filter-drawer";
+import { MobileViewRedirect } from "@/components/schedule/mobile-view-redirect";
 import {
   MiniCalendar,
   buildMarkedKeys,
@@ -35,6 +38,10 @@ import {
   type CalendarQuery,
   type CalendarView,
 } from "@starstask/contracts";
+import {
+  isAssignmentHiddenFromDefault,
+  isEventHiddenFromDefault,
+} from "@/lib/schedule/lifecycle";
 import {
   buildCalendarViewRange,
   calendarEventDateKey,
@@ -136,6 +143,8 @@ export default async function SchedulePage({
 
   const query = parsed.data;
   const today = todayDateKey();
+  const showHistory = query.history === "1";
+  const hasExplicitView = "view" in raw;
   const anchorKey =
     query.date && isCalendarDateKey(query.date) ? query.date : today;
   const range = buildCalendarViewRange(query.view, anchorKey);
@@ -147,13 +156,37 @@ export default async function SchedulePage({
   const assignments = data.assignments.filter((assignment) =>
     matchesCourseSelection(assignment, selected),
   );
-  const markedKeys = buildMarkedKeys(assignments);
   const courseOptions = buildCourseOptions(data.assignments, data.subjects);
 
-  const items: TimelineItem[] = [
+  // Lifecycle: expired items (past-due assignments the user has not
+  // completed, and events that already ended) stay out of the default
+  // calendar so it only shows relevant upcoming work. They are never
+  // deleted — the Past Events toggle reveals them. Completed assignments
+  // keep their existing visible state (completion semantics unchanged).
+  const displayAssignments = showHistory
+    ? assignments
+    : assignments.filter(
+        (assignment) => !isAssignmentHiddenFromDefault(assignment, today),
+      );
+  const markedKeys = buildMarkedKeys(displayAssignments);
+
+  const allItems: TimelineItem[] = [
     ...assignments.map((assignment) => assignmentToItem(assignment, today)),
     ...data.events.map(toTimelineItem),
   ];
+  const items = showHistory
+    ? allItems
+    : allItems.filter((item) =>
+        item.kind === "assignment"
+          ? item.isCompleted || item.endKey >= today
+          : !isEventHiddenFromDefault(item, today),
+      );
+
+  const activeFilterCount =
+    (query.type !== "all" ? 1 : 0) +
+    (query.class ? 1 : 0) +
+    (query.mine === "mine" ? 1 : 0) +
+    (selected && selected.size > 0 ? selected.size : 0);
 
   const rangeLabel =
     query.view === "month"
@@ -164,8 +197,40 @@ export default async function SchedulePage({
 
   const isBoardView = query.view === "week" || query.view === "month";
 
+  const sidebarContent = (
+    <>
+      <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
+        <MiniCalendar
+          anchorKey={anchorKey}
+          markedKeys={markedKeys}
+        />
+      </div>
+
+      <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
+        <TypeSelect
+          query={query}
+          dateKey={anchorKey}
+          subjectParams={parseSubjectParams(raw)}
+        />
+        <CourseFilterPanel
+          options={courseOptions}
+          selected={selected}
+          mine={query.mine === "mine"}
+          view={query.view}
+          dateKey={anchorKey}
+          type={query.type}
+          classFilter={query.class}
+          history={query.history}
+        />
+      </div>
+
+      <Legend />
+    </>
+  );
+
   return (
     <div className={pageContainer}>
+      <MobileViewRedirect hasExplicitView={hasExplicitView} />
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
@@ -296,20 +361,71 @@ export default async function SchedulePage({
           >
             Today
           </Link>
+          <Link
+            href={scheduleHref(
+              query,
+              anchorKey,
+              { history: showHistory ? "0" : "1" },
+              selected,
+            )}
+            aria-pressed={showHistory}
+            className={cn(
+              "ml-1 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+              showHistory
+                ? "bg-surface text-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <History
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+            Past Events
+          </Link>
+        </div>
+
+        <div className="lg:hidden">
+          <FilterDrawer activeFilterCount={activeFilterCount}>
+            {sidebarContent}
+          </FilterDrawer>
         </div>
       </div>
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
           {isBoardView ? (
-            <TimelineBoard
-              view={query.view === "week" ? "week" : "month"}
-              days={range.days}
-              items={items}
-              todayKey={today}
-              classes={data.classes}
-              subjects={data.subjects}
-            />
+            <>
+              {/* Desktop/tablet: full spanning-bar board */}
+              <div className="hidden sm:block">
+                <TimelineBoard
+                  view={query.view === "week" ? "week" : "month"}
+                  days={range.days}
+                  items={items}
+                  todayKey={today}
+                  classes={data.classes}
+                  subjects={data.subjects}
+                />
+              </div>
+              {/* Mobile: compact dot board, then the day's events below */}
+              <div className="sm:hidden">
+                <TimelineBoard
+                  compact
+                  view={query.view === "week" ? "week" : "month"}
+                  days={range.days}
+                  items={items}
+                  todayKey={today}
+                  classes={data.classes}
+                  subjects={data.subjects}
+                />
+                <div className="mt-5">
+                  <TimelineList
+                    days={range.days}
+                    items={items}
+                    todayKey={today}
+                  />
+                </div>
+              </div>
+            </>
           ) : (
             <TimelineList
               days={range.days}
@@ -319,36 +435,12 @@ export default async function SchedulePage({
           )}
 
           <div className="mt-5">
-            <UpcomingAssignments assignments={assignments} />
+            <UpcomingAssignments assignments={displayAssignments} />
           </div>
         </div>
 
-        <aside className="space-y-5 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
-          <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
-            <MiniCalendar
-              anchorKey={anchorKey}
-              markedKeys={markedKeys}
-            />
-          </div>
-
-          <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
-            <TypeSelect
-              query={query}
-              dateKey={anchorKey}
-              subjectParams={parseSubjectParams(raw)}
-            />
-            <CourseFilterPanel
-              options={courseOptions}
-              selected={selected}
-              mine={query.mine === "mine"}
-              view={query.view}
-              dateKey={anchorKey}
-              type={query.type}
-              classFilter={query.class}
-            />
-          </div>
-
-          <Legend />
+        <aside className="hidden space-y-5 lg:sticky lg:top-4 lg:block lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
+          {sidebarContent}
         </aside>
       </div>
 
@@ -612,6 +704,13 @@ function TypeSelect({
           value="1"
         />
       ) : null}
+      {query.history === "1" ? (
+        <input
+          type="hidden"
+          name="history"
+          value="1"
+        />
+      ) : null}
       {submitted && all ? (
         <input
           type="hidden"
@@ -714,13 +813,23 @@ function Legend() {
 function scheduleHref(
   query: CalendarQuery,
   anchorKey: string,
-  overrides: { view?: CalendarView; date?: string },
+  overrides: {
+    view?: CalendarView;
+    date?: string;
+    history?: string;
+  },
   selected: SubjectSelection,
 ): string {
   const params = new URLSearchParams();
 
   params.set("view", overrides.view ?? query.view);
   params.set("date", overrides.date ?? anchorKey);
+
+  const history = overrides.history ?? query.history;
+
+  if (history === "1") {
+    params.set("history", "1");
+  }
 
   if (query.type !== "all") {
     params.set("type", query.type);
