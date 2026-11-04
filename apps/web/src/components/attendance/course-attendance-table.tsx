@@ -26,12 +26,52 @@ function courseHref(row: CourseAttendanceRow): string | null {
 
 function CourseIdentity({ row }: { row: CourseAttendanceRow }) {
   return (
-    <div className="min-w-0">
+    <div className="hidden min-w-0 sm:block">
       {row.code ? (
         <p className="text-muted-foreground text-xs font-medium">{row.code}</p>
       ) : null}
       <p className="truncate text-sm font-medium">{row.name}</p>
       <p className="text-muted-foreground truncate text-xs">{row.className}</p>
+    </div>
+  );
+}
+
+/** Mobile row: code badge, name + summary, chevron. One status line only. */
+function CourseMobileRow({ row }: { row: CourseAttendanceRow }) {
+  const hasSessions = row.status !== "no_sessions";
+
+  return (
+    <div className="flex items-center gap-3 sm:hidden">
+      {row.code ? (
+        <span className="bg-muted text-muted-foreground shrink-0 rounded-md px-2 py-1 font-mono text-[11px] font-semibold">
+          {row.code}
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{row.name}</p>
+        <p className="text-muted-foreground mt-0.5 truncate text-xs">
+          {hasSessions
+            ? `${row.counts.eligible} sessions · ${row.counts.present + row.counts.late} attended`
+            : "No sessions yet"}
+        </p>
+      </div>
+      {hasSessions ? (
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold tabular-nums">
+            {formatAttendancePercentage(row.counts.percentage)}
+          </p>
+          <Badge
+            variant={STATUS_VARIANTS[row.status]}
+            className="mt-1"
+          >
+            {COURSE_ATTENDANCE_STATUS_LABELS[row.status]}
+          </Badge>
+        </div>
+      ) : null}
+      <ChevronRight
+        aria-hidden="true"
+        className="text-muted-foreground h-4 w-4 shrink-0"
+      />
     </div>
   );
 }
@@ -95,6 +135,7 @@ export function CourseAttendanceTable({
           const content = (
             <>
               <CourseIdentity row={row} />
+              <CourseMobileRow row={row} />
 
               <span className="hidden text-center text-sm tabular-nums sm:block">
                 {row.counts.eligible}
@@ -105,14 +146,6 @@ export function CourseAttendanceTable({
               <span className="text-muted-foreground hidden text-center text-sm tabular-nums sm:block">
                 {row.counts.absent + row.counts.unrecorded}
               </span>
-
-              <div className="flex items-center justify-between gap-3 sm:hidden">
-                <p className="text-muted-foreground text-xs">
-                  {row.counts.eligible} sessions ·{" "}
-                  {row.counts.present + row.counts.late} attended
-                </p>
-                <CourseStatus row={row} />
-              </div>
 
               <div className="hidden sm:block">
                 <CourseStatus row={row} />

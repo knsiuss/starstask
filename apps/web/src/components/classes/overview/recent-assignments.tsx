@@ -42,7 +42,7 @@ export function RecentAssignments({ assignments, viewAllHref }: Props) {
       aria-labelledby="recent-assignments"
       className="border-border bg-surface overflow-hidden rounded-xl border"
     >
-      <div className="flex items-center justify-between gap-2 px-5 py-4">
+      <div className="flex items-center justify-between gap-2 px-4 py-3.5 sm:px-5 sm:py-4">
         <h2
           id="recent-assignments"
           className="text-accent inline-flex items-center gap-2 text-base font-semibold tracking-tight"
@@ -80,7 +80,7 @@ export function RecentAssignments({ assignments, viewAllHref }: Props) {
             return (
               <li
                 key={assignment.id}
-                className="hover:bg-band/50 flex items-start gap-3 px-5 py-4 transition-colors"
+                className="hover:bg-band/50 flex items-start gap-3 px-4 py-3.5 transition-colors sm:px-5 sm:py-4"
               >
                 <span
                   aria-hidden="true"
@@ -91,7 +91,7 @@ export function RecentAssignments({ assignments, viewAllHref }: Props) {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/assignments/${assignment.id}`}
-                    className="hover:text-accent text-foreground block truncate text-sm font-semibold tracking-tight focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="hover:text-accent text-foreground block text-sm font-semibold tracking-tight break-words focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     {assignment.title}
                   </Link>

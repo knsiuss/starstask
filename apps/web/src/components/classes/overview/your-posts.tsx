@@ -29,7 +29,7 @@ export function YourPosts({
       aria-labelledby="your-posts"
       className="border-border bg-surface overflow-hidden rounded-xl border"
     >
-      <div className="flex items-center justify-between gap-2 px-5 py-4">
+      <div className="flex items-center justify-between gap-2 px-4 py-3.5 sm:px-5 sm:py-4">
         <h2
           id="your-posts"
           className="text-accent inline-flex items-center gap-2 text-base font-semibold tracking-tight"
@@ -53,12 +53,12 @@ export function YourPosts({
       </div>
 
       {posts.length === 0 ? (
-        <div className="flex flex-wrap items-center justify-center gap-5 px-5 py-10 text-center sm:text-left">
+        <div className="flex flex-wrap items-center justify-center gap-4 px-4 py-6 text-center sm:gap-5 sm:px-5 sm:py-10 sm:text-left">
           <span
             aria-hidden="true"
-            className="bg-accent-soft text-accent flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+            className="bg-accent-soft text-accent flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:h-16 sm:w-16"
           >
-            <FolderOpen className="h-8 w-8" />
+            <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8" />
           </span>
           <div className="min-w-0">
             <p className="text-foreground font-semibold">No posts yet.</p>
@@ -87,7 +87,7 @@ export function YourPosts({
           {posts.map((post) => (
             <li
               key={post.id}
-              className="flex items-start gap-3 px-5 py-4"
+              className="flex items-start gap-3 px-4 py-3.5 sm:px-5 sm:py-4"
             >
               <span
                 aria-hidden="true"
@@ -98,7 +98,7 @@ export function YourPosts({
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/assignments/${post.id}`}
-                  className="hover:text-accent text-foreground block truncate text-sm font-semibold tracking-tight focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="hover:text-accent text-foreground block text-sm font-semibold tracking-tight break-words focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   {post.title}
                 </Link>

@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -168,16 +174,24 @@ export function MyWeekSection({
       className="border-border bg-surface rise-in rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          <h2
-            id="my-week"
-            className="text-foreground text-base font-semibold tracking-tight sm:text-lg"
-          >
-            My week
-          </h2>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Deadlines, sessions, and your absences for the selected week.
-          </p>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+            <CalendarDays
+              aria-hidden="true"
+              className="h-[18px] w-[18px]"
+            />
+          </span>
+          <div className="min-w-0">
+            <h2
+              id="my-week"
+              className="text-foreground text-base font-semibold tracking-tight sm:text-lg"
+            >
+              My week
+            </h2>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              Deadlines, sessions, and your absences for the selected week.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -275,9 +289,9 @@ export function MyWeekSection({
       </div>
 
       <WeekScroller>
-        {/* Every day shares the row equally, but never below the width the
-            labels need, so narrow screens scroll instead of squeezing dates. */}
-        <ol className="grid grid-flow-col auto-cols-[minmax(7.5rem,1fr)] gap-2">
+        {/* `w-max` lets the grid grow past the viewport so narrow screens
+            scroll sideways; without it the columns squeeze and clip. */}
+        <ol className="grid w-max min-w-full grid-flow-col auto-cols-[minmax(7rem,1fr)] gap-2">
           {days.map((day) => {
             const isToday = day.key === todayKey;
             const items = itemsByDay.get(day.key) ?? [];
@@ -291,21 +305,16 @@ export function MyWeekSection({
                 className={cn(
                   // A floor, not a ceiling: grid stretch keeps every column the
                   // same height while a busy day can grow instead of clipping.
-                  "flex min-h-56 snap-start flex-col rounded-lg border p-1.5",
+                  "flex min-h-40 snap-start flex-col rounded-xl border p-3 sm:min-h-44",
                   isToday
-                    ? "border-accent/25 bg-accent-soft/50"
-                    : "border-border/70 bg-subtle/40",
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-border bg-subtle/40",
                 )}
               >
-                <div
-                  className={cn(
-                    "rounded-md px-1.5 py-1 text-center",
-                    isToday ? "bg-accent text-accent-foreground" : "",
-                  )}
-                >
+                <div className="text-center">
                   <p
                     className={cn(
-                      "text-[11px] font-semibold tracking-wide uppercase",
+                      "text-[11px] font-semibold tracking-wider uppercase",
                       isToday ? "" : "text-muted-foreground",
                     )}
                   >
@@ -313,62 +322,107 @@ export function MyWeekSection({
                   </p>
                   <p
                     className={cn(
-                      "text-[11px] tabular-nums",
-                      isToday ? "" : "text-muted-foreground",
+                      "mt-0.5 text-sm font-semibold tabular-nums",
+                      isToday ? "" : "text-foreground",
                     )}
                   >
                     {dayMonthFormatter.format(day.date)}
                   </p>
                 </div>
 
-                <ul className="mt-1.5 space-y-1.5">
-                  {visible.map((item) => (
-                    <li key={item.key}>
-                      <Link
-                        href={item.href}
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-3">
+                  <CalendarDays
+                    aria-hidden="true"
+                    className={cn(
+                      "h-5 w-5",
+                      isToday ? "opacity-80" : "text-muted-foreground",
+                    )}
+                  />
+                  {items.length === 0 ? (
+                    <>
+                      <p
                         className={cn(
-                          "hover:bg-hover focus-visible:outline-accent block rounded-md border-y border-r border-border border-l-[3px] px-1.5 py-1 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2",
-                          KIND_BORDER[item.kind],
-                          KIND_TINT[item.kind],
+                          "text-[11px]",
+                          isToday ? "opacity-80" : "text-muted-foreground",
                         )}
                       >
-                        <span className="text-foreground block truncate text-[11px] font-semibold">
-                          {item.title}
-                        </span>
-                        <span className="text-muted-foreground block truncate text-[10px] tabular-nums">
-                          {item.allDay
-                            ? "All day"
-                            : timeFormatter.format(new Date(item.at))}
-                          {item.endsAt && !item.allDay
-                            ? ` – ${timeFormatter.format(new Date(item.endsAt))}`
-                            : null}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
+                        No events
+                      </p>
+                      {canScheduleSessions ? (
+                        <Link
+                          href="/sessions/new"
+                          aria-label={`Add an event on ${dayMonthFormatter.format(day.date)}`}
+                          className={cn(
+                            "flex h-6 w-6 items-center justify-center rounded-full border transition-colors",
+                            isToday
+                              ? "border-accent-foreground/30 hover:bg-accent-foreground/10"
+                              : "border-border text-muted-foreground hover:bg-hover hover:text-foreground",
+                          )}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Link>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap",
+                        isToday
+                          ? "bg-accent-foreground/15"
+                          : "bg-accent-soft text-accent",
+                      )}
+                    >
+                      {items.length} {items.length === 1 ? "event" : "events"}
+                    </span>
+                  )}
+                </div>
 
-                  {hidden > 0 ? (
-                    <li className="text-muted-foreground px-1.5 text-[10px] font-medium">
-                      +{hidden} more
-                    </li>
-                  ) : null}
-                </ul>
+                {items.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {visible.map((item) => (
+                      <li key={item.key}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "focus-visible:outline-accent block truncate rounded-md border-y border-r border-l-[3px] px-1.5 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2",
+                            isToday
+                              ? "border-accent-foreground/20 bg-accent-foreground/10 hover:bg-accent-foreground/20"
+                              : cn(
+                                  "hover:bg-hover",
+                                  KIND_BORDER[item.kind],
+                                  KIND_TINT[item.kind],
+                                ),
+                          )}
+                        >
+                          <span className="block truncate">{item.title}</span>
+                          <span
+                            className={cn(
+                              "block truncate text-[10px] font-normal tabular-nums",
+                              isToday ? "opacity-75" : "text-muted-foreground",
+                            )}
+                          >
+                            {item.allDay
+                              ? "All day"
+                              : timeFormatter.format(new Date(item.at))}
+                            {item.endsAt && !item.allDay
+                              ? ` – ${timeFormatter.format(new Date(item.endsAt))}`
+                              : null}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
 
-                {items.length === 0 ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-1 py-2">
-                    <p className="text-muted-foreground text-[10px]">
-                      No events
-                    </p>
-                    {canScheduleSessions ? (
-                      <Link
-                        href="/sessions/new"
-                        aria-label={`Add an event on ${dayMonthFormatter.format(day.date)}`}
-                        className="border-border text-muted-foreground hover:bg-hover hover:text-foreground flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
+                    {hidden > 0 ? (
+                      <li
+                        className={cn(
+                          "px-1.5 text-[10px] font-medium",
+                          isToday ? "opacity-75" : "text-muted-foreground",
+                        )}
                       >
-                        <Plus className="h-3 w-3" />
-                      </Link>
+                        +{hidden} more
+                      </li>
                     ) : null}
-                  </div>
+                  </ul>
                 ) : null}
               </li>
             );

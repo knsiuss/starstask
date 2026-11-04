@@ -11,6 +11,7 @@ import {
   getSessionCheckInWindow,
   getSessionCheckInWindowState,
   SESSION_CHECKIN_ACCURACY_MAX_M,
+  CHECKIN_POSITION_MAX_AGE_MS,
   type SessionCheckInWindowState,
 } from "@starstask/contracts";
 import { formatSessionTime } from "@starstask/shared";
@@ -91,6 +92,14 @@ export function CheckInCard({
     try {
       const position = await getCurrentPosition();
       const { latitude, longitude, accuracy } = position.coords;
+      const capturedAt = position.capturedAt;
+
+      if (Date.now() - capturedAt > CHECKIN_POSITION_MAX_AGE_MS) {
+        setError(
+          "Your location is stale. Move somewhere with a clearer signal and try again.",
+        );
+        return;
+      }
 
       if (accuracy > SESSION_CHECKIN_ACCURACY_MAX_M) {
         setError(
@@ -102,7 +111,7 @@ export function CheckInCard({
       const response = await fetch(`/api/sessions/${sessionId}/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ latitude, longitude, accuracy }),
+        body: JSON.stringify({ latitude, longitude, accuracy, capturedAt }),
       });
 
       const body = (await response.json().catch(() => null)) as {

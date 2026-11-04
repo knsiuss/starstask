@@ -38,7 +38,7 @@ export function SessionFilters({
   const isCalendar = query.view === "calendar";
 
   return (
-    <div className="border-border bg-surface rounded-xl border p-4 sm:p-5">
+    <div className="border-border bg-surface hidden rounded-xl border p-4 sm:p-5 lg:block">
       <form
         method="get"
         action={action}

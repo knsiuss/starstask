@@ -76,19 +76,19 @@ export function StatCards({ stats }: StatCardsProps) {
 
   return (
     <ul
-      className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4"
       style={{ "--rise-delay": "40ms" } as CSSProperties}
     >
       {items.map((item) => (
         <li key={item.label}>
           <Link
             href={item.href}
-            className="border-border bg-surface hover:border-accent/30 focus-visible:outline-accent group flex h-full items-start gap-3 rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.03)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="border-border bg-surface hover:border-accent/30 focus-visible:outline-accent group flex h-full items-center gap-2.5 rounded-xl border p-3 shadow-[0_1px_2px_rgba(9,9,11,0.03)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-3 sm:p-4"
           >
             <span
               aria-hidden="true"
               className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10",
                 TONE_CLASSES[item.tone],
               )}
             >
@@ -96,11 +96,11 @@ export function StatCards({ stats }: StatCardsProps) {
             </span>
 
             <span className="min-w-0 flex-1">
-              <span className="text-muted-foreground block text-[12px] font-medium">
+              <span className="text-muted-foreground block truncate text-xs font-medium">
                 {item.label}
               </span>
-              <span className="mt-1 flex items-baseline gap-2">
-                <span className="text-foreground text-[26px] leading-none font-semibold tracking-tight tabular-nums">
+              <span className="mt-0.5 flex items-baseline gap-1.5">
+                <span className="text-foreground text-[22px] leading-none font-semibold tracking-tight tabular-nums sm:text-[26px]">
                   {formatCount(item.value)}
                 </span>
                 {item.delta && item.delta > 0 ? (
@@ -113,14 +113,14 @@ export function StatCards({ stats }: StatCardsProps) {
                   </span>
                 ) : null}
               </span>
-              <span className="text-muted-foreground mt-1.5 block truncate text-[11px]">
+              <span className="text-muted-foreground mt-1 hidden truncate text-[11px] sm:block">
                 {item.hint}
               </span>
             </span>
 
             <span
               aria-hidden="true"
-              className="border-border text-muted-foreground group-hover:border-accent/30 group-hover:text-accent mt-6 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors"
+              className="border-border text-muted-foreground group-hover:border-accent/30 group-hover:text-accent mt-6 hidden h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors sm:flex"
             >
               <ArrowRight className="h-3 w-3" />
             </span>

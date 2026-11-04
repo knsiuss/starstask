@@ -39,9 +39,7 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AssignmentsPage({
-  searchParams,
-}: PageProps) {
+export default async function AssignmentsPage({ searchParams }: PageProps) {
   if (!isSupabaseConfigured()) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -128,31 +126,46 @@ export default async function AssignmentsPage({
     tab === "schedule" ? BASE_PATH : `${BASE_PATH}?tab=requests`;
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Assignments</h1>
-          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
+    <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Assignments
+          </h1>
+          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-relaxed">
             {manages
               ? "Manage class tasks, schedules, and publication requests."
               : "Keep track of tasks and deadlines across your classes."}
           </p>
         </div>
         {scope.classes.length > 0 ? (
-          <RequestPublicationDialog
-            classes={scope.classes}
-            mode={manages ? "create" : "request"}
-          />
+          <div className="w-full shrink-0 sm:w-auto [&_button]:w-full sm:[&_button]:w-auto">
+            <RequestPublicationDialog
+              classes={scope.classes}
+              mode={manages ? "create" : "request"}
+            />
+          </div>
         ) : null}
       </header>
 
+      <div className="mt-5 lg:hidden">
+        <OverviewSidebar
+          overview={overview}
+          idPrefix="workspace-overview-mobile"
+        />
+      </div>
+
       <nav
         aria-label="Assignments sections"
-        className="no-scrollbar mt-6 flex gap-1 overflow-x-auto border-b border-border"
+        className="no-scrollbar mt-5 flex gap-1 overflow-x-auto border-b border-border xl:mt-6"
       >
         {(
           [
-            { value: "schedule", label: "Task Schedule", count: schedule.total },
+            {
+              value: "schedule",
+              label: "Task Schedule",
+              count: schedule.total,
+            },
             {
               value: "requests",
               label: manages ? "Publication Requests" : "My Requests",
@@ -168,7 +181,7 @@ export default async function AssignmentsPage({
               href={tabHref(tab.value)}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2",
+                "-mb-px inline-flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-2 sm:px-3 sm:text-sm",
                 active
                   ? "border-accent text-accent"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -190,7 +203,7 @@ export default async function AssignmentsPage({
         })}
       </nav>
 
-      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-5 grid items-start gap-4 xl:mt-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-6">
         <div className="min-w-0">
           {query.tab === "schedule" ? (
             <>
@@ -259,7 +272,12 @@ export default async function AssignmentsPage({
           )}
         </div>
 
-        <OverviewSidebar overview={overview} />
+        <div className="hidden lg:block">
+          <OverviewSidebar
+            overview={overview}
+            idPrefix="workspace-overview-desktop"
+          />
+        </div>
       </div>
     </div>
   );

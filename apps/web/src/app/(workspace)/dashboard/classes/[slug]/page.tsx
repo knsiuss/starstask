@@ -208,7 +208,7 @@ export default async function ClassDashboardPage({
   const hasElevatedRole = role.isAdmin || role.isPlatformAdmin;
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1400px] px-4 pt-4 pb-8 sm:px-6 sm:py-8 lg:px-8">
       <nav
         aria-label="Breadcrumb"
         className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm"

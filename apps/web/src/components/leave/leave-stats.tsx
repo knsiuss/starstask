@@ -11,12 +11,12 @@ const STATS = [
   {
     status: "approved",
     icon: CheckCircle2,
-    iconClassName: "bg-emerald-500/10 text-emerald-600",
+    iconClassName: "bg-success-soft text-success",
   },
   {
     status: "rejected",
     icon: XCircle,
-    iconClassName: "bg-red-500/10 text-red-500",
+    iconClassName: "bg-danger-soft text-danger",
   },
   {
     status: "draft",
@@ -30,7 +30,7 @@ export function LeaveStats({ counts }: { counts: LeaveRequestStatusCounts }) {
   return (
     <div
       aria-label="Request statistics"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid grid-cols-2 gap-2.5 xl:grid-cols-4"
     >
       {STATS.map((stat) => {
         const Icon = stat.icon;
@@ -38,19 +38,19 @@ export function LeaveStats({ counts }: { counts: LeaveRequestStatusCounts }) {
         return (
           <div
             key={stat.status}
-            className="bg-surface border-border flex items-center gap-4 rounded-2xl border px-5 py-4 shadow-sm"
+            className="bg-surface border-border flex items-center gap-3 rounded-xl border p-3 shadow-sm"
           >
             <span
               aria-hidden="true"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.iconClassName}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${stat.iconClassName}`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-[18px] w-[18px]" />
             </span>
-            <span>
-              <span className="text-muted-foreground block text-xs">
+            <span className="min-w-0">
+              <span className="text-muted-foreground block truncate text-xs">
                 {LEAVE_STATUS_LABELS[stat.status]}
               </span>
-              <span className="block text-2xl leading-tight font-bold">
+              <span className="block text-[22px] leading-tight font-bold tabular-nums">
                 {counts[stat.status]}
               </span>
             </span>

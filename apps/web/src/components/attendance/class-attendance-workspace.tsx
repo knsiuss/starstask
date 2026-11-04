@@ -108,7 +108,7 @@ export function ClassAttendanceWorkspace({
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:overflow-hidden lg:p-6">
         <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
-          <section className="border-border bg-surface rounded-2xl border p-5">
+          <section className="border-border bg-surface rounded-2xl border p-4 sm:p-5">
             <header className="flex items-center gap-2.5">
               <span className="bg-accent-soft text-accent flex h-9 w-9 items-center justify-center rounded-lg">
                 <CalendarDays
@@ -143,12 +143,17 @@ export function ClassAttendanceWorkspace({
         </div>
 
         <aside className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto">
-          <AttendanceProgressCard
-            summary={summary}
-            title="Attendance overview"
-            description="Across every member and session."
-            totalLabel="Total records"
-          />
+          {/* Overview and export stay on desktop; on mobile the creation
+              workflow takes the full column (both remain reachable through
+              the Action Center). */}
+          <div className="hidden lg:block">
+            <AttendanceProgressCard
+              summary={summary}
+              title="Attendance overview"
+              description="Across every member and session."
+              totalLabel="Total records"
+            />
+          </div>
 
           <AttendanceQuickActions
             actions={[
@@ -174,10 +179,12 @@ export function ClassAttendanceWorkspace({
             ]}
           />
 
-          <AttendanceExportCard
-            classSlug={classSlug}
-            subjects={subjects}
-          />
+          <div className="hidden lg:block">
+            <AttendanceExportCard
+              classSlug={classSlug}
+              subjects={subjects}
+            />
+          </div>
         </aside>
       </div>
 

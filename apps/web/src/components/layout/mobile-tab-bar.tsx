@@ -42,9 +42,9 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="border-border bg-surface fixed inset-x-0 bottom-0 z-40 border-t lg:hidden"
+      className="border-border bg-surface fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-5 gap-1 px-2 pt-2">
         {TABS.map((tab) => {
           const isActive =
             pathname === tab.href || pathname.startsWith(`${tab.href}/`);
@@ -55,9 +55,9 @@ export function MobileTabBar() {
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] transition-colors",
+                  "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] transition-colors",
                   isActive
-                    ? "text-accent font-medium"
+                    ? "bg-accent-soft text-accent font-semibold"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -65,7 +65,7 @@ export function MobileTabBar() {
                   aria-hidden="true"
                   className="h-5 w-5"
                 />
-                <span className="truncate">{tab.label}</span>
+                <span className="max-w-full truncate">{tab.label}</span>
               </Link>
             </li>
           );

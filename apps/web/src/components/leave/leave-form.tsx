@@ -11,11 +11,13 @@ import {
   GraduationCap,
   Loader2,
   Paperclip,
+  Search,
   Send,
   Sparkles,
   Tags,
   Trash2,
   UploadCloud,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -501,55 +503,13 @@ export function LeaveForm({
             ) : null}
 
             {selectedClass.courses.length > 0 ? (
-              <div className="mt-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-muted-foreground text-[11px] font-medium">
-                    Courses this absence covers
-                  </p>
-                  <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
-                    {selectedSubjectIds.length} selected
-                  </span>
-                </div>
-
-                <ul
-                  aria-label="Courses this absence covers"
-                  className="mt-1.5 flex flex-wrap gap-1.5"
-                >
-                  {selectedClass.courses.map((course) => {
-                    const selected = selectedSubjectIds.includes(course.id);
-
-                    return (
-                      <li key={course.id}>
-                        <button
-                          type="button"
-                          aria-pressed={selected}
-                          disabled={busy !== null}
-                          onClick={() => toggleCourse(course.id)}
-                          className={cn(
-                            "focus-visible:outline-accent flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
-                            selected
-                              ? "border-accent bg-accent-soft text-accent"
-                              : "border-border bg-subtle text-foreground hover:border-accent/60",
-                          )}
-                        >
-                          {selected ? (
-                            <Check
-                              aria-hidden="true"
-                              className="h-3 w-3"
-                            />
-                          ) : null}
-                          {course.name}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <p className="text-muted-foreground mt-2 text-[11px] leading-relaxed">
-                  Pick every course this absence applies to. You can choose more
-                  than one.
-                </p>
-              </div>
+              <CourseMultiSelect
+                courses={selectedClass.courses}
+                selectedIds={selectedSubjectIds}
+                disabled={busy !== null}
+                onToggle={toggleCourse}
+                onClear={() => setSelectedSubjectIds([])}
+              />
             ) : null}
           </section>
         ) : null}
@@ -999,6 +959,233 @@ export function LeaveForm({
           </div>
         </aside>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Searchable multi-select for the courses an absence covers.
+ *
+ * Selection stays as course IDs in the parent form state, so searching,
+ * closing, and reopening the panel can never drop a chosen course; the
+ * panel only filters what is *shown*, never what is selected.
+ */
+function CourseMultiSelect({
+  courses,
+  selectedIds,
+  disabled,
+  onToggle,
+  onClear,
+}: {
+  courses: LeaveCourseChoice[];
+  selectedIds: string[];
+  disabled: boolean;
+  onToggle: (subjectId: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Close on outside tap and on Escape; selection is untouched either way.
+  React.useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function onPointerDown(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const selectedCourses = courses.filter((course) =>
+    selectedIds.includes(course.id),
+  );
+  const visibleCourses = selectedCourses.slice(0, 2);
+  const hiddenCount = selectedCourses.length - visibleCourses.length;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredCourses = normalizedQuery
+    ? courses.filter((course) =>
+        course.name.toLowerCase().includes(normalizedQuery),
+      )
+    : courses;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative mt-3"
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-muted-foreground text-[11px] font-medium">
+          Courses this absence covers
+        </p>
+        <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+          {selectedIds.length} selected
+        </span>
+      </div>
+
+      <div
+        className={cn(
+          "border-input bg-surface mt-1.5 flex min-h-11 flex-wrap items-center gap-1.5 rounded-xl border px-2.5 py-2",
+          open && "border-accent",
+        )}
+      >
+        {selectedIds.length === 0 ? (
+          <span className="text-muted-foreground min-w-0 flex-1 text-sm">
+            Select courses…
+          </span>
+        ) : (
+          <>
+            {visibleCourses.map((course) => (
+              <span
+                key={course.id}
+                className="bg-accent-soft text-accent inline-flex max-w-full items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium"
+              >
+                <span className="truncate">{course.name}</span>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-label={`Remove ${course.name}`}
+                  onClick={() => onToggle(course.id)}
+                  className="focus-visible:outline-accent shrink-0 rounded focus-visible:outline-2"
+                >
+                  <X
+                    aria-hidden="true"
+                    className="h-3 w-3"
+                  />
+                </button>
+              </span>
+            ))}
+            {hiddenCount > 0 ? (
+              <span className="bg-muted text-muted-foreground rounded-lg px-2 py-0.5 text-xs font-medium tabular-nums">
+                +{hiddenCount} more
+              </span>
+            ) : null}
+          </>
+        )}
+
+        <button
+          type="button"
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label="Choose courses"
+          onClick={() => setOpen((current) => !current)}
+          className="focus-visible:outline-accent text-muted-foreground hover:text-foreground ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-lg focus-visible:outline-2"
+        >
+          <ChevronDown
+            aria-hidden="true"
+            className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+          />
+        </button>
+      </div>
+
+      {open ? (
+        <div className="border-border bg-surface absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border shadow-lg">
+          <div className="border-border p-2 pb-0">
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+              />
+              <Input
+                autoFocus
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search courses…"
+                aria-label="Search courses"
+                className="h-10 pl-9"
+              />
+            </div>
+          </div>
+
+          {filteredCourses.length > 0 ? (
+            <ul
+              role="listbox"
+              aria-label="Available courses"
+              aria-multiselectable="true"
+              className="max-h-56 overflow-y-auto p-1.5"
+            >
+              {filteredCourses.map((course) => {
+                const selected = selectedIds.includes(course.id);
+
+                return (
+                  <li key={course.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => onToggle(course.id)}
+                      className={cn(
+                        "focus-visible:outline-accent flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors focus-visible:outline-2",
+                        selected ? "bg-accent-soft" : "hover:bg-subtle",
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                          selected
+                            ? "border-accent bg-accent text-white"
+                            : "border-input bg-surface",
+                        )}
+                      >
+                        {selected ? <Check className="h-3.5 w-3.5" /> : null}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {course.name}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground px-3 py-4 text-center text-xs">
+              No courses match {query.trim()}.
+            </p>
+          )}
+
+          <div className="border-border bg-subtle/60 flex items-center justify-between gap-2 border-t px-3 py-2">
+            <button
+              type="button"
+              disabled={disabled || selectedIds.length === 0}
+              onClick={onClear}
+              className="text-danger focus-visible:outline-accent rounded-lg px-2 py-1.5 text-xs font-semibold disabled:opacity-50 focus-visible:outline-2"
+            >
+              Clear selection
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="bg-accent text-accent-foreground focus-visible:outline-accent rounded-lg px-4 py-1.5 text-xs font-semibold focus-visible:outline-2"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <p className="text-muted-foreground mt-2 text-[11px] leading-relaxed">
+        Pick every course this absence applies to. You can choose more than one.
+      </p>
     </div>
   );
 }

@@ -21,6 +21,8 @@ export function describeCheckInFailure(
       return "Attendance for this meeting has closed. Ask your class admin if you need a correction.";
     case "checkin_imprecise":
       return "Your location is not accurate enough. Move somewhere with a clearer signal and try again.";
+    case "checkin_stale_position":
+      return "Your location is stale. Move somewhere with a clearer signal and try again.";
     case "checkin_unavailable":
     case "checkin_not_scheduled":
       return "This meeting is not open for check-in.";

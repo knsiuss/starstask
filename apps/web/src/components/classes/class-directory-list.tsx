@@ -40,7 +40,9 @@ function CardStat({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    // On very narrow screens the icon stacks above the number so the three
+    // stats plus the navigation arrow fit without squeezing the labels.
+    <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-2">
       <Icon
         aria-hidden="true"
         className="text-muted-foreground h-4 w-4 shrink-0"
@@ -49,7 +51,7 @@ function CardStat({
         <dd className="text-foreground text-sm font-medium tabular-nums">
           {formatCount(value)}
         </dd>
-        <dt className="text-muted-foreground text-[11px]">{label}</dt>
+        <dt className="text-muted-foreground truncate text-[11px]">{label}</dt>
       </div>
     </div>
   );
@@ -57,11 +59,11 @@ function CardStat({
 
 export function ClassDirectoryCard({ classItem }: ClassDirectoryCardProps) {
   return (
-    <article className="border-border bg-surface hover:border-accent/40 group relative flex h-full flex-col rounded-xl border transition-colors">
+    <article className="border-border bg-surface hover:border-accent/40 group relative flex h-full flex-col rounded-2xl border shadow-sm transition-colors">
       {/* No `overflow-hidden` on the card: it clipped the icon tile that is
           meant to straddle the cover edge. The cover rounds its own top
           corners instead, so nothing inside the card can be cut off. */}
-      <div className="from-accent/15 via-accent-soft to-surface relative h-20 rounded-t-xl bg-gradient-to-br">
+      <div className="bg-accent-soft relative h-16 rounded-t-2xl sm:h-20">
         <div className="absolute top-2.5 right-2.5 z-10">
           <ClassDirectoryMenu
             classSlug={classItem.slug}
@@ -71,7 +73,7 @@ export function ClassDirectoryCard({ classItem }: ClassDirectoryCardProps) {
         </div>
       </div>
 
-      <div className="px-5 pb-4">
+      <div className="px-4 pb-4 sm:px-5">
         {/* `relative z-10` matters: the cover above is positioned, so without it
             the cover paints over the top half of the icon tile. */}
         <div className="relative z-10 -mt-5 flex items-end justify-between gap-2">
@@ -97,7 +99,7 @@ export function ClassDirectoryCard({ classItem }: ClassDirectoryCardProps) {
           </div>
         </div>
 
-        <h2 className="mt-3 truncate text-lg leading-snug font-semibold tracking-tight">
+        <h2 className="mt-3 text-lg leading-snug font-semibold tracking-tight break-words">
           <Link
             href={`/dashboard/classes/${classItem.slug}`}
             className={TITLE_LINK_CLASS}
@@ -123,8 +125,8 @@ export function ClassDirectoryCard({ classItem }: ClassDirectoryCardProps) {
         ) : null}
       </div>
 
-      <div className="border-border mt-auto flex items-center justify-between gap-3 border-t px-5 py-3">
-        <dl className="flex items-center gap-4">
+      <div className="border-border mt-auto flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-5">
+        <dl className="grid flex-1 grid-cols-3 gap-2 min-[420px]:flex min-[420px]:items-center min-[420px]:gap-4">
           <CardStat
             icon={BookOpen}
             value={classItem.subject_count}

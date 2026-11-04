@@ -34,6 +34,7 @@ import {
   ATTENDANCE_MEETING_PHASE_LABELS,
   ATTENDANCE_MEETING_NIM_PATTERN,
   ATTENDANCE_STATUS_LABELS,
+  CHECKIN_POSITION_MAX_AGE_MS,
   SESSION_CHECKIN_ACCURACY_MAX_M,
   getAttendanceLateDeadline,
 } from "@starstask/contracts";
@@ -189,6 +190,19 @@ function StudentMeetingCard({
     try {
       const position = await getCurrentPosition();
       const { latitude, longitude, accuracy } = position.coords;
+      const capturedAt = position.capturedAt;
+
+      if (Date.now() - capturedAt > CHECKIN_POSITION_MAX_AGE_MS) {
+        setResultFailure({
+          message:
+            "Your location is stale. Move somewhere with a clearer signal and try again.",
+          distanceM: null,
+          radiusM: meeting.radiusM,
+          canRetry: isOpenPhase,
+        });
+        setPermissionOpen(false);
+        return;
+      }
 
       if (
         !Number.isFinite(accuracy) ||
@@ -215,6 +229,7 @@ function StudentMeetingCard({
             latitude,
             longitude,
             accuracy,
+            capturedAt,
           }),
         },
       );

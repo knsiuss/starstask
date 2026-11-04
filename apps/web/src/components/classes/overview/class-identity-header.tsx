@@ -30,7 +30,7 @@ export function ClassIdentityHeader({
         aria-hidden="true"
         viewBox="0 0 640 160"
         preserveAspectRatio="xMaxYMid slice"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-70"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-40 sm:opacity-70"
       >
         <path
           d="M330 160c60-52 150-70 240-34 26 10 48 22 70 34z"
@@ -115,16 +115,16 @@ export function ClassIdentityHeader({
         </g>
       </svg>
 
-      <div className="relative flex flex-wrap items-center gap-4 px-5 py-5 sm:px-6">
+      <div className="relative flex flex-wrap items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5">
         <span
           aria-hidden="true"
-          className="bg-accent-soft text-accent flex h-14 w-14 shrink-0 items-center justify-center rounded-xl"
+          className="bg-accent-soft text-accent flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-14 sm:w-14"
         >
-          <BookOpenCheck className="h-7 w-7" />
+          <BookOpenCheck className="h-5 w-5 sm:h-7 sm:w-7" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight break-words sm:text-3xl">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <h1 className="text-xl font-semibold tracking-tight break-words sm:text-3xl">
               {classSummary.class_code ?? classSummary.name}
             </h1>
             <StatusBadge status={classSummary.status} />
@@ -138,7 +138,7 @@ export function ClassIdentityHeader({
               {roleLabel}
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:mt-1.5 sm:text-sm">
             <span className="text-foreground font-medium">
               {classSummary.course_name}
             </span>

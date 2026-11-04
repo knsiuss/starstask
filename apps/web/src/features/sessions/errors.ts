@@ -70,6 +70,12 @@ const CODE_MAP: Record<
     code: "checkin_too_far",
     message: "You are outside the check-in radius.",
   },
+  SS106: {
+    status: 422,
+    code: "checkin_stale_position",
+    message:
+      "Your location is stale. Move somewhere with a clearer signal and try again.",
+  },
   SS107: {
     status: 409,
     code: "checkin_not_scheduled",
@@ -83,8 +89,7 @@ const CODE_MAP: Record<
   SS111: {
     status: 409,
     code: "attendance_finalized",
-    message:
-      "This meeting is finalized. Reopen it before changing attendance.",
+    message: "This meeting is finalized. Reopen it before changing attendance.",
   },
   SS112: {
     status: 409,

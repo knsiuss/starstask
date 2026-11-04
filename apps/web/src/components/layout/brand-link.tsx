@@ -12,7 +12,7 @@ export function BrandLink({ className, showTagline = false }: BrandLinkProps) {
   return (
     <Link
       href="/"
-      className={cn("flex items-center gap-2.5", className)}
+      className={cn("flex items-center gap-2", className)}
     >
       <BrandMark size={36} />
       <span className="min-w-0">

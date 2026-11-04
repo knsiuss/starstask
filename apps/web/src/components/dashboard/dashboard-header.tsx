@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, Clock } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import {
@@ -138,42 +139,38 @@ export function DashboardHeader({
   const zoneLabel = timeZoneLabel(zone);
 
   return (
-    <header className="border-border relative overflow-hidden rounded-2xl border">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[url('/hero-dashboard.svg')] bg-cover bg-center"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/10 dark:from-[#0e1116]/90 dark:via-[#0e1116]/65 dark:to-[#0e1116]/10"
-      />
+    <header className="border-border bg-surface rounded-2xl border px-4 py-5 sm:px-6 sm:py-6">
+      <p className="text-muted-foreground text-sm font-medium">{greeting},</p>
+      <h1 className="text-foreground mt-0.5 truncate text-2xl leading-tight font-semibold tracking-tight sm:text-[30px]">
+        {name ?? "Welcome"}
+      </h1>
+      <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
+        {summary ?? "Here is an overview of your academic activities today."}
+      </p>
 
-      <div className="relative flex flex-col gap-5 px-5 py-7 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:py-8">
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-sm font-medium">
-            {greeting},
-          </p>
-          <h1 className="text-foreground mt-0.5 text-3xl leading-tight font-semibold tracking-tight sm:text-[34px]">
-            {name ?? "Welcome"}
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-xl text-sm leading-relaxed">
-            {summary ??
-              "Here is an overview of your academic activities today."}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-col gap-1 sm:items-end sm:text-right">
-          <p className="text-muted-foreground text-xs font-medium">
-            {dateLabel}
-          </p>
-          <p className="text-foreground flex items-baseline gap-2 text-[26px] leading-none font-semibold tracking-tight tabular-nums sm:text-[30px]">
+      <div className="border-border mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-3.5">
+        <p className="text-muted-foreground flex items-center gap-2 text-sm">
+          <span className="bg-accent-soft text-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+            <CalendarDays
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+          </span>
+          {dateLabel}
+        </p>
+        <p className="text-muted-foreground flex items-center gap-2 text-sm">
+          <span className="bg-accent-soft text-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+            <Clock
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+          </span>
+          <span className="text-foreground font-semibold tabular-nums">
             <span className="sr-only">Current time: </span>
             <time dateTime={now.toISOString()}>{clockLabel}</time>
-            <span className="text-muted-foreground text-xs font-medium">
-              {zoneLabel}
-            </span>
-          </p>
-        </div>
+          </span>
+          {zoneLabel}
+        </p>
       </div>
     </header>
   );

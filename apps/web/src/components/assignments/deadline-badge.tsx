@@ -28,7 +28,10 @@ export function DeadlineBadge({
         : "accent";
 
   return (
-    <Badge variant={variant}>
+    <Badge
+      variant={variant}
+      className="max-w-full"
+    >
       <span>{deadlineStateLabel(state)}</span>
       {showDate ? (
         <span className="opacity-80">· {formatDeadline(deadline)}</span>

@@ -53,28 +53,28 @@ export function AttendanceOverviewMetrics({
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
       {metrics.map((metric) => {
         const Icon = metric.icon;
 
         return (
           <div
             key={metric.label}
-            className="border-border bg-surface flex items-center gap-3 rounded-xl border px-4 py-4"
+            className="border-border bg-surface flex items-center gap-2.5 rounded-xl border p-3 sm:gap-3 sm:px-4 sm:py-4"
           >
             <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${metric.iconBackground}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10 ${metric.iconBackground}`}
             >
               <Icon
                 aria-hidden="true"
-                className={`h-5 w-5 ${metric.iconClassName}`}
+                className={`h-[18px] w-[18px] ${metric.iconClassName}`}
               />
             </span>
             <div className="min-w-0">
               <dt className="text-muted-foreground truncate text-xs font-medium">
                 {metric.label}
               </dt>
-              <dd className="mt-0.5 text-2xl font-semibold tabular-nums">
+              <dd className="mt-0.5 text-[22px] leading-none font-semibold tabular-nums sm:text-2xl">
                 {metric.value}
               </dd>
             </div>

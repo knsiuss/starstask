@@ -81,7 +81,7 @@ export function ClassQuickActions({ classSlug, canManage }: Props) {
   return (
     <section
       aria-labelledby="class-quick-actions"
-      className="border-border bg-surface rounded-xl border p-5"
+      className="border-border bg-surface rounded-xl border p-4 sm:p-5"
     >
       <h2
         id="class-quick-actions"

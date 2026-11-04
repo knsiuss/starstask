@@ -41,7 +41,7 @@ export function OverviewStats({ stats }: { stats: ClassOverviewStats }) {
   return (
     <section
       aria-labelledby="class-overview-stats"
-      className="border-border bg-surface rounded-xl border p-5"
+      className="border-border bg-surface rounded-xl border p-4 sm:p-5"
     >
       <h2
         id="class-overview-stats"
@@ -49,23 +49,25 @@ export function OverviewStats({ stats }: { stats: ClassOverviewStats }) {
       >
         Class Overview
       </h2>
-      <ul className="mt-4 space-y-4">
+      <ul className="mt-3 grid grid-cols-2 gap-2.5">
         {rows.map((row) => (
           <li
             key={row.label}
-            className="flex items-center justify-between gap-3"
+            className={`flex items-center gap-2.5 rounded-xl p-3 ${row.chip}`}
           >
-            <span className="text-muted-foreground inline-flex items-center gap-2.5 text-sm">
-              <span
-                aria-hidden="true"
-                className={`flex h-8 w-8 items-center justify-center rounded-lg ${row.chip}`}
-              >
-                <row.icon className="h-4 w-4" />
-              </span>
-              {row.label}
+            <span
+              aria-hidden="true"
+              className="bg-surface/70 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+            >
+              <row.icon className={`h-[18px] w-[18px] ${row.tone}`} />
             </span>
-            <span className={`text-lg font-semibold tabular-nums ${row.tone}`}>
-              {row.value}
+            <span className="min-w-0 leading-tight">
+              <span className="text-muted-foreground block truncate text-[11px]">
+                {row.label}
+              </span>
+              <span className="text-foreground block text-xl font-bold tabular-nums">
+                {row.value}
+              </span>
             </span>
           </li>
         ))}

@@ -37,7 +37,7 @@ export function NextSchedule({ item }: { item: NextScheduleItem | null }) {
   return (
     <section
       aria-labelledby="next-schedule"
-      className="border-border bg-surface rise-in rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
+      className="border-border bg-surface rise-in rounded-xl border p-3.5 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export function NextSchedule({ item }: { item: NextScheduleItem | null }) {
       {item ? (
         <Link
           href={item.href}
-          className="border-accent/20 bg-band hover:border-accent/40 focus-visible:outline-accent mt-3 flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="border-accent/20 bg-band hover:border-accent/40 focus-visible:outline-accent mt-3 flex flex-wrap items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3.5"
         >
           <span className="bg-surface text-accent border-border flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border">
             {item.kind === "assignment" ? (

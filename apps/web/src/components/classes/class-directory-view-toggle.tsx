@@ -44,7 +44,7 @@ export function ClassDirectoryViewToggle({
   ];
 
   return (
-    <div className="border-border bg-surface flex items-center gap-0.5 rounded-lg border p-0.5">
+    <div className="border-border bg-surface flex items-center gap-0.5 rounded-xl border p-0.5">
       {options.map((option) => {
         const isActive = query.view === option.view;
 
@@ -55,7 +55,7 @@ export function ClassDirectoryViewToggle({
             aria-label={option.label}
             aria-current={isActive ? "true" : undefined}
             className={cn(
-              "focus-visible:outline-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+              "focus-visible:outline-accent flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
               isActive
                 ? "bg-accent-soft text-accent"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -63,7 +63,7 @@ export function ClassDirectoryViewToggle({
           >
             <option.icon
               aria-hidden="true"
-              className="h-3.5 w-3.5"
+              className="h-4 w-4"
             />
           </Link>
         );

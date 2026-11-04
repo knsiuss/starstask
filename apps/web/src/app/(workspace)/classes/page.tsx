@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const pageContainer =
-  "mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10";
+  "mx-auto w-full max-w-5xl px-4 pt-5 pb-8 sm:px-6 sm:pt-7 lg:px-8 lg:py-10";
 
 type MyClassesPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -104,10 +104,12 @@ export default async function MyClassesPage({
 
   return (
     <div className={pageContainer}>
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">My Classes</h1>
-          <p className="text-muted-foreground mt-1.5 text-sm">
+          <h1 className="text-[26px] leading-tight font-semibold tracking-tight sm:text-3xl">
+            My Classes
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             All your enrolled class groups in one place.
           </p>
         </div>
@@ -115,7 +117,10 @@ export default async function MyClassesPage({
         {/* The empty state carries its own primary action, so a header action
             here would be a second competing button. */}
         {classes.length > 0 ? (
-          <Button asChild>
+          <Button
+            asChild
+            size="lg"
+          >
             <Link href="/classes/join">
               <PlusCircle
                 aria-hidden="true"
@@ -128,7 +133,10 @@ export default async function MyClassesPage({
       </header>
 
       {classes.length > 0 ? (
-        <div className="mt-6">
+        // Filters are a desktop concern only: on mobile they eat the first
+        // screen and push the cards down, so the panel is not rendered there
+        // at all. The toolbar component itself stays untouched.
+        <div className="mt-5 hidden lg:block">
           <ClassDirectoryToolbar
             query={query}
             semesters={semesters}
@@ -139,7 +147,7 @@ export default async function MyClassesPage({
       ) : null}
 
       {classes.length > 0 ? (
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="mt-4 flex items-center justify-between gap-3 lg:mt-5">
           <p className="text-muted-foreground text-sm">
             {formatCount(visible.length)}{" "}
             {pluralize(visible.length, "class group")}

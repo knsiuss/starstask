@@ -1,6 +1,18 @@
 "use client";
 
-import { Link2, Loader2, LocateFixed, MapPin, PlusCircle } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  Crosshair,
+  Hash,
+  Link2,
+  Loader2,
+  LocateFixed,
+  MapPin,
+  PlusCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -51,6 +63,30 @@ type AttendanceMeetingFormProps = {
   /** Drops the surrounding panel so the caller can provide its own frame. */
   bare?: boolean;
 };
+
+/** Label with a small leading icon, matching the field it describes. */
+function FieldLabel({
+  htmlFor,
+  icon: Icon,
+  children,
+}: {
+  htmlFor: string;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) {
+  return (
+    <Label
+      htmlFor={htmlFor}
+      className="flex items-center gap-1.5"
+    >
+      <Icon
+        aria-hidden="true"
+        className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+      />
+      {children}
+    </Label>
+  );
+}
 
 function addMinutes(time: string, minutes: number): string | null {
   const match = /^(\d{2}):(\d{2})$/.exec(time);
@@ -115,6 +151,7 @@ export function AttendanceMeetingForm({
   const [manualLatitude, setManualLatitude] = React.useState("");
   const [manualLongitude, setManualLongitude] = React.useState("");
   const [isLocating, setIsLocating] = React.useState(false);
+  const [locationOpen, setLocationOpen] = React.useState(true);
   const [isBusy, setIsBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
@@ -371,9 +408,14 @@ export function AttendanceMeetingForm({
           : "border-border bg-subtle mt-4 space-y-5 rounded-2xl border p-5"
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="attendance-subject">Subject / Course</Label>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="col-span-2 space-y-1.5">
+          <FieldLabel
+            htmlFor="attendance-subject"
+            icon={BookOpen}
+          >
+            Subject / Course
+          </FieldLabel>
           <Select
             id="attendance-subject"
             value={subjectId}
@@ -396,7 +438,12 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-meeting-number">Meeting number</Label>
+          <FieldLabel
+            htmlFor="attendance-meeting-number"
+            icon={Hash}
+          >
+            Meeting number
+          </FieldLabel>
           <Input
             id="attendance-meeting-number"
             type="number"
@@ -412,7 +459,12 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-meeting-date">Meeting date</Label>
+          <FieldLabel
+            htmlFor="attendance-meeting-date"
+            icon={CalendarDays}
+          >
+            Meeting date
+          </FieldLabel>
           <Input
             id="attendance-meeting-date"
             type="date"
@@ -494,7 +546,12 @@ export function AttendanceMeetingForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="attendance-radius">Allowed radius</Label>
+          <FieldLabel
+            htmlFor="attendance-radius"
+            icon={Crosshair}
+          >
+            Allowed radius
+          </FieldLabel>
           <Select
             id="attendance-radius"
             value={radiusM}
@@ -511,84 +568,187 @@ export function AttendanceMeetingForm({
           </Select>
         </div>
 
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="attendance-location">Location name</Label>
-          <Input
-            id="attendance-location"
-            value={location}
-            maxLength={ATTENDANCE_MEETING_LOCATION_MAX}
-            onChange={(event) => setLocation(event.target.value)}
-            placeholder="Room 3.04, Faculty of Computer Science"
-            aria-invalid={Boolean(fieldErrors.location)}
-          />
-          {fieldErrors.location ? (
-            <p className="text-danger text-xs">{fieldErrors.location}</p>
-          ) : null}
-        </div>
-
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="attendance-maps-link">
-            Google Maps link (optional)
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="attendance-maps-link"
-              inputMode="url"
-              value={mapsLink}
-              maxLength={2_048}
-              onChange={(event) => setMapsLink(event.target.value)}
-              placeholder="https://maps.app.goo.gl/…"
-              className="min-w-0 flex-1"
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => void resolveMapsLink()}
-              disabled={isResolvingLink || isBusy || mapsLink.trim() === ""}
-              className="shrink-0"
+        <section
+          aria-labelledby="location-details"
+          className="border-border bg-subtle/60 col-span-2 rounded-xl border p-3 sm:p-4"
+        >
+          <button
+            type="button"
+            aria-expanded={locationOpen}
+            aria-controls="location-details-body"
+            onClick={() => setLocationOpen((open) => !open)}
+            className="focus-visible:outline-accent flex w-full items-center gap-2.5 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+              <MapPin
+                aria-hidden="true"
+                className="h-[18px] w-[18px]"
+              />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span
+                id="location-details"
+                className="block text-sm font-semibold"
+              >
+                Location details
+              </span>
+              <span className="text-muted-foreground block text-xs">
+                Location, map link, and coordinates.
+              </span>
+            </span>
+            <span
+              className={
+                coordinates
+                  ? "bg-success-soft text-success shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  : "bg-muted text-muted-foreground shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              }
             >
-              {isResolvingLink ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="h-4 w-4 animate-spin"
+              {coordinates ? "Configured" : "Not set"}
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={`text-muted-foreground h-4 w-4 shrink-0 transition-transform ${locationOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {locationOpen ? (
+            <div
+              id="location-details-body"
+              className="mt-4 space-y-3"
+            >
+              <div className="space-y-1.5">
+                <FieldLabel
+                  htmlFor="attendance-location"
+                  icon={MapPin}
+                >
+                  Location name
+                </FieldLabel>
+                <Input
+                  id="attendance-location"
+                  value={location}
+                  maxLength={ATTENDANCE_MEETING_LOCATION_MAX}
+                  onChange={(event) => setLocation(event.target.value)}
+                  placeholder="Room 3.04, Faculty of Computer Science"
+                  aria-invalid={Boolean(fieldErrors.location)}
                 />
-              ) : (
-                <Link2
-                  aria-hidden="true"
-                  className="h-4 w-4"
-                />
-              )}
-              Use link
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-[11px] leading-relaxed">
-            Paste a share link from Google Maps and StarsTask fills the
-            coordinates. A pin link or a full maps.google.com URL works best.
-          </p>
-        </div>
+                {fieldErrors.location ? (
+                  <p className="text-danger text-xs">{fieldErrors.location}</p>
+                ) : null}
+              </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="attendance-latitude">Latitude</Label>
-          <Input
-            id="attendance-latitude"
-            inputMode="decimal"
-            value={manualLatitude}
-            onChange={(event) => setManualLatitude(event.target.value)}
-          />
-        </div>
+              <div className="space-y-1.5">
+                <FieldLabel
+                  htmlFor="attendance-maps-link"
+                  icon={Link2}
+                >
+                  Google Maps link (optional)
+                </FieldLabel>
+                <div className="flex gap-2">
+                  <Input
+                    id="attendance-maps-link"
+                    inputMode="url"
+                    value={mapsLink}
+                    maxLength={2_048}
+                    onChange={(event) => setMapsLink(event.target.value)}
+                    placeholder="https://maps.app.goo.gl/…"
+                    className="min-w-0 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => void resolveMapsLink()}
+                    disabled={
+                      isResolvingLink || isBusy || mapsLink.trim() === ""
+                    }
+                    className="shrink-0"
+                  >
+                    {isResolvingLink ? (
+                      <Loader2
+                        aria-hidden="true"
+                        className="h-4 w-4 animate-spin"
+                      />
+                    ) : (
+                      <Link2
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      />
+                    )}
+                    Use link
+                  </Button>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Paste a share link from Google Maps and StarsTask fills the
+                  coordinates. A pin link or a full maps.google.com URL works
+                  best.
+                </p>
+              </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="attendance-longitude">Longitude</Label>
-          <Input
-            id="attendance-longitude"
-            inputMode="decimal"
-            value={manualLongitude}
-            onChange={(event) => setManualLongitude(event.target.value)}
-          />
-        </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <FieldLabel
+                    htmlFor="attendance-latitude"
+                    icon={Crosshair}
+                  >
+                    Latitude
+                  </FieldLabel>
+                  <Input
+                    id="attendance-latitude"
+                    inputMode="decimal"
+                    value={manualLatitude}
+                    onChange={(event) => setManualLatitude(event.target.value)}
+                  />
+                </div>
 
-        <div className="space-y-1.5 sm:col-span-2">
+                <div className="space-y-1.5">
+                  <FieldLabel
+                    htmlFor="attendance-longitude"
+                    icon={Crosshair}
+                  >
+                    Longitude
+                  </FieldLabel>
+                  <Input
+                    id="attendance-longitude"
+                    inputMode="decimal"
+                    value={manualLongitude}
+                    onChange={(event) => setManualLongitude(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void captureLocation()}
+                  disabled={isLocating}
+                >
+                  {isLocating ? (
+                    <Loader2
+                      aria-hidden="true"
+                      className="h-4 w-4 animate-spin"
+                    />
+                  ) : (
+                    <LocateFixed
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                    />
+                  )}
+                  Use my location
+                </Button>
+
+                {point?.accuracy ? (
+                  <p className="text-muted-foreground text-[11px]">
+                    GPS accuracy about {Math.round(point.accuracy)} m
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <div className="col-span-2 space-y-1.5">
           <Label htmlFor="attendance-title">Title (optional)</Label>
           <Input
             id="attendance-title"
@@ -598,35 +758,6 @@ export function AttendanceMeetingForm({
             placeholder="Defaults to the course and meeting number"
           />
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => void captureLocation()}
-          disabled={isLocating}
-        >
-          {isLocating ? (
-            <Loader2
-              aria-hidden="true"
-              className="h-4 w-4 animate-spin"
-            />
-          ) : (
-            <LocateFixed
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-          )}
-          Use my location
-        </Button>
-
-        {point?.accuracy ? (
-          <p className="text-muted-foreground text-[11px]">
-            GPS accuracy about {Math.round(point.accuracy)} m
-          </p>
-        ) : null}
       </div>
 
       {error ? (
@@ -640,6 +771,7 @@ export function AttendanceMeetingForm({
           type="submit"
           size="sm"
           disabled={isBusy}
+          className="h-11 w-full sm:h-9 sm:w-auto"
         >
           {isBusy ? (
             <Loader2

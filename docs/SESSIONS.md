@@ -239,7 +239,19 @@ authority:
 2. the session is `in_person`, `scheduled`, and has a saved point,
 3. `now()` is between `starts_at - 15 minutes` and `ends_at`,
 4. the reported accuracy is at most 100 m,
-5. the haversine distance is within `checkin_radius_m` (25-1,000 m).
+5. the reading's `capturedAt` timestamp is at most 60 seconds old and not in
+   the future (see Freshness below),
+6. the haversine distance is within `checkin_radius_m` (25-1,000 m).
+
+### Freshness
+
+A browser may cache a fix, so the client sends the reading's own timestamp
+as `capturedAt`. The contract (`CHECKIN_POSITION_MAX_AGE_MS`, 60 seconds)
+rejects a stale or future stamp before the request, and the database wrapper
+overloads in `20261106000000_geofencing_freshness.sql` re-check it with
+`now()`: discussion check-in raises `SS106` (`checkin_stale_position`),
+meeting check-in returns `checkin_stale_position`. A null stamp keeps old
+clients valid. The organizer's room-point picker is unaffected.
 
 A missing row becomes `present`, or `late` once more than ten minutes have passed
 since the start. A repeated request returns the existing row instead of failing,

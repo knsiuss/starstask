@@ -58,7 +58,10 @@ export function TabStrip({ label, items, className }: TabStripProps) {
         className="flex min-w-max items-center gap-1"
       >
         {items.map((item) => (
-          <li key={item.href}>
+          <li
+            key={item.href}
+            className="min-w-0"
+          >
             <Link
               href={item.href}
               aria-current={item.active ? "page" : undefined}
@@ -70,7 +73,7 @@ export function TabStrip({ label, items, className }: TabStripProps) {
               )}
             >
               {item.icon}
-              {item.label}
+              <span className="truncate">{item.label}</span>
             </Link>
           </li>
         ))}

@@ -98,9 +98,9 @@ export function ScheduleFilterBar({
         const form = new FormData(event.currentTarget);
         navigate({ search: String(form.get("search") ?? "") });
       }}
-      className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_180px_180px_180px]"
+      className="hidden gap-2 sm:gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-[1fr_180px_180px_180px]"
     >
-      <div className="relative">
+      <div className="relative min-w-0 sm:col-span-2 xl:col-span-1">
         <Label
           htmlFor="workspace-search"
           className="sr-only"
@@ -134,7 +134,7 @@ export function ScheduleFilterBar({
         ) : null}
       </div>
 
-      <div>
+      <div className="min-w-0">
         <Label
           htmlFor="workspace-class"
           className="sr-only"
@@ -159,7 +159,7 @@ export function ScheduleFilterBar({
         </Select>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <Label
           htmlFor="workspace-status"
           className="sr-only"
@@ -182,7 +182,7 @@ export function ScheduleFilterBar({
         </Select>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <Label
           htmlFor="workspace-sort"
           className="sr-only"

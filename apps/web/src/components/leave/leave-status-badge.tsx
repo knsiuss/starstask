@@ -6,14 +6,14 @@ import {
 
 const VARIANTS: Record<
   LeaveRequestStatus,
-  "neutral" | "accent" | "warning" | "success"
+  "neutral" | "accent" | "warning" | "success" | "danger"
 > = {
   draft: "neutral",
   submitted: "accent",
   approved: "success",
-  rejected: "warning",
+  rejected: "danger",
   revision_requested: "warning",
-  forwarded: "success",
+  forwarded: "accent",
   cancelled: "neutral",
 };
 

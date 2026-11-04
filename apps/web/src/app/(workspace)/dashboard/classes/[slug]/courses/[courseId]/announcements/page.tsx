@@ -41,7 +41,7 @@ export default async function CourseAnnouncementsPage({
     role.canManage && found.status === "active" && course.status === "active";
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-5 pb-8 sm:px-6 sm:py-8 lg:px-8">
       <CourseWorkspaceHeader
         classSlug={found.slug}
         className={found.name}
@@ -93,7 +93,7 @@ export default async function CourseAnnouncementsPage({
       </div>
 
       {announcements.length === 0 ? (
-        <div className="border-border bg-subtle mt-6 rounded-xl border border-dashed px-5 py-12 text-center">
+        <div className="border-border bg-subtle mt-6 rounded-xl border border-dashed px-5 py-8 text-center sm:py-12">
           <Megaphone
             aria-hidden="true"
             className="text-muted-foreground mx-auto h-6 w-6"

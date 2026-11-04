@@ -18,13 +18,15 @@ function Stat({
       ? "text-warning"
       : tone === "danger"
         ? "text-danger"
-        : "text-foreground";
+        : "text-accent";
 
   return (
-    <li className="flex items-baseline justify-between gap-3">
-      <span className="text-muted-foreground text-sm">{label}</span>
+    <li className="flex min-w-0 flex-col items-center gap-0.5 px-1 text-center first:border-l-0 lg:flex-row lg:items-baseline lg:justify-between lg:px-0 lg:text-left">
+      <span className="text-muted-foreground order-2 text-[11px] leading-tight lg:order-1 lg:text-sm">
+        {label}
+      </span>
       <span
-        className={`text-2xl font-semibold tracking-tight tabular-nums ${toneClass}`}
+        className={`order-1 text-xl font-semibold tracking-tight tabular-nums lg:order-2 lg:text-2xl ${toneClass}`}
       >
         {value}
       </span>
@@ -33,25 +35,32 @@ function Stat({
 }
 
 /**
- * Right sidebar: overview numbers plus the nearest upcoming deadlines, all
- * computed from the same visible published set as the schedule list.
+ * Overview numbers plus (on desktop) the nearest upcoming deadlines, from
+ * the same visible published set as the schedule list. `idPrefix` keeps
+ * heading ids unique across the mobile and desktop instances.
  */
-export function OverviewSidebar({ overview }: { overview: WorkspaceOverview }) {
+export function OverviewSidebar({
+  overview,
+  idPrefix,
+}: {
+  overview: WorkspaceOverview;
+  idPrefix: string;
+}) {
   const now = new Date();
 
   return (
     <aside className="space-y-5">
       <section
-        aria-labelledby="workspace-overview"
-        className="border-border bg-surface rounded-xl border p-5"
+        aria-labelledby={`${idPrefix}-overview`}
+        className="border-border bg-surface rounded-xl border p-3.5 sm:p-4 lg:p-5"
       >
         <h2
-          id="workspace-overview"
+          id={`${idPrefix}-overview`}
           className="text-foreground text-sm font-semibold tracking-tight"
         >
           Overview
         </h2>
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-3 grid grid-cols-3 divide-x divide-border lg:mt-4 lg:grid-cols-1 lg:space-y-3 lg:divide-x-0">
           <Stat
             label="Total Tasks"
             value={overview.total}
@@ -71,11 +80,11 @@ export function OverviewSidebar({ overview }: { overview: WorkspaceOverview }) {
       </section>
 
       <section
-        aria-labelledby="workspace-upcoming"
-        className="border-border bg-surface rounded-xl border p-5"
+        aria-labelledby={`${idPrefix}-upcoming`}
+        className="border-border bg-surface hidden rounded-xl border p-5 lg:block"
       >
         <h2
-          id="workspace-upcoming"
+          id={`${idPrefix}-upcoming`}
           className="text-foreground text-sm font-semibold tracking-tight"
         >
           Upcoming Deadlines

@@ -29,7 +29,7 @@ export function WorkspaceTopbar({
 }: WorkspaceTopbarProps) {
   return (
     <header className="border-border bg-surface/90 sticky top-0 z-30 border-b backdrop-blur">
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="flex h-14 items-center gap-1.5 px-2 sm:gap-3 sm:px-6 lg:h-16 lg:px-8">
         <MobileNav
           isAuthenticated={isAuthenticated}
           isClassAdmin={isClassAdmin}

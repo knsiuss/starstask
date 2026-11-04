@@ -43,7 +43,7 @@ export function AbsenceFilterBar({
     <form
       action={action}
       method="get"
-      className="border-border bg-card grid grid-cols-2 gap-3 rounded-xl border p-3 sm:p-4 lg:grid-cols-7"
+      className="border-border bg-card hidden grid-cols-2 gap-3 rounded-xl border p-3 sm:p-4 lg:grid lg:grid-cols-7"
     >
       <input
         type="hidden"
@@ -187,7 +187,7 @@ export function AbsenceRequestCard({
       href={`/dashboard/actions?tab=absences&request=${request.id}`}
       className="border-border bg-surface hover:border-accent/60 block rounded-xl border px-4 py-3.5 transition-colors"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <LeaveStatusBadge status={request.status} />

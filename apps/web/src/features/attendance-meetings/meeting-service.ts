@@ -23,6 +23,7 @@ export type AttendanceMeetingCheckInResult = {
 
 const CHECK_IN_FAILURE_STATUS: Record<string, number> = {
   checkin_too_far: 422,
+  checkin_stale_position: 422,
   checkin_imprecise: 422,
   checkin_name_mismatch: 422,
   checkin_nim_mismatch: 422,
@@ -160,6 +161,9 @@ export async function checkInAttendanceMeeting(
     p_latitude: input.latitude,
     p_longitude: input.longitude,
     p_accuracy_m: input.accuracy,
+    p_captured_at: input.capturedAt
+      ? new Date(input.capturedAt).toISOString()
+      : null,
   });
 
   if (error) {
@@ -225,7 +229,11 @@ export async function recordAttendanceCorrection(
   }
 
   if (!data) {
-    throw new ApiError(500, "internal_error", "Could not record the correction.");
+    throw new ApiError(
+      500,
+      "internal_error",
+      "Could not record the correction.",
+    );
   }
 
   return data;

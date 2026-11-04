@@ -1,3 +1,4 @@
+import { GraduationCap, Settings } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -32,7 +33,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const pageContainer = "mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 lg:px-10";
+const pageContainer =
+  "mx-auto w-full max-w-6xl px-3 py-5 sm:px-8 sm:py-8 lg:px-10";
 
 type AttendancePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -126,55 +128,52 @@ export default async function AttendancePage({
 
   return (
     <div className={pageContainer}>
-      <AttendanceHeader period={period} />
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <AttendanceHeader period={period} />
 
-      {managedClasses.length > 0 ? (
-        <section
-          aria-labelledby="admin-attendance-tools"
-          className="border-border bg-subtle mt-4 rounded-xl border px-4 py-3"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2
-                id="admin-attendance-tools"
-                className="text-sm font-medium"
+        {managedClasses.length > 0 ? (
+          <nav
+            aria-labelledby="admin-attendance-tools"
+            className="flex shrink-0 flex-wrap items-center gap-1.5"
+          >
+            <h2
+              id="admin-attendance-tools"
+              className="sr-only"
+            >
+              Class admin tools
+            </h2>
+            {managedClasses.slice(0, 3).map((classItem) => (
+              <Button
+                asChild
+                key={classItem.id}
+                size="sm"
+                variant="secondary"
+                className="rounded-full"
               >
-                Class admin tools
-              </h2>
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                Open a class to create a meeting and start check-in.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {managedClasses.slice(0, 3).map((classItem) => (
-                <Button
-                  asChild
-                  key={classItem.id}
-                  size="sm"
-                  variant="secondary"
-                >
-                  <Link
-                    href={`/dashboard/classes/${classItem.slug}/attendance`}
-                  >
-                    Manage {classItem.name}
-                  </Link>
-                </Button>
-              ))}
-              {managedClasses.length > 3 ? (
-                <Button
-                  asChild
-                  size="sm"
-                  variant="ghost"
-                >
-                  <Link href="/classes">All classes</Link>
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : null}
+                <Link href={`/dashboard/classes/${classItem.slug}/attendance`}>
+                  <Settings
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+                  Manage {classItem.name}
+                </Link>
+              </Button>
+            ))}
+            {managedClasses.length > 3 ? (
+              <Button
+                asChild
+                size="sm"
+                variant="ghost"
+                className="rounded-full"
+              >
+                <Link href="/classes">All classes</Link>
+              </Button>
+            ) : null}
+          </nav>
+        ) : null}
+      </div>
 
-      <div className="mt-6">
+      <div className="mt-5">
         <AttendanceOverviewMetrics
           totalSessions={summary.eligible}
           present={summary.present}
@@ -199,15 +198,18 @@ export default async function AttendancePage({
         </div>
       ) : (
         <>
-          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <section aria-labelledby="course-attendance">
               <h2
                 id="course-attendance"
-                className="text-lg font-semibold tracking-tight"
+                className="text-base font-semibold tracking-tight sm:text-lg"
               >
                 Course Attendance
               </h2>
-              <div className="mt-4">
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                Attendance summary for your enrolled courses.
+              </p>
+              <div className="mt-3 sm:mt-4">
                 <CourseAttendanceTable rows={courseRows} />
               </div>
             </section>
@@ -219,7 +221,7 @@ export default async function AttendancePage({
             />
           </div>
 
-          <div className="mt-10">
+          <div className="mt-6 sm:mt-10">
             <AttendanceHistorySection
               view={historyView}
               query={query}
@@ -234,18 +236,22 @@ export default async function AttendancePage({
 
 function AttendanceHeader({ period }: { period?: string | null }) {
   return (
-    <header>
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
+    <header className="min-w-0">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
         Attendance
       </h1>
-      <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
+      <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
         Track your attendance across your enrolled courses.
       </p>
       {period ? (
         <Badge
           variant="neutral"
-          className="mt-3"
+          className="mt-3 gap-1.5 rounded-full px-3 py-1"
         >
+          <GraduationCap
+            aria-hidden="true"
+            className="h-3.5 w-3.5"
+          />
           {period}
         </Badge>
       ) : null}

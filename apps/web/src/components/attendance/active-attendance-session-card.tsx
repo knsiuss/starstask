@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   BookOpen,
@@ -35,9 +35,10 @@ import {
 } from "@/lib/geo/position";
 import {
   ATTENDANCE_STATUS_LABELS,
-  SESSION_CHECKIN_ACCURACY_MAX_M,
   getSessionCheckInWindow,
   getSessionCheckInWindowState,
+  CHECKIN_POSITION_MAX_AGE_MS,
+  SESSION_CHECKIN_ACCURACY_MAX_M,
 } from "@starstask/contracts";
 import {
   formatSessionDate,
@@ -90,7 +91,7 @@ export function ActiveAttendanceSessionCard({
   const subject = session.subjectName ?? session.courseName;
   const classLine = [session.className, session.classCode, session.semester]
     .filter((value): value is string => Boolean(value))
-    .join(" · ");
+    .join(" Â· ");
   const hasCheckInTime =
     checkIn?.status === "present" || checkIn?.status === "late";
   const checkInWindow = getSessionCheckInWindow(
@@ -132,6 +133,19 @@ export function ActiveAttendanceSessionCard({
     try {
       const position = await getCurrentPosition();
       const { latitude, longitude, accuracy } = position.coords;
+      const capturedAt = position.capturedAt;
+
+      if (Date.now() - capturedAt > CHECKIN_POSITION_MAX_AGE_MS) {
+        setResultFailure({
+          message:
+            "Your location is stale. Move somewhere with a clearer signal and try again.",
+          distanceM: null,
+          radiusM: session.radiusM,
+          canRetry: true,
+        });
+        setPermissionOpen(false);
+        return;
+      }
 
       if (accuracy > SESSION_CHECKIN_ACCURACY_MAX_M) {
         setResultFailure({
@@ -149,7 +163,7 @@ export function ActiveAttendanceSessionCard({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ latitude, longitude, accuracy }),
+          body: JSON.stringify({ latitude, longitude, accuracy, capturedAt }),
         },
       );
 
@@ -269,7 +283,7 @@ export function ActiveAttendanceSessionCard({
             />
             <dt className="sr-only">Check-in window</dt>
             <dd>
-              Check-in {formatSessionTime(opensAt, session.timeZone)}–
+              Check-in {formatSessionTime(opensAt, session.timeZone)}â€“
               {formatSessionTime(session.endsAt, session.timeZone)}{" "}
               {timeZoneLabel(session.timeZone)}
             </dd>
@@ -281,7 +295,7 @@ export function ActiveAttendanceSessionCard({
             />
             <dt className="sr-only">Allowed area</dt>
             <dd>
-              {session.location ? `${session.location} · ` : ""}
+              {session.location ? `${session.location} Â· ` : ""}
               Within {session.radiusM} meters
             </dd>
           </div>

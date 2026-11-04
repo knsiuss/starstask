@@ -110,9 +110,9 @@ export function AttendanceTab({
       <form
         action="/dashboard/actions?tab=attendance"
         method="get"
-        className="border-border bg-card flex flex-wrap items-end gap-3 rounded-xl border p-3 sm:p-4"
+        className="border-border bg-card flex items-center gap-2 rounded-xl border p-3 sm:p-4"
       >
-        <div className="min-w-52 flex-1">
+        <div className="min-w-0 flex-1">
           <Label htmlFor="attendance-class">Class</Label>
           <Select
             id="attendance-class"
@@ -136,19 +136,20 @@ export function AttendanceTab({
           type="submit"
           size="sm"
           variant="secondary"
+          className="shrink-0"
         >
           Show
         </Button>
       </form>
 
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-2.5 lg:gap-3 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
 
           return (
             <Card
               key={stat.label}
-              className="p-4"
+              className="p-3.5"
             >
               <dt className="text-muted-foreground flex items-center gap-2 text-xs">
                 <Icon
@@ -166,14 +167,14 @@ export function AttendanceTab({
       </dl>
 
       {latestActivity ? (
-        <p className="text-muted-foreground text-xs">
+        <p className="bg-band text-foreground rounded-xl px-3.5 py-3 text-xs leading-relaxed">
           Latest attendance activity: Meeting {latestActivity.meetingNumber} in{" "}
           {latestActivity.subjectName} on{" "}
           {formatLeaveDate(latestActivity.startsAt.slice(0, 10))}(
           {PHASE_LABELS[latestActivity.phase]})
         </p>
       ) : (
-        <p className="text-muted-foreground text-xs">
+        <p className="bg-band text-foreground rounded-xl px-3.5 py-3 text-xs leading-relaxed">
           No attendance recorded for this class yet.
         </p>
       )}
@@ -195,68 +196,106 @@ export function AttendanceTab({
             return (
               <li
                 key={course.id}
-                className="border-border bg-surface flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3.5"
+                className="border-border bg-surface rounded-xl border p-4"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-foreground text-[15px] font-semibold tracking-tight">
-                      {course.name}
-                    </h3>
-                    {latest ? (
-                      <Badge
-                        variant={
-                          latest.phase === "finalized"
-                            ? "success"
-                            : latest.phase === "open"
-                              ? "accent"
-                              : "neutral"
-                        }
-                      >
-                        {PHASE_LABELS[latest.phase]}
-                      </Badge>
-                    ) : null}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-foreground min-w-0 truncate text-[15px] font-semibold tracking-tight">
+                        {course.name}
+                      </h3>
+                      {latest ? (
+                        <Badge
+                          variant={
+                            latest.phase === "finalized"
+                              ? "success"
+                              : latest.phase === "open"
+                                ? "accent"
+                                : "neutral"
+                          }
+                        >
+                          {PHASE_LABELS[latest.phase]}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      {course.code ?? "No code"}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {course.code ?? "No code"}
-                    {" · "}
-                    {course.lecturerName ?? "No lecturer set"}
-                    {" · "}
-                    {course.meetings.length}{" "}
-                    {course.meetings.length === 1
-                      ? "recorded meeting"
-                      : "recorded meetings"}
-                    {latest
-                      ? ` · Latest Meeting ${latest.meetingNumber} on ${formatLeaveDate(latest.startsAt.slice(0, 10))}`
-                      : ""}
-                  </p>
+                  <a
+                    href={viewHref}
+                    aria-label={`View attendance for ${course.name}`}
+                    className="text-muted-foreground hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                  >
+                    <ArrowUpRight
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                    />
+                  </a>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+
+                <div className="border-border mt-3 grid grid-cols-2 gap-3 border-t pt-3">
+                  <div className="min-w-0">
+                    <div className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                      <Users
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 shrink-0"
+                      />
+                      Lecturer
+                    </div>
+                    <p className="mt-0.5 text-sm font-medium">
+                      {course.lecturerName ?? "Not set"}
+                    </p>
+                  </div>
+                  <div className="min-w-0 border-l border-border pl-3">
+                    <div className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                      <CalendarDays
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 shrink-0"
+                      />
+                      Recorded
+                    </div>
+                    <p className="mt-0.5 text-sm font-medium">
+                      {course.meetings.length}{" "}
+                      {course.meetings.length === 1 ? "meeting" : "meetings"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <Button
                     asChild
                     size="sm"
                     variant="secondary"
+                    className="min-w-0"
                   >
-                    <a href={viewHref}>
+                    <a
+                      href={viewHref}
+                      className="truncate"
+                    >
                       View attendance
-                      <ArrowUpRight
-                        aria-hidden="true"
-                        className="ml-1 h-3.5 w-3.5"
-                      />
                     </a>
                   </Button>
                   <Button
                     asChild
                     size="sm"
+                    className="min-w-0"
                   >
-                    <a href={exportHref}>
-                      <Download
-                        aria-hidden="true"
-                        className="mr-1 h-3.5 w-3.5"
-                      />
+                    <a
+                      href={exportHref}
+                      className="truncate"
+                    >
                       Export Attendance
                     </a>
                   </Button>
                 </div>
+
+                {latest ? (
+                  <p className="text-muted-foreground mt-2.5 text-[11px]">
+                    Latest Meeting {latest.meetingNumber} on{" "}
+                    {formatLeaveDate(latest.startsAt.slice(0, 10))}
+                  </p>
+                ) : null}
               </li>
             );
           })}

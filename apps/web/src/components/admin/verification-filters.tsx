@@ -34,7 +34,7 @@ export function VerificationFilters({
     <form
       action="/admin/verifications"
       method="get"
-      className="border-border bg-surface grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-6"
+      className="border-border bg-surface hidden gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid lg:grid-cols-6"
     >
       <div className="lg:col-span-2">
         <Label htmlFor="verification-search">Student</Label>

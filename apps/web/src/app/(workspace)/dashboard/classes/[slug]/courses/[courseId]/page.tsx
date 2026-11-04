@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { requireCourseContext } from "@/features/classes/course-access";
 import { groupUpcomingAssignments } from "@/features/classes/course-assignment-filters";
 import { loadCompletionIds } from "@/lib/db/assignment-completions";
-import { listCourseAssignments } from "@/lib/db/classes";
+import { countCourseContent, listCourseAssignments } from "@/lib/db/classes";
 import { listCourseMaterials } from "@/lib/db/course-materials";
 
 export const metadata: Metadata = {
@@ -35,7 +35,7 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
     course,
   } = await requireCourseContext(slug, courseId);
 
-  const [assignments, announcements, materials] = await Promise.all([
+  const [assignments, announcements, materials, counts] = await Promise.all([
     listCourseAssignments(found.id, course.id, {
       contentType: "lecturer_assignment",
       limit: 50,
@@ -45,6 +45,7 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
       limit: 3,
     }),
     listCourseMaterials(found.id, course.id),
+    countCourseContent(found.id, course.id),
   ]);
 
   const now = new Date();
@@ -61,7 +62,7 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
   const courseBase = `/dashboard/classes/${found.slug}/courses/${course.id}`;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pt-5 pb-8 sm:px-6 sm:py-8 lg:px-8">
       <CourseWorkspaceHeader
         classSlug={found.slug}
         className={found.name}
@@ -92,6 +93,7 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
         recentAssignments={assignments.slice(0, 6)}
         upcomingAssignments={upcomingGroups}
         materials={materials}
+        counts={counts}
         now={now}
       />
     </div>

@@ -2,7 +2,10 @@ import { z } from "zod";
 
 import { isoDateTimeWithOffsetSchema } from "./assignment";
 import { isoDateSchema } from "./leave";
-import { SESSION_CHECKIN_ACCURACY_MAX_M } from "./sessions";
+import {
+  CHECKIN_POSITION_MAX_AGE_MS,
+  SESSION_CHECKIN_ACCURACY_MAX_M,
+} from "./sessions";
 
 /**
  * Status of one student in one meeting.
@@ -217,6 +220,22 @@ export const attendanceMeetingCheckInSchema = z
         SESSION_CHECKIN_ACCURACY_MAX_M,
         "Your location is too imprecise. Move somewhere with a clearer signal and try again",
       ),
+    capturedAt: z
+      .number()
+      .int("Timestamp must be a whole number of milliseconds")
+      .optional()
+      .refine(
+        (value) =>
+          value === undefined ||
+          value <= Date.now() + CHECKIN_POSITION_MAX_AGE_MS,
+        "Your location timestamp is not valid",
+      )
+      .refine(
+        (value) =>
+          value === undefined ||
+          value >= Date.now() - CHECKIN_POSITION_MAX_AGE_MS,
+        "Your location is stale. Move somewhere with a clearer signal and try again",
+      ),
   })
   .strict();
 
@@ -261,10 +280,7 @@ export const ATTENDANCE_CORRECTION_REASON_MAX = 500;
 export const attendanceMeetingCorrectionSchema = z
   .object({
     userId: z.uuid("Choose a student"),
-    status: z.enum(
-      ["present", "late", "excused", "absent"],
-      "Choose a status",
-    ),
+    status: z.enum(["present", "late", "excused", "absent"], "Choose a status"),
     reason: z
       .string()
       .trim()

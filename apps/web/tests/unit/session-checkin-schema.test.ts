@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CHECKIN_POSITION_MAX_AGE_MS,
   getSessionCheckInWindow,
   getSessionCheckInWindowState,
   sessionCheckInLocationSchema,
@@ -57,6 +58,30 @@ describe("sessionCheckInSchema", () => {
       sessionCheckInSchema.safeParse(
         reading({ userId: "3f2b6c1e-8a4d-4f6b-9c2e-1d5a7b9c0e3f" }),
       ).success,
+    ).toBe(false);
+  });
+
+  it("accepts a fresh capturedAt timestamp", () => {
+    const now = Date.now();
+
+    expect(
+      sessionCheckInSchema.safeParse(reading({ capturedAt: now })).success,
+    ).toBe(true);
+  });
+
+  it("rejects a stale capturedAt timestamp", () => {
+    const stale = Date.now() - CHECKIN_POSITION_MAX_AGE_MS - 1_000;
+
+    expect(
+      sessionCheckInSchema.safeParse(reading({ capturedAt: stale })).success,
+    ).toBe(false);
+  });
+
+  it("rejects a capturedAt timestamp in the future", () => {
+    const future = Date.now() + CHECKIN_POSITION_MAX_AGE_MS + 1_000;
+
+    expect(
+      sessionCheckInSchema.safeParse(reading({ capturedAt: future })).success,
     ).toBe(false);
   });
 });

@@ -31,19 +31,19 @@ export function LeaveRequestList({
 }) {
   if (requests.length === 0) {
     return (
-      <Card className="px-6 py-16 text-center">
+      <Card className="px-5 py-8 text-center">
         {filtered ? null : (
           <span
             aria-hidden="true"
-            className="text-muted-foreground mx-auto flex h-12 w-12 items-center justify-center"
+            className="bg-accent-soft text-accent mx-auto flex h-11 w-11 items-center justify-center rounded-xl"
           >
-            <CalendarDays className="h-10 w-10" />
+            <CalendarDays className="h-5 w-5" />
           </span>
         )}
-        <p className="mt-4 text-base font-semibold">
+        <p className="mt-3 text-base font-semibold">
           {filtered ? "No requests match these filters" : emptyTitle}
         </p>
-        <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
+        <p className="text-muted-foreground mx-auto mt-1.5 max-w-md text-sm">
           {filtered
             ? "Try a wider date range or a different status."
             : emptyBody}
@@ -51,7 +51,7 @@ export function LeaveRequestList({
         {newHref ? (
           <Button
             asChild
-            className="mt-5"
+            className="mt-4"
           >
             <Link href={newHref}>
               <PlusCircle

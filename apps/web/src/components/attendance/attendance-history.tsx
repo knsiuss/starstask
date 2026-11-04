@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, History } from "lucide-react";
 import Link from "next/link";
 
 import { AttendanceStatusBadge } from "@/components/attendance/attendance-status-badge";
@@ -9,12 +9,20 @@ import { formatSessionDate, formatSessionTime } from "@starstask/shared";
 export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
   if (entries.length === 0) {
     return (
-      <div className="border-border bg-subtle rounded-lg border border-dashed px-5 py-10 text-center">
-        <p className="text-sm font-medium">No attendance records match</p>
-        <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
-          Finished sessions appear here once they happen. Try widening the
-          filters if you expected older records.
-        </p>
+      <div className="border-border bg-surface flex items-center gap-3 rounded-xl border px-4 py-3.5">
+        <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+          <History
+            aria-hidden="true"
+            className="h-[18px] w-[18px]"
+          />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">No attendance records yet.</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Finished sessions appear here once they happen. Try widening the
+            filters if you expected older records.
+          </p>
+        </div>
       </div>
     );
   }

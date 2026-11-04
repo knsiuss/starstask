@@ -52,21 +52,23 @@ export function ActiveAttendanceSection({
     <section aria-labelledby="active-attendance">
       <h2
         id="active-attendance"
-        className="text-lg font-semibold tracking-tight"
+        className="text-base font-semibold tracking-tight sm:text-lg"
       >
         Active Attendance
       </h2>
-      <div className="border-border bg-subtle mt-4 rounded-xl border border-dashed px-5 py-10 text-center">
-        <CalendarDays
-          aria-hidden="true"
-          className="text-muted-foreground mx-auto h-6 w-6"
-        />
-        <p className="mt-2 text-sm font-medium">
-          No active attendance sessions
-        </p>
-        <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
-          Your instructors have not opened an attendance session yet.
-        </p>
+      <div className="border-border bg-surface mt-3 flex items-center gap-3 rounded-xl border px-4 py-3.5">
+        <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+          <CalendarDays
+            aria-hidden="true"
+            className="h-[18px] w-[18px]"
+          />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">No active attendance sessions.</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Your instructors have not opened an attendance session yet.
+          </p>
+        </div>
       </div>
     </section>
   );

@@ -286,6 +286,13 @@ const longitudeSchema = z
  * The values are self-reported, so this schema only keeps them plausible. The
  * database decides whether the reader is close enough and inside the window.
  */
+/**
+ * Maximum accepted age of a check-in position reading. A browser may cache a
+ * stale fix; both the client guard and the server RPC reject readings no
+ * older than this.
+ */
+export const CHECKIN_POSITION_MAX_AGE_MS = 60_000;
+
 export const sessionCheckInSchema = z
   .object({
     latitude: latitudeSchema,
@@ -296,6 +303,22 @@ export const sessionCheckInSchema = z
       .max(
         SESSION_CHECKIN_ACCURACY_MAX_M,
         "Your location is too imprecise. Move somewhere with a clearer signal and try again",
+      ),
+    capturedAt: z
+      .number()
+      .int("Timestamp must be a whole number of milliseconds")
+      .optional()
+      .refine(
+        (value) =>
+          value === undefined ||
+          value <= Date.now() + CHECKIN_POSITION_MAX_AGE_MS,
+        "Your location timestamp is not valid",
+      )
+      .refine(
+        (value) =>
+          value === undefined ||
+          value >= Date.now() - CHECKIN_POSITION_MAX_AGE_MS,
+        "Your location is stale. Move somewhere with a clearer signal and try again",
       ),
   })
   .strict();

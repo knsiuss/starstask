@@ -517,12 +517,12 @@ export default async function ActionCenterPage({ searchParams }: PageProps) {
     : [];
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-5 pb-8 sm:px-6 sm:py-8 lg:px-8">
       <header>
         <p className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
           Class leader
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-[26px] leading-tight font-semibold tracking-tight sm:text-3xl">
           Action center
         </h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
@@ -535,7 +535,7 @@ export default async function ActionCenterPage({ searchParams }: PageProps) {
 
       <TabStrip
         label="Action center sections"
-        className="mt-6"
+        className="mt-5 sm:mt-6"
         items={tabs}
       />
 
@@ -702,7 +702,7 @@ function OverviewTab({
 
   if (center.rows.length === 0) {
     return (
-      <div className="border-border bg-subtle mt-6 rounded-xl border border-dashed px-6 py-10 text-center">
+      <div className="border-border bg-subtle mt-5 rounded-xl border border-dashed px-5 py-8 text-center sm:mt-6 sm:px-6 sm:py-10">
         <ListChecks
           aria-hidden="true"
           className="text-muted-foreground mx-auto h-6 w-6"
@@ -728,7 +728,7 @@ function OverviewTab({
 
   return (
     <>
-      <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="mt-5 grid grid-cols-2 gap-2.5 lg:mt-6 lg:gap-3 lg:grid-cols-4">
         {cards.map((item) => {
           const Icon = item.icon;
 
@@ -752,7 +752,7 @@ function OverviewTab({
         })}
       </dl>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:mt-6 lg:grid-cols-3">
         <section
           aria-labelledby="recent-requests"
           className="border-border bg-surface rounded-xl border p-4 sm:p-5 lg:col-span-2"

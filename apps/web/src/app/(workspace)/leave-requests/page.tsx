@@ -110,19 +110,19 @@ export default async function LeaveRequestsPage({
 
   return (
     <div className={pageContainer}>
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="flex min-w-0 items-start gap-3">
           <span
             aria-hidden="true"
-            className="bg-accent-soft text-accent flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+            className="bg-accent-soft text-accent flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl"
           >
-            <CalendarDays className="h-6 w-6" />
+            <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6" />
           </span>
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
               Absence Requests
             </h1>
-            <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
+            <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
               Submit and track your absence requests for class activities.
             </p>
           </div>
@@ -131,6 +131,7 @@ export default async function LeaveRequestsPage({
           <Button
             asChild
             size="lg"
+            className="w-full sm:w-auto"
           >
             <Link href={newHref}>
               <PlusCircle
@@ -163,18 +164,18 @@ export default async function LeaveRequestsPage({
         </Alert>
       ) : null}
 
-      <div className="mt-6">
+      <div className="mt-5">
         <LeaveStats counts={counts} />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4">
         <LeaveFilters
           action="/leave-requests"
           values={{ status: query.status, from: query.from, to: query.to }}
         />
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h2 className="text-lg font-semibold tracking-tight">
             Your requests
@@ -217,16 +218,16 @@ export default async function LeaveRequestsPage({
         }}
       />
 
-      <p className="border-border bg-surface text-muted-foreground mt-5 flex items-start gap-1.5 rounded-xl border px-4 py-3 text-xs leading-relaxed">
+      <p className="bg-band text-muted-foreground mt-5 flex items-start gap-2 rounded-xl px-4 py-3 text-xs leading-relaxed">
         <Info
           aria-hidden="true"
-          className="mt-0.5 h-3.5 w-3.5 shrink-0"
+          className="text-accent mt-0.5 h-3.5 w-3.5 shrink-0"
         />
         <span>
-          <strong className="font-medium">Forwarded</strong> means your class
-          admin put the request into a package for the lecturer. It does not
-          mean the absence was approved, and StarsTask cannot tell you whether
-          the lecturer has read it.
+          <strong className="text-foreground font-semibold">Forwarded</strong>{" "}
+          means your class admin put the request into a package for the
+          lecturer. It does not mean the absence was approved, and StarsTask
+          cannot tell you whether the lecturer has read it.
         </span>
       </p>
     </div>

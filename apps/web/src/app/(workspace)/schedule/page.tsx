@@ -12,7 +12,6 @@ import { redirect } from "next/navigation";
 
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { EventFormDialog } from "@/components/schedule/event-form-dialog";
-import { FilterDrawer } from "@/components/schedule/filter-drawer";
 import { MobileViewRedirect } from "@/components/schedule/mobile-view-redirect";
 import {
   MiniCalendar,
@@ -181,12 +180,6 @@ export default async function SchedulePage({
           ? item.isCompleted || item.endKey >= today
           : !isEventHiddenFromDefault(item, today),
       );
-
-  const activeFilterCount =
-    (query.type !== "all" ? 1 : 0) +
-    (query.class ? 1 : 0) +
-    (query.mine === "mine" ? 1 : 0) +
-    (selected && selected.size > 0 ? selected.size : 0);
 
   const rangeLabel =
     query.view === "month"
@@ -382,12 +375,6 @@ export default async function SchedulePage({
             />
             Past Events
           </Link>
-        </div>
-
-        <div className="lg:hidden">
-          <FilterDrawer activeFilterCount={activeFilterCount}>
-            {sidebarContent}
-          </FilterDrawer>
         </div>
       </div>
 

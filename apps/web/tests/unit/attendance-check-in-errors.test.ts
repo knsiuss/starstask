@@ -31,6 +31,12 @@ describe("describeCheckInFailure", () => {
     );
   });
 
+  it("asks for a fresh reading when the position is stale", () => {
+    expect(
+      describeCheckInFailure("checkin_stale_position", undefined),
+    ).toContain("stale");
+  });
+
   it("explains that the session does not accept check-ins", () => {
     expect(describeCheckInFailure("checkin_unavailable", undefined)).toBe(
       "This meeting is not open for check-in.",

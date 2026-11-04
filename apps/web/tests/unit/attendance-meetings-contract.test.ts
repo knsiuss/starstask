@@ -171,6 +171,21 @@ describe("attendanceMeetingCheckInSchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("accepts a fresh capturedAt and rejects a stale one", () => {
+    const now = Date.now();
+
+    expect(
+      attendanceMeetingCheckInSchema.safeParse({ ...valid, capturedAt: now })
+        .success,
+    ).toBe(true);
+    expect(
+      attendanceMeetingCheckInSchema.safeParse({
+        ...valid,
+        capturedAt: now - 61_000,
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("attendanceMeetingCloseSchema", () => {
@@ -282,7 +297,9 @@ describe("attendanceMeetingCorrectionSchema", () => {
   } as const;
 
   it("accepts a physically verified correction to present", () => {
-    expect(attendanceMeetingCorrectionSchema.safeParse(valid).success).toBe(true);
+    expect(attendanceMeetingCorrectionSchema.safeParse(valid).success).toBe(
+      true,
+    );
   });
 
   it("rejects a present correction without a reason", () => {
@@ -302,7 +319,9 @@ describe("attendanceMeetingCorrectionSchema", () => {
 
     if (!parsed.success) {
       expect(
-        parsed.error.issues.some((issue) => issue.path[0] === "physicallyVerified"),
+        parsed.error.issues.some(
+          (issue) => issue.path[0] === "physicallyVerified",
+        ),
       ).toBe(true);
     }
   });

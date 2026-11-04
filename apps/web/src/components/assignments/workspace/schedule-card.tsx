@@ -33,11 +33,16 @@ export function ScheduleCard({ item }: { item: WorkspaceScheduleItem }) {
     : item.course_name;
 
   return (
-    <li className="border-border bg-surface hover:border-accent/30 focus-within:border-accent/40 rounded-xl border px-4 py-3.5 transition-colors">
-      <div className="flex items-start gap-3">
+    <li className="border-border bg-surface hover:border-accent/30 focus-within:border-accent/40 rounded-xl border px-3.5 py-3.5 transition-colors sm:px-4">
+      <div className="flex items-start gap-2.5 sm:gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <Badge variant="neutral">{courseLabel}</Badge>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs sm:gap-2">
+            <Badge
+              variant="neutral"
+              className="max-w-[62%] sm:max-w-none"
+            >
+              <span className="truncate">{courseLabel}</span>
+            </Badge>
             {item.class_code ? (
               <span className="text-muted-foreground tabular-nums">
                 {item.class_code}
@@ -61,14 +66,14 @@ export function ScheduleCard({ item }: { item: WorkspaceScheduleItem }) {
           </div>
           <Link
             href={`/assignments/${item.id}`}
-            className="text-foreground hover:text-accent mt-1.5 block truncate text-[15px] font-semibold tracking-tight focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="text-foreground hover:text-accent mt-1.5 block text-[15px] font-semibold tracking-tight break-words focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 line-clamp-2"
           >
             {item.title}
           </Link>
           <p className="text-muted-foreground mt-0.5 truncate text-xs">
             {item.class_name ?? "Class course"}
           </p>
-          <div className="mt-2">
+          <div className="mt-2 min-w-0">
             <DeadlineBadge deadline={item.deadline} />
           </div>
         </div>

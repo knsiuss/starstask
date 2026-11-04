@@ -31,7 +31,7 @@ export function AdminClassFilters({ values }: AdminClassFiltersProps) {
       action="/admin/classes"
       method="get"
       role="search"
-      className="border-border bg-surface grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-12"
+      className="border-border bg-surface hidden gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid lg:grid-cols-12"
     >
       <div className="lg:col-span-4">
         <Label htmlFor="admin-class-search">Search</Label>

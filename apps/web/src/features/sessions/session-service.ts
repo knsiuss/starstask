@@ -176,6 +176,9 @@ export async function checkInSession(
     p_latitude: input.latitude,
     p_longitude: input.longitude,
     p_accuracy_m: input.accuracy,
+    p_captured_at: input.capturedAt
+      ? new Date(input.capturedAt).toISOString()
+      : null,
   });
 
   if (error) {
