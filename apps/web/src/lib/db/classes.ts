@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ClassApplicationStatus,
@@ -361,7 +363,14 @@ export async function getClassJoinPolicy(
   return data?.join_policy ?? null;
 }
 
-export async function listMyClasses(userId: string): Promise<MyClassSummary[]> {
+/**
+ * Memberships for one user. Wrapped in React `cache()` so the layout, page,
+ * and calendar helpers querying in the same request share one round-trip
+ * instead of one query each.
+ */
+export const listMyClasses = cache(async function listMyClasses(
+  userId: string,
+): Promise<MyClassSummary[]> {
   const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
@@ -409,7 +418,7 @@ export async function listMyClasses(userId: string): Promise<MyClassSummary[]> {
       },
     ];
   });
-}
+});
 
 export type ClassDirectoryItem = {
   id: string;

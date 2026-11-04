@@ -56,6 +56,51 @@ type TimelineBoardProps = {
 };
 
 /**
+ * Responsive switch: only one board is mounted at a time so the calendar
+ * payload is not serialized twice for both breakpoints. The initial render
+ * matches the server render (desktop board) and swaps to the compact board
+ * after mount, so SSR markup stays hydration-safe.
+ */
+export function ResponsiveTimelineBoard(
+  props: TimelineBoardProps & {
+    mobileList: React.ReactNode;
+  },
+) {
+  const { mobileList, view, ...boardProps } = props;
+  const [isNarrow, setIsNarrow] = React.useState(false);
+
+  React.useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsNarrow(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  if (isNarrow) {
+    return (
+      <>
+        <TimelineBoard
+          {...boardProps}
+          view={view}
+          compact
+        />
+        <div className="mt-5">{mobileList}</div>
+      </>
+    );
+  }
+
+  return (
+    <TimelineBoard
+      {...boardProps}
+      view={view}
+    />
+  );
+}
+
+/**
  * The assignment timeline: bars span publication -> deadline, non-assignment
  * calendar entries get shorter bars in the same lanes. Layout is recomputed
  * client-side as the Jakarta date ticks over midnight, so the today line and
@@ -311,6 +356,7 @@ function DayCell({
       <Link
         href={`/schedule?view=list&date=${day.dateKey}`}
         aria-label={`${day.dateKey}${isToday ? ", today" : ""}${marked ? ", has events" : ""}`}
+        prefetch={false}
         className={className}
       >
         {inner}

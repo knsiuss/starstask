@@ -5,9 +5,11 @@ import {
   ClipboardList,
   Compass,
   LayoutDashboard,
+  Loader2,
   UserCheck,
   type LucideIcon,
 } from "lucide-react";
+import { useLinkStatus } from "next/link";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -61,9 +63,9 @@ export function MobileTabBar() {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <tab.icon
-                  aria-hidden="true"
-                  className="h-5 w-5"
+                <TabIcon
+                  Icon={tab.icon}
+                  isActive={isActive}
                 />
                 <span className="max-w-full truncate">{tab.label}</span>
               </Link>
@@ -72,5 +74,30 @@ export function MobileTabBar() {
         })}
       </ul>
     </nav>
+  );
+}
+
+/**
+ * Swaps the destination icon for a spinner while its navigation is pending,
+ * so a tap on a slow (force-dynamic) route reads as immediate feedback
+ * instead of a frozen screen until the server responds.
+ */
+function TabIcon({ Icon, isActive }: { Icon: LucideIcon; isActive: boolean }) {
+  const { pending } = useLinkStatus();
+
+  if (pending && !isActive) {
+    return (
+      <Loader2
+        aria-hidden="true"
+        className="h-5 w-5 animate-spin"
+      />
+    );
+  }
+
+  return (
+    <Icon
+      aria-hidden="true"
+      className="h-5 w-5"
+    />
   );
 }

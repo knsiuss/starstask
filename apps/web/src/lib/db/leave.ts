@@ -136,10 +136,39 @@ const LIST_COLUMNS = `
   cancellation_note,
   ocr_status,
   ocr_provider,
-  ocr_result,
   ocr_extracted_at,
   ocr_confirmed_at,
-  field_sources,
+  created_at,
+  updated_at,
+  classes!leave_requests_class_id_fkey ( id, slug, name )
+`;
+
+/**
+ * List-only columns: the OCR payload and field provenance are detail data,
+ * so list queries skip them and the detail page fetches them via
+ * `getLeaveRequestById`. Summaries built from list rows carry nulls there.
+ */
+const LIST_COLUMNS_SLIM = `
+  id,
+  reference,
+  student_id,
+  class_id,
+  subject_ids,
+  leave_start_date,
+  leave_end_date,
+  reason_category,
+  explanation,
+  document_issue_date,
+  status,
+  submitted_at,
+  forwarded_at,
+  cancelled_at,
+  cancelled_by,
+  cancellation_note,
+  ocr_status,
+  ocr_provider,
+  ocr_extracted_at,
+  ocr_confirmed_at,
   created_at,
   updated_at,
   classes!leave_requests_class_id_fkey ( id, slug, name )
@@ -164,10 +193,10 @@ type LeaveRowShape = {
   cancellation_note: string | null;
   ocr_status: LeaveOcrStatus;
   ocr_provider: string | null;
-  ocr_result: Json | null;
+  ocr_result?: Json | null;
   ocr_extracted_at: string | null;
   ocr_confirmed_at: string | null;
-  field_sources: Json;
+  field_sources?: Json;
   created_at: string;
   updated_at: string;
   classes: { id: string; slug: string; name: string } | null;
@@ -265,10 +294,10 @@ async function toSummaries(
     cancellationNote: row.cancellation_note,
     ocrStatus: row.ocr_status,
     ocrProvider: row.ocr_provider,
-    ocrResult: row.ocr_result,
+    ocrResult: row.ocr_result ?? null,
     ocrExtractedAt: row.ocr_extracted_at,
     ocrConfirmedAt: row.ocr_confirmed_at,
-    fieldSources: row.field_sources,
+    fieldSources: row.field_sources ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     evidenceCount: evidenceCounts.get(row.id) ?? 0,
@@ -301,7 +330,7 @@ async function listLeaveRequests(
 
   let query = supabase
     .from("leave_requests")
-    .select(LIST_COLUMNS, { count: "exact" });
+    .select(LIST_COLUMNS_SLIM, { count: "exact" });
 
   if (options.studentId) {
     query = query.eq("student_id", options.studentId);
@@ -408,33 +437,34 @@ export type LeaveRequestStatusCounts = Pick<
 export async function countLeaveRequestsByStatus(
   studentId: string,
 ): Promise<LeaveRequestStatusCounts> {
-  const statuses = ["submitted", "approved", "rejected", "draft"] as const;
   const supabase = await createSupabaseServerClient();
 
-  const results = await Promise.all(
-    statuses.map((status) =>
-      supabase
-        .from("leave_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("student_id", studentId)
-        .eq("status", status),
-    ),
-  );
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select("status")
+    .eq("student_id", studentId)
+    .in("status", ["submitted", "approved", "rejected", "draft"]);
 
-  const counts = {} as LeaveRequestStatusCounts;
+  if (error) {
+    throw new DataAccessError("Could not count absences", error.code);
+  }
 
-  for (const [index, result] of results.entries()) {
-    if (result.error) {
-      throw new DataAccessError("Could not count absences", result.error.code);
+  const counts = {
+    submitted: 0,
+    approved: 0,
+    rejected: 0,
+    draft: 0,
+  } as LeaveRequestStatusCounts;
+
+  for (const row of data ?? []) {
+    if (
+      row.status === "submitted" ||
+      row.status === "approved" ||
+      row.status === "rejected" ||
+      row.status === "draft"
+    ) {
+      counts[row.status] += 1;
     }
-
-    const status = statuses[index];
-
-    if (!status) {
-      continue;
-    }
-
-    counts[status] = result.count ?? 0;
   }
 
   return counts;

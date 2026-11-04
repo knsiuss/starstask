@@ -21,7 +21,7 @@ import {
   CourseFilterPanel,
   type CourseOption,
 } from "@/components/schedule/course-filter-panel";
-import { TimelineBoard } from "@/components/schedule/timeline-board";
+import { ResponsiveTimelineBoard } from "@/components/schedule/timeline-board";
 import { TimelineList } from "@/components/schedule/timeline-list";
 import { UpcomingAssignments } from "@/components/schedule/upcoming-assignments";
 import { Alert } from "@/components/ui/alert";
@@ -294,6 +294,7 @@ export default async function SchedulePage({
             <Link
               key={view}
               href={scheduleHref(query, anchorKey, { view }, selected)}
+              prefetch={false}
               aria-current={
                 view === query.view || (view === "list" && query.view === "day")
                   ? "page"
@@ -320,6 +321,7 @@ export default async function SchedulePage({
               selected,
             )}
             aria-label="Previous period"
+            prefetch={false}
             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
           >
             <ChevronLeft
@@ -341,6 +343,7 @@ export default async function SchedulePage({
               selected,
             )}
             aria-label="Next period"
+            prefetch={false}
             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
           >
             <ChevronRight
@@ -350,6 +353,7 @@ export default async function SchedulePage({
           </Link>
           <Link
             href={scheduleHref(query, anchorKey, { date: today }, selected)}
+            prefetch={false}
             className="text-muted-foreground hover:bg-muted hover:text-foreground ml-1 rounded-md px-2.5 py-1.5 text-xs font-medium"
           >
             Today
@@ -362,6 +366,7 @@ export default async function SchedulePage({
               selected,
             )}
             aria-pressed={showHistory}
+            prefetch={false}
             className={cn(
               "ml-1 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
               showHistory
@@ -381,38 +386,21 @@ export default async function SchedulePage({
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
           {isBoardView ? (
-            <>
-              {/* Desktop/tablet: full spanning-bar board */}
-              <div className="hidden sm:block">
-                <TimelineBoard
-                  view={query.view === "week" ? "week" : "month"}
+            <ResponsiveTimelineBoard
+              view={query.view === "week" ? "week" : "month"}
+              days={range.days}
+              items={items}
+              todayKey={today}
+              classes={data.classes}
+              subjects={data.subjects}
+              mobileList={
+                <TimelineList
                   days={range.days}
                   items={items}
                   todayKey={today}
-                  classes={data.classes}
-                  subjects={data.subjects}
                 />
-              </div>
-              {/* Mobile: compact dot board, then the day's events below */}
-              <div className="sm:hidden">
-                <TimelineBoard
-                  compact
-                  view={query.view === "week" ? "week" : "month"}
-                  days={range.days}
-                  items={items}
-                  todayKey={today}
-                  classes={data.classes}
-                  subjects={data.subjects}
-                />
-                <div className="mt-5">
-                  <TimelineList
-                    days={range.days}
-                    items={items}
-                    todayKey={today}
-                  />
-                </div>
-              </div>
-            </>
+              }
+            />
           ) : (
             <TimelineList
               days={range.days}

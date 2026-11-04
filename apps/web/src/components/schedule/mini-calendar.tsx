@@ -49,6 +49,7 @@ export function MiniCalendar({ anchorKey, markedKeys }: MiniCalendarProps) {
           <Link
             href={miniMonthHref(prevMonth)}
             aria-label="Previous month"
+            prefetch={false}
             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-1.5"
           >
             ‹
@@ -56,6 +57,7 @@ export function MiniCalendar({ anchorKey, markedKeys }: MiniCalendarProps) {
           <Link
             href={miniMonthHref(nextMonth)}
             aria-label="Next month"
+            prefetch={false}
             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-1.5"
           >
             ›
@@ -83,6 +85,7 @@ export function MiniCalendar({ anchorKey, markedKeys }: MiniCalendarProps) {
               href={`/schedule?view=week&date=${cell.dateKey}`}
               aria-label={cell.dateKey}
               aria-current={isToday ? "date" : undefined}
+              prefetch={false}
               className={cn(
                 "relative flex h-8 items-center justify-center rounded-full text-[11px] tabular-nums transition-colors",
                 cell.inMonth
