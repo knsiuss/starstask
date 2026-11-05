@@ -4,6 +4,7 @@ import * as React from "react";
 import { redirect } from "next/navigation";
 
 import { AcademicContextCard } from "@/components/dashboard/academic-context-card";
+import { UnpamWidget } from "@/components/dashboard/unpam-widget";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
@@ -20,6 +21,9 @@ import {
   listStudentPendingInvitations,
 } from "@/lib/db/dashboard";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
+import { getPersistedUnpamEvents, isUnpamMember } from "@/lib/db/plugins";
+import { getMyProfile } from "@/lib/db/profiles";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { pluralize } from "@starstask/shared";
 
@@ -102,6 +106,13 @@ export default async function DashboardPage({
     getMyWeek(session.user.id, new Date(), weekOffset),
     getNextSchedule(session.user.id),
   ]);
+  const showUnpamWidget =
+    isUnpamPluginEnabled() &&
+    (await isUnpamMember(
+      session.user.id,
+      (await getMyProfile().catch(() => null))?.university,
+    ));
+  const unpamEvents = showUnpamWidget ? await getPersistedUnpamEvents() : [];
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
@@ -121,6 +132,12 @@ export default async function DashboardPage({
           <AcademicContextCard />
         </React.Suspense>
       </div>
+
+      {showUnpamWidget ? (
+        <div className="mt-5">
+          <UnpamWidget events={unpamEvents} />
+        </div>
+      ) : null}
 
       <div
         className="mt-5"

@@ -3,6 +3,7 @@
 import { CalendarDays, Clock } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { BrandMark } from "@/components/layout/brand-mark";
 import {
   APP_TIME_ZONE,
   isKnownTimeZone,
@@ -97,9 +98,22 @@ function greetingFor(now: Date, timeZone: string): string {
 }
 
 function firstName(displayName: string | null): string | null {
-  const first = displayName?.trim().split(/\s+/)[0];
+  const cleaned = displayName?.trim().replace(/^@+/, "");
 
-  return first && first.length > 0 ? first : null;
+  if (!cleaned) {
+    return null;
+  }
+
+  const parts = cleaned.split(/\s+/);
+  const first = parts[0];
+
+  // A single-letter first token is an initial ("P KANISIUS ..."), not a
+  // name — show the full display name instead of a lone initial.
+  if (first && first.length > 1) {
+    return first;
+  }
+
+  return cleaned;
 }
 
 /**
@@ -139,16 +153,38 @@ export function DashboardHeader({
   const zoneLabel = timeZoneLabel(zone);
 
   return (
-    <header className="border-border bg-surface rounded-2xl border px-4 py-5 sm:px-6 sm:py-6">
-      <p className="text-muted-foreground text-sm font-medium">{greeting},</p>
-      <h1 className="text-foreground mt-0.5 truncate text-2xl leading-tight font-semibold tracking-tight sm:text-[30px]">
-        {name ?? "Welcome"}
-      </h1>
-      <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
-        {summary ?? "Here is an overview of your academic activities today."}
-      </p>
+    <header className="border-border bg-surface rise-in relative overflow-hidden rounded-2xl border px-4 py-5 sm:px-6 sm:py-6">
+      <div
+        aria-hidden="true"
+        className="from-accent-soft via-band to-surface pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l opacity-70 sm:block"
+      />
 
-      <div className="border-border mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-3.5">
+      <div className="relative flex items-start justify-between gap-6">
+        <div className="min-w-0">
+          <p className="text-muted-foreground text-sm font-medium">
+            {greeting},
+          </p>
+          <h1 className="text-foreground mt-0.5 truncate text-2xl leading-tight font-semibold tracking-tight sm:text-[30px]">
+            {name ?? "Welcome"}
+          </h1>
+          <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
+            {summary ??
+              "Here is an overview of your academic activities today."}
+          </p>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="hidden shrink-0 sm:block"
+        >
+          <BrandMark
+            size={88}
+            className="st-float opacity-90"
+          />
+        </div>
+      </div>
+
+      <div className="border-border relative mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-3.5">
         <p className="text-muted-foreground flex items-center gap-2 text-sm">
           <span className="bg-accent-soft text-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
             <CalendarDays

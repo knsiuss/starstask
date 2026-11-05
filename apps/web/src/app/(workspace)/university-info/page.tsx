@@ -11,10 +11,14 @@ import {
   type ProgramId,
   filterEventsByProgram,
   isUnpamPluginEnabled,
-  isUnpamUniversity,
   parseProgramParam,
 } from "@/features/plugins/unpam/config";
 import { getSessionUser } from "@/lib/auth/session";
+import {
+  getMyProgramId,
+  getPersistedUnpamEvents,
+  isUnpamMember,
+} from "@/lib/db/plugins";
 import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
@@ -59,14 +63,26 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
 
   const myProfile = session ? await getMyProfile().catch(() => null) : null;
 
-  if (!isUnpamUniversity(myProfile?.university)) {
+  if (
+    !(await isUnpamMember(session?.user.id ?? null, myProfile?.university))
+  ) {
     notFound();
   }
 
   const params = await searchParams;
-  const program: ProgramId = parseProgramParam(params.program);
+  // Auto program dari academic unit bila ?program= tidak diisi (personalization).
+  const autoProgram = await getMyProgramId(session?.user.id ?? null);
+  const program: ProgramId =
+    params.program != null
+      ? parseProgramParam(params.program)
+      : autoProgram;
 
-  const events = await fetchUnpamEvents().catch(() => []);
+  // DB dulu (persisted via cron), fallback live fetch. DB = offline + bisa search.
+  const persisted = await getPersistedUnpamEvents();
+  const events =
+    persisted.length > 0
+      ? persisted
+      : await fetchUnpamEvents().catch(() => []);
   const filtered = filterEventsByProgram(events, program);
 
   return (

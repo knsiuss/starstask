@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from "@/lib/api/responses";
 import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
 import { fetchUnpamEvents } from "@/features/plugins/unpam/adapter";
 import { isAuthorizedCronRequest } from "@/lib/security/cron-auth";
+import { persistUnpamEvents } from "@/lib/db/plugins";
 
 // Cron menghangatkan cache server; jangan di-cache CDN.
 export const dynamic = "force-dynamic";
@@ -23,7 +24,15 @@ export async function GET(request: Request) {
     return apiSuccess({ pluginId: "unpam", enabled: false, count: 0 });
   }
 
-  const events = await fetchUnpamEvents().catch(() => []);
+  let events: Awaited<ReturnType<typeof fetchUnpamEvents>> = [];
+  let syncError: string | undefined;
+  try {
+    events = await fetchUnpamEvents();
+    await persistUnpamEvents(events);
+  } catch (error) {
+    syncError = error instanceof Error ? error.message : "fetch failed";
+    await persistUnpamEvents([], syncError);
+  }
   const byKind = events.reduce<Record<string, number>>((acc, event) => {
     acc[event.kind] = (acc[event.kind] ?? 0) + 1;
     return acc;

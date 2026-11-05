@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AttendanceMeetingForm } from "@/components/academic/attendance-meeting-form";
+import { AttendancePaperImport } from "@/components/academic/attendance-paper-import";
 import { AttendanceRoster } from "@/components/academic/attendance-roster";
 import { CorrectionForm } from "@/components/academic/correction-form";
 import { ClassUnlinkedNotice } from "@/components/academic/unlinked-notice";
@@ -203,6 +204,19 @@ export default async function AcademicAttendancePage({
               </CardHeader>
               <div className="px-6 pb-6">
                 <AttendanceRoster
+                  classSlug={classRow.slug}
+                  meetingId={selectedMeetingId}
+                  entries={roster.map((row) => ({
+                    studentIdentityId: row.studentIdentityId,
+                    displayName: row.displayName,
+                    studentCode: row.studentCode,
+                    currentStatus:
+                      recordByIdentity.get(row.studentIdentityId)?.status ??
+                      null,
+                  }))}
+                />
+
+                <AttendancePaperImport
                   classSlug={classRow.slug}
                   meetingId={selectedMeetingId}
                   entries={roster.map((row) => ({

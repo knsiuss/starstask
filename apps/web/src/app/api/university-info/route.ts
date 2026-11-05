@@ -4,10 +4,14 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getMyProfile } from "@/lib/db/profiles";
 import {
   isUnpamPluginEnabled,
-  isUnpamUniversity,
   parseProgramParam,
 } from "@/features/plugins/unpam/config";
 import { fetchUnpamEvents } from "@/features/plugins/unpam/adapter";
+import {
+  getMyProgramId,
+  getPersistedUnpamEvents,
+  isUnpamMember,
+} from "@/lib/db/plugins";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
 // Respons cache CDN 1 jam; fetch ke ftiunpam.com juga revalidate 3600 dtk.
@@ -34,15 +38,23 @@ export async function GET(request: Request) {
 
     const myProfile = session ? await getMyProfile().catch(() => null) : null;
 
-    if (!session || !isUnpamUniversity(myProfile?.university)) {
+    if (
+      !session ||
+      !(await isUnpamMember(session.user.id, myProfile?.university))
+    ) {
       throw notFound();
     }
 
-    const program = parseProgramParam(
-      new URL(request.url).searchParams.get("program") ?? undefined,
-    );
+    const programParam = new URL(request.url).searchParams.get("program");
+    const program = programParam
+      ? parseProgramParam(programParam)
+      : await getMyProgramId(session.user.id);
 
-    const events = await fetchUnpamEvents().catch(() => []);
+    const persisted = await getPersistedUnpamEvents();
+    const events =
+      persisted.length > 0
+        ? persisted
+        : await fetchUnpamEvents().catch(() => []);
     const filtered =
       program === "semua"
         ? events

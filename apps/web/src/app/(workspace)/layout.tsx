@@ -4,10 +4,8 @@ import { redirect } from "next/navigation";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
-import {
-  isUnpamPluginEnabled,
-  isUnpamUniversity,
-} from "@/features/plugins/unpam/config";
+import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
+import { isUnpamMember } from "@/lib/db/plugins";
 import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
@@ -46,9 +44,11 @@ export default async function WorkspaceLayout({
       // hides the optional sidebar link, it must not break the workspace.
       session ? getMyProfile().catch(() => null) : Promise.resolve(null),
     ]);
-  // Sidebar hanya tampil bila plugin aktif (env) DAN profil menunjuk UNPAM.
+  // Sidebar hanya tampil bila plugin aktif (env) DAN membership registry UNPAM aktif
+  // (fallback teks legacy selama transisi).
   const showUniversityInfo =
-    isUnpamPluginEnabled() && isUnpamUniversity(myProfile?.university);
+    isUnpamPluginEnabled() &&
+    (await isUnpamMember(session?.user.id ?? null, myProfile?.university));
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;

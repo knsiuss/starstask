@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { listPlugins } from "@/features/plugins";
 import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
 import { requirePlatformAdmin } from "@/features/classes/class-access";
+import { getUnpamSyncStatus } from "@/lib/db/plugins";
 
 export const metadata: Metadata = {
   title: "Plugin settings",
@@ -25,6 +26,7 @@ export default async function PluginSettingsPage() {
 
   const plugins = listPlugins();
   const enabled = isUnpamPluginEnabled();
+  const syncStatus = await getUnpamSyncStatus().catch(() => null);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -65,6 +67,16 @@ export default async function PluginSettingsPage() {
             <code className="bg-muted rounded px-1 py-0.5">
               {process.env.UNPAM_PLUGIN_ENABLED ?? "(kosong = aktif)"}
             </code>
+          </p>
+          <p className="text-muted-foreground mt-2 text-xs">
+            Sync terakhir:{" "}
+            {syncStatus?.last_success_at ??
+              syncStatus?.last_attempt_at ??
+              "belum pernah"}
+            {syncStatus?.event_count != null
+              ? ` • ${syncStatus.event_count} event tersimpan`
+              : ""}
+            {syncStatus?.last_error ? ` • Gagal: ${syncStatus.last_error}` : ""}
           </p>
         </Card>
 
