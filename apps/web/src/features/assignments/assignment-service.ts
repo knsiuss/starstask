@@ -31,18 +31,21 @@ export async function createAssignmentForUser(params: {
   files: File[];
 }): Promise<CreateAssignmentResult> {
   const validated: ValidatedAttachment[] = [];
+  let hasInvalidFile = false;
 
   for (const file of params.files) {
     const result = await validateAttachmentFile(file);
 
     if (!result.ok) {
-      throw new ApiError(400, "invalid_attachment", result.error, {
-        attachments: result.error,
-      });
+      hasInvalidFile = true;
+      continue;
     }
 
     validated.push(result.value);
   }
+
+  // File out/nggak allowed → simpan sebagai draft, bukan gagal total.
+  const forceDraft = hasInvalidFile;
 
   const course = await getOrCreateCourse(
     params.input.courseName,
@@ -57,6 +60,7 @@ export async function createAssignmentForUser(params: {
       params.userId,
       params.input,
       course.id,
+      forceDraft,
     );
   } catch (error) {
     throw toApiError(error, "Could not create the assignment.");

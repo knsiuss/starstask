@@ -94,7 +94,7 @@ export function FileDropzone({ files, onChange }: Props) {
           Click to upload or drag and drop files
         </p>
         <p className="text-muted-foreground mt-0.5 text-xs">
-          PDF, DOCX, PNG, JPG · Max 10MB per file
+          PDF, DOCX, PNG, JPG, CSV, IPYNB, PY · Max 10MB per file
         </p>
       </div>
 

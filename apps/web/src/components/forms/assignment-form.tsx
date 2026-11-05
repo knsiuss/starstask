@@ -204,7 +204,7 @@ export function AssignmentForm({
 
       if (!ATTACHMENT_ALLOWED_EXTENSIONS.includes(extension as never)) {
         nextErrors.attachments =
-          "Allowed file types: PDF, DOCX, PPTX, XLSX, PNG, JPG.";
+          "Allowed file types: PDF, DOCX, PPTX, XLSX, PNG, JPG, CSV, IPYNB, TXT, PY, JS, ZIP.";
       }
 
       if (file.size > ASSIGNMENT_ATTACHMENT_MAX_BYTES) {
@@ -706,7 +706,7 @@ export function AssignmentForm({
               className="text-muted-foreground text-sm"
             >
               Optional. Up to {ASSIGNMENT_ATTACHMENTS_MAX} files, 10 MB each.
-              PDF, DOCX, PPTX, XLSX, PNG, or JPG.
+              PDF, DOCX, PPTX, XLSX, PNG, JPG, CSV, IPYNB, TXT, PY, JS, ZIP.
             </p>
             <div className="border-border bg-subtle rounded-md border border-dashed p-4">
               <Label

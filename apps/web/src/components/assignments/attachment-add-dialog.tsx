@@ -65,7 +65,9 @@ export function AttachmentAddDialog({
     if (
       !(ATTACHMENT_ALLOWED_EXTENSIONS as readonly string[]).includes(extension)
     ) {
-      setError("Choose a PDF, DOCX, PPTX, XLSX, PNG, or JPG file.");
+      setError(
+        "Choose a PDF, DOCX, PPTX, XLSX, PNG, JPG, CSV, IPYNB, TXT, PY, JS, ZIP file.",
+      );
       return;
     }
 
@@ -161,7 +163,8 @@ export function AttachmentAddDialog({
         <DialogTitle>Add attachment</DialogTitle>
         <DialogDescription>
           Attach one file. {remaining} of {ASSIGNMENT_ATTACHMENTS_MAX} slots
-          remain. PDF, DOCX, PPTX, XLSX, PNG, or JPG up to 10 MB.
+          remain. PDF, DOCX, PPTX, XLSX, PNG, JPG, CSV, IPYNB, TXT, PY, JS, ZIP
+          up to 10 MB.
         </DialogDescription>
 
         <div className="mt-5 space-y-3">

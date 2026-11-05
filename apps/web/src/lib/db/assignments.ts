@@ -522,6 +522,7 @@ export async function insertAssignment(
   userId: string,
   input: AssignmentCreateInput,
   courseId: string,
+  forceDraft = false,
 ): Promise<string> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -538,10 +539,16 @@ export async function insertAssignment(
       deadline: input.deadline ?? null,
       tags: input.tags,
       reference_urls: input.referenceUrls,
+      // Draft fallback: kalau file out/nggak allowed atau publish gagal,
+      // simpan sebagai draft biar user tidak kehilangan data.
       // A member's submission is a request a platform admin reviews before
       // `list_assignments` returns it. Anyone who administers a class already
       // publishes to that class, so their public brief goes live at once.
-      status: (await canPublishPublicAssignment()) ? "published" : "pending",
+      status: forceDraft
+        ? "draft"
+        : (await canPublishPublicAssignment())
+          ? "published"
+          : "pending",
     })
     .select("id")
     .single();

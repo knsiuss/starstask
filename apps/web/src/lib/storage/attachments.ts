@@ -58,6 +58,65 @@ const ALLOWED_EXTENSIONS: Record<string, AllowedFile> = {
     mimeType: "image/jpeg",
     signatures: [[0xff, 0xd8, 0xff]],
   },
+  csv: {
+    mimeType: "text/csv",
+    signatures: [],
+  },
+  ipynb: {
+    mimeType: "application/json",
+    signatures: [],
+  },
+  txt: {
+    mimeType: "text/plain",
+    signatures: [],
+  },
+  md: {
+    mimeType: "text/markdown",
+    signatures: [],
+  },
+  json: {
+    mimeType: "application/json",
+    signatures: [],
+  },
+  py: {
+    mimeType: "text/x-python",
+    signatures: [],
+  },
+  js: {
+    mimeType: "text/javascript",
+    signatures: [],
+  },
+  ts: {
+    mimeType: "text/typescript",
+    signatures: [],
+  },
+  tsx: {
+    mimeType: "text/typescript",
+    signatures: [],
+  },
+  html: {
+    mimeType: "text/html",
+    signatures: [],
+  },
+  css: {
+    mimeType: "text/css",
+    signatures: [],
+  },
+  zip: {
+    mimeType: "application/zip",
+    signatures: [
+      [0x50, 0x4b, 0x03, 0x04],
+      [0x50, 0x4b, 0x05, 0x06],
+    ],
+  },
+  mp4: {
+    mimeType: "video/mp4",
+    signatures: [],
+  },
+  mp3: {
+    mimeType: "audio/mpeg",
+    signatures: [],
+  },
 };
 
 export const ACCEPTED_FILE_EXTENSIONS = Object.keys(ALLOWED_EXTENSIONS);
@@ -99,13 +158,16 @@ export async function validateAttachmentFile(
   if (!allowed) {
     return {
       ok: false,
-      error: "Allowed file types: PDF, DOCX, PPTX, XLSX, PNG, JPG.",
+      error:
+        "Allowed file types: PDF, DOCX, PPTX, XLSX, PNG, JPG, CSV, IPYNB, TXT, MD, JSON, PY, JS, TS, ZIP, MP4, MP3.",
     };
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
+  const isTextLike = allowed.signatures.length === 0;
   if (
+    !isTextLike &&
     !allowed.signatures.some((signature) => matchesSignature(bytes, signature))
   ) {
     return {

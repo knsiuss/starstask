@@ -146,7 +146,8 @@ export function ClassSubmissionForm({
       const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
 
       if (!ATTACHMENT_ALLOWED_EXTENSIONS.includes(extension as never)) {
-        error = "Allowed file types: PDF, DOCX, PPTX, XLSX, PNG, JPG.";
+        error =
+          "Allowed file types: PDF, DOCX, PPTX, XLSX, PNG, JPG, CSV, IPYNB, TXT, PY, JS, ZIP.";
       }
 
       if (file.size > ASSIGNMENT_ATTACHMENT_MAX_BYTES) {
