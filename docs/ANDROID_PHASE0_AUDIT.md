@@ -122,8 +122,12 @@ sync triggers only on `online`/startup.
   (no tokens/PII at call sites). A native Crashlytics JS bridge is
   still missing — logged errors are visible in Logcat, not yet in the
   Crashlytics dashboard.
-- Remaining Phase 1 item: verify merged manifest permissions and FCM
-  tap on a real device/emulator (needs Android SDK + build).
+- Remaining Phase 1 item: FCM tap on a real device/emulator.
+  Build verification (2026-11-06): Android Studio + SDK (android-34/35)
+  - JDK 17 already present on the dev machine; `cap sync android` +
+    `gradlew assembleDebug` succeeded (`app-debug.apk`, 7.3 MB), and the
+    merged manifest contains `POST_NOTIFICATIONS`,
+    `ACCESS_FINE_LOCATION`, and `ACCESS_COARSE_LOCATION`.
 
 1. **Phase 1:** fix initialization bugs first — push tap navigation,
    innerHTML escaping, `POST_NOTIFICATIONS` + location permission audit,
