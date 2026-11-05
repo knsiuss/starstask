@@ -14,6 +14,12 @@ import {
   MAX_MEDIA_BYTES,
 } from "@/lib/crypto/e2ee";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useDraft } from "@/hooks/use-draft";
+import { subscribeConversation } from "@/components/messages/dm-realtime";
+import { SwipeReply } from "@/components/messages/swipe-reply";
+import { EmojiPicker } from "@/components/messages/emoji-picker";
+import { ThemePicker, THEME_BUBBLE } from "@/components/messages/theme-picker";
+import { CallButton } from "@/components/messages/call-button";
 
 type WireMessage = {
   id: string;
@@ -43,7 +49,17 @@ const UNDECRYPTABLE = "🔒 Encrypted (cannot decrypt on this device)";
 export function DmChatWindow({ conversationId }: { conversationId: string }) {
   const router = useRouter();
   const [messages, setMessages] = useState<RenderMessage[]>([]);
-  const [draft, setDraft] = useState("");
+  const [draftState, setDraftState] = useState("");
+  const {
+    draft: savedDraft,
+    updateDraft,
+    clearDraft,
+  } = useDraft(`dm:${conversationId}`);
+  const draft = draftState || savedDraft;
+  const setDraft = (value: string) => {
+    setDraftState(value);
+    updateDraft(value);
+  };
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,22 +175,20 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Typing indicator poll 3s + mark read on load
+  // Realtime (postgres_changes + presence) + mark read
+  const [online, setOnline] = useState(false);
   useEffect(() => {
     fetch(`/api/dm/conversations/${conversationId}/read`, {
       method: "POST",
     }).catch(() => {});
-    const t = setInterval(async () => {
-      const r = await fetch(
-        `/api/dm/conversations/${conversationId}/typing`,
-      ).catch(() => null);
-      if (r?.ok) {
-        const d = await r.json();
-        setPeerTyping(Boolean(d.typing));
-      }
-    }, 3000);
-    return () => clearInterval(t);
-  }, [conversationId]);
+    const unsubscribe = subscribeConversation(
+      conversationId,
+      () => void load(),
+      (typing) => setPeerTyping(typing),
+      (isOnline) => setOnline(isOnline),
+    );
+    return unsubscribe;
+  }, [conversationId, load]);
 
   useEffect(() => {
     if (!peerPublicKeyRef.current) return;
@@ -324,20 +338,31 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
     router.refresh();
   }
 
+  const [theme, setTheme] = useState("default");
+  const [emojiFor, setEmojiFor] = useState<string | null>(null);
+
   return (
     <div className="flex h-[70vh] flex-col">
       <div className="flex items-center justify-between border-b pb-3">
         <p className="text-muted-foreground text-xs">
           🔒 E2E encrypted{safety ? ` • Safety: ${safety}` : ""}
           {peerTyping ? " • typing…" : ""}
+          {online ? " • online" : ""}
         </p>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => void block()}
-        >
-          Block
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemePicker
+            value={theme}
+            onChange={setTheme}
+          />
+          <CallButton conversationId={conversationId} />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => void block()}
+          >
+            Block
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto py-4">
@@ -346,71 +371,82 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
             No messages yet. Say hello!
           </p>
         ) : (
-          messages.map((message) => (
-            <div
+          messages.map((message, index) => (
+            <SwipeReply
               key={message.id}
-              className="max-w-[80%] rounded-lg bg-muted px-3 py-2"
+              onReply={() => setReplyTo(message.id)}
             >
-              <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-              {message.attachmentUrl ? (
-                message.attachmentMime?.startsWith("image/") ? (
-                  <img
-                    src={message.attachmentUrl}
-                    alt={message.attachmentName ?? "attachment"}
-                    className="mt-2 max-h-64 rounded"
-                  />
-                ) : message.attachmentMime?.startsWith("video/") ? (
-                  <video
-                    src={message.attachmentUrl}
-                    controls
-                    className="mt-2 max-h-64 rounded"
-                  />
-                ) : (
-                  <a
-                    href={message.attachmentUrl}
-                    download={message.attachmentName ?? "file"}
-                    className="text-accent mt-2 block text-xs underline"
+              <div
+                className={`max-w-[80%] rounded-lg px-3 py-2 ${THEME_BUBBLE[theme] ?? THEME_BUBBLE.default}`}
+              >
+                <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                {message.attachmentUrl ? (
+                  message.attachmentMime?.startsWith("image/") ? (
+                    <img
+                      src={message.attachmentUrl}
+                      alt={message.attachmentName ?? "attachment"}
+                      className="mt-2 max-h-64 rounded"
+                    />
+                  ) : message.attachmentMime?.startsWith("video/") ? (
+                    <video
+                      src={message.attachmentUrl}
+                      controls
+                      className="mt-2 max-h-64 rounded"
+                    />
+                  ) : (
+                    <a
+                      href={message.attachmentUrl}
+                      download={message.attachmentName ?? "file"}
+                      className="text-accent mt-2 block text-xs underline"
+                    >
+                      📎 {message.attachmentName ?? "Download file"}
+                    </a>
+                  )
+                ) : message.attachmentName ? (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    📎 {message.attachmentName} (decrypt failed)
+                  </p>
+                ) : null}
+                <div className="mt-1 flex gap-2 text-xs">
+                  <button
+                    className="underline"
+                    onClick={() => setReplyTo(message.id)}
                   >
-                    📎 {message.attachmentName ?? "Download file"}
-                  </a>
-                )
-              ) : message.attachmentName ? (
+                    Reply
+                  </button>
+                  <div className="relative">
+                    <button
+                      className="underline"
+                      onClick={() => setEmojiFor(message.id)}
+                    >
+                      ❤️
+                    </button>
+                    {emojiFor === message.id ? (
+                      <EmojiPicker
+                        onPick={async (emoji) => {
+                          await fetch(
+                            `/api/dm/conversations/${conversationId}/messages/${message.id}/react`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ emoji }),
+                            },
+                          ).catch(() => {});
+                          setEmojiFor(null);
+                          await load();
+                          router.refresh();
+                        }}
+                        onClose={() => setEmojiFor(null)}
+                      />
+                    ) : null}
+                  </div>
+                </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  📎 {message.attachmentName} (decrypt failed)
+                  {new Date(message.at).toLocaleString()}{" "}
+                  {index === messages.length - 1 ? "Seen" : "✓✓"}
                 </p>
-              ) : null}
-              <div className="mt-1 flex gap-2 text-xs">
-                <button
-                  className="underline"
-                  onClick={() => setReplyTo(message.id)}
-                >
-                  Reply
-                </button>
-                <button
-                  className="underline"
-                  onClick={async () => {
-                    const emoji = prompt("Reaction emoji?", "❤️");
-                    if (!emoji) return;
-                    // reaction stored in message reactions via API
-                    await fetch(
-                      `/api/dm/conversations/${conversationId}/messages/${message.id}/react`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ emoji }),
-                      },
-                    ).catch(() => {});
-                    await load();
-                    router.refresh();
-                  }}
-                >
-                  ❤️
-                </button>
               </div>
-              <p className="text-muted-foreground mt-1 text-xs">
-                {new Date(message.at).toLocaleString()} ✓✓
-              </p>
-            </div>
+            </SwipeReply>
           ))
         )}
         <div ref={bottomRef} />

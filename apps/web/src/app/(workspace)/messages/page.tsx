@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 
 import { DmKeySetup } from "@/components/messages/dm-key-setup";
 import { DmUserSearch } from "@/components/messages/dm-user-search";
+import { StoryRow } from "@/components/messages/story-row";
+import { ConversationFilter } from "@/components/messages/message-search";
+import { BackupKeyButton } from "@/components/messages/backup-key";
 import { getSessionUser } from "@/lib/auth/session";
 import { listConversations } from "@/lib/db/direct-messages";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -50,7 +53,11 @@ export default async function MessagesPage() {
         <DmKeySetup />
       </div>
 
+      <StoryRow />
+
       <DmUserSearch />
+
+      <BackupKeyButton />
 
       <div className="mt-6">
         {conversations.length === 0 ? (
