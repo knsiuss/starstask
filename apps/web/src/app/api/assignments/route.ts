@@ -17,6 +17,8 @@ import { isSupabaseConfigured } from "@/lib/env/public";
 import { recordAppActivity } from "@/lib/observability/events";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { createAssignmentForUser } from "@/features/assignments/assignment-service";
+import { dispatchNotificationEvents } from "@/lib/push/dispatch";
+import { after } from "next/server";
 import { assertAttachmentCount } from "@/lib/storage/attachments";
 
 const MAX_REQUEST_BYTES = 34 * 1024 * 1024;
@@ -140,6 +142,9 @@ export async function POST(request: Request) {
       resourceType: "assignment",
       resourceId: result.id,
     });
+
+    // In-app notif via trigger + Web Push (Chrome) dispatch after response.
+    after(() => dispatchNotificationEvents());
 
     return apiSuccess(result, 201);
   } catch (error) {
