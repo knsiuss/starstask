@@ -1,0 +1,9 @@
+# Launch smoke test: the signed-out state must be reachable and show the
+# sign-in entry point. The native fallback bar always renders this button,
+# even on devices where WebView text fails to rasterize.
+appId: id.starstask.mobile
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Sign in with Google"
+- takeScreenshot: launch-signed-out
