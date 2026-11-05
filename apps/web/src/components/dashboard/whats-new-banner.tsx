@@ -30,20 +30,29 @@ const HIGHLIGHTS = [
   },
 ] as const;
 
+function subscribeToSeen(): () => void {
+  return () => {};
+}
+
+function seenVersion(): string | null {
+  try {
+    return window.localStorage.getItem(SEEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function WhatsNewBanner() {
-  const [visible, setVisible] = React.useState(false);
+  // Server snapshot keeps hydration deterministic; the stored dismissal
+  // takes over only after hydration (same pattern as the theme toggle).
+  const storedSeen = React.useSyncExternalStore(
+    subscribeToSeen,
+    seenVersion,
+    () => null,
+  );
+  const [dismissed, setDismissed] = React.useState(false);
 
-  React.useEffect(() => {
-    try {
-      setVisible(
-        window.localStorage.getItem(SEEN_STORAGE_KEY) !== WHATS_NEW_VERSION,
-      );
-    } catch {
-      setVisible(true);
-    }
-  }, []);
-
-  if (!visible) {
+  if (dismissed || storedSeen === WHATS_NEW_VERSION) {
     return null;
   }
 
@@ -53,7 +62,7 @@ export function WhatsNewBanner() {
     } catch {
       // Dismissal is best-effort; the banner simply shows again next visit.
     }
-    setVisible(false);
+    setDismissed(true);
   };
 
   return (
