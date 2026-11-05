@@ -27,18 +27,6 @@ const dateLabel = new Intl.DateTimeFormat("id-ID", {
   timeZone: TIME_ZONE,
 });
 
-// Single source of truth for column widths. The table uses `table-fixed`,
-// so these widths are exact: sticky offsets below are derived from the
-// same constants and can never drift from the rendered columns.
-const SHEET_NO_WIDTH = 40;
-const SHEET_NIM_WIDTH = 112;
-const SHEET_NAME_WIDTH = 176;
-const SHEET_MEETING_WIDTH = 40;
-const SHEET_TOTAL_WIDTH = 40;
-const SHEET_PERCENT_WIDTH = 56;
-const SHEET_NIM_LEFT = SHEET_NO_WIDTH;
-const SHEET_NAME_LEFT = SHEET_NO_WIDTH + SHEET_NIM_WIDTH;
-
 type SheetProps = {
   classSlug: string;
   recap: AttendanceRecap;
@@ -314,35 +302,21 @@ export function AttendanceSheet({
         </Alert>
       ) : null}
 
-      <div className="border-border bg-surface mt-4 overflow-x-auto rounded-xl border">
-        <table className="[&_td]:border-border [&_td]:border-b [&_th]:border-border [&_th]:border-b w-full min-w-[720px] border-separate border-spacing-0 text-sm">
-          <colgroup>
-            <col className="w-10" />
-            <col className="w-28" />
-            <col className="w-44" />
-            {recap.meetings.map((meeting) => (
-              <col
-                key={meeting.sessionId}
-                className="w-10"
-              />
-            ))}
-            <col className="w-10" />
-            <col className="w-10" />
-            <col className="w-10" />
-            <col className="w-10" />
-            <col className="w-10" />
-            <col className="w-14" />
-          </colgroup>
+      <div className="border-border bg-surface mt-4 overflow-x-auto overscroll-x-contain rounded-xl border">
+        <table className="w-full min-w-[720px] border-separate border-spacing-0 text-sm [&_td]:border-border [&_td]:border-b [&_th]:border-border [&_th]:border-b">
           <thead>
             <tr className="bg-slate-900 text-white dark:bg-slate-950">
-              <th className="sticky left-0 z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
-                No.
-              </th>
-              <th className="sticky left-10 z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
-                NIM
-              </th>
-              <th className="sticky left-[9.5rem] z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
-                Nama Mahasiswa
+              <th
+                scope="col"
+                className="sticky left-0 z-10 bg-slate-900 px-3 py-2 dark:bg-slate-950"
+              >
+                <span className="flex items-center gap-3 text-left text-xs font-medium">
+                  <span className="w-6 shrink-0">No.</span>
+                  <span className="w-24 shrink-0">NIM</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    Nama Mahasiswa
+                  </span>
+                </span>
               </th>
               <th
                 colSpan={totalMeetings}
@@ -358,17 +332,20 @@ export function AttendanceSheet({
               <th className="px-2 py-2 text-center text-xs font-medium">%</th>
             </tr>
             <tr className="bg-slate-900 text-white dark:bg-slate-950">
-              <th className="sticky left-0 z-10 bg-slate-900 dark:bg-slate-950" />
-              <th className="sticky left-10 z-10 bg-slate-900 dark:bg-slate-950" />
-              <th className="sticky left-[9.5rem] z-10 bg-slate-900 dark:bg-slate-950" />
+              <th
+                scope="col"
+                className="sticky left-0 z-10 bg-slate-900 dark:bg-slate-950"
+              />
               {recap.meetings.map((meeting) => (
                 <th
                   key={meeting.sessionId}
-                  className="px-1 py-1.5 text-center text-xs font-medium"
+                  className="w-10 px-1 py-1.5 text-center text-xs font-medium"
                   title={`Meeting ${meeting.meetingNumber} — mark all present`}
                 >
-                  <span className="block">{meeting.meetingNumber}</span>
-                  <span className="text-slate-300 block text-[10px] font-normal">
+                  <span className="block whitespace-nowrap">
+                    {meeting.meetingNumber}
+                  </span>
+                  <span className="text-slate-300 block text-[10px] font-normal whitespace-nowrap">
                     {dateLabel.format(new Date(meeting.startsAt))}
                   </span>
                   <button
@@ -409,14 +386,18 @@ export function AttendanceSheet({
 
               return (
                 <tr key={student.userId}>
-                  <td className="bg-surface sticky left-0 z-[5] border-r border-border px-3 py-2 text-center text-xs">
-                    {index + 1}
-                  </td>
-                  <td className="bg-surface sticky left-10 z-[5] border-r border-border px-3 py-2 text-xs whitespace-nowrap">
-                    {student.nim ?? "—"}
-                  </td>
-                  <td className="bg-surface sticky left-[9.5rem] z-[5] max-w-44 truncate border-r border-border px-3 py-2 text-xs font-medium shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
-                    {student.fullName}
+                  <td className="bg-surface sticky left-0 z-[5] border-r border-border px-3 py-2 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
+                    <span className="flex items-center gap-3 text-xs">
+                      <span className="text-muted-foreground w-6 shrink-0 text-center tabular-nums">
+                        {index + 1}
+                      </span>
+                      <span className="w-24 shrink-0 tabular-nums">
+                        {student.nim ?? "—"}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-medium">
+                        {student.fullName}
+                      </span>
+                    </span>
                   </td>
                   {recap.meetings.map((meeting) => {
                     const status =
