@@ -13,6 +13,7 @@ import {
   getStudentAttendanceMeetingView,
   listClassAttendanceMeetings,
 } from "@/lib/db/attendance-meetings";
+import { listCourseComponentGrades } from "@/lib/db/course-grades";
 import { ATTENDANCE_MEETING_PHASE_LABELS } from "@starstask/contracts";
 import { formatDate, pluralize } from "@starstask/shared";
 
@@ -49,6 +50,9 @@ export default async function CourseAttendancePage({
   const recap = role.canManage
     ? await getClassAttendanceRecap(found.id, course.id)
     : null;
+  const componentGrades = role.canManage
+    ? await listCourseComponentGrades(found.id, course.id)
+    : {};
   const memberMeetings = (memberView?.meetings ?? []).filter(
     (meeting) =>
       meeting.classId === found.id && meeting.subjectId === course.id,
@@ -98,7 +102,9 @@ export default async function CourseAttendancePage({
         {role.canManage && recap ? (
           <AttendanceSheet
             classSlug={found.slug}
+            courseId={course.id}
             recap={recap}
+            componentGrades={componentGrades}
             courseName={course.name}
             courseCode={course.code}
             className={found.name}

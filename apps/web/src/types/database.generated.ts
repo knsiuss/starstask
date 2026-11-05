@@ -4864,6 +4864,20 @@ export type Database = {
         Returns: string;
       };
       get_my_profile: { Args: Record<PropertyKey, never>; Returns: Json };
+      list_course_component_grades: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: Json;
+      };
+      set_course_component_grade: {
+        Args: {
+          p_class_id: string;
+          p_subject_id: string;
+          p_student_id: string;
+          p_component: string;
+          p_score: number;
+        };
+        Returns: number;
+      };
       get_platform_admin_overview: {
         Args: Record<PropertyKey, never>;
         Returns: {
