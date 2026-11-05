@@ -10,6 +10,7 @@ import type {
 } from "@starstask/contracts";
 
 import type { AssignmentStatusRow, Database, Json } from "@/types/database";
+import { LISTING_CACHE_TTL_SECONDS, getCached } from "@/lib/cache/redis-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export class DataAccessError extends Error {
@@ -428,54 +429,58 @@ export async function getMemberCourseOptions(
 }
 
 export async function getSemesterOptions(): Promise<string[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("semester")
-    .eq("status", "published")
-    .not("semester", "is", null)
-    .limit(1000);
+  return getCached("semesters", LISTING_CACHE_TTL_SECONDS, async () => {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("assignments")
+      .select("semester")
+      .eq("status", "published")
+      .not("semester", "is", null)
+      .limit(1000);
 
-  if (error) {
-    throw new DataAccessError("Could not load semesters", error.code);
-  }
-
-  const semesters = new Set<string>();
-
-  for (const row of data ?? []) {
-    if (row.semester) {
-      semesters.add(row.semester);
+    if (error) {
+      throw new DataAccessError("Could not load semesters", error.code);
     }
-  }
 
-  return [...semesters].sort((a, b) => a.localeCompare(b));
+    const semesters = new Set<string>();
+
+    for (const row of data ?? []) {
+      if (row.semester) {
+        semesters.add(row.semester);
+      }
+    }
+
+    return [...semesters].sort((a, b) => a.localeCompare(b));
+  });
 }
 
 export async function getPublishedCounts(): Promise<{
   assignments: number;
   courses: number;
 }> {
-  const supabase = await createSupabaseServerClient();
+  return getCached("published-counts", LISTING_CACHE_TTL_SECONDS, async () => {
+    const supabase = await createSupabaseServerClient();
 
-  const [assignments, courses] = await Promise.all([
-    supabase
-      .from("assignments")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "published"),
-    supabase.from("courses").select("id", { count: "exact", head: true }),
-  ]);
+    const [assignments, courses] = await Promise.all([
+      supabase
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published"),
+      supabase.from("courses").select("id", { count: "exact", head: true }),
+    ]);
 
-  if (assignments.error || courses.error) {
-    throw new DataAccessError(
-      "Could not load statistics",
-      assignments.error?.code ?? courses.error?.code,
-    );
-  }
+    if (assignments.error || courses.error) {
+      throw new DataAccessError(
+        "Could not load statistics",
+        assignments.error?.code ?? courses.error?.code,
+      );
+    }
 
-  return {
-    assignments: assignments.count ?? 0,
-    courses: courses.count ?? 0,
-  };
+    return {
+      assignments: assignments.count ?? 0,
+      courses: courses.count ?? 0,
+    };
+  });
 }
 
 export async function getOrCreateCourse(

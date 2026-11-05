@@ -101,3 +101,6 @@ export async function getCached<T>(
 
 /** TTL for the per-user dashboard overview read. */
 export const DASHBOARD_CACHE_TTL_SECONDS = DASHBOARD_TTL_SECONDS;
+
+/** TTL for global listing helpers (semesters, published counts). */
+export const LISTING_CACHE_TTL_SECONDS = 60;
