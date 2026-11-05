@@ -27,6 +27,8 @@ export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
     );
   }
 
+  const isScrollable = entries.length > 2;
+
   return (
     <div className="border-border bg-surface overflow-hidden rounded-xl border">
       <div className="border-border text-muted-foreground hidden border-b px-4 py-2 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto] sm:gap-4">
@@ -35,7 +37,18 @@ export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
         <span className="text-right">Status</span>
       </div>
 
-      <ul className="divide-border divide-y">
+      <ul
+        // Height fits two rows: ~138px per stacked row on mobile, ~60px
+        // per grid row on sm+, so older sessions scroll inside the box
+        // instead of stretching the page.
+        className="divide-border divide-y max-h-[17.25rem] overflow-y-auto overscroll-contain sm:max-h-[7.5rem]"
+        tabIndex={isScrollable ? 0 : undefined}
+        aria-label={
+          isScrollable
+            ? `Attendance history, ${entries.length} sessions, scrollable`
+            : undefined
+        }
+      >
         {entries.map((entry) => (
           <li key={entry.sessionId}>
             <Link
@@ -73,6 +86,12 @@ export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
           </li>
         ))}
       </ul>
+
+      {isScrollable ? (
+        <p className="border-border text-muted-foreground border-t px-4 py-2 text-xs">
+          {entries.length} sessions — scroll inside this box for older ones.
+        </p>
+      ) : null}
     </div>
   );
 }
