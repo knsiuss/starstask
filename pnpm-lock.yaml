@@ -26,6 +26,12 @@ importers:
       '@capacitor/android':
         specifier: ^6.2.3
         version: 6.2.3(@capacitor/core@6.2.3)
+      '@capacitor/app':
+        specifier: ^6.0.0
+        version: 6.0.0(@capacitor/core@6.2.3)
+      '@capacitor/browser':
+        specifier: ^6.0.0
+        version: 6.0.0(@capacitor/core@6.2.3)
       '@capacitor/core':
         specifier: ^6.0.0
         version: 6.2.3
@@ -36,6 +42,9 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0(@capacitor/core@6.2.3)
       '@capacitor/push-notifications':
+        specifier: ^6.0.0
+        version: 6.0.0(@capacitor/core@6.2.3)
+      '@capacitor/splash-screen':
         specifier: ^6.0.0
         version: 6.0.0(@capacitor/core@6.2.3)
       '@supabase/supabase-js':
@@ -348,6 +357,16 @@ packages:
     peerDependencies:
       '@capacitor/core': ^6.2.0
 
+  '@capacitor/app@6.0.0':
+    resolution: {integrity: sha512-X5UGd90Jh5p9rmoPyMqFyFWqOypdJgVJhYcM5X1YyDVJJGzmJ5MuYv1+ajj5DW9Qyh+5a3th9WYptdGby8jidA==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
+  '@capacitor/browser@6.0.0':
+    resolution: {integrity: sha512-mtZq8qNwN/lqBDMYSF5h0oa4Kru6UWp4OyUXG4Rw13GKXkX6QoxlSy3k2MEBS3BGvK6OG7FAMTMAjh1QyynDxQ==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
   '@capacitor/cli@6.2.3':
     resolution: {integrity: sha512-jqmqpe8K/kdw2/imsii+taG7qsv0bbYKsxwrOfcgPpm+omxBGg4j81Hf9FIvlxB3zV2EAORPBKeUfCkkV+o83A==}
     engines: {node: '>=18.0.0'}
@@ -368,6 +387,11 @@ packages:
 
   '@capacitor/push-notifications@6.0.0':
     resolution: {integrity: sha512-VTUO6OCX0rvKSpEsI9wq8TV1ntmdn/ZpsbH4bvmjlrYAG4kclgKBP9lm+Fw+GqzjyE1lIpCQFj2avpbQ03Ni0g==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
+  '@capacitor/splash-screen@6.0.0':
+    resolution: {integrity: sha512-ZGgbT1j6opz1xCnMHnERnBd33aQTuepOXuDHMiKgZGlOluviBFOyOcnMnWjEwavg8PSiYSPSmVSwjxW7L6mXsg==}
     peerDependencies:
       '@capacitor/core': ^6.0.0
 
@@ -4706,6 +4730,14 @@ snapshots:
     dependencies:
       '@capacitor/core': 6.2.3
 
+  '@capacitor/app@6.0.0(@capacitor/core@6.2.3)':
+    dependencies:
+      '@capacitor/core': 6.2.3
+
+  '@capacitor/browser@6.0.0(@capacitor/core@6.2.3)':
+    dependencies:
+      '@capacitor/core': 6.2.3
+
   '@capacitor/cli@6.2.3':
     dependencies:
       '@ionic/cli-framework-output': 2.2.8
@@ -4741,6 +4773,10 @@ snapshots:
       '@capacitor/core': 6.2.3
 
   '@capacitor/push-notifications@6.0.0(@capacitor/core@6.2.3)':
+    dependencies:
+      '@capacitor/core': 6.2.3
+
+  '@capacitor/splash-screen@6.0.0(@capacitor/core@6.2.3)':
     dependencies:
       '@capacitor/core': 6.2.3
 
