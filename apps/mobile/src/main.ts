@@ -241,6 +241,15 @@ async function refreshSession(): Promise<void> {
 render("loading");
 
 if (Capacitor.isNativePlatform()) {
+  // Native back button: go back in history instead of exiting the app.
+  App.addListener("backButton", ({ canGoBack }) => {
+    if (canGoBack) {
+      window.history.back();
+    } else {
+      void App.exitApp();
+    }
+  });
+
   void SplashScreen.hide();
 }
 
