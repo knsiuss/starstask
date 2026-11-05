@@ -29,7 +29,9 @@ const dateLabel = new Intl.DateTimeFormat("id-ID", {
 
 type SheetProps = {
   classSlug: string;
+  courseId?: string;
   recap: AttendanceRecap;
+  componentGrades?: Record<string, number>;
   courseName: string;
   courseCode: string | null;
   className: string;
@@ -39,6 +41,16 @@ type SheetProps = {
 };
 
 type CellKey = `${string}:${string}`;
+
+type GradeCellKey = `${string}:${string}:${string}`;
+
+const GRADE_COMPONENTS = [
+  { id: "tugas", label: "Tugas" },
+  { id: "uts", label: "UTS" },
+  { id: "uas", label: "UAS" },
+] as const;
+
+type GradeComponent = (typeof GRADE_COMPONENTS)[number]["id"];
 
 /**
  * Spreadsheet-style attendance sheet for one course.
@@ -50,7 +62,9 @@ type CellKey = `${string}:${string}`;
  */
 export function AttendanceSheet({
   classSlug,
+  courseId,
   recap,
+  componentGrades = {},
   courseName,
   courseCode,
   className,
@@ -77,6 +91,12 @@ export function AttendanceSheet({
   const [physicallyVerified, setPhysicallyVerified] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [grades, setGrades] =
+    React.useState<Record<string, number>>(componentGrades);
+  const [openGradeCell, setOpenGradeCell] = React.useState<GradeCellKey | null>(
+    null,
+  );
+  const [gradeInput, setGradeInput] = React.useState("");
 
   const totalMeetings = recap.meetings.length;
   const percentages = recap.students.map((student) =>
@@ -157,6 +177,60 @@ export function AttendanceSheet({
       toast({
         variant: "success",
         title: `${studentName}: ${labels[pendingStatus]}`,
+      });
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveGrade = async (
+    studentId: string,
+    studentName: string,
+    component: GradeComponent,
+  ) => {
+    if (saving || !courseId) {
+      return;
+    }
+
+    const score = Number(gradeInput);
+
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
+      setError("Score must be between 0 and 100.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/classes/${classSlug}/courses/${courseId}/grades`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentId, component, score }),
+        },
+      );
+      const body = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+
+      if (!response.ok) {
+        setError(body?.error?.message ?? "Could not save the grade.");
+        return;
+      }
+
+      setGrades((current) => ({
+        ...current,
+        [`${studentId}:${component}`]: score,
+      }));
+      setOpenGradeCell(null);
+      toast({
+        variant: "success",
+        title: `${studentName}: ${component.toUpperCase()} ${score}`,
       });
       router.refresh();
     } catch {
@@ -324,6 +398,12 @@ export function AttendanceSheet({
               >
                 Pertemuan
               </th>
+              <th
+                colSpan={GRADE_COMPONENTS.length}
+                className="px-3 py-2 text-center text-xs font-medium"
+              >
+                Nilai
+              </th>
               <th className="px-2 py-2 text-center text-xs font-medium">H</th>
               <th className="px-2 py-2 text-center text-xs font-medium">I</th>
               <th className="px-2 py-2 text-center text-xs font-medium">S</th>
@@ -361,6 +441,14 @@ export function AttendanceSheet({
                   >
                     All ✓
                   </button>
+                </th>
+              ))}
+              {GRADE_COMPONENTS.map((component) => (
+                <th
+                  key={component.id}
+                  className="w-14 px-1 py-1.5 text-center text-xs font-medium"
+                >
+                  {component.label}
                 </th>
               ))}
               <th className="bg-slate-900 dark:bg-slate-950" />
@@ -495,6 +583,88 @@ export function AttendanceSheet({
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setOpenCell(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </span>
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  })}
+                  {GRADE_COMPONENTS.map((component) => {
+                    const gradeKey =
+                      `${student.userId}:${component.id}` as GradeCellKey;
+                    const grade = grades[`${student.userId}:${component.id}`];
+                    const isOpen = openGradeCell === gradeKey;
+
+                    return (
+                      <td
+                        key={component.id}
+                        className="relative w-14 px-1 py-1 text-center"
+                      >
+                        <button
+                          type="button"
+                          disabled={!courseId || saving}
+                          onClick={() => {
+                            setError(null);
+                            setGradeInput(
+                              grade === undefined ? "" : String(grade),
+                            );
+                            setOpenGradeCell(isOpen ? null : gradeKey);
+                          }}
+                          aria-label={`${student.fullName}, ${component.label}`}
+                          className="inline-flex h-7 min-w-7 items-center justify-center rounded px-1 text-xs font-semibold tabular-nums hover:bg-muted disabled:cursor-default"
+                        >
+                          {grade === undefined
+                            ? "—"
+                            : Number.isInteger(grade)
+                              ? String(grade)
+                              : grade.toFixed(1)}
+                        </button>
+                        {isOpen ? (
+                          <span className="border-border bg-surface absolute top-8 left-1/2 z-20 w-40 -translate-x-1/2 rounded-lg border p-2 text-left shadow-lg">
+                            <span className="block space-y-1">
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                max={100}
+                                step="0.5"
+                                value={gradeInput}
+                                onChange={(event) =>
+                                  setGradeInput(event.target.value)
+                                }
+                                placeholder="0–100"
+                                aria-label={`${component.label} score`}
+                                className="border-input w-full rounded-md border px-2 py-1.5 text-xs tabular-nums"
+                              />
+                            </span>
+                            <span className="mt-2 flex gap-1">
+                              <Button
+                                size="sm"
+                                disabled={saving}
+                                onClick={() =>
+                                  void saveGrade(
+                                    student.userId,
+                                    student.fullName,
+                                    component.id,
+                                  )
+                                }
+                              >
+                                {saving ? (
+                                  <Loader2
+                                    aria-hidden="true"
+                                    className="h-3 w-3 animate-spin"
+                                  />
+                                ) : (
+                                  "Save"
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setOpenGradeCell(null)}
                               >
                                 Cancel
                               </Button>

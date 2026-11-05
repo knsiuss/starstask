@@ -318,6 +318,25 @@ export type AttendanceMeetingCorrectionInput = z.infer<
   typeof attendanceMeetingCorrectionSchema
 >;
 
+export const COURSE_GRADE_COMPONENTS = ["tugas", "uts", "uas"] as const;
+
+export type CourseGradeComponent = (typeof COURSE_GRADE_COMPONENTS)[number];
+
+export const courseComponentGradeSchema = z
+  .object({
+    studentId: z.uuid("Choose a student"),
+    component: z.enum(COURSE_GRADE_COMPONENTS),
+    score: z.coerce
+      .number()
+      .min(0, "Score must be at least 0")
+      .max(100, "Score must be at most 100"),
+  })
+  .strict();
+
+export type CourseComponentGradeInput = z.infer<
+  typeof courseComponentGradeSchema
+>;
+
 export const attendanceExportKindSchema = z.enum([
   "meeting",
   "recap",

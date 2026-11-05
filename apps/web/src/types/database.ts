@@ -4754,6 +4754,20 @@ export interface Database {
           reminder_3h: boolean;
         }[];
       };
+      list_course_component_grades: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: Json;
+      };
+      set_course_component_grade: {
+        Args: {
+          p_class_id: string;
+          p_subject_id: string;
+          p_student_id: string;
+          p_component: string;
+          p_score: number;
+        };
+        Returns: number;
+      };
       claim_session_reminders: {
         Args: { p_now: string; p_limit?: number };
         Returns: SessionReminderClaim[];
