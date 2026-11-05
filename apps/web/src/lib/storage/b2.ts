@@ -63,15 +63,16 @@ export async function uploadToStorage(
   bytes: Uint8Array,
   mimeType: string,
 ): Promise<{ url: string; path: string; provider: "r2" | "b2" | "supabase" }> {
-  // Prioritas: R2 (egress $0) → B2 (storage gede) → Supabase (fallback)
+  // Prioritas: B2 (tanpa kartu kredit) → R2 → Supabase (fallback)
+  // R2 skip: Cloudflare butuh kartu kredit buat verifikasi, ditolak user 2026-11-05.
+  if (isB2Configured()) {
+    const b2 = await uploadToB2(objectName, bytes, mimeType);
+    return { ...b2, provider: "b2" };
+  }
   const { isR2Configured, uploadToR2 } = await import("@/lib/storage/r2");
   if (isR2Configured()) {
     const r2 = await uploadToR2(objectName, bytes, mimeType);
     return { ...r2, provider: "r2" };
-  }
-  if (isB2Configured()) {
-    const b2 = await uploadToB2(objectName, bytes, mimeType);
-    return { ...b2, provider: "b2" };
   }
   const { createSupabaseServerClient } = await import("@/lib/supabase/server");
   const supabase = await createSupabaseServerClient();
