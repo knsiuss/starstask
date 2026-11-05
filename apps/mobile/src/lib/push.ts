@@ -19,6 +19,15 @@ const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   "https://starstask.vercel.app";
 
+/** Opens a notification target inside the app's own WebView. */
+export async function openNotificationTarget(url: string): Promise<void> {
+  const absolute = url.startsWith("http")
+    ? url
+    : `${API_BASE_URL.replace(/\/$/, "")}${url.startsWith("/") ? url : `/${url}`}`;
+
+  window.location.assign(absolute);
+}
+
 /** Registers an FCM token with the web API; best effort, never throws. */
 export async function sendNativeTokenToServer(
   token: string,

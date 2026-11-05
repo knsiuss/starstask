@@ -10,7 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { Browser } from "@capacitor/browser";
 
-import { handleAuthDeepLink, signInWithGoogle } from "./lib/auth";
+import { handleAuthDeepLink, signInWithGoogle, signInWithNativeGoogleIdToken } from "./lib/auth";
 import { checkInToSession, syncQueuedCheckIns } from "./lib/checkin";
 import { formatTime, loadDashboard } from "./lib/dashboard";
 import { listAttachments, openAttachment } from "./lib/document";
@@ -198,13 +198,83 @@ async function refreshDashboard(): Promise<void> {
   }
 }
 
-function render(state: "loading" | "signed-out" | "signed-in" | "error"): void {
+type RenderState = "splash" | "loading" | "signed-out" | "signed-in" | "error";
+
+/** Minimum time the launch splash stays up before auth UI appears. */
+const SPLASH_MIN_MS = 1400;
+let splashDone = false;
+let pendingState: RenderState | null = null;
+
+function renderSplash(): void {
   if (!app) {
     return;
   }
 
-  if (state === "loading") {
-    app.textContent = "StarsTask Mobile — loading…";
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes starstask-logo-in {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes starstask-shimmer {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(200%); }
+    }
+    .starstask-splash {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 70vh; gap: 14px;
+      font-family: system-ui, sans-serif; text-align: center;
+    }
+    .starstask-splash .logo {
+      font-size: 34px; font-weight: 700; letter-spacing: -0.02em;
+      animation: starstask-logo-in 0.7s ease-out both;
+    }
+    .starstask-splash .tagline {
+      font-size: 14px; color: #64748b;
+      animation: starstask-logo-in 0.7s ease-out 0.15s both;
+    }
+    .starstask-splash .bar {
+      width: 160px; height: 4px; border-radius: 999px;
+      background: #e2e8f0; overflow: hidden; position: relative;
+    }
+    .starstask-splash .bar::after {
+      content: ""; position: absolute; inset: 0; width: 50%;
+      border-radius: 999px; background: #334155;
+      animation: starstask-shimmer 1.1s linear infinite;
+    }
+  `;
+  app.replaceChildren(style);
+
+  const splash = document.createElement("div");
+  splash.className = "starstask-splash";
+
+  const logo = document.createElement("div");
+  logo.className = "logo";
+  logo.textContent = "StarsTask";
+
+  const tagline = document.createElement("div");
+  tagline.className = "tagline";
+  tagline.textContent = "Academic workspace";
+
+  const bar = document.createElement("div");
+  bar.className = "bar";
+
+  splash.append(logo, tagline, bar);
+  app.append(splash);
+}
+
+function render(state: RenderState): void {
+  if (!app) {
+    return;
+  }
+
+  if (state === "splash") {
+    renderSplash();
+    return;
+  }
+
+  if (!splashDone) {
+    pendingState = state;
     return;
   }
 
@@ -293,7 +363,26 @@ async function openNotificationDestination(url: string | null): Promise<void> {
   await Browser.open({ url: `${origin}${url}` });
 }
 
-render("loading");
+render("splash");
+
+setTimeout(() => {
+  splashDone = true;
+  const next = pendingState;
+  pendingState = null;
+  if (next) {
+    render(next);
+  }
+}, SPLASH_MIN_MS);
+
+// Native Google sign-in (MainActivity → Credential Manager → Firebase)
+// hands its ID token here; trade it for a Supabase session in-app.
+(window as unknown as { __nativeGoogleSignIn?: (token: string) => void }).__nativeGoogleSignIn = (
+  idToken: string,
+) => {
+  void signInWithNativeGoogleIdToken(idToken)
+    .then(refreshSession)
+    .catch(() => render("error"));
+};
 
 if (Capacitor.isNativePlatform()) {
   // Native back button: go back in history instead of exiting the app.

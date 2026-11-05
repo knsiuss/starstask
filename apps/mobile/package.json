@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "sync": "capacitor sync"
+    "sync": "capacitor sync",
+    "test:e2e": "maestro test e2e/maestro"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.3",

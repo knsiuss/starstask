@@ -49,6 +49,19 @@ Push Android memakai `@capacitor/push-notifications` (FCM). Setup
 `google-services.json` + Firebase project dilakukan manual di Android
 Studio; tanpa itu push native belum aktif, Web Push PWA tetap jalan.
 
+## E2E (Maestro)
+
+Flow ada di `e2e/maestro/` — launch smoke test, debug launch, dan deep
+link callback. Butuh Maestro CLI
+([install](https://docs.maestro.dev/get-started/quickstart)) dan device
+atau emulator yang terhubung via adb:
+
+```bash
+pnpm --filter @starstask/mobile build
+npx cap sync android
+pnpm --filter @starstask/mobile test:e2e
+```
+
 Token FCM didaftarkan ke web API (`POST /api/push/native-token`) setelah
 login, disimpan di tabel `native_push_tokens`, dan dipakai scheduler
 server (reminder deadline, reminder sesi, event publikasi) lewat pengirim
