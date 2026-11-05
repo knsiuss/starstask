@@ -10,10 +10,41 @@ import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
 import { handleAuthDeepLink, signInWithGoogle } from "./lib/auth";
+import { formatTime, loadDashboard } from "./lib/dashboard";
 import { registerNativePush } from "./lib/push";
 import { getSupabase, isSupabaseConfigured } from "./lib/supabase";
 
 const app = document.querySelector<HTMLDivElement>("#app");
+
+function renderDashboard(
+  data: Awaited<ReturnType<typeof loadDashboard>>,
+): void {
+  if (!app) {
+    return;
+  }
+
+  const sessions =
+    data.todaySessions.length === 0
+      ? "<p>No sessions today.</p>"
+      : `<ul>${data.todaySessions
+          .map(
+            (session) =>
+              `<li>${session.subjectName ?? session.title} ${formatTime(session.startsAt)}-${formatTime(session.endsAt)} ${session.checkInStatus ?? "not recorded"}</li>`,
+          )
+          .join("")}</ul>`;
+
+  const assignments =
+    data.upcomingAssignments.length === 0
+      ? "<p>No upcoming assignments.</p>"
+      : `<ul>${data.upcomingAssignments
+          .map(
+            (assignment) =>
+              `<li>${assignment.subjectName ?? ""} ${assignment.title}${assignment.deadline ? ` — ${formatTime(assignment.deadline)}` : ""}</li>`,
+          )
+          .join("")}</ul>`;
+
+  app.innerHTML = `<h1>StarsTask Mobile</h1><h2>Today</h2>${sessions}<h2>Upcoming assignments</h2>${assignments}`;
+}
 
 function render(state: "loading" | "signed-out" | "signed-in" | "error"): void {
   if (!app) {
@@ -27,6 +58,16 @@ function render(state: "loading" | "signed-out" | "signed-in" | "error"): void {
 
   if (state === "signed-in") {
     app.textContent = "StarsTask Mobile — signed in";
+    const userId = sessionUserId();
+
+    if (userId) {
+      void loadDashboard(userId)
+        .then(renderDashboard)
+        .catch(() => {
+          app.textContent = "StarsTask Mobile — dashboard failed to load";
+        });
+    }
+
     return;
   }
 
@@ -44,10 +85,17 @@ function render(state: "loading" | "signed-out" | "signed-in" | "error"): void {
     });
 }
 
+let currentUserId: string | null = null;
+
+function sessionUserId(): string | null {
+  return currentUserId;
+}
+
 async function refreshSession(): Promise<void> {
   const supabase = getSupabase();
 
   if (!supabase) {
+    currentUserId = null;
     render(isSupabaseConfigured() ? "signed-out" : "error");
     return;
   }
@@ -56,6 +104,7 @@ async function refreshSession(): Promise<void> {
     data: { session },
   } = await supabase.auth.getSession();
 
+  currentUserId = session?.user.id ?? null;
   render(session ? "signed-in" : "signed-out");
 
   if (session) {
@@ -84,6 +133,7 @@ void App.addListener("appUrlOpen", (event) => {
 
 const supabase = getSupabase();
 supabase?.auth.onAuthStateChange((_event, session) => {
+  currentUserId = session?.user.id ?? null;
   render(session ? "signed-in" : "signed-out");
 });
 
