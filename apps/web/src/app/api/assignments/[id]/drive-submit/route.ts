@@ -83,7 +83,7 @@ export async function POST(
       validated.value.mimeType,
     );
 
-    const row = await insertDriveSubmission({
+    const { row, shareToken } = await insertDriveSubmission({
       assignmentId: parsed.data,
       userId: session.user.id,
       driveFileId: driveFileId || null,
@@ -99,7 +99,7 @@ export async function POST(
       {
         submissionId: row.id,
         fileName: row.drive_file_name,
-        lecturerPath: `/d/${row.share_token}`,
+        lecturerPath: `/d/${shareToken}`,
       },
       201,
     );

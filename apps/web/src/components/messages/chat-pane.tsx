@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { EmojiPicker } from "@/components/messages/emoji-picker";
+import { KeyTrustBanner } from "@/components/messages/key-trust-banner";
 import { PresenceDot } from "@/components/messages/presence-dot";
 import { subscribeConversation } from "@/components/messages/dm-realtime";
 import { SwipeReply } from "@/components/messages/swipe-reply";
@@ -111,6 +112,7 @@ export function ChatPane({
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const peerPublicKeyRef = useRef<string | null>(null);
+  const [peerPublicKey, setPeerPublicKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -191,6 +193,7 @@ export function ChatPane({
         hasMore?: boolean;
       };
       peerPublicKeyRef.current = data.peerPublicKey;
+      setPeerPublicKey(data.peerPublicKey);
       if (data.participants) setParticipants(data.participants);
       setHasMore(Boolean(data.hasMore));
       const rendered = await mapWire(data.messages, data.peerPublicKey);
@@ -605,6 +608,11 @@ export function ChatPane({
           </button>
         </div>
       </header>
+
+      <KeyTrustBanner
+        conversationId={conversationId}
+        peerPublicKey={peerPublicKey}
+      />
 
       {searchOpen ? (
         <div className="border-border border-b px-4 py-2 sm:px-5">

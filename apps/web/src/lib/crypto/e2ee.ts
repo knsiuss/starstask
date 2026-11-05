@@ -77,6 +77,37 @@ export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
   return pair;
 }
 
+/**
+ * Totally replaces the device keypair (backup restore). This is the correct
+ * storage location: `getOrCreateKeyPair` only reads `SELF_KEY`, so anything
+ * written elsewhere is orphaned.
+ */
+export async function storeSelfKeyPair(pair: CryptoKeyPair): Promise<void> {
+  await idbSet(SELF_KEY, pair);
+}
+
+/** Rebuilds a keypair from its JWK parts (private `d` + public `x`/`y`). */
+export async function importKeyPairFromJwk(
+  jwk: JsonWebKey,
+): Promise<CryptoKeyPair> {
+  const publicKey = await crypto.subtle.importKey(
+    "jwk",
+    { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
+    { name: "ECDH", namedCurve: "P-256" },
+    true,
+    [],
+  );
+  const privateKey = await crypto.subtle.importKey(
+    "jwk",
+    jwk,
+    { name: "ECDH", namedCurve: "P-256" },
+    true,
+    ["deriveKey", "deriveBits"],
+  );
+
+  return { publicKey, privateKey };
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
 

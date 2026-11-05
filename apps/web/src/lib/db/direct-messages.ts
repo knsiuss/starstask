@@ -267,8 +267,37 @@ export async function getPeerPublicKey(
 }
 
 export async function upsertOwnPublicKey(publicKey: string): Promise<void> {
+  // P-256 uncompressed points are 65 bytes: 0x04 || X(32) || Y(32).
+  // Anything else cannot be a key our clients would have generated, and
+  // accepting it would hand the server's MITM ability a valid-looking key.
+  if (
+    !/^[A-Za-z0-9+/=]+$/.test(publicKey) ||
+    base64Length(publicKey) !== 65 ||
+    base64FirstByte(publicKey) !== 0x04
+  ) {
+    throw new DataAccessError("Invalid public key", "22023");
+  }
+
   const me = await requireUserId();
   const supabase = (await createSupabaseServerClient()) as any;
+
+  // Key history: if the key changed, retain the old key before overwriting so
+  // peers can detect the change (they pin fingerprints client-side).
+  const { data: previous } = await supabase
+    .from("dm_keys")
+    .select("public_key")
+    .eq("user_id", me)
+    .maybeSingle();
+
+  const previousKey = (previous as { public_key?: string } | null)?.public_key;
+
+  if (previousKey && previousKey !== publicKey) {
+    await supabase.from("dm_key_history").insert({
+      user_id: me,
+      public_key: previousKey,
+    });
+  }
+
   const { error } = await supabase.from("dm_keys").upsert(
     {
       user_id: me,
@@ -281,6 +310,16 @@ export async function upsertOwnPublicKey(publicKey: string): Promise<void> {
   if (error) {
     throw new DataAccessError("Could not save key", error.code);
   }
+}
+
+function base64Length(value: string): number {
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  return Math.floor((value.length * 3) / 4) - padding;
+}
+
+function base64FirstByte(value: string): number {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(normalized, "base64")[0] ?? 0;
 }
 
 export async function getOwnPublicKey(): Promise<string | null> {

@@ -5,6 +5,7 @@ import {
   encryptWithKeyPair,
   exportPublicKey,
   generateKeyPair,
+  importKeyPairFromJwk,
   isValidWireFormat,
   parseWireFormat,
 } from "@/lib/crypto/e2ee";
@@ -54,5 +55,31 @@ describe("isCiphertextWireFormat", () => {
     expect(isCiphertextWireFormat("abc")).toBe(false);
     expect(isCiphertextWireFormat("a:b:c")).toBe(false);
     expect(isCiphertextWireFormat("")).toBe(false);
+  });
+});
+
+describe("importKeyPairFromJwk", () => {
+  it("rebuilds a working keypair from exported JWK parts", async () => {
+    const pair = await generateKeyPair();
+    const senderPublic = await exportPublicKey(pair);
+    const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+
+    const restored = await importKeyPairFromJwk(jwk);
+    const restoredPublic = await exportPublicKey(restored);
+
+    // The restored keypair derives the identical shared secret.
+    const receiver = await generateKeyPair();
+    const receiverPublic = await exportPublicKey(receiver);
+    const wire = await encryptWithKeyPair(restored, receiverPublic, "hi");
+    const plaintext = await decryptWithKeyPair(receiver, senderPublic, wire);
+
+    expect(restoredPublic).toBe(senderPublic);
+    expect(plaintext).toBe("hi");
+  });
+
+  it("rejects a JWK missing its public parts", async () => {
+    await expect(
+      importKeyPairFromJwk({ kty: "EC" } as unknown as JsonWebKey),
+    ).rejects.toThrow();
   });
 });
