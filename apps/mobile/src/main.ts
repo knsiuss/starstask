@@ -10,6 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
 import { handleAuthDeepLink, signInWithGoogle } from "./lib/auth";
+import { checkInToSession } from "./lib/checkin";
 import { formatTime, loadDashboard } from "./lib/dashboard";
 import { registerNativePush } from "./lib/push";
 import { getSupabase, isSupabaseConfigured } from "./lib/supabase";
@@ -27,10 +28,18 @@ function renderDashboard(
     data.todaySessions.length === 0
       ? "<p>No sessions today.</p>"
       : `<ul>${data.todaySessions
-          .map(
-            (session) =>
-              `<li>${session.subjectName ?? session.title} ${formatTime(session.startsAt)}-${formatTime(session.endsAt)} ${session.checkInStatus ?? "not recorded"}</li>`,
-          )
+          .map((session) => {
+            const hasLocation =
+              session.checkInLatitude !== null &&
+              session.checkInLongitude !== null;
+            const action = session.checkInStatus
+              ? ` ${session.checkInStatus}`
+              : hasLocation
+                ? ` <button type="button" data-checkin="${session.id}">Check in</button>`
+                : " no check-in point";
+
+            return `<li>${session.subjectName ?? session.title} ${formatTime(session.startsAt)}-${formatTime(session.endsAt)}${action}</li>`;
+          })
           .join("")}</ul>`;
 
   const assignments =
@@ -44,6 +53,33 @@ function renderDashboard(
           .join("")}</ul>`;
 
   app.innerHTML = `<h1>StarsTask Mobile</h1><h2>Today</h2>${sessions}<h2>Upcoming assignments</h2>${assignments}`;
+  app
+    .querySelectorAll<HTMLButtonElement>("[data-checkin]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const sessionId = button.dataset.checkin;
+        const userId = sessionUserId();
+
+        if (!sessionId || !userId) {
+          return;
+        }
+
+        button.disabled = true;
+        void checkInToSession(sessionId, userId)
+          .then((result) => {
+            app
+              .querySelector(`[data-checkin="${sessionId}"]`)
+              ?.replaceWith(
+                document.createTextNode(
+                  result.ok ? ` ${result.status}` : ` ${result.message}`,
+                ),
+              );
+          })
+          .catch(() => {
+            button.disabled = false;
+          });
+      });
+    });
 }
 
 function render(state: "loading" | "signed-out" | "signed-in" | "error"): void {

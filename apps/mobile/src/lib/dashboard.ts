@@ -16,6 +16,9 @@ export type DashboardSession = {
   endsAt: string;
   subjectName: string | null;
   checkInStatus: string | null;
+  checkInLatitude: number | null;
+  checkInLongitude: number | null;
+  checkInRadiusM: number | null;
 };
 
 export type DashboardAssignment = {
@@ -70,7 +73,9 @@ export async function loadDashboard(
   const [{ data: sessions }, { data: assignments }] = await Promise.all([
     supabase
       .from("discussion_sessions")
-      .select("id, title, starts_at, ends_at, subject_id")
+      .select(
+        "id, title, starts_at, ends_at, subject_id, checkin_latitude, checkin_longitude, checkin_radius_m",
+      )
       .in("class_id", classIds)
       .eq("status", "scheduled")
       .not("meeting_number", "is", null)
@@ -93,6 +98,9 @@ export async function loadDashboard(
     starts_at: string;
     ends_at: string;
     subject_id: string | null;
+    checkin_latitude: number | null;
+    checkin_longitude: number | null;
+    checkin_radius_m: number | null;
   }>;
   const assignmentRows = (assignments ?? []) as Array<{
     id: string;
@@ -160,6 +168,9 @@ export async function loadDashboard(
         ? (subjectNameById.get(row.subject_id) ?? null)
         : null,
       checkInStatus: checkInBySession.get(row.id) ?? null,
+      checkInLatitude: row.checkin_latitude,
+      checkInLongitude: row.checkin_longitude,
+      checkInRadiusM: row.checkin_radius_m,
     })),
     upcomingAssignments: assignmentRows.map((row) => ({
       id: row.id,
