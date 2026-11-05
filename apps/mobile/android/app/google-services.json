@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "501832401915",
+    "project_id": "startask-29b59",
+    "storage_bucket": "startask-29b59.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501832401915:android:852c6fec57f099ccd2c15e",
+        "android_client_info": {
+          "package_name": "id.starstask.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABo25_XP_S3lz7Dm4yaNQm0xdTO9Fn708"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
