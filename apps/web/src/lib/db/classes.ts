@@ -553,8 +553,16 @@ async function countPublishedAssignmentsByClass(
  *
  * The three predicates run server-side, so a caller cannot claim a role by
  * sending a different id: `auth.uid()` is the verified session identity.
+ *
+ * Wrapped in React `cache()` (per-request memoization, keyed by classId):
+ * layout/page/action helpers asking for the same class in one request share
+ * one predicate round-trip instead of re-issuing three RPCs each. Never
+ * lifted to a cross-request/TTL cache — authorization data must not survive
+ * membership revocation or leak across users.
  */
-export async function getClassRole(classId: string): Promise<ClassRole> {
+export const getClassRole = cache(async function getClassRole(
+  classId: string,
+): Promise<ClassRole> {
   const supabase = await createSupabaseServerClient();
 
   const [platformAdmin, member, admin] = await Promise.all([
@@ -579,7 +587,7 @@ export async function getClassRole(classId: string): Promise<ClassRole> {
     isAdmin,
     canManage: isPlatformAdmin || isAdmin,
   };
-}
+});
 
 export async function listClassMembers(
   classId: string,

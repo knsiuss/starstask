@@ -1,0 +1,3 @@
+# Phase 5E — Evidence Closure
+
+assignments (status draft/pending_review/pending/published/rejected/unpublished/archived, deadline idx, GIN search, class/subject links, reviews/revisions/completions/attachments tables) verified; late/attempt policies UNRESOLVED (16 §16.3) → not invented. Attendance statuses VERIFIED five (present/late/excused/sick/absent per 20261107000000); not_applicable display-only per recap. Excel/PDF export via existing app code; no CSV import exists. Buckets verified: assignment-attachments (private), leave-evidence (private), verification-evidence (private), avatars (public), class-media (public). No grade tables existed.

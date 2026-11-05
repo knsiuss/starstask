@@ -1,0 +1,20 @@
+%% Free-tier resource architecture — PROPOSED additions labelled
+
+flowchart TB
+  NX[Next.js — existing]
+  VCV[Vercel Hobby — existing]
+  SUP[Supabase Free — existing]
+  UP[Upstash Redis — existing]
+  CF[Cloudflare DNS/CDN PROPOSED]
+  R2[Cloudflare R2 PROPOSED]
+  CI[GitHub Actions PROPOSED]
+  UPT[UptimeRobot PROPOSED]
+  OBS[Sentry/PostHog PROPOSED]
+
+  CF --> VCV --> NX
+  NX --> SUP
+  NX --> UP
+  NX --> R2
+  CI --> NX
+  UPT --> NX
+  NX --> OBS

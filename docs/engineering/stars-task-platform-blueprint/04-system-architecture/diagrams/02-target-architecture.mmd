@@ -1,0 +1,28 @@
+%% Target Architecture (TO-BE) — proposed components labelled PROPOSED
+
+flowchart TB
+  U[User / Browser]
+  CDN[Cloudflare CDN PROPOSED]
+  NX[Next.js — existing]
+  TEN[Tenant context middleware PROPOSED]
+  APP[Application services]
+  PG[(PostgreSQL + RLS + university_id PROPOSED)]
+  RD[Upstash Redis — tenant-keyed cache PROPOSED]
+  R2[Cloudflare R2 PROPOSED bytes]
+  JOB[DB job queue PROPOSED]
+  CRON[Vercel cron scheduler]
+  OBS[Observability: Web Vitals + Sentry/PostHog free PROPOSED]
+  GCP[Google Calendar integration]
+  PUSH[Web Push]
+
+  U --> CDN --> NX
+  NX --> TEN --> APP
+  APP --> PG
+  APP --> RD
+  APP --> R2
+  APP --> JOB
+  CRON --> JOB
+  JOB --> PG
+  APP --> OBS
+  APP --> GCP
+  APP --> PUSH

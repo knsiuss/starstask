@@ -1,0 +1,19 @@
+%% Background processing — PROPOSED queue + existing crons
+
+flowchart TB
+  CRON[Vercel cron]
+  JOB[DB job queue PROPOSED]
+  EXP[Exports]
+  OCR[OCR parse]
+  NOTIF[Notifications]
+  RET[Retry/backoff PROPOSED]
+  OUT[Signed URL / delivery]
+
+  CRON --> JOB
+  JOB --> EXP
+  JOB --> OCR
+  JOB --> NOTIF
+  EXP --> RET
+  OCR --> RET
+  NOTIF --> RET
+  RET --> OUT

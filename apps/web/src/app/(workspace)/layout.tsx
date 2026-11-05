@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
+import { isUnpamPluginEnabled, isUnpamUniversity } from "@/features/plugins/unpam/config";
 import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
@@ -27,6 +28,9 @@ export default async function WorkspaceLayout({
 
   const isAuthenticated = session !== null;
   const displayName = session?.profile?.display_name ?? "StarsTask member";
+  // Sidebar hanya tampil bila plugin aktif (env) DAN profil menunjuk UNPAM.
+  const showUniversityInfo =
+    isUnpamPluginEnabled() && isUnpamUniversity(session?.profile?.university);
   // These lookups are independent, so they share one round-trip window instead
   // of adding three sequential waits to every workspace navigation.
   const [platformAdmin, classAdmin, unreadNotificationCount] =
@@ -50,6 +54,7 @@ export default async function WorkspaceLayout({
         displayName={displayName}
         email={session?.user.email ?? null}
         avatarUrl={session?.profile?.avatar_url ?? null}
+        showUniversityInfo={showUniversityInfo}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

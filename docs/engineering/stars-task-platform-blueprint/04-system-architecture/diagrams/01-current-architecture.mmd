@@ -1,0 +1,32 @@
+%% Current Architecture (AS-IS) — verified
+
+flowchart TB
+  U[User / Browser]
+  NX[Next.js App Router apps/web]
+  RSC[Server Components]
+  CC[Client Components]
+  API[API routes /api/** 113 routes]
+  AUTH[Supabase Auth]
+  PG[(PostgreSQL + RLS + RPCs)]
+  ST[Supabase Storage]
+  RD[Upstash Redis + Ratelimit]
+  VCV[Vercel hosting]
+  CRON[Vercel cron 2 jobs]
+  CRON2[Additional cron routes 3]
+  GCP[Google Calendar integration]
+  PUSH[Web Push notifications]
+  UNP[ExcelJS/PDF-Lib/unpdf pipelines]
+
+  U --> VCV --> NX
+  NX --> RSC
+  NX --> CC
+  RSC --> PG
+  API --> PG
+  API --> ST
+  NX --> AUTH
+  NX --> RD
+  VCV --> CRON
+  VCV --> CRON2
+  NX --> GCP
+  NX --> PUSH
+  NX --> UNP

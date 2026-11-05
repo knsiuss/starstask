@@ -1,0 +1,20 @@
+%% Deployment & infrastructure — existing vs PROPOSED
+
+flowchart TB
+  CDN[Cloudflare Free PROPOSED]
+  VCV[Vercel Hobby — existing]
+  DB[Supabase Free Postgres — existing]
+  RD[Upstash Redis — existing]
+  R2[Cloudflare R2 PROPOSED]
+  CI[GitHub Actions CI PROPOSED]
+  UPT[UptimeRobot free PROPOSED]
+  OBS[Sentry/PostHog free PROPOSED]
+  NX[Next.js app]
+
+  CDN --> VCV --> NX
+  NX --> DB
+  NX --> RD
+  NX --> R2
+  CI --> VCV
+  UPT --> NX
+  NX --> OBS

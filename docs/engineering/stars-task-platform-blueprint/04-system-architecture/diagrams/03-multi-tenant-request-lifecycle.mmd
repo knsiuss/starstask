@@ -1,0 +1,20 @@
+%% Multi-Tenant Request Lifecycle — PROPOSED flow
+
+sequenceDiagram
+  participant U as User
+  participant NX as Next.js
+  participant M as Tenant middleware PROPOSED
+  participant S as Application service
+  participant R as RLS
+  participant DB as PostgreSQL
+
+  U->>NX: request with session cookie
+  NX->>M: resolve active university
+  M->>DB: university membership check
+  DB-->>M: member / not member
+  M-->>NX: tenant context (deny if none)
+  NX->>S: process with tenant ctx
+  S->>DB: tenant-aware query
+  DB->>R: RLS university_id check
+  R-->>DB: pass / deny
+  DB-->>U: response (tenant-namespaced cache)

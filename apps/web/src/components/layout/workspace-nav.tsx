@@ -11,6 +11,7 @@ import {
   Settings,
   UserCheck,
   UserRound,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -67,6 +68,19 @@ const LEADER_ITEMS: NavItem[] = [
  * owns notifications, and the calendar connection lives under Schedule and
  * Settings. A second sidebar destination would only duplicate them.
  */
+/**
+ * University Info hanya muncul untuk pengguna yang terhubung ke kampus
+ * dengan plugin aktif (mis. UNPAM). Flag dari server/layout; default false
+ * berarti menu tidak dirender sama sekali.
+ */
+const UNIVERSITY_ITEMS: NavItem[] = [
+  {
+    href: "/university-info",
+    label: "University Info",
+    icon: Building2,
+  },
+];
+
 const ACCOUNT_ITEMS: NavItem[] = [
   {
     href: "/settings/profile",
@@ -94,6 +108,8 @@ type WorkspaceNavProps = {
   isClassAdmin?: boolean;
   /** Icon-only rendering for the collapsed desktop sidebar. */
   compact?: boolean;
+  /** Menampilkan section University Info (UNPAM/FTI). */
+  showUniversityInfo?: boolean;
   /** Closes the mobile drawer after a link is followed. */
   onNavigate?: () => void;
 };
@@ -109,6 +125,7 @@ export function WorkspaceNav({
   isAuthenticated,
   isClassAdmin = false,
   compact = false,
+  showUniversityInfo = false,
   onNavigate,
 }: WorkspaceNavProps) {
   const pathname = usePathname();
@@ -116,6 +133,7 @@ export function WorkspaceNav({
   const items = [
     ...STUDY_ITEMS,
     ...(isClassAdmin ? LEADER_ITEMS : []),
+    ...(showUniversityInfo ? UNIVERSITY_ITEMS : []),
     ...(isAuthenticated ? ACCOUNT_ITEMS : []),
   ].filter((item) => !item.requiresAuth || isAuthenticated);
 
@@ -174,6 +192,14 @@ export function WorkspaceNav({
           compact={compact}
         >
           {LEADER_ITEMS.map(renderItem)}
+        </NavSection>
+      ) : null}
+      {showUniversityInfo ? (
+        <NavSection
+          label="Campus"
+          compact={compact}
+        >
+          {UNIVERSITY_ITEMS.map(renderItem)}
         </NavSection>
       ) : null}
       {isAuthenticated ? (

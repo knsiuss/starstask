@@ -14,6 +14,7 @@ type WorkspaceSidebarProps = {
   displayName: string;
   email: string | null;
   avatarUrl: string | null;
+  showUniversityInfo?: boolean;
 };
 
 const COLLAPSE_STORAGE_KEY = "starstask:sidebar-collapsed";
@@ -24,6 +25,7 @@ export function WorkspaceSidebar({
   displayName,
   email,
   avatarUrl,
+  showUniversityInfo = false,
 }: WorkspaceSidebarProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
@@ -97,6 +99,7 @@ export function WorkspaceSidebar({
           isAuthenticated={isAuthenticated}
           isClassAdmin={isClassAdmin}
           compact={isCollapsed}
+          showUniversityInfo={showUniversityInfo}
         />
       </nav>
 

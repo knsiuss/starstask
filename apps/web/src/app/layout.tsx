@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import { PostHogProvider } from "@/components/analytics/posthog-provider";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { ToastProvider } from "@/components/ui/toast";
 import { getSiteUrl } from "@/lib/env/public";
@@ -78,10 +79,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        <ToastProvider>
-          {children}
-          <ServiceWorkerRegistration />
-        </ToastProvider>
+        <PostHogProvider>
+          <ToastProvider>
+            {children}
+            <ServiceWorkerRegistration />
+          </ToastProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

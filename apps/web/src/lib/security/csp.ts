@@ -4,11 +4,50 @@ export function createCspNonce(): string {
   return btoa(crypto.randomUUID());
 }
 
+function supabaseOrigin(url: string | undefined): string {
+  return url && url.startsWith("https://") ? url : FALLBACK_SUPABASE_ORIGIN;
+}
+
 function supabaseOrigins(): { http: string; socket: string } {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const http = url.startsWith("https://") ? url : FALLBACK_SUPABASE_ORIGIN;
+  const http = supabaseOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
   return { http, socket: http.replace("https://", "wss://") };
+}
+
+function envOrigin(value: string | undefined): string | null {
+  if (!value || !value.trim()) {
+    return null;
+  }
+
+  try {
+    return new URL(value.trim()).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extra `connect-src` origins needed by opt-in third-party services:
+ * the Sentry ingest endpoint (derived from the DSN) and PostHog. Nothing is
+ * added when the services are not configured.
+ */
+function thirdPartyOrigins(): string[] {
+  const origins: string[] = [];
+  const sentryOrigin = envOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
+
+  if (sentryOrigin) {
+    origins.push(sentryOrigin);
+  }
+
+  const posthogOrigin = envOrigin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
+
+  if (posthogOrigin) {
+    origins.push(posthogOrigin);
+  } else if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    origins.push("https://us.i.posthog.com");
+  }
+
+  return origins;
 }
 
 /**
@@ -30,7 +69,9 @@ export function buildContentSecurityPolicy(nonce: string): string {
     `img-src 'self' data: blob: ${supabaseOrigin} https://*.googleusercontent.com`,
     `frame-src 'self' ${supabaseOrigin}`,
     "font-src 'self' data:",
-    `connect-src 'self' ${supabaseOrigin} ${supabaseSocket}`,
+    `connect-src 'self' ${supabaseOrigin} ${supabaseSocket}${thirdPartyOrigins()
+      .map((origin) => ` ${origin}`)
+      .join("")}`,
     "worker-src 'self'",
     "manifest-src 'self'",
     "frame-ancestors 'none'",

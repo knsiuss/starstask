@@ -1,0 +1,11 @@
+%% Critical feature data flows (existing; aggregated vs verified paths)
+
+flowchart TB
+  DASH[dashboard/page.tsx] -->|aggregates| DB1[(PostgreSQL)]
+  ATT[attendance page] -->|Promise.all 3| DB1
+  ACT[action-center] -->|assignment + leave + attendance| DB1
+  PUB[Assignment publication] -->|RPC review_class_assignment| DB1
+  ABS[Absence requests] -->|review_leave_request| DB1
+  EXP[Attendance exports] -->|ExcelJS sync| INPROC[In-request build]
+  NOTIF[Notification delivery] -->|cron + web-push| DB1
+  UPL[File upload] -->|signed URL| ST[Supabase Storage]

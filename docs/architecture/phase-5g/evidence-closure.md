@@ -1,0 +1,3 @@
+# Phase 5G — Evidence Closure
+
+Tenant isolation: new domains use direct university_id + composite FKs (23/ADR-013); legacy domains remain class-derived (is_class_member) — noted as inherited, not forced. RLS: all 21 new tables enabled, anon revoked, authenticated SELECT-only, writes via service_role/RPC. SECURITY DEFINER review: new functions (has_class_permission, validate_grade_entry, guard_last_class_admin, cycle guard 5B) use search_path='' and explicit qualification; EXECUTE granted to authenticated with in-function checks; legacy functions (search_path=public,pg_temp) flagged REPORTED, not changed. audit_logs actor+timestamp verified; university scoping added.

@@ -130,6 +130,13 @@ Order the contents of components and functions consistently:
 - Keep JSON, YAML, and Markdown formatted with the project's Prettier configuration.
 - Keep Markdown headings sequential, with blank lines around headings, lists, and code blocks.
 
+### 5.6 File size and responsibility
+
+- One file = one responsibility. Keep each file under **300 lines**.
+- When a file would exceed 300 lines, split by responsibility into small, well-named modules (component, hook, helper, type). Do not create catch-all files.
+- Existing oversized files stay as-is until touched; do not force-refactor them in unrelated work. When you do touch one, prefer extracting one focused piece instead of a full rewrite.
+- Never bundle unrelated concerns into a single file just to save imports.
+
 ## 6. UI and Design Consistency
 
 - Inspect the existing design system before creating or modifying UI.

@@ -182,6 +182,13 @@ export function AbsenceRequestCard({
       ? leaveDayCount(request.leaveStartDate, request.leaveEndDate)
       : 0;
 
+  const courseRecap =
+    request.subjectNames.length === 0
+      ? "Whole class"
+      : request.subjectNames.length <= 2
+        ? request.subjectNames.join(", ")
+        : `${request.subjectNames.slice(0, 2).join(", ")} +${request.subjectNames.length - 2} more`;
+
   return (
     <Link
       href={`/dashboard/actions?tab=absences&request=${request.id}`}
@@ -228,17 +235,9 @@ export function AbsenceRequestCard({
             {days > 0 ? ` · ${days} ${days === 1 ? "day" : "days"}` : ""}
           </dd>
         </div>
-        <div>
+        <div className="col-span-2">
           <dt className="sr-only">Affected courses</dt>
-          <dd>
-            {request.subjectIds.length === 0
-              ? "Whole class"
-              : `${request.subjectIds.length} ${request.subjectIds.length === 1 ? "course" : "courses"}`}
-          </dd>
-        </div>
-        <div>
-          <dt className="sr-only">Affected courses detail</dt>
-          <dd>Sessions derived on open</dd>
+          <dd className="truncate">{courseRecap}</dd>
         </div>
         <div className="flex items-center gap-1.5">
           <Paperclip

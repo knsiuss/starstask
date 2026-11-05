@@ -31,6 +31,8 @@ export type LeaveRequestSummary = {
   className: string;
   /** Courses the absence covers. Empty means the whole class. */
   subjectIds: string[];
+  /** Display names matching `subjectIds`; empty for whole-class requests. */
+  subjectNames: string[];
   leaveStartDate: string | null;
   leaveEndDate: string | null;
   reasonCategory: LeaveReasonCategory | null;
@@ -203,6 +205,33 @@ type LeaveRowShape = {
 };
 
 /**
+ * Course names for the subjects a page of requests covers, in one query,
+ * so list cards can recap which courses an absence touches instead of only
+ * showing a count. Keyed by subject id.
+ */
+async function loadSubjectNames(
+  subjectIds: string[],
+): Promise<Map<string, string>> {
+  const unique = [...new Set(subjectIds)];
+
+  if (unique.length === 0) {
+    return new Map();
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_subjects")
+    .select("id, name")
+    .in("id", unique);
+
+  if (error) {
+    throw new DataAccessError("Could not load courses", error.code);
+  }
+
+  return new Map((data ?? []).map((row) => [row.id, row.name]));
+}
+
+/**
  * Counts active evidence for a page of requests in one query.
  *
  * Doing this per request would be an N+1; a single read of `request_id` for the
@@ -268,6 +297,9 @@ async function toSummaries(
     ...new Set([...rows.map((row) => row.student_id), ...cancelledByIds]),
   ]);
   const evidenceCounts = await countEvidence(rows.map((row) => row.id));
+  const subjectNames = await loadSubjectNames(
+    rows.flatMap((row) => row.subject_ids ?? []),
+  );
 
   return rows.map((row) => ({
     id: row.id,
@@ -279,6 +311,11 @@ async function toSummaries(
     classSlug: row.classes?.slug ?? "",
     className: row.classes?.name ?? "Class",
     subjectIds: row.subject_ids ?? [],
+    subjectNames: (row.subject_ids ?? []).flatMap((subjectId) => {
+      const name = subjectNames.get(subjectId);
+
+      return name ? [name] : [];
+    }),
     leaveStartDate: row.leave_start_date,
     leaveEndDate: row.leave_end_date,
     reasonCategory: row.reason_category,

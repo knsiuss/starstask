@@ -7,6 +7,7 @@ import {
   Flag,
   GraduationCap,
   LayoutDashboard,
+  Mail,
   MessageSquare,
   ShieldCheck,
   Users,
@@ -41,6 +42,7 @@ const ADMIN_ITEMS: AdminNavItem[] = [
     label: "Verifications",
     icon: ShieldCheck,
   },
+  { href: "/admin/invitations", label: "Course invites", icon: Mail },
 ];
 
 /**

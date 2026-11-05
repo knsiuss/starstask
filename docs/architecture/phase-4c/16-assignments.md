@@ -1,0 +1,48 @@
+# 16 — Domain J: Assignments
+
+> **Status:** DRAFT. **CONFIRMED** = brief decision; VERIFIED = repo evidence; UNKNOWN = no evidence.
+
+## 16.1 What exists today (VERIFIED)
+
+Core DDL: `20261029000100_core_schema.sql` (`assignments`, `assignment_attachments`, `rate_limits`) + classes additions `20261029000900_classes.sql` (`class_id` nullable, review/publication columns) + content-type/completions `20261031100000`, trust loop `20261029003610`, course-scoped content `20261102110000`, shared assignments `20261103120000`, publish privilege `20261103170000`.
+
+| Concern           | VERIFIED state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Columns (core)    | `id uuid PK`, `title`, `description`, `course_id uuid NOT NULL → courses RESTRICT`, `user_id uuid NOT NULL → auth.users CASCADE`, `lecturer_name`, `semester`, `academic_year`, `assignment_type`, `deadline timestamptz`, `tags TEXT[] DEFAULT '{}'`, `reference_urls jsonb DEFAULT '[]'`, `status default 'published'`, `created_at`, `updated_at`, `search_vector tsvector` (GIN search). CHECKs: title 3–200, description 10–20000, semester 1–20, year `^\d{4}/\d{4}$`, type allowlist, plus `assignments_deadline_idx` (index VERIFIED). |
+| Class association | `class_id` nullable added by `20261029000900` (VERIFIED comment: "Existing rows keep their current status"). Course-scoped link: `course_materials` + `class_course_shared_assignments` migrations (VERIFIED).                                                                                                                                                                                                                                                                                                                                 |
+| Ownership         | `user_id` = author (VERIFIED: storage insert policy checks `a.user_id = auth.uid()`).                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Visibility        | **VERIFIED:** class-scoped read (`20261102104000_assignment_read_scope.sql`), public filter (`20261029001400_class_public_assignment_filter.sql`), publish privilege (`20261103170000_public_publish_privilege.sql`), authenticated read (`20261030180000`).                                                                                                                                                                                                                                                                                   |
+| Deadlines         | `deadline timestamptz` nullable + `assignments_deadline_idx (deadline ASC NULLS LAST)` (VERIFIED). No late/attempt enforcement columns found (UNKNOWN / absent — see below).                                                                                                                                                                                                                                                                                                                                                                   |
+| History           | `assignment_reviews` (decision CHECK `submitted/approved/rejected/unpublished/restored/archived`, VERIFIED DDL) + `assignment_revisions` + `assignment_reports` (`20261029003610`, VERIFIED tables).                                                                                                                                                                                                                                                                                                                                           |
+| Attachments       | `assignment_attachments` + storage bucket `assignment-attachments` with owner-path policies (see `20-materials-and-storage.md`).                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Contract          | `packages/contracts/src/assignment.ts` (VERIFIED): `ASSIGNMENT_SORTS = newest/oldest/deadline`, deadline optional, filters include `no_deadline` "over published rows only".                                                                                                                                                                                                                                                                                                                                                                   |
+
+## 16.2 Ownership, course/class association, visibility (target: MODIFY, KEEP)
+
+- `assignments` KEEPS catalogue-brief role (`course_id` → global `courses`, CROSS_TENANT_REFERENCE).
+- Target adds `university_id uuid NULL → universities` (backfilled from class) + `offering_id uuid NULL → course_offerings` (class-course assignments). Catalogue briefs keep `offering_id NULL`; class-course assignments set it (RECOMMENDED).
+- Ownership stays `user_id → auth.users` (global); per-university authorship is derivable via `student_identities` where needed (do not add `student_identity_id` to assignments — global briefs outlive personas; see `07` §7.5).
+
+## 16.3 Deadlines, late rules, multiple attempts
+
+- **Deadlines (VERIFIED):** `deadline timestamptz` + deadline index + contract sorts/filters (all cited above). Timezone for deadlines: **UNRESOLVED (new)** — stored as `timestamptz` (absolute), displayed per `universities.timezone`; no `timezone` column on assignments was found.
+- **Late rules: UNKNOWN / VERIFIED-ABSENT as enforced columns.** No `late_at`, `late_penalty`, `grace_period` columns or functions were found in migrations/contracts. Any late-submission rule is UNRESOLVED (needs product input; see `36`).
+- **Multiple attempts: VERIFIED-ABSENT as a model.** No `attempt_number` / resubmission table was found; `assignment_revisions` tracks revisions (history), not graded attempts. Resubmission policy is UNRESOLVED. RECOMMENDED: if attempts are needed, model as `assignment_submissions(id, assignment_id, user_id, submitted_at, status)` rows (PROPOSED, not in `26` mandatory specs until confirmed).
+
+## 16.4 History + file metadata
+
+- History: `assignment_reviews` + `assignment_revisions` + `audit_logs` (pattern above). Preserve append-only (VERIFIED comment on `class_application_reviews`; same pattern).
+- File metadata (VERIFIED on attachments path): bucket `assignment-attachments`, keys `{owner_id}/{assignment_id}/{uuid}-{safe_filename}` (`20261029000400_storage.sql` header), 10 MiB, mime allowlist (pdf/docx/pptx/xlsx/png/jpeg). Row-level `assignment_attachments` carries `assignment_id` + `owner_id` (renamed `20261103130000_attachment_owner_rename.sql`), storage path. Full storage detail: `20-materials-and-storage.md`.
+- **UNKNOWN (new):** exact `assignment_attachments` column list (size/mime/checksums) — reads truncated; Phase 5A to extract full DDL from `database.generated.ts` before locking target columns.
+
+## 16.5 Grading relations
+
+- **VERIFIED-ABSENT:** no grade/attempt/score columns on `assignments` or attachments; grading domain is NEW (see `18-grading.md`). RECOMMENDED linkage when built: `grade_entries(component = 'assignment', assignment_id → assignments)` — no FK yet (UNRESOLVED until grading format confirmed).
+
+## 16.6 Target decisions
+
+| Existing                                                                                                                                                   | Target decision                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `assignments`, `assignment_attachments`, `assignment_completions`, `assignment_reviews`, `assignment_reports`, `assignment_revisions`, `saved_assignments` | KEEP + MODIFY (`university_id`, `offering_id` nullable; see `26` §26.1) |
+
+**Cross-refs:** `06`, `13`, `18`, `20`, `23` (CROSS_TENANT_REFERENCE), `24` (§24.2), `26` §26.1, `36` items 1/13.

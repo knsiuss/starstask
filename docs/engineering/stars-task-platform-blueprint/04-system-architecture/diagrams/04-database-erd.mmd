@@ -1,0 +1,32 @@
+%% Database ERD — entities verified; university-scoped ones PROPOSED
+
+erDiagram
+  USER ||--o{ UNIVERSITY_MEMBERSHIP : joins
+  UNIVERSITY {
+    uuid id PK
+    text slug
+    text name
+  }
+  UNIVERSITY_MEMBERSHIP {
+    uuid id PK
+    uuid user_id FK
+    uuid university_id FK
+  }
+  USER {
+    uuid id PK
+    text email
+  }
+  CLASS ||--o{ CLASS_MEMBER : has
+  CLASS_MEMBER {
+    uuid id PK
+    uuid class_id FK
+    uuid user_id FK
+  }
+  CLASS ||--o{ ASSIGNMENT : contains
+  CLASS ||--o{ SESSION : hosts
+  SESSION ||--o{ CHECKIN : has
+  ASSIGNMENT ||--o{ SUBMISSION : receives
+  USER ||--o{ LEAVE_REQUEST : files
+  CLASS ||--o{ ANNOUNCEMENT : posts
+  CLASS ||--o{ MATERIAL : stores
+  CLASS ||--o{ NOTIFICATION : triggers

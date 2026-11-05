@@ -1,0 +1,22 @@
+%% Cloudflare R2 upload/download flow — PROPOSED
+
+sequenceDiagram
+  participant C as Client
+  participant S as Server route
+  participant DB as PostgreSQL
+  participant R2 as Cloudflare R2
+
+  Note over C,R2: Upload
+  C->>S: request upload (class/file)
+  S->>DB: membership + quota check
+  S-->>C: signed PUT URL + objectKey
+  C->>R2: PUT bytes
+  R2-->>C: 200 OK
+  C->>S: confirm upload
+  S->>DB: persist metadata row
+  Note over C,R2: Download
+  C->>S: request download
+  S->>DB: authz + ownership check
+  S-->>C: signed GET URL
+  C->>R2: GET bytes
+  R2-->>C: file bytes

@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/notification-retention",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/unpam-sync",
+      "schedule": "0 5 * * *"
     }
   ]
 }

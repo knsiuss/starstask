@@ -1,0 +1,50 @@
+# 01 — Repository & Evidence Inventory
+
+> **Status:** DRAFT. **Scope:** read-only. **Verification:** file-system + grep evidence collected 2026-11-04. No live DB access.
+
+## 1.1 Monorepo layout (VERIFIED)
+
+| Item | Actual location | Purpose | Status |
+|------|----------------|---------|--------|
+| Root manifest | `package.json` (`starstask@0.1.0`, pnpm 11.10.0, Node >=20.9.0) | Workspace scripts: dev/build/lint/typecheck/test/db:push/db:types | Verified |
+| Workspace | `pnpm-workspace.yaml` | apps/*, packages/* | Verified |
+| Engineering rules | `AGENTS.md` (repo root) | Zero-warning lint, Prettier, LF, no `any`, WHY comments | Verified |
+| Web app | `apps/web/` (Next.js App Router) | UI, Server Components, Route Handlers, lib/services | Verified |
+| Contracts | `packages/contracts/src/` (16 modules: admin, assignment, attendance, attendance-meetings, calendar, class-schedule, classes, developer, feedback, index, leave, profile, push, sessions, trust, verification) | Shared TS contracts (zod-like validators/types) | Verified |
+| DB types | `apps/web/src/types/database.generated.ts` (~112 KB) + `database.ts` (~102 KB) + `database-contract.ts` | Generated Supabase types; primary table/function evidence | Verified |
+| Migrations | `supabase/migrations/` — **83 files**, `20261029000100…20261110000000` | Full schema history (core → classes → sessions → leave → verification → attendance_meetings → subject_enrollment) | Verified |
+| Supabase config | `supabase/config.toml` (project_id `starstask`), `supabase/seed.sql` | Local stack, storage bucket `assignment-attachments` (private, 10 MiB), Google Auth via env | Verified |
+| Existing docs | `docs/` (ARCHITECTURE.md, DATABASE.md, SECURITY.md, SCHEDULE.md, etc.) + `docs/database/{architecture,audit,backup}/` (Phase 4A/4B reports, TABLE_CATALOG, RLS_POLICIES, SECURITY_DEFINER_REVIEW, RECOVERY_GATE) + `docs/architecture/hybrid-discovery-report.md` | Prior audits; not re-verified against live DB | Verified present |
+
+## 1.2 Application structure (VERIFIED)
+
+| Area | Location | Notes |
+|------|----------|-------|
+| Route groups | `apps/web/src/app/(site)`, `(home)`, `(console)`, `(workspace)`, `(onboarding)`, `auth/`, `api/` | Onboarding collecting `university` (free-text, unverified), NIM, class text |
+| API routes | `apps/web/src/app/api/{admin,assignments,attendance,cron,developer,feedback,geo,integrations,leave-requests,my-assignments,notifications,profile,push,saved-assignments,sessions,verification,calendar,classes,auth}` | Cron routes present (see §1.3) |
+| Features | `apps/web/src/features/{admin,assignments,attendance-meetings,classes,integrations,leave,plugins,profile,schedule,sessions,verification}` | Attendance export: `attendance-meetings/excel.ts` (34 KB), `pdf.ts`; classes: class-access, class-application-service, class-invitation-service, class-management-service, class-review-service, class-submission-service |
+| Lib | `apps/web/src/lib/{api,assignments,attendance,auth,classes,config,db,env,geo,hooks,integrations,observability,ocr,onboarding,push,schedule,security,share,storage,supabase,utils}` | `lib/db/classes.ts` calls `is_class_member()`; `lib/supabase/` = client wiring |
+| Types | `apps/web/src/types/database.generated.ts` | 52 tables, 143 functions (counted from generated types file) |
+
+## 1.3 RPC / cron / storage evidence (VERIFIED from repo)
+
+- **RPC surface:** 143 functions listed in `database.generated.ts` under `Functions`. Prior Phase 4B report cites 158 functions in production (includes `rls_auto_enable()` not in migrations — see `02-current-state-architecture.md`). App `.rpc()` calls cover class, invitation, session/attendance, leave, verification, assignment, notification, rate-limit flows (verified by grep; full matrix in `05-application-database-mapping.md`).
+- **Cron:** `apps/web/src/app/api/cron/{attendance-retention,deadline-reminders,notification-events,notification-retention,session-jobs}` — app-level cron routes, **not** `pg_cron`. `pg_cron` grep across migrations: **0 hits (VERIFIED absent)**.
+- **Storage buckets (VERIFIED in `supabase/config.toml` + migration `20261029000400_storage.sql`):** `assignment-attachments` (private). Leave-evidence and verification-evidence buckets are created in their respective migrations (`20261029002400`, `20261029002600`). Class media added `20261102100000_class_media.sql`. Policies on `storage.objects` for assignment attachments, leave evidence, verification evidence (SELECT/INSERT/DELETE).
+- **Auth:** Supabase Auth, Google OAuth (`SUPABASE_AUTH_GOOGLE_CLIENT_ID/SECRET` via env, never committed — VERIFIED in config comments). `handle_new_user()` trigger provisions `profiles` from `auth.users`.
+- **RLS:** every table has `ALTER TABLE … ENABLE ROW LEVEL SECURITY` in migrations (VERIFIED by grep across all 83 files). Text occurrences of `create policy`: 115 (includes duplicates/drop-create pairs). Prior audits report 83 distinct policies (REPORTED, plausible).
+- **SECURITY DEFINER:** 208 text occurrences of `security definer` across migrations (VERIFIED count; distinct functions ≈ 143 in generated types + production-only `rls_auto_enable` + helper re-creations). Classification in `24-rls-and-function-security-review.md`.
+
+## 1.4 What was NOT verified
+
+- Live row counts, table sizes, seq-scan stats, `pg_cron` absence in production, `rls_auto_enable` presence in production — **no live DB access**; taken from Phase 4A/4B docs as REPORTED.
+- Grading format/CSV template — no evidence in repo (see `18-grading.md`, UNRESOLVED).
+- Lecturer roles — no dedicated tables (VERIFIED absent; extensible-only per brief).
+
+## 1.5 Files inspected for this phase
+
+Root `package.json`, `AGENTS.md`, `supabase/config.toml`, all 83 migration filenames + targeted greps (CREATE TABLE, SECURITY DEFINER, RLS, policies, indexes, triggers, FKs, `is_class_member`, `universit`, `grade`, `schedule`), `apps/web/src/types/database.generated.ts` (table/function counts), `apps/web/src/app/api/` listing, `packages/contracts/src/` listing, `docs/database/architecture/PHASE_4B_DECISION_REPORT.md` (header) as prior-context.
+
+---
+
+*Classification: repository facts VERIFIED unless marked otherwise. No production data accessed.*

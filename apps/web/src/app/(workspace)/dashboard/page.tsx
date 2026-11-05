@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import * as React from "react";
 import { redirect } from "next/navigation";
 
+import { AcademicContextCard } from "@/components/dashboard/academic-context-card";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
@@ -113,6 +115,12 @@ export default async function DashboardPage({
       <DashboardAttentionBanner pastDeadline={overview.stats.pastDeadline} />
 
       <PendingInvitationsSection initialInvitations={pendingInvitations} />
+
+      <div className="mt-5">
+        <React.Suspense fallback={null}>
+          <AcademicContextCard />
+        </React.Suspense>
+      </div>
 
       <div
         className="mt-5"

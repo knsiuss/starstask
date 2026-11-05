@@ -1,0 +1,21 @@
+%% AuthN/AuthZ flow
+
+flowchart TB
+  U[User]
+  L[Login]
+  S[Server session]
+  MEM[Class membership check]
+  UNI[University resolution PROPOSED]
+  PERM[Permission check]
+  API[API handler]
+  RLS[RLS enforcement]
+  RESP[Response or 401/403]
+
+  U --> L --> S
+  S --> MEM
+  S --> UNI
+  MEM --> PERM
+  UNI --> PERM
+  PERM --> API
+  API --> RLS
+  RLS --> RESP

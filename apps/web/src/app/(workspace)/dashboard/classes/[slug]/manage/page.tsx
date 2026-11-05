@@ -192,6 +192,15 @@ export default async function ManageClassPage({
         </div>
       </header>
 
+      <div className="mt-4">
+        <Link
+          href={`/dashboard/classes/${found.slug}/academic`}
+          className="text-accent inline-flex items-center gap-1.5 text-sm hover:underline"
+        >
+          Academic administration (new)
+        </Link>
+      </div>
+
       <ManageClassTabs
         slug={found.slug}
         activeTab={activeTab}

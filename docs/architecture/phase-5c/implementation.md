@@ -1,0 +1,3 @@
+# Phase 5C — Implementation
+
+Migration: `supabase/migrations/20261113000000_academic_structure.sql` (additive, expand-contract). New: academic_years, semesters, course_offerings, enrollments, schedule_rules/instances/exceptions. Evolved: classes (+6 cols), courses (+university_id). RLS: member-read via is_university_member/is_class_member, no anon, no client writes. Indexes: unique (id,university_id) supports, code uniques, offering/enrollment/schedule lookups. Types: regenerated via node scripts/generate-db-types.mjs; hand database.ts updated (new tables + columns) so database-contract passes.

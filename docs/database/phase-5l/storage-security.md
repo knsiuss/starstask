@@ -11,9 +11,13 @@ Buckets (verified live): `assignment-attachments` (private),
 - `class-media` writes (INSERT/UPDATE/DELETE) are scoped to
   `class_admins` for the class in the object path
   (`foldername(name)[1] = class_id`), so a University B admin cannot
-  write objects for a University A class. Verified via policy text —
-  no live cross-tenant upload test (would require a storage upload,
-  not run in this phase; tracked as follow-up).
+  write objects for a University A class. Verified live 2026-11-05
+  via `supabase/tests/phase5l-storage-policy-validation.sql`
+  (S1–S4 PASS): public read allowed, anon/non-admin INSERT denied by RLS.
+  NOTE: direct SQL DELETE on `storage.objects` is blocked by the
+  Storage hook for every role ("Use the Storage API instead") — API
+  DELETE still goes through the class-admin policy; that live API-level
+  DELETE remains a follow-up.
 - `assignment-attachments` / `leave-evidence` / `verification-evidence`
   reads are owner-or-authorized-reviewer only; writes are owner-scoped.
 - No storage policy uses a bare `authenticated` check without
@@ -21,6 +25,6 @@ Buckets (verified live): `assignment-attachments` (private),
 
 ## Classification
 - `class-media` / `avatars` public read: INFORMATIONAL (by design).
-- File-ownership / tenant association by class path: verified at
-  policy level; live upload-overwrite-delete tests remain a
-  follow-up (require storage API + seed objects).
+- File-ownership / tenant association by class path: verified live
+  (S1–S4 PASS, 2026-11-05); Storage API DELETE / UPDATE overwrite
+  remains a follow-up (requires HTTP upload + seeded objects).

@@ -66,6 +66,52 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy).toContain("form-action 'self' https://accounts.google.com");
     expect(policy).toContain("frame-ancestors 'none'");
   });
+
+  it("adds no third-party origins when observability is unconfigured", () => {
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "");
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "");
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "");
+
+    const policy = buildContentSecurityPolicy("nonce");
+
+    expect(policy).not.toContain("sentry");
+    expect(policy).not.toContain("posthog");
+  });
+
+  it("adds the Sentry ingest origin when a DSN is configured", () => {
+    vi.stubEnv(
+      "NEXT_PUBLIC_SENTRY_DSN",
+      "https://abc@o123.ingest.sentry.io/456",
+    );
+
+    expect(buildContentSecurityPolicy("nonce")).toContain(
+      "https://o123.ingest.sentry.io",
+    );
+  });
+
+  it("ignores a malformed Sentry DSN", () => {
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "not-a-url");
+
+    expect(buildContentSecurityPolicy("nonce")).not.toContain("sentry");
+  });
+
+  it("adds the PostHog host when a key is configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "");
+
+    expect(buildContentSecurityPolicy("nonce")).toContain(
+      "https://us.i.posthog.com",
+    );
+  });
+
+  it("adds the configured PostHog host origin", () => {
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "https://eu.i.posthog.com");
+
+    expect(buildContentSecurityPolicy("nonce")).toContain(
+      "https://eu.i.posthog.com",
+    );
+  });
 });
 
 describe("createCspNonce", () => {

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // The Content-Security-Policy is built per request in `src/proxy.ts` because it
 // carries a nonce that Next.js copies onto its own script tags.
@@ -81,4 +82,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry's wrapper is applied only when a DSN is configured; without one the
+// config is byte-identical to the un-wrapped config and no source-map upload
+// network calls happen. Org/project are needed only for sourcemap upload.
+const sentryConfigured = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
+
+const exportedConfig = sentryConfigured
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: !process.env.CI,
+      widenClientFileUpload: true,
+    })
+  : nextConfig;
+
+export default exportedConfig;
