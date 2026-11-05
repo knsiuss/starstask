@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getAssignmentDetail } from "@/lib/db/assignments";
 import { insertDriveSubmission } from "@/lib/db/drive-submissions";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { validateAttachmentFile } from "@/lib/storage/attachments";
 import { uploadToStorage } from "@/lib/storage/b2";
 
@@ -32,6 +33,15 @@ export async function POST(
     if (!session) {
       throw new ApiError(401, "unauthorized", "Sign in to submit.");
     }
+
+    // A 10 MB upload per request is expensive; cap it per user per hour.
+    await enforceRateLimit({
+      action: "assignments:drive-submit",
+      identifier: session.user.id,
+      limit: 10,
+      windowSeconds: 3600,
+      onBackendFailure: "closed",
+    });
 
     const { id } = await context.params;
     const parsed = assignmentIdSchema.safeParse(id);

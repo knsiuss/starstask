@@ -78,6 +78,14 @@ function hasUpstashConfig(): boolean {
  */
 export async function enforceRateLimit(rule: RateLimitRule): Promise<void> {
   if (rule.identifier === UNKNOWN_IDENTIFIER) {
+    if (
+      process.env.NODE_ENV === "production" &&
+      rule.onBackendFailure === "closed"
+    ) {
+      // No trustworthy identifier means the limit cannot be enforced; for
+      // auth/expensive actions a silent skip would remove the only control.
+      throw serviceUnavailable();
+    }
     warnMissingIdentifier(rule.action);
     return;
   }

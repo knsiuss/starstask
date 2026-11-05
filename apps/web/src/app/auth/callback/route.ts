@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       identifier: getClientIdentifier(request),
       limit: 30,
       windowSeconds: 300,
+      onBackendFailure: "closed",
     });
   } catch {
     await recordAuthActivity({

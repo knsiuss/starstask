@@ -1,7 +1,14 @@
 "server-only";
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
+
+import { SIGNED_URL_TTL_SECONDS } from "./attachments";
 
 /**
  * Backblaze B2 (S3-compatible) — free tier: 10GB storage, 1GB download/hari.
@@ -54,7 +61,15 @@ export async function uploadToB2(
       ContentType: mimeType,
     }),
   );
-  const url = `https://${config.bucketName}.s3.${config.region}.backblazeb2.com/${key}`;
+
+  // The bucket is private: callers only ever receive a short-lived signed
+  // URL, never a public one, so a leaked link dies with SIGNED_URL_TTL_SECONDS.
+  const url = await getSignedUrl(
+    client,
+    new GetObjectCommand({ Bucket: config.bucketName, Key: key }),
+    { expiresIn: SIGNED_URL_TTL_SECONDS },
+  );
+
   return { url, path: key };
 }
 
@@ -81,8 +96,14 @@ export async function uploadToStorage(
     .from("assignment-attachments")
     .upload(key, bytes, { contentType: mimeType, upsert: false });
   if (error) throw error;
-  const { data } = supabase.storage
+
+  // Same posture as the B2/R2 path and `getAttachmentViews`: the bucket is
+  // private, so hand out a short-lived signed URL instead of a public one.
+  const { data, error: signError } = await supabase.storage
     .from("assignment-attachments")
-    .getPublicUrl(key);
-  return { url: data.publicUrl, path: key, provider: "supabase" };
+    .createSignedUrl(key, SIGNED_URL_TTL_SECONDS);
+
+  if (signError || !data) throw signError ?? new Error("Could not sign upload");
+
+  return { url: data.signedUrl, path: key, provider: "supabase" };
 }

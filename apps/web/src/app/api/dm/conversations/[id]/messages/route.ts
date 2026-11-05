@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ApiError } from "@/lib/api/errors";
 import {
   getConversationParticipants,
   getConversationPeerId,
@@ -7,11 +8,25 @@ import {
   listMessages,
   sendCiphertext,
 } from "@/lib/db/direct-messages";
+import {
+  enforceRateLimit,
+  getClientIdentifier,
+} from "@/lib/security/rate-limit";
+
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: Params) {
   try {
+    await enforceRateLimit({
+      action: "dm:messages:list",
+      identifier: getClientIdentifier(request),
+      limit: 120,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
+
     const { id } = await params;
     const url = new URL(request.url);
     const before = url.searchParams.get("before") ?? undefined;
@@ -28,9 +43,17 @@ export async function GET(request: Request, { params }: Params) {
       peerPublicKey,
       peerId,
       participants,
-      hasMore: messages.length >= (Number.isFinite(limitParam) ? limitParam : 50),
+      hasMore:
+        messages.length >= (Number.isFinite(limitParam) ? limitParam : 50),
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+
     const code =
       error instanceof Error && "code" in error
         ? String((error as { code?: unknown }).code)
@@ -53,6 +76,14 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   try {
+    await enforceRateLimit({
+      action: "dm:messages:send",
+      identifier: getClientIdentifier(request),
+      limit: 60,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
+
     const { id } = await params;
     const body = await request.json();
     const ciphertext = body?.ciphertext;
@@ -70,6 +101,13 @@ export async function POST(request: Request, { params }: Params) {
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+
     const code =
       error instanceof Error && "code" in error
         ? String((error as { code?: unknown }).code)

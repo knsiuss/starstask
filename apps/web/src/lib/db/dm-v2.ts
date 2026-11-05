@@ -31,6 +31,39 @@ export async function deleteMessage(messageId: string) {
   if (error) throw new DataAccessError("delete failed", error.code);
 }
 
+/** Toggle (set/remove) the caller's emoji reaction on one message. */
+export async function toggleReaction(
+  messageId: string,
+  conversationId: string,
+  emoji: string,
+): Promise<void> {
+  const supabase = (await createSupabaseServerClient()) as any;
+  const { data: userData } = await supabase.auth.getUser();
+  const me = userData.user?.id;
+  if (!me) throw new DataAccessError("Not signed in", "42501");
+
+  const { data: msg, error: readError } = await supabase
+    .from("dm_messages")
+    .select("reactions")
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  if (readError) throw new DataAccessError("reaction failed", readError.code);
+
+  const reactions: Record<string, string> = { ...(msg?.reactions ?? {}) };
+  if (reactions[me] === emoji) {
+    delete reactions[me];
+  } else {
+    reactions[me] = emoji;
+  }
+
+  const { error } = await supabase
+    .from("dm_messages")
+    .update({ reactions })
+    .eq("id", messageId);
+  if (error) throw new DataAccessError("reaction failed", error.code);
+}
+
 export async function setTyping(conversationId: string, isTyping: boolean) {
   const supabase = (await createSupabaseServerClient()) as any;
   const { data: userData } = await supabase.auth.getUser();

@@ -20,6 +20,10 @@ import type { Database } from "@/types/database";
  * The single exception below is a routing rule, not an authorization check: a
  * developer account is bounced from student-only pages to the console, which
  * re-verifies the allowlist on every request itself.
+ *
+ * CSRF security relies on the session cookie being HttpOnly + Secure (HTTPS)
+ * + SameSite=Lax. These are required deployment settings in Supabase Auth:
+ * never lower SameSite to None or the app becomes CSRF-able.
  */
 export async function updateSession(
   request: NextRequest,

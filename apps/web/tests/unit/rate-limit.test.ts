@@ -166,6 +166,18 @@ describe("enforceRateLimit", () => {
     expect(console.warn).toHaveBeenCalledTimes(1);
   });
 
+  it("fails closed without an identifier for closed-mode rules in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    const { enforceRateLimit } = await loadModule();
+    const closed = rule({ identifier: "unknown", onBackendFailure: "closed" });
+
+    await expect(enforceRateLimit(closed)).rejects.toMatchObject({
+      status: 503,
+    });
+    expect(supabaseRpc).not.toHaveBeenCalled();
+  });
+
   it("reuses one Upstash limiter for the same window", async () => {
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");

@@ -1,28 +1,43 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ApiError } from "@/lib/api/errors";
+import { toggleReaction } from "@/lib/db/dm-v2";
+import {
+  enforceRateLimit,
+  getClientIdentifier,
+} from "@/lib/security/rate-limit";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; messageId: string }> },
 ) {
-  const { id, messageId } = await params;
-  const body = await req.json();
-  const emoji = String(body?.emoji ?? "").slice(0, 8);
-  if (!emoji)
-    return NextResponse.json({ error: "emoji required" }, { status: 400 });
-  const supabase = (await createSupabaseServerClient()) as any;
-  const { data: userData } = await supabase.auth.getUser();
-  const me = userData.user?.id;
-  if (!me)
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const { data: msg } = await supabase
-    .from("dm_messages")
-    .select("reactions")
-    .eq("id", messageId)
-    .eq("conversation_id", id)
-    .single();
-  const reactions = { ...(msg?.reactions ?? {}), [me]: emoji };
-  await supabase.from("dm_messages").update({ reactions }).eq("id", messageId);
-  return NextResponse.json({ ok: true });
+  try {
+    await enforceRateLimit({
+      action: "dm:reactions",
+      identifier: getClientIdentifier(req),
+      limit: 120,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
+
+    const { id, messageId } = await params;
+    const body = await req.json();
+    const emoji = String(body?.emoji ?? "").slice(0, 8);
+    if (!emoji) {
+      return NextResponse.json({ error: "emoji required" }, { status: 400 });
+    }
+
+    await toggleReaction(messageId, id, emoji);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+    return NextResponse.json({ error: "Could not react" }, { status: 500 });
+  }
 }

@@ -50,12 +50,16 @@ export function fileDownload(
   contentType: string,
 ): Response {
   const body = new Uint8Array(bytes);
+  // Defense in depth: strip quotes and control characters so the header can
+  // never split, even if a future caller changes.
+  const safeFilename = filename.replace(/["\r\n]/g, "");
+  const encoded = encodeURIComponent(safeFilename);
 
   return new Response(body, {
     status: 200,
     headers: {
       "Content-Type": contentType,
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename="${safeFilename}"; filename*=UTF-8''${encoded}`,
       "Content-Length": String(body.byteLength),
       "Cache-Control": "no-store",
     },

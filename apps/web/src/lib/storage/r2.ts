@@ -1,7 +1,14 @@
 "server-only";
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
+
+import { SIGNED_URL_TTL_SECONDS } from "./attachments";
 
 /**
  * Cloudflare R2 (S3-compatible) — free tier: 10GB storage, $0 egress.
@@ -63,8 +70,15 @@ export async function uploadToR2(
       ContentType: mimeType,
     }),
   );
-  const url = config.publicUrl
-    ? `${config.publicUrl}/${key}`
-    : `r2://${config.bucket}/${key}`;
+
+  // The bucket is private: only a short-lived signed URL leaves the server,
+  // so a leaked link dies with SIGNED_URL_TTL_SECONDS. `R2_PUBLIC_URL` is no
+  // longer used; it remains in old deployments only.
+  const url = await getSignedUrl(
+    client,
+    new GetObjectCommand({ Bucket: config.bucket, Key: key }),
+    { expiresIn: SIGNED_URL_TTL_SECONDS },
+  );
+
   return { url, path: key };
 }

@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 
+import { ApiError } from "@/lib/api/errors";
 import {
   getOrCreateConversation,
   listConversations,
   searchUsers,
 } from "@/lib/db/direct-messages";
+import {
+  enforceRateLimit,
+  getClientIdentifier,
+} from "@/lib/security/rate-limit";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    await enforceRateLimit({
+      action: "dm:conversations:list",
+      identifier: getClientIdentifier(request),
+      limit: 120,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
+
     const url = new URL(request.url);
     const query = url.searchParams.get("q");
 
@@ -21,6 +36,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ conversations });
   } catch (error) {
+    // Rate-limit and other ApiErrors keep their status and safe message.
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+
     const code =
       error instanceof Error && "code" in error
         ? String((error as { code?: unknown }).code)
@@ -39,6 +62,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await enforceRateLimit({
+      action: "dm:conversations:create",
+      identifier: getClientIdentifier(request),
+      limit: 60,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
+
     const body = await request.json();
     const otherUserId = body?.otherUserId;
 
@@ -50,6 +81,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id });
   } catch (error) {
+    // Rate-limit and other ApiErrors keep their status and safe message.
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+
     const code =
       error instanceof Error && "code" in error
         ? String((error as { code?: unknown }).code)

@@ -4,6 +4,7 @@ import { apiError, apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
 import { disconnectDrive } from "@/lib/db/google-drive-connections";
 import { revokeGoogleToken } from "@/lib/integrations/google/oauth";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,14 @@ export async function POST() {
     if (!session) {
       return apiError(401, "unauthorized", "Sign in to disconnect Drive.");
     }
+
+    await enforceRateLimit({
+      action: "integrations:google-drive:disconnect",
+      identifier: session.user.id,
+      limit: 30,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     // Revoke via the stored refresh token when available (best effort).
     try {

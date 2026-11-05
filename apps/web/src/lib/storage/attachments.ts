@@ -94,14 +94,6 @@ const ALLOWED_EXTENSIONS: Record<string, AllowedFile> = {
     mimeType: "text/typescript",
     signatures: [],
   },
-  html: {
-    mimeType: "text/html",
-    signatures: [],
-  },
-  css: {
-    mimeType: "text/css",
-    signatures: [],
-  },
   zip: {
     mimeType: "application/zip",
     signatures: [

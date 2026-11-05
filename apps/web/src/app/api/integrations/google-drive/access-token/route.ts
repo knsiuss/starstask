@@ -1,6 +1,7 @@
 import { apiError, apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
 import { getValidDriveAccessToken } from "@/lib/db/google-drive-connections";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,14 @@ export async function GET() {
     if (!session) {
       return apiError(401, "unauthorized", "Sign in first.");
     }
+
+    await enforceRateLimit({
+      action: "integrations:google-drive:access-token",
+      identifier: session.user.id,
+      limit: 60,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     const accessToken = await getValidDriveAccessToken(session.user.id);
 
