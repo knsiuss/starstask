@@ -50,8 +50,16 @@ function getCacheClient(): CacheClient | null {
     return cacheClient;
   }
 
-  const url = process.env.CACHE_REDIS_REST_URL?.trim();
-  const token = process.env.CACHE_REDIS_REST_TOKEN?.trim();
+  // `UPSTASH_REDIS_*` is the name actually configured in every environment
+  // (rate limiting uses it too); `CACHE_REDIS_*` stays as an override for a
+  // dedicated cache instance. Without this fallback the cache silently
+  // misses on every read and all listing queries hit the database.
+  const url =
+    process.env.CACHE_REDIS_REST_URL?.trim() ||
+    process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token =
+    process.env.CACHE_REDIS_REST_TOKEN?.trim() ||
+    process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
 
   if (!url || !token) {
     cacheClient = null;
