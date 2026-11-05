@@ -70,17 +70,34 @@ type NotificationInboxListProps = {
   items: NotificationInboxItem[];
   unreadCount: number;
   nowIso: string;
+  nextCursor: string | null;
+  hasMore: boolean;
+  unreadOnly: boolean;
+};
+
+type CursorPage = {
+  items: NotificationInboxItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
 };
 
 export function NotificationInboxList({
-  items,
+  items: initialItems,
   unreadCount,
   nowIso,
+  nextCursor: initialNextCursor,
+  hasMore: initialHasMore,
+  unreadOnly,
 }: NotificationInboxListProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extraItems, setExtraItems] = useState<NotificationInboxItem[]>([]);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
+  const [hasMore, setHasMore] = useState(initialHasMore);
   const now = new Date(nowIso).getTime();
+  const items = [...initialItems, ...extraItems];
 
   async function markRead(
     body: { all: true } | { ids: string[] },
@@ -122,6 +139,42 @@ export function NotificationInboxList({
       await markRead({ ids: [id] }, true);
     } catch {
       setError("Could not update your notifications. Try again.");
+    }
+  }
+
+  async function loadMore() {
+    if (!nextCursor) {
+      return;
+    }
+
+    setLoadingMore(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams({ cursor: nextCursor });
+
+      if (unreadOnly) {
+        params.set("filter", "unread");
+      }
+
+      const response = await fetch(`/api/notifications?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error("Could not load more notifications");
+      }
+
+      const body = (await response.json()) as { data: CursorPage };
+      const page = body.data;
+      const seen = new Set(items.map((item) => item.id));
+      const fresh = page.items.filter((item) => !seen.has(item.id));
+
+      setExtraItems((current) => [...current, ...fresh]);
+      setNextCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch {
+      setError("Could not load more notifications. Try again.");
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -173,6 +226,20 @@ export function NotificationInboxList({
           </li>
         ))}
       </ul>
+
+      {hasMore ? (
+        <div className="mt-4 text-center">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

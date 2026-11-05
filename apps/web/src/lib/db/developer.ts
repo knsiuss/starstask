@@ -1,6 +1,5 @@
 import "server-only";
 
-import type { User } from "@supabase/supabase-js";
 import type { DeveloperUsersQuery } from "@starstask/contracts";
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
@@ -15,13 +14,11 @@ import {
  *
  * Every query uses the service role because it deliberately spans all accounts
  * and classes. These functions are server-only and must never be imported from
- * a Client Component. Counts are computed in SQL (or by the Auth admin API)
+ * a Client Component. Counts and directory pagination are computed in SQL
  * rather than by paging through rows in the browser.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_AUTH_USER_PAGES = 50;
-const AUTH_USERS_PER_PAGE = 1000;
 const RECENT_AUTH_EVENT_LIMIT = 12;
 const RECENT_REGISTRATION_LIMIT = 8;
 const RECENT_AUDIT_LIMIT = 15;
@@ -381,74 +378,32 @@ export async function getDeveloperHealth(): Promise<DeveloperHealth> {
   };
 }
 
-async function loadAuthUsers(): Promise<{ users: User[]; truncated: boolean }> {
-  const admin = createSupabaseAdminClient();
-  const users: User[] = [];
-  let page = 1;
-  let scannedPages = 0;
-
-  while (scannedPages < MAX_AUTH_USER_PAGES) {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage: AUTH_USERS_PER_PAGE,
-    });
-
-    if (error) {
-      throw new DataAccessError("Could not load accounts", error.code);
-    }
-
-    users.push(...data.users);
-    scannedPages += 1;
-
-    if (!data.nextPage) {
-      return { users, truncated: false };
-    }
-
-    page = data.nextPage;
-  }
-
-  return { users, truncated: true };
-}
-
-function compareNullableDate(
-  a: string | null | undefined,
-  b: string | null | undefined,
-): number {
-  return (a ? Date.parse(a) : 0) - (b ? Date.parse(b) : 0);
-}
-
 export async function listDeveloperUsers(
   query: DeveloperUsersQuery,
 ): Promise<DeveloperUserDirectory> {
   requireServiceRole();
 
   const admin = createSupabaseAdminClient();
-  const { users, truncated } = await loadAuthUsers();
+  // Search, sort, and pagination run in SQL (developer_list_users) instead of
+  // paging every auth user into memory and filtering in JS.
+  const { data: pageUsers, error: pageError } = await admin.rpc(
+    "developer_list_users",
+    {
+      p_search: query.search ?? null,
+      p_sort: query.sort,
+      p_direction: query.direction,
+      p_page: query.page,
+      p_page_size: query.pageSize,
+    },
+  );
 
-  const search = query.search?.toLowerCase();
-  const filtered = search
-    ? users.filter((user) => {
-        // Emails are deliberately not part of the directory: they are personal
-        // data, so they are neither displayed nor searchable.
-        const name = getUserMetadataName(user)?.toLowerCase() ?? "";
+  if (pageError) {
+    throw new DataAccessError("Could not load accounts", pageError.code);
+  }
 
-        return name.includes(search);
-      })
-    : users;
-
-  const sorted = [...filtered].sort((a, b) => {
-    const result =
-      query.sort === "last_sign_in_at"
-        ? compareNullableDate(a.last_sign_in_at, b.last_sign_in_at)
-        : compareNullableDate(a.created_at, b.created_at);
-
-    return query.direction === "asc" ? result : -result;
-  });
-
-  const total = sorted.length;
-  const offset = (query.page - 1) * query.pageSize;
-  const pageItems = sorted.slice(offset, offset + query.pageSize);
-  const ids = pageItems.map((user) => user.id);
+  const users = pageUsers ?? [];
+  const total = users[0]?.total_count ?? 0;
+  const ids = users.map((user) => user.id);
   const pagination = {
     total,
     page: query.page,
@@ -457,7 +412,7 @@ export async function listDeveloperUsers(
   };
 
   if (ids.length === 0) {
-    return { items: [], ...pagination, truncated };
+    return { items: [], ...pagination, truncated: false };
   }
 
   const [profilesResult, platformAdminsResult, classAdminsResult] =
@@ -495,13 +450,12 @@ export async function listDeveloperUsers(
     );
   }
 
-  const items: DeveloperUser[] = pageItems.map((user) => {
+  const items: DeveloperUser[] = users.map((user) => {
     const classAdminCount = classAdminCounts.get(user.id) ?? 0;
 
     return {
       id: user.id,
-      displayName:
-        profileNames.get(user.id) ?? getUserMetadataName(user) ?? null,
+      displayName: profileNames.get(user.id) ?? user.display_name ?? null,
       createdAt: user.created_at,
       lastSignInAt: user.last_sign_in_at ?? null,
       role: platformAdmins.has(user.id)
@@ -516,21 +470,6 @@ export async function listDeveloperUsers(
   return {
     items,
     ...pagination,
-    truncated,
+    truncated: false,
   };
-}
-
-function getUserMetadataName(user: User): string | null {
-  const fullName = user.user_metadata?.full_name;
-  const name = user.user_metadata?.name;
-
-  if (typeof fullName === "string" && fullName.trim().length > 0) {
-    return fullName.trim();
-  }
-
-  if (typeof name === "string" && name.trim().length > 0) {
-    return name.trim();
-  }
-
-  return null;
 }

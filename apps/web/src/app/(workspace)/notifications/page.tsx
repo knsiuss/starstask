@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Pagination } from "@/components/assignments/pagination";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { NotificationInboxList } from "@/components/notifications/notification-inbox-list";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
-const MAX_PAGE = 1000;
 
 type NotificationsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -29,16 +27,6 @@ type NotificationsPageProps = {
 
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function parsePage(value: string | undefined): number {
-  const parsed = Number.parseInt(value ?? "", 10);
-
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    return 1;
-  }
-
-  return Math.min(parsed, MAX_PAGE);
 }
 
 export default async function NotificationsPage({
@@ -63,11 +51,11 @@ export default async function NotificationsPage({
 
   const rawParams = await searchParams;
   const unreadOnly = firstValue(rawParams.filter) === "unread";
-  const page = parsePage(firstValue(rawParams.page));
   const result = await listNotificationInbox({
-    page,
+    page: 1,
     pageSize: PAGE_SIZE,
     unreadOnly,
+    cursor: null,
   });
 
   return (
@@ -143,16 +131,12 @@ export default async function NotificationsPage({
             items={result.items}
             unreadCount={result.unreadCount}
             nowIso={new Date().toISOString()}
+            nextCursor={result.nextCursor}
+            hasMore={result.hasMore}
+            unreadOnly={unreadOnly}
           />
         </div>
       )}
-
-      <Pagination
-        basePath="/notifications"
-        page={result.page}
-        totalPages={result.totalPages}
-        params={{ filter: unreadOnly ? "unread" : undefined }}
-      />
     </div>
   );
 }

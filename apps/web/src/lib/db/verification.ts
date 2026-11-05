@@ -8,6 +8,7 @@ import type {
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { loadProfiles } from "@/lib/db/classes";
+import { fetchAllRows } from "@/lib/db/fetch-all";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ClassStatusRow, Json } from "@/types/database";
 
@@ -222,17 +223,19 @@ async function findStudentIds(term: string): Promise<string[]> {
 /** Resolves class ids for a semester filter. */
 async function findClassIdsBySemester(semester: string): Promise<string[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("classes")
-    .select("id")
-    .eq("semester", semester)
-    .limit(500);
+  const data = await fetchAllRows(
+    async (from, to) =>
+      supabase
+        .from("classes")
+        .select("id")
+        .eq("semester", semester)
+        .range(from, to),
+    (code) => {
+      throw new DataAccessError("Could not filter by semester", code);
+    },
+  );
 
-  if (error) {
-    throw new DataAccessError("Could not filter by semester", error.code);
-  }
-
-  return (data ?? []).map((row) => row.id);
+  return data.map((row) => row.id);
 }
 
 /**

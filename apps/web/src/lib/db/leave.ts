@@ -9,6 +9,7 @@ import type {
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { loadProfiles } from "@/lib/db/classes";
+import { fetchAllRows } from "@/lib/db/fetch-all";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -713,35 +714,37 @@ export async function listLeaveReportRows(options: {
 }): Promise<LeaveReportRow[]> {
   const supabase = await createSupabaseServerClient();
 
-  let query = supabase
-    .from("leave_requests")
-    .select(
-      "id, reference, student_id, leave_start_date, leave_end_date, document_issue_date, reason_category, submitted_at, status, cancellation_note",
-    )
-    .eq("class_id", options.classId)
-    .in("status", [
-      "submitted",
-      "approved",
-      "rejected",
-      "forwarded",
-      "cancelled",
-    ])
-    .order("leave_start_date", { ascending: true })
-    .limit(500);
+  const data = await fetchAllRows(
+    async (from, to) => {
+      let query = supabase
+        .from("leave_requests")
+        .select(
+          "id, reference, student_id, leave_start_date, leave_end_date, document_issue_date, reason_category, submitted_at, status, cancellation_note",
+        )
+        .eq("class_id", options.classId)
+        .in("status", [
+          "submitted",
+          "approved",
+          "rejected",
+          "forwarded",
+          "cancelled",
+        ])
+        .order("leave_start_date", { ascending: true });
 
-  if (options.from) {
-    query = query.gte("leave_start_date", options.from);
-  }
+      if (options.from) {
+        query = query.gte("leave_start_date", options.from);
+      }
 
-  if (options.to) {
-    query = query.lte("leave_end_date", options.to);
-  }
+      if (options.to) {
+        query = query.lte("leave_end_date", options.to);
+      }
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new DataAccessError("Could not build the report", error.code);
-  }
+      return query.range(from, to);
+    },
+    (code) => {
+      throw new DataAccessError("Could not build the report", code);
+    },
+  );
 
   const profiles = await loadProfiles(
     (data ?? []).map((row) => row.student_id),
@@ -1022,29 +1025,31 @@ export async function listAffectedSessions(
 
   const joinedAt = membership?.joined_at ?? null;
 
-  let query = supabase
-    .from("discussion_sessions")
-    .select(
-      "id, subject_id, meeting_number, meeting_date, title, starts_at, ends_at, status",
-    )
-    .eq("class_id", request.classId)
-    .neq("status", "cancelled")
-    .order("starts_at", { ascending: true })
-    .limit(500);
+  const data = await fetchAllRows(
+    async (from, to) => {
+      let query = supabase
+        .from("discussion_sessions")
+        .select(
+          "id, subject_id, meeting_number, meeting_date, title, starts_at, ends_at, status",
+        )
+        .eq("class_id", request.classId)
+        .neq("status", "cancelled")
+        .order("starts_at", { ascending: true });
 
-  if (request.subjectIds.length > 0) {
-    query = query.in("subject_id", request.subjectIds);
-  }
+      if (request.subjectIds.length > 0) {
+        query = query.in("subject_id", request.subjectIds);
+      }
 
-  if (joinedAt) {
-    query = query.gte("starts_at", joinedAt);
-  }
+      if (joinedAt) {
+        query = query.gte("starts_at", joinedAt);
+      }
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new DataAccessError("Could not load affected sessions", error.code);
-  }
+      return query.range(from, to);
+    },
+    (code) => {
+      throw new DataAccessError("Could not load affected sessions", code);
+    },
+  );
 
   // Date-window check happens in code because the Jakarta calendar date of a
   // timestamptz cannot be expressed as a simple gte/lte filter on starts_at.
