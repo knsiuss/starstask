@@ -1,6 +1,7 @@
 import { notFound, serviceUnavailable } from "@/lib/api/errors";
 import { handleRouteError, publicJson } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
+import { getMyProfile } from "@/lib/db/profiles";
 import {
   isUnpamPluginEnabled,
   isUnpamUniversity,
@@ -31,7 +32,9 @@ export async function GET(request: Request) {
 
     const session = await getSessionUser();
 
-    if (!session || !isUnpamUniversity(session.profile?.university)) {
+    const myProfile = session ? await getMyProfile().catch(() => null) : null;
+
+    if (!session || !isUnpamUniversity(myProfile?.university)) {
       throw notFound();
     }
 

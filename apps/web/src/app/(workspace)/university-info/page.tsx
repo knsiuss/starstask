@@ -15,6 +15,7 @@ import {
   parseProgramParam,
 } from "@/features/plugins/unpam/config";
 import { getSessionUser } from "@/lib/auth/session";
+import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
 export const metadata: Metadata = {
@@ -56,7 +57,9 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
 
   const session = await getSessionUser();
 
-  if (!isUnpamUniversity(session?.profile?.university)) {
+  const myProfile = session ? await getMyProfile().catch(() => null) : null;
+
+  if (!isUnpamUniversity(myProfile?.university)) {
     notFound();
   }
 

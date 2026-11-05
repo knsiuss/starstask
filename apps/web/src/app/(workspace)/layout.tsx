@@ -4,11 +4,15 @@ import { redirect } from "next/navigation";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
-import { isUnpamPluginEnabled, isUnpamUniversity } from "@/features/plugins/unpam/config";
+import {
+  isUnpamPluginEnabled,
+  isUnpamUniversity,
+} from "@/features/plugins/unpam/config";
 import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
 import { countUnreadNotifications } from "@/lib/db/notifications";
+import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
 export default async function WorkspaceLayout({
@@ -28,12 +32,9 @@ export default async function WorkspaceLayout({
 
   const isAuthenticated = session !== null;
   const displayName = session?.profile?.display_name ?? "StarsTask member";
-  // Sidebar hanya tampil bila plugin aktif (env) DAN profil menunjuk UNPAM.
-  const showUniversityInfo =
-    isUnpamPluginEnabled() && isUnpamUniversity(session?.profile?.university);
   // These lookups are independent, so they share one round-trip window instead
   // of adding three sequential waits to every workspace navigation.
-  const [platformAdmin, classAdmin, unreadNotificationCount] =
+  const [platformAdmin, classAdmin, unreadNotificationCount, myProfile] =
     await Promise.all([
       // Admin navigation is cosmetic only; every admin route re-checks the role.
       session ? isPlatformAdmin() : Promise.resolve(false),
@@ -41,7 +42,13 @@ export default async function WorkspaceLayout({
       // A bell badge is presentation only; a count failure must not take the
       // whole workspace down.
       session ? countUnreadNotifications().catch(() => 0) : Promise.resolve(0),
+      // `university` is RPC-only (no PostgREST grant); a failure here only
+      // hides the optional sidebar link, it must not break the workspace.
+      session ? getMyProfile().catch(() => null) : Promise.resolve(null),
     ]);
+  // Sidebar hanya tampil bila plugin aktif (env) DAN profil menunjuk UNPAM.
+  const showUniversityInfo =
+    isUnpamPluginEnabled() && isUnpamUniversity(myProfile?.university);
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;

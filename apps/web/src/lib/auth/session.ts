@@ -11,7 +11,6 @@ export type SessionProfile = {
   display_name: string;
   avatar_url: string | null;
   onboarded_at: string | null;
-  university: string | null;
 };
 
 export type SessionUser = {
@@ -40,11 +39,20 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     return null;
   }
 
-  const { data: profile } = await supabase
+  // `university` has no SELECT grant for `authenticated` (private, RPC-only),
+  // so it must not be selected here: one ungranted column rejects the whole
+  // query and `profile` would silently be null.
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, display_name, avatar_url, onboarded_at, university")
+    .select("id, display_name, avatar_url, onboarded_at")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (profileError) {
+    console.error("[session] profile lookup failed", {
+      code: profileError.code,
+    });
+  }
 
   return { user, profile };
 });
