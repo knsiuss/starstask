@@ -10,6 +10,7 @@ import type {
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { listMyClasses, loadProfiles } from "@/lib/db/classes";
+import { fetchAllRows } from "@/lib/db/fetch-all";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { SessionListRow } from "@/types/database";
 
@@ -309,16 +310,18 @@ export async function getSessionParticipants(
   sessionId: string,
 ): Promise<SessionParticipant[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("discussion_session_rsvps")
-    .select("user_id, status, updated_at")
-    .eq("session_id", sessionId)
-    .order("updated_at", { ascending: true })
-    .limit(500);
-
-  if (error) {
-    throw new DataAccessError("Could not load participants", error.code);
-  }
+  const data = await fetchAllRows(
+    async (from, to) =>
+      supabase
+        .from("discussion_session_rsvps")
+        .select("user_id, status, updated_at")
+        .eq("session_id", sessionId)
+        .order("updated_at", { ascending: true })
+        .range(from, to),
+    (code) => {
+      throw new DataAccessError("Could not load participants", code);
+    },
+  );
 
   const profiles = await loadProfiles((data ?? []).map((row) => row.user_id));
 
@@ -339,18 +342,20 @@ export async function getSessionCheckIns(
   sessionId: string,
 ): Promise<SessionCheckIn[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("discussion_session_checkins")
-    .select(
-      "id, user_id, status, method, checked_in_at, accuracy_m, distance_m, note, reviewed_at",
-    )
-    .eq("session_id", sessionId)
-    .order("checked_in_at", { ascending: true })
-    .limit(500);
-
-  if (error) {
-    throw new DataAccessError("Could not load attendance", error.code);
-  }
+  const data = await fetchAllRows(
+    async (from, to) =>
+      supabase
+        .from("discussion_session_checkins")
+        .select(
+          "id, user_id, status, method, checked_in_at, accuracy_m, distance_m, note, reviewed_at",
+        )
+        .eq("session_id", sessionId)
+        .order("checked_in_at", { ascending: true })
+        .range(from, to),
+    (code) => {
+      throw new DataAccessError("Could not load attendance", code);
+    },
+  );
 
   const profiles = await loadProfiles((data ?? []).map((row) => row.user_id));
 

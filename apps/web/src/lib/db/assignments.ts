@@ -11,6 +11,7 @@ import type {
 
 import type { AssignmentStatusRow, Database, Json } from "@/types/database";
 import { LISTING_CACHE_TTL_SECONDS, getCached } from "@/lib/cache/redis-cache";
+import { decodeCursor, encodeCursor } from "@/lib/db/cursor";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export class DataAccessError extends Error {
@@ -239,12 +240,19 @@ export async function getOwnedAssignment(
   return assignment;
 }
 
+export type MyAssignmentPage = PaginatedResult<MyAssignment> & {
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
 export async function getMyAssignments(
   userId: string,
   query: MyAssignmentsQuery,
-): Promise<PaginatedResult<MyAssignment>> {
+): Promise<MyAssignmentPage> {
   const supabase = await createSupabaseServerClient();
   const offset = (query.page - 1) * query.pageSize;
+  const cursorTs = decodeCursor(query.cursor);
+  const useCursor = query.cursor !== undefined;
 
   let request = supabase
     .from("assignments")
@@ -258,15 +266,26 @@ export async function getMyAssignments(
     request = request.eq("status", query.status);
   }
 
+  if (useCursor && cursorTs) {
+    request = request.lt("created_at", cursorTs);
+  }
+
   const { data, error, count } = await request
     .order("created_at", { ascending: false })
-    .range(offset, offset + query.pageSize - 1);
+    .range(
+      useCursor ? 0 : offset,
+      useCursor ? query.pageSize : offset + query.pageSize - 1,
+    );
 
   if (error) {
     throw new DataAccessError("Could not load your assignments", error.code);
   }
 
-  const items = (data ?? []).map((row) => ({
+  const rawRows = data ?? [];
+  const hasMore = useCursor && rawRows.length > query.pageSize;
+  const pageRows = hasMore ? rawRows.slice(0, query.pageSize) : rawRows;
+
+  const items = pageRows.map((row) => ({
     id: row.id,
     title: row.title,
     status: row.status as AssignmentStatusRow,
@@ -286,6 +305,11 @@ export async function getMyAssignments(
     page: query.page,
     pageSize: query.pageSize,
     totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+    nextCursor:
+      hasMore && pageRows.length > 0
+        ? encodeCursor(pageRows[pageRows.length - 1]?.created_at ?? "")
+        : null,
+    hasMore,
   };
 }
 
@@ -431,6 +455,17 @@ export async function getMemberCourseOptions(
 export async function getSemesterOptions(): Promise<string[]> {
   return getCached("semesters", LISTING_CACHE_TTL_SECONDS, async () => {
     const supabase = await createSupabaseServerClient();
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "list_published_semesters" as never,
+    );
+
+    if (!rpcError && rpcData) {
+      return (rpcData as unknown as { semester: string }[])
+        .map((row) => row.semester)
+        .sort((a, b) => a.localeCompare(b));
+    }
+
     const { data, error } = await supabase
       .from("assignments")
       .select("semester")

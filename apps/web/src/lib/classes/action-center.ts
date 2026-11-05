@@ -74,6 +74,19 @@ export function toActionCenterRow(
   };
 }
 
+/** Pairs each class with its grouped count row; unknown classes count as zero. */
+export function mergeActionCounts<T extends ActionCenterClass>(
+  classes: T[],
+  countsByClassId: Map<string, ActionCounts>,
+): ActionCenterRow[] {
+  return classes.map((classItem) =>
+    toActionCenterRow(
+      classItem,
+      countsByClassId.get(classItem.id) ?? EMPTY_ACTION_COUNTS,
+    ),
+  );
+}
+
 /** Classes with more waiting work come first; ties keep a stable name order. */
 export function sortActionCenterRows(
   rows: ActionCenterRow[],

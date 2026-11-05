@@ -3,12 +3,14 @@ import "server-only";
 import { buildCalendarViewRange, todayDateKey } from "@starstask/shared";
 
 import {
+  mergeActionCounts,
   selectActionCenterClasses,
   sortActionCenterRows,
   summarizeActionCenter,
   toActionCenterRow,
   type ActionCenterRow,
   type ActionCenterTotals,
+  type ActionCounts,
 } from "@/lib/classes/action-center";
 import { DataAccessError } from "@/lib/db/assignments";
 import { listMyClasses } from "@/lib/db/classes";
@@ -26,6 +28,14 @@ type CountQuery = PromiseLike<{
   error: { code?: string } | null;
 }>;
 
+type ClassActionCountRow = {
+  class_id: string;
+  pending_submissions: number;
+  pending_leave: number;
+  todays_sessions: number;
+  open_reports: number;
+};
+
 async function countRows(query: CountQuery, message: string): Promise<number> {
   const { count, error } = await query;
 
@@ -39,9 +49,9 @@ async function countRows(query: CountQuery, message: string): Promise<number> {
 /**
  * Everything waiting on the caller across the active classes they lead.
  *
- * Counts come from head requests, so no row leaves the database just to be
- * counted. RLS already scopes every table to classes the caller manages; the
- * filters here only turn each table into its queue.
+ * Counts come from one grouped RPC roundtrip where possible, so no row
+ * leaves the database just to be counted. The RPC re-checks class
+ * administration via auth.uid(); RLS still scopes the legacy fallback.
  */
 export async function getClassActionCenter(
   userId: string,
@@ -57,7 +67,77 @@ export async function getClassActionCenter(
 
   const supabase = await createSupabaseServerClient();
 
-  const rows = await Promise.all(
+  const rows = await loadActionRows(supabase, classes, fromIso, toIso);
+
+  return {
+    rows: sortActionCenterRows(rows),
+    totals: summarizeActionCenter(rows),
+    todayKey,
+  };
+}
+
+type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+async function loadActionRows(
+  supabase: ServerClient,
+  classes: ReturnType<typeof selectActionCenterClasses>,
+  fromIso: string,
+  toIso: string,
+): Promise<ActionCenterRow[]> {
+  const rpcRows = await loadActionCountsViaRpc(
+    supabase,
+    classes,
+    fromIso,
+    toIso,
+  );
+
+  if (rpcRows) {
+    return mergeActionCounts(classes, rpcRows);
+  }
+
+  return loadActionRowsLegacy(supabase, classes, fromIso, toIso);
+}
+
+async function loadActionCountsViaRpc(
+  supabase: ServerClient,
+  classes: ReturnType<typeof selectActionCenterClasses>,
+  fromIso: string,
+  toIso: string,
+): Promise<Map<string, ActionCounts> | null> {
+  const { data, error } = await supabase.rpc(
+    "get_class_action_counts" as never,
+    {
+      p_class_ids: classes.map((classItem) => classItem.id),
+      p_from: fromIso,
+      p_to: toIso,
+    } as never,
+  );
+
+  if (error || !data) {
+    return null;
+  }
+
+  const countsByClassId = new Map<string, ActionCounts>();
+
+  for (const row of data as unknown as ClassActionCountRow[]) {
+    countsByClassId.set(row.class_id, {
+      pendingSubmissions: row.pending_submissions,
+      pendingLeave: row.pending_leave,
+      todaysSessions: row.todays_sessions,
+      openReports: row.open_reports,
+    });
+  }
+
+  return countsByClassId;
+}
+
+async function loadActionRowsLegacy(
+  supabase: ServerClient,
+  classes: ReturnType<typeof selectActionCenterClasses>,
+  fromIso: string,
+  toIso: string,
+): Promise<ActionCenterRow[]> {
+  return Promise.all(
     classes.map(async (classItem) => {
       const [pendingSubmissions, pendingLeave, todaysSessions, openReports] =
         await Promise.all([
@@ -105,10 +185,4 @@ export async function getClassActionCenter(
       });
     }),
   );
-
-  return {
-    rows: sortActionCenterRows(rows),
-    totals: summarizeActionCenter(rows),
-    todayKey,
-  };
 }

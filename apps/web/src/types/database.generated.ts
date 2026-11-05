@@ -4936,6 +4936,22 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      developer_list_users: {
+        Args: {
+          p_search?: string | null;
+          p_sort?: string;
+          p_direction?: string;
+          p_page?: number;
+          p_page_size?: number;
+        };
+        Returns: {
+          created_at: string;
+          display_name: string | null;
+          id: string;
+          last_sign_in_at: string | null;
+          total_count: number;
+        }[];
+      };
       discard_class_verification: {
         Args: { p_request_id: string };
         Returns: string[];
