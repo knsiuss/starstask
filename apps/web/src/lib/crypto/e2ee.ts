@@ -232,6 +232,19 @@ export async function decryptMessage(
   return decryptWithKeyPair(self, peerPublicBase64, wire);
 }
 
+export async function getSafetyFingerprint(
+  peerPublicBase64: string,
+): Promise<string> {
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(peerPublicBase64),
+  );
+  const hex = [...new Uint8Array(hash)]
+    .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+    .join("");
+  return hex.match(/.{1,4}/g)?.join("-").slice(0, 29) ?? hex.slice(0, 29);
+}
+
 /** Encrypt file bytes (image/video/files) with conversation key. Returns wire iv:ciphertext base64. */
 export async function encryptFile(
   peerPublicBase64: string,

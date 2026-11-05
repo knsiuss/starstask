@@ -192,7 +192,7 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
 
   useEffect(() => {
     if (!peerPublicKeyRef.current) return;
-    import("@/lib/db/dm-v2")
+    import("@/lib/crypto/e2ee")
       .then(async (m) => {
         setSafety(await m.getSafetyFingerprint(peerPublicKeyRef.current!));
       })
