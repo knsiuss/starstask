@@ -47,21 +47,19 @@ export function DmKeySetup() {
     };
   }, []);
 
-  if (status === "ready") {
-    return (
-      <p className="text-muted-foreground text-xs">🔒 End-to-end encrypted</p>
-    );
-  }
-
   if (status === "error") {
     return (
-      <p className="text-xs text-amber-600">
+      <p
+        role="alert"
+        className="text-xs text-amber-600"
+      >
         Encryption setup failed — reload to retry.
       </p>
     );
   }
 
-  return (
-    <p className="text-muted-foreground text-xs">Setting up encryption…</p>
-  );
+  // Silent by design: key setup runs in the background while the Messages
+  // workspace stays free of permanent encryption clutter. Status and recovery
+  // controls live in Settings → Security & Privacy.
+  return null;
 }

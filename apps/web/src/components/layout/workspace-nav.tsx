@@ -10,6 +10,7 @@ import {
   MessageSquare,
   MessagesSquare,
   Settings,
+  ShieldCheck,
   UserCheck,
   UserRound,
   Building2,
@@ -100,6 +101,12 @@ const ACCOUNT_ITEMS: NavItem[] = [
     href: "/settings/notifications",
     label: "Settings",
     icon: Settings,
+    requiresAuth: true,
+  },
+  {
+    href: "/settings/security",
+    label: "Security & Privacy",
+    icon: ShieldCheck,
     requiresAuth: true,
   },
   {

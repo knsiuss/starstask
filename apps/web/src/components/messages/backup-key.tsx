@@ -10,31 +10,42 @@ export function BackupKeyButton() {
 
   async function backup() {
     if (!passphrase) return;
+
     try {
       await backupPrivateKey(passphrase);
-      setStatus("Backup tersimpan (wrapped, server tidak bisa baca)");
+      setStatus("Backup saved — the server cannot read it.");
+      setPassphrase("");
     } catch {
-      setStatus("Backup gagal");
+      setStatus("Backup failed — try again.");
     }
   }
 
   return (
-    <div className="mt-2 flex gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <input
         type="password"
         value={passphrase}
-        onChange={(e) => setPassphrase(e.target.value)}
-        placeholder="Passphrase backup kunci"
-        className="rounded border px-2 py-1 text-sm"
+        onChange={(event) => setPassphrase(event.target.value)}
+        placeholder="Passphrase for backup"
+        aria-label="Passphrase for backup"
+        autoComplete="off"
+        className="border-border bg-surface min-w-52 flex-1 rounded-lg border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
       />
       <button
         type="button"
-        className="rounded border px-2 py-1 text-sm"
+        className="rounded-lg border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         onClick={() => void backup()}
       >
-        Backup kunci (multi-device)
+        Back up key
       </button>
-      {status ? <span className="text-xs">{status}</span> : null}
+      {status ? (
+        <span
+          role="status"
+          className="text-muted-foreground text-xs"
+        >
+          {status}
+        </span>
+      ) : null}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function SwipeReply({
 
   return (
     <div
-      className="relative"
+      className="relative [touch-action:pan-y]"
       style={{ transform: `translateX(${offset}px)` }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

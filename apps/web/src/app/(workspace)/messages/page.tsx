@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { DmKeySetup } from "@/components/messages/dm-key-setup";
-import { DmUserSearch } from "@/components/messages/dm-user-search";
 import { MessagesShell } from "@/components/messages/messages-shell";
 import { getSessionUser } from "@/lib/auth/session";
 import { listConversations } from "@/lib/db/direct-messages";
@@ -39,17 +38,17 @@ export default async function MessagesPage() {
 
   const conversations = await listConversations();
 
+  // Full-bleed workspace: no outer card, no centered container, no top
+  // encryption/user-search clutter. DmKeySetup runs silently so device keys
+  // exist before the first message; user search lives in the compose panel.
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <DmKeySetup />
-        <DmUserSearch />
-      </div>
-
+    <div className="flex h-[calc(100dvh-8rem)] w-full flex-col lg:h-[calc(100dvh-4rem)]">
+      <DmKeySetup />
       {/* Server stores ciphertext only; decryption happens in the browser. */}
       <MessagesShell
         conversations={conversations}
         myUserId={session.user.id}
+        className="min-h-0 flex-1"
       />
     </div>
   );
