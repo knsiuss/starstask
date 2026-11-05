@@ -10,7 +10,8 @@ Keputusan arsitektur yang sudah diambil:
 - Web app (`apps/web`) tetap satu-satunya sumber UI; mobile tidak fork kode.
 - Build web untuk mobile memakai Vite di `apps/mobile` (`webDir: dist`).
 - Push memakai plugin Capacitor (`@capacitor/push-notifications`, FCM).
-- Ikon & splash memakai aset yang sama dengan PWA (`apps/web/public/icons`).
+- Ikon & splash native di-generate dari satu master 1024x1024 memakai
+  `@capacitor/assets` (ikon PWA 192/512 bukan ikon store native).
 
 ## Fase 0 — Scaffolding (selesai)
 
@@ -23,16 +24,31 @@ Keputusan arsitektur yang sudah diambil:
 
 ## Fase 1 — Keputusan fondasi
 
-- [ ] Putuskan mode WebView: bundel hasil `vite build` lokal, atau load
-      server produksi (`starstask.vercel.app`) via `server.url` - Rekomendasi: bundel lokal untuk offline-first check-in; server URL
-      hanya sebagai fallback saat pertama launch
-- [ ] Putuskan alur login di WebView: Supabase Auth Google di dalam WebView
-      vs Custom Tab browser terpisah, termasuk deep link callback
-      (`id.starstask.mobile://` atau App Links `https://starstask.app`)
-- [ ] Samakan identitas aplikasi: appId `id.starstask.mobile`, nama
-      "StarsTask", ikon 192/512 + maskable dari `apps/web/public/icons`
-- [ ] Tentukan strategi update: update lewat Play Store vs OTA di dalam
-      WebView (web app memang selalu segar, jadi OTA cukup untuk konten)
+- [x] Mode WebView: **bundel lokal** (`webDir: dist`) sebagai jalur utama.
+      Alasan: launch instan, check-in offline jalan tanpa jaringan, dan
+      terasa seperti app native. `server.url` hanya untuk development
+      (live reload) — bukan jalur produksi, karena koneksi jelek berarti
+      layar kosong dan app yang isinya cuma website berisiko ditolak Apple
+      (guideline fungsi minimum). Fallback server saat first launch boleh.
+- [x] Alur login: **wajib keluar WebView**. Google memblokir OAuth di
+      dalam WebView (`disallowed_useragent`), jadi alurnya: tombol login
+      di app → Custom Tab / browser sistem (plugin `@capacitor/browser`) →
+      user login di sana → callback balik via deep link → app menukar code
+      jadi session dengan pola PKCE (pola resmi Supabase untuk Capacitor).
+      Deep link tahap awal memakai custom scheme `id.starstask.mobile://`
+      (cepat jalan); sebelum rilis publik pindah ke App Links terverifikasi
+      (`https://starstask.app`) karena custom scheme bisa diklaim app lain.
+- [x] Identitas aplikasi: appId `id.starstask.mobile`, nama "StarsTask".
+      AppId Android permanen begitu publish di Play Store — sudah benar
+      sejak awal. Ikon native (iOS AppIcon 1024, Android adaptive icon
+      foreground + background terpisah) di-generate dari satu master
+      1024x1024 (art dari `apps/web/public/icons`) memakai `@capacitor/assets`.
+- [x] Strategi update berlapis: shell native (plugin, permission, upgrade
+      Capacitor) lewat Play Store; isi web (UI, logika JS) lewat OTA
+      Capgo (`@capgo/capacitor-updater`) tanpa menunggu review store —
+      legal selama tidak mengubah fungsi utama app. Web Next.js di Vercel
+      memang selalu segar untuk user browser; permukaan yang bisa basi
+      hanya bundel mobile, dan itu yang ditutup Capgo.
 
 ## Fase 2 — Paritas fitur inti
 
@@ -55,7 +71,8 @@ Keputusan arsitektur yang sudah diambil:
 
 ## Fase 4 — Release Android
 
-- [ ] Ikon & splash final (semua densitas), nama aplikasi, warna tema
+- [ ] Ikon & splash final: generate semua ukuran native dari master
+      1024x1024 memakai `@capacitor/assets`, nama aplikasi, warna tema
 - [ ] `versionCode` / `versionName` dikelola per rilis
 - [ ] Signing key release dibuat & disimpan aman di luar repo
 - [ ] Build AAB release (`gradlew bundleRelease`) lolos tanpa warning
