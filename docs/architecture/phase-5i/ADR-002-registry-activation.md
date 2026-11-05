@@ -35,4 +35,5 @@
 
 ## Consequences
 - UNPAM pilot: 1 university active, 1 class linked, 8 offerings, 248 enrollments (2026-11-05 backfill).
+- Cost policy (owner, 2026-11-05): free tier only. No paid Supabase branches. Staging = local stack (`supabase start`).
 - Other universities remain `registered` until mapping approved.

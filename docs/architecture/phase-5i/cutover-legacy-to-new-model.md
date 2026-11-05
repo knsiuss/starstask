@@ -22,4 +22,4 @@
 ## Blockers
 - NIM dual-write (see ADR-002 §5)
 - Admin permission mapping (needs owner input)
-- 2-university negative test on staging branch (cost $0.01344/hr — pending user confirm)
+- 2-university negative test: DONE locally 2026-11-05 (11/11 passed, local stack). Cloud staging branch REJECTED by owner 2026-11-05 — free tier only, no paid branches.
