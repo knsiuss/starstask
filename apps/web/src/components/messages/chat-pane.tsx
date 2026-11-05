@@ -536,7 +536,7 @@ export function ChatPane({
           />
         </button>
         <span className="relative shrink-0">
-          <span className="from-indigo-400 to-purple-500 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+          <span className="from-accent to-accent-hover flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
             {initials(displayName)}
           </span>
           <PresenceDot online={online} />
@@ -649,18 +649,18 @@ export function ChatPane({
                     <div
                       className={
                         mine
-                          ? "flex items-end justify-end gap-2"
-                          : "flex items-end gap-2"
+                          ? "message-in flex items-end justify-end gap-2"
+                          : "message-in flex items-end gap-2"
                       }
                     >
                       {!mine ? (
-                        <span className="from-indigo-400 to-purple-500 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold text-white">
+                        <span className="from-accent to-accent-hover flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold text-white">
                           {initials(message.senderName ?? displayName)}
                         </span>
                       ) : null}
                       <div className="max-w-[80%] sm:max-w-[60%]">
                         {!mine && conversation.isGroup && message.senderName ? (
-                          <p className="mb-0.5 px-1 text-[11px] font-medium text-indigo-600 dark:text-indigo-300">
+                          <p className="mb-0.5 px-1 text-[11px] font-medium text-accent dark:text-accent">
                             {message.senderName}
                           </p>
                         ) : null}
@@ -684,7 +684,7 @@ export function ChatPane({
                             }}
                             className={
                               mine
-                                ? "block rounded-2xl rounded-br-md bg-indigo-600 px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-white"
+                                ? "block rounded-2xl rounded-br-md bg-gradient-to-br from-accent to-accent-hover px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-white shadow-sm"
                                 : "block rounded-2xl rounded-bl-md bg-slate-100 px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-slate-800 dark:bg-slate-800 dark:text-slate-100"
                             }
                           >
@@ -791,7 +791,7 @@ export function ChatPane({
                               ) : message.state === "read" ? (
                                 <CheckCheck
                                   aria-label="Read"
-                                  className="h-3.5 w-3.5 text-indigo-400"
+                                  className="h-3.5 w-3.5 text-accent"
                                 />
                               ) : (
                                 <Check
@@ -876,10 +876,23 @@ export function ChatPane({
         <div ref={bottomRef} />
       </div>
 
+      {peerTyping ? (
+        <div
+          aria-label="Typing"
+          className="flex items-center gap-1 px-6 pb-1"
+        >
+          <span className="bg-muted flex items-center gap-1 rounded-full px-3 py-2">
+            <span className="typing-dot bg-muted-foreground h-1.5 w-1.5 rounded-full" />
+            <span className="typing-dot bg-muted-foreground h-1.5 w-1.5 rounded-full" />
+            <span className="typing-dot bg-muted-foreground h-1.5 w-1.5 rounded-full" />
+          </span>
+        </div>
+      ) : null}
+
       {replyTarget ? (
         <div className="border-border mx-4 flex items-start justify-between gap-3 rounded-xl border bg-muted/50 px-3 py-2 sm:mx-6">
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+            <p className="text-xs font-semibold text-accent dark:text-accent">
               Replying to{" "}
               {replyTarget.senderId === myUserId
                 ? "yourself"
@@ -948,7 +961,7 @@ export function ChatPane({
                   void send();
                 }
               }}
-              placeholder="Type a message..."
+              placeholder="Message..."
               aria-label="Type a message"
               className="max-h-30 w-full resize-none bg-transparent px-2 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
             />
@@ -1010,7 +1023,7 @@ export function ChatPane({
             type="submit"
             aria-label="Send message"
             disabled={!draft.trim()}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-accent hover:bg-accent-hover disabled:bg-accent/40 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <SendHorizonal
               aria-hidden="true"

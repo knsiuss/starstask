@@ -94,7 +94,7 @@ export function ConversationListPanel({
             <button
               type="button"
               aria-label="Add your story"
-              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex h-14 w-14 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="bg-accent-soft text-accent hover:bg-accent-soft/70 flex h-14 w-14 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <Plus
                 aria-hidden="true"
@@ -108,7 +108,7 @@ export function ConversationListPanel({
               key={story.id}
               className="flex shrink-0 flex-col items-center"
             >
-              <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-semibold text-white ring-2 ring-green-400 ring-offset-2">
+              <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-accent via-accent-hover to-band text-sm font-semibold text-white ring-2 ring-accent ring-offset-2 ring-offset-white">
                 <CircleUserRound
                   aria-hidden="true"
                   className="h-6 w-6 opacity-70"
@@ -160,12 +160,12 @@ export function ConversationListPanel({
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl px-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
                     active
-                      ? "bg-indigo-50 dark:bg-indigo-950/40"
+                      ? "bg-accent-soft dark:bg-accent-soft/40"
                       : "hover:bg-muted/60",
                   )}
                 >
                   <span className="relative shrink-0">
-                    <span className="from-indigo-400 to-purple-500 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+                    <span className="from-accent to-accent-hover flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
                       {initials(conversation.otherName)}
                     </span>
                     <PresenceDot
@@ -181,7 +181,7 @@ export function ConversationListPanel({
                         className={cn(
                           "shrink-0 text-[11px]",
                           active
-                            ? "text-indigo-600 dark:text-indigo-300"
+                            ? "text-accent dark:text-accent"
                             : "text-muted-foreground",
                         )}
                       >
@@ -193,7 +193,7 @@ export function ConversationListPanel({
                         {conversation.lastMessage ?? "Encrypted"}
                       </span>
                       {conversation.unread ? (
-                        <span className="bg-indigo-600 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+                        <span className="bg-accent flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
                           1
                         </span>
                       ) : null}
