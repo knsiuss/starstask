@@ -308,7 +308,7 @@ export function AttendanceSheet({
             <tr className="bg-slate-900 text-white dark:bg-slate-950">
               <th
                 scope="col"
-                className="sticky left-0 z-10 bg-slate-900 px-3 py-2 dark:bg-slate-950"
+                className="sticky left-0 z-10 w-[15rem] max-w-[62vw] bg-slate-900 px-3 py-2 dark:bg-slate-950"
               >
                 <span className="flex items-center gap-3 text-left text-xs font-medium">
                   <span className="w-6 shrink-0">No.</span>
@@ -386,7 +386,7 @@ export function AttendanceSheet({
 
               return (
                 <tr key={student.userId}>
-                  <td className="bg-surface sticky left-0 z-[5] border-r border-border px-3 py-2 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
+                  <td className="bg-surface sticky left-0 z-[5] w-[15rem] max-w-[62vw] border-r border-border px-3 py-2 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
                     <span className="flex items-center gap-3 text-xs">
                       <span className="text-muted-foreground w-6 shrink-0 text-center tabular-nums">
                         {index + 1}
