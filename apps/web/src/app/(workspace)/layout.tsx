@@ -2,10 +2,12 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
+import { PostHogIdentify } from "@/components/analytics/posthog-identify";
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
 import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
 import { isUnpamMember } from "@/lib/db/plugins";
+import { isBetaTester } from "@/lib/auth/beta";
 import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
@@ -33,16 +35,23 @@ export default async function WorkspaceLayout({
   // These lookups are independent, so they share one round-trip window instead
   // of adding three sequential waits to every workspace navigation.
   // Semua lookup independen paralel dalam 1 round-trip window (perf: TTFB).
-  const [platformAdmin, classAdmin, unreadNotificationCount, myProfile, unpamMember] =
-    await Promise.all([
-      session ? isPlatformAdmin() : Promise.resolve(false),
-      session ? isClassAdminAnywhere(session.user.id) : Promise.resolve(false),
-      session ? countUnreadNotifications().catch(() => 0) : Promise.resolve(0),
-      session ? getMyProfile().catch(() => null) : Promise.resolve(null),
-      // isUnpamMember di-cache per-request; butuh profileUniversity dari getMyProfile,
-      // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
-      Promise.resolve(false),
-    ]);
+  const [
+    platformAdmin,
+    classAdmin,
+    unreadNotificationCount,
+    myProfile,
+    unpamMember,
+    betaTester,
+  ] = await Promise.all([
+    session ? isPlatformAdmin() : Promise.resolve(false),
+    session ? isClassAdminAnywhere(session.user.id) : Promise.resolve(false),
+    session ? countUnreadNotifications().catch(() => 0) : Promise.resolve(0),
+    session ? getMyProfile().catch(() => null) : Promise.resolve(null),
+    // isUnpamMember di-cache per-request; butuh profileUniversity dari getMyProfile,
+    // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
+    Promise.resolve(false),
+    session ? isBetaTester() : Promise.resolve(false),
+  ]);
   const showUniversityInfo =
     isUnpamPluginEnabled() &&
     (unpamMember ||
@@ -53,6 +62,10 @@ export default async function WorkspaceLayout({
 
   return (
     <div className="bg-background lg:flex lg:min-h-dvh">
+      <PostHogIdentify
+        userId={session?.user.id ?? null}
+        betaTester={betaTester}
+      />
       <WorkspaceSidebar
         isAuthenticated={isAuthenticated}
         isClassAdmin={classAdmin}

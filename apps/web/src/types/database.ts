@@ -4330,6 +4330,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      is_beta_tester: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
       is_class_member: {
         Args: { p_class_id: string };
         Returns: boolean;
