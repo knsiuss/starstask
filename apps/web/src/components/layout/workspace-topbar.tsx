@@ -2,8 +2,11 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 
 import { BrandLink } from "@/components/layout/brand-link";
+import { CommandPalette } from "@/components/layout/command-palette";
+import { FontSizeToggle } from "@/components/layout/font-size-toggle";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { ShortcutHelp } from "@/components/layout/shortcut-help";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,8 @@ export function WorkspaceTopbar({
         </div>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <ShortcutHelp />
+          <FontSizeToggle />
           <ThemeToggle />
           {isAuthenticated ? (
             <Link
