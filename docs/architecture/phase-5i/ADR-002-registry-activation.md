@@ -8,7 +8,7 @@
 ### 1. Registry
 - `universities` is the single registry. Slug is canonical (`universitas-pamulang`, `seraphim`).
 - Lifecycle: `registered -> pending -> active -> suspended/archived`. Only `active` universities grant academic access.
-- Seraphim: created as `registered` (2026-11-05, id `e1fdf659-...`), profile `Bagas 73` untouched, no membership created. Activation requires owner mapping review.
+- Seraphim: created as `registered` (2026-11-05, id `e1fdf659-...`), profile `Bagas 73` untouched, no membership created. Activation requires owner mapping review. Owner decision 2026-11-05: leave Seraphim empty/unmapped — no activation, no membership, no identity.
 
 ### 2. Activation
 - Platform Admin activates via service_role only. No auto-activation from profile text.
