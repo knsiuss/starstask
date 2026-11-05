@@ -21,6 +21,20 @@ pnpm --filter @starstask/mobile build
 pnpm --filter @starstask/mobile sync  # capacitor sync ios/android
 ```
 
+## iOS
+
+```bash
+cd apps/mobile
+npx cap add ios
+# copy ios/Info.plist.snippet.xml into ios/App/App/Info.plist
+npx cap sync ios
+open ios/App/App.xcworkspace
+# Run di iPhone / simulator, deployment target iOS 15+
+```
+
+Push iOS butuh Apple Developer account ($99/tahun) buat TestFlight/App Store.
+Tanpa itu, bisa jalan di simulator + sideload Xcode.
+
 ## Status
 
 - Scaffolding only (2026-11-05). Fitur prioritas: check-in offline,
