@@ -32,6 +32,15 @@ correction history and in the recap workbook's Correction Audit
 sheet. The correction is recorded as `manual`, never as a GPS
 check-in, so it is never mistaken for a geo check-in.
 
+## Approved leave (auto-excused)
+
+When an absence request is approved, the matching sessions are
+marked excused automatically — including sessions created after the
+approval, which a database trigger excuses on creation. The student
+does not need to check in for those meetings, and the admin does not
+need to record them one by one. A session the student already
+checked in to (present/late) is never overwritten.
+
 ## Limits
 
 - A student who is genuinely absent or outside the area must not be
