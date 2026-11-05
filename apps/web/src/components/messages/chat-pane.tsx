@@ -765,6 +765,7 @@ export function ChatPane({
                               )}
                               {message.attachmentUrl ? (
                                 message.attachmentMime?.startsWith("image/") ? (
+                                  // eslint-disable-next-line @next/next/no-img-element -- attachment previews use signed/blob URLs that next/image cannot optimize
                                   <img
                                     src={message.attachmentUrl}
                                     alt={message.attachmentName ?? "attachment"}
