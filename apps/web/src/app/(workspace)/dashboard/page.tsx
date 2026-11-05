@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 
 import { AcademicContextCard } from "@/components/dashboard/academic-context-card";
 import { UnpamWidget } from "@/components/dashboard/unpam-widget";
+import {
+  HeaderSection,
+  InvitationsSection,
+  ScheduleSection,
+  WeekAndClassesSection,
+} from "@/components/dashboard/dashboard-sections";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
@@ -101,34 +107,28 @@ export default async function DashboardPage({
   const query = await searchParams;
   const weekOffset = parseWeekOffset(query.week);
 
-  // Semua query paralel (perf): overview, invitations, week, schedule, profile, unpam.
-  const [overview, pendingInvitations, week, nextSchedule, myProfile] =
-    await Promise.all([
-      getDashboardOverview(session.user.id),
-      listStudentPendingInvitations(session.user.id, session.user.email),
-      getMyWeek(session.user.id, new Date(), weekOffset),
-      getNextSchedule(session.user.id),
-      getMyProfile().catch(() => null),
-    ]);
-  const showUnpamWidget =
-    isUnpamPluginEnabled() &&
-    (await isUnpamMember(session.user.id, myProfile?.university));
+  // Streaming: page shell + auth langsung, section berat di-Suspense terpisah.
+  // TTFB turun karena tidak nunggu overview/week/schedule selesai.
+  const [myProfile, unpamMember] = await Promise.all([
+    getMyProfile().catch(() => null),
+    isUnpamPluginEnabled()
+      ? isUnpamMember(session.user.id, null).catch(() => false)
+      : Promise.resolve(false),
+  ]);
+  const showUnpamWidget = unpamMember || (await isUnpamMember(session.user.id, myProfile?.university));
   const unpamEvents = showUnpamWidget ? await getPersistedUnpamEvents() : [];
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
-      <DashboardHeader
-        displayName={session.profile?.display_name ?? null}
-        initialNowIso={overview.nowIso}
-        initialTimeZone={overview.timeZone}
-        summary={buildHeaderSummary(overview.stats)}
-      />
+      <React.Suspense fallback={<div className="h-24 animate-pulse rounded bg-muted" />}>
+        <HeaderSection userId={session.user.id} displayName={session.profile?.display_name ?? null} />
+      </React.Suspense>
 
       <WhatsNewBanner />
 
-      <DashboardAttentionBanner pastDeadline={overview.stats.pastDeadline} />
-
-      <PendingInvitationsSection initialInvitations={pendingInvitations} />
+      <React.Suspense fallback={null}>
+        <InvitationsSection userId={session.user.id} email={session.user.email ?? ""} />
+      </React.Suspense>
 
       <div className="mt-5">
         <React.Suspense fallback={null}>
@@ -142,32 +142,13 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      <div
-        className="mt-5"
-        style={{ "--rise-delay": "0ms" } as CSSProperties}
-      >
-        <StatCards stats={overview.stats} />
-      </div>
+      <React.Suspense fallback={<div className="mt-5 h-20 animate-pulse rounded bg-muted" />}>
+        <ScheduleSection userId={session.user.id} />
+      </React.Suspense>
 
-      <div className="mt-5">
-        <NextSchedule item={nextSchedule} />
-      </div>
-
-      <div
-        className="mt-5 space-y-5"
-        style={{ "--rise-delay": "120ms" } as CSSProperties}
-      >
-        <MyWeekSection
-          week={week}
-          nowIso={overview.nowIso}
-          weekOffset={weekOffset}
-          canScheduleSessions={overview.classes.some(
-            (classItem) => classItem.is_admin,
-          )}
-        />
-
-        <MyClassesSection classes={overview.classes} />
-      </div>
+      <React.Suspense fallback={<div className="mt-5 h-64 animate-pulse rounded bg-muted" />}>
+        <WeekAndClassesSection userId={session.user.id} weekOffset={weekOffset} />
+      </React.Suspense>
     </div>
   );
 }
