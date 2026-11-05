@@ -18,6 +18,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AttachmentList } from "@/components/assignments/attachment-list";
+import { DriveSubmit } from "@/components/assignments/drive-submit";
 import { AssignmentContentTypeBadge } from "@/components/assignments/assignment-content-type-badge";
 import { AssignmentHistory } from "@/components/assignments/assignment-history";
 import { CopyLinkButton } from "@/components/assignments/copy-link-button";
@@ -470,6 +471,27 @@ export default async function AssignmentPage({
               </section>
             ) : null}
           </article>
+
+          {!isOwner && isPublished ? (
+            <div className="border-border bg-surface mt-4 rounded-lg border p-4">
+              <h2 className="text-sm font-semibold">
+                Submit your work via Google Drive
+              </h2>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Pick a file from your own Drive. We copy it at submission time
+                and give you a lecturer link to forward. Your lecturer does not
+                need a StarsTask account.
+              </p>
+              <div className="mt-3">
+                <DriveSubmit
+                  assignmentId={assignment.id}
+                  clientId={
+                    process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID?.trim() ?? ""
+                  }
+                />
+              </div>
+            </div>
+          ) : null}
 
           {!isOwner ? (
             <div className="border-border bg-subtle mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3">
