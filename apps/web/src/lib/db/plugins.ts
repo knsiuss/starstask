@@ -55,6 +55,18 @@ export type PluginEventRow = {
   kind: "academic-calendar" | "e-learning" | "events";
 };
 
+/** Search persisted plugin events (text + date range). */
+export async function searchPersistedUnpamEvents(query: string, from?: string, to?: string): Promise<PluginEventRow[]> {
+  const all = await getPersistedUnpamEvents();
+  const q = query.trim().toLowerCase();
+  return all.filter((e) => {
+    if (q && !`${e.title} ${e.description ?? ""}`.toLowerCase().includes(q)) return false;
+    if (from && e.startsAt < from) return false;
+    if (to && e.startsAt > to) return false;
+    return true;
+  });
+}
+
 /** Read persisted plugin events for UNPAM (newest first). Empty = not synced yet. */
 export async function getPersistedUnpamEvents(): Promise<PluginEventRow[]> {
   if (!isSupabaseConfigured()) return [];
@@ -135,6 +147,22 @@ export async function persistUnpamEvents(
     { onConflict: "university_id,plugin_id" },
   );
   return { count: events.length };
+}
+
+/** Observability views (dual_write_drift, nim_drift, tenant_gap) via admin client. */
+export async function getObservabilityViews() {
+  const client = adminClient();
+  if (!client) return { drift: null, nim: null, gap: [] as never[] };
+  const [drift, nim, gap] = await Promise.all([
+    client.from("dual_write_drift" as never).select("*").maybeSingle(),
+    client.from("nim_drift" as never).select("*").maybeSingle(),
+    client.from("observability_tenant_gap" as never).select("*"),
+  ]);
+  return {
+    drift: (drift as { data: unknown }).data,
+    nim: (nim as { data: unknown }).data,
+    gap: ((gap as { data: unknown[] }).data ?? []) as never[],
+  };
 }
 
 export async function getUnpamSyncStatus() {

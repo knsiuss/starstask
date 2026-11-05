@@ -18,6 +18,7 @@ import {
   getMyProgramId,
   getPersistedUnpamEvents,
   isUnpamMember,
+  searchPersistedUnpamEvents,
 } from "@/lib/db/plugins";
 import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ program?: string }>;
+  searchParams: Promise<{ program?: string; q?: string; from?: string; to?: string }>;
 };
 
 const KIND_LABELS: Record<PluginEvent["kind"], string> = {
@@ -79,10 +80,16 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
 
   // DB dulu (persisted via cron), fallback live fetch. DB = offline + bisa search.
   const persisted = await getPersistedUnpamEvents();
+  const searched =
+    params.q || params.from || params.to
+      ? await searchPersistedUnpamEvents(params.q ?? "", params.from, params.to)
+      : persisted;
   const events =
-    persisted.length > 0
-      ? persisted
-      : await fetchUnpamEvents().catch(() => []);
+    searched.length > 0
+      ? searched
+      : persisted.length > 0
+        ? persisted
+        : await fetchUnpamEvents().catch(() => []);
   const filtered = filterEventsByProgram(events, program);
 
   return (
@@ -93,6 +100,33 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
           Kalender akademik, jadwal MENTARI, dan pengumuman UNPAM / FTI.
         </p>
       </header>
+
+      <form method="get" className="flex flex-wrap gap-2">
+        <input
+          name="q"
+          defaultValue={params.q ?? ""}
+          placeholder="Cari event..."
+          className="border-border rounded border px-2 py-1 text-sm"
+        />
+        <input
+          name="from"
+          type="date"
+          defaultValue={params.from ?? ""}
+          className="border-border rounded border px-2 py-1 text-sm"
+        />
+        <input
+          name="to"
+          type="date"
+          defaultValue={params.to ?? ""}
+          className="border-border rounded border px-2 py-1 text-sm"
+        />
+        <button
+          type="submit"
+          className="bg-primary text-primary-foreground rounded px-3 py-1 text-sm"
+        >
+          Cari
+        </button>
+      </form>
 
       <TabStrip
         label="Filter program"

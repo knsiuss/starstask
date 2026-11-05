@@ -12,6 +12,7 @@ import { MyWeekSection } from "@/components/dashboard/my-week-section";
 import { NextSchedule } from "@/components/dashboard/next-schedule";
 import { PendingInvitationsSection } from "@/components/dashboard/pending-invitations-section";
 import { StatCards } from "@/components/dashboard/stat-cards";
+import { WhatsNewBanner } from "@/components/dashboard/whats-new-banner";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { getSessionUser } from "@/lib/auth/session";
 import {
