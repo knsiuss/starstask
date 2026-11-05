@@ -74,6 +74,37 @@ const RECENT_TASK_LIMIT = 5;
 export async function getDashboardOverview(
   userId: string,
 ): Promise<DashboardOverview> {
+  // Fast path: 1 RPC roundtrip (20261126000000). Falls back to legacy multi-query on error.
+  try {
+    const supabaseRpc = await createSupabaseServerClient();
+    const { data, error } = await supabaseRpc.rpc(
+      "get_dashboard_overview" as never,
+      { p_user_id: userId } as never,
+    );
+    if (!error && data) {
+      const d = data as unknown as {
+        classes: DashboardClass[];
+        stats: DashboardStats;
+        recentTasks: DashboardTask[];
+        timeZone: string | null;
+        nowIso: string;
+      };
+      return {
+        classes: d.classes ?? [],
+        stats: d.stats,
+        recentTasks: (d.recentTasks ?? []).map((t) => ({
+          id: t.id,
+          title: t.title,
+          deadline: t.deadline,
+          class_name: t.class_name,
+        })),
+        timeZone: d.timeZone,
+        nowIso: d.nowIso,
+      };
+    }
+  } catch {
+    // fall through to legacy path
+  }
   const now = new Date();
   const nowIso = now.toISOString();
   const dueSoonWindow = getDueSoonWindow(now);

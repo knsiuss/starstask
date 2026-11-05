@@ -8,21 +8,13 @@ import { ClassAdminApplyPanel } from "@/components/profile/class-admin-apply-pan
 import { ProfileAcademic } from "@/components/profile/profile-academic";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { ProfileSection } from "@/components/profile/profile-section";
-import { Alert } from "@/components/ui/alert";
-import { PositionForm } from "@/components/verification/position-form";
 import type { GrantableClass } from "@/components/verification/representative-grant-form";
-import { VerificationRequestCard } from "@/components/verification/verification-request-card";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, listMyClasses } from "@/lib/db/classes";
 import { getMyProfile } from "@/lib/db/profiles";
-import {
-  getMyDeclaredPosition,
-  listMyRepresentativeClassIds,
-  listMyVerificationRequests,
-} from "@/lib/db/verification";
+import { listMyRepresentativeClassIds } from "@/lib/db/verification";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
-import { getVerificationEvidenceViews } from "@/features/verification/evidence-service";
 import { formatDate } from "@starstask/shared";
 
 export const metadata: Metadata = {
@@ -78,41 +70,20 @@ export default async function ProfileSettingsPage() {
     );
   }
 
-  const [position, requests, classes, representativeClassIds] =
-    await Promise.all([
-      getMyDeclaredPosition(),
-      listMyVerificationRequests(session.user.id),
-      listMyClasses(session.user.id),
-      listMyRepresentativeClassIds(session.user.id),
-    ]);
-
-  const evidenceEntries = await Promise.all(
-    requests.map(
-      async (request) =>
-        [request.id, await getVerificationEvidenceViews(request.id)] as const,
-    ),
-  );
-  const evidenceByRequest = new Map(evidenceEntries);
-
-  const liveClassIds = new Set(
-    requests
-      .filter(
-        (request) =>
-          request.status === "pending" ||
-          request.status === "needs_revision" ||
-          request.status === "verified",
-      )
-      .map((request) => request.classId),
-  );
+  const [classes, representativeClassIds] = await Promise.all([
+    listMyClasses(session.user.id),
+    listMyRepresentativeClassIds(session.user.id),
+  ]);
 
   const representedClasses = new Set(representativeClassIds);
 
+  // Any member of an active class can claim admin access directly — no
+  // verification request, evidence, or approval. The server enforces the
+  // 5-per-class cap.
   const availableClasses: GrantableClass[] = classes
     .filter(
       (item) =>
-        item.status === "active" &&
-        !representedClasses.has(item.id) &&
-        !liveClassIds.has(item.id),
+        item.status === "active" && !representedClasses.has(item.id),
     )
     .map((item) => ({
       id: item.id,
@@ -155,13 +126,11 @@ export default async function ProfileSettingsPage() {
         />
 
         <ProfileSection
-          id="class-representative"
-          title="Class representative"
-          description="Declaring a position never grants class admin access."
+          id="class-admin"
+          title="Class admin"
+          description="Any member of an active class can claim admin access right away — up to 5 per class. No evidence or approval needed; the class decides who steps up."
         >
-          <PositionForm initialPosition={position} />
-
-          <div className="border-border border-t px-5 py-4">
+          <div className="px-5 py-4">
             <h3 className="text-foreground text-sm font-medium">
               Class admin access
             </h3>
