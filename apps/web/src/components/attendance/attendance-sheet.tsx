@@ -303,7 +303,24 @@ export function AttendanceSheet({
       ) : null}
 
       <div className="border-border bg-surface mt-4 overflow-x-auto rounded-xl border">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+        <table className="[&_td]:border-border [&_td]:border-b [&_th]:border-border [&_th]:border-b w-full min-w-[720px] border-separate border-spacing-0 text-sm">
+          <colgroup>
+            <col className="w-10" />
+            <col className="w-28" />
+            <col className="w-44" />
+            {recap.meetings.map((meeting) => (
+              <col
+                key={meeting.sessionId}
+                className="w-10"
+              />
+            ))}
+            <col className="w-10" />
+            <col className="w-10" />
+            <col className="w-10" />
+            <col className="w-10" />
+            <col className="w-10" />
+            <col className="w-14" />
+          </colgroup>
           <thead>
             <tr className="bg-slate-900 text-white dark:bg-slate-950">
               <th className="sticky left-0 z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
@@ -312,7 +329,7 @@ export function AttendanceSheet({
               <th className="sticky left-10 z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
                 NIM
               </th>
-              <th className="sticky left-32 z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
+              <th className="sticky left-[9.5rem] z-10 bg-slate-900 px-3 py-2 text-left text-xs font-medium dark:bg-slate-950">
                 Nama Mahasiswa
               </th>
               <th
@@ -329,9 +346,9 @@ export function AttendanceSheet({
               <th className="px-2 py-2 text-center text-xs font-medium">%</th>
             </tr>
             <tr className="bg-slate-900 text-white dark:bg-slate-950">
-              <th className="sticky left-0 bg-slate-900 dark:bg-slate-950" />
-              <th className="sticky left-10 bg-slate-900 dark:bg-slate-950" />
-              <th className="sticky left-32 bg-slate-900 dark:bg-slate-950" />
+              <th className="sticky left-0 z-10 bg-slate-900 dark:bg-slate-950" />
+              <th className="sticky left-10 z-10 bg-slate-900 dark:bg-slate-950" />
+              <th className="sticky left-[9.5rem] z-10 bg-slate-900 dark:bg-slate-950" />
               {recap.meetings.map((meeting) => (
                 <th
                   key={meeting.sessionId}
@@ -379,17 +396,14 @@ export function AttendanceSheet({
               const percentage = sheetPercentage(totals.present, totalMeetings);
 
               return (
-                <tr
-                  key={student.userId}
-                  className="border-border border-b last:border-b-0"
-                >
-                  <td className="bg-surface sticky left-0 px-3 py-2 text-center text-xs">
+                <tr key={student.userId}>
+                  <td className="bg-surface sticky left-0 z-[5] border-r border-border px-3 py-2 text-center text-xs">
                     {index + 1}
                   </td>
-                  <td className="bg-surface sticky left-10 px-3 py-2 text-xs whitespace-nowrap">
+                  <td className="bg-surface sticky left-10 z-[5] border-r border-border px-3 py-2 text-xs whitespace-nowrap">
                     {student.nim ?? "—"}
                   </td>
-                  <td className="bg-surface sticky left-32 max-w-44 truncate px-3 py-2 text-xs font-medium">
+                  <td className="bg-surface sticky left-[9.5rem] z-[5] max-w-44 truncate border-r border-border px-3 py-2 text-xs font-medium shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
                     {student.fullName}
                   </td>
                   {recap.meetings.map((meeting) => {
