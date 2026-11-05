@@ -1,5 +1,6 @@
 package id.starstask.mobile;
 
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -17,7 +18,9 @@ public class MainActivity extends BridgeActivity {
 
         // Debug-only smoke test for Crashlytics setup (Firebase guide
         // Step 3). The button never appears in release builds.
-        if (BuildConfig.DEBUG) {
+        boolean debuggable =
+                (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        if (debuggable) {
             Button crashButton = new Button(this);
             crashButton.setText("Test Crash");
             crashButton.setOnClickListener(
