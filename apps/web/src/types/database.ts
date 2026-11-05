@@ -654,6 +654,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      native_push_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          token: string;
+          platform: "android" | "ios";
+          device_label: string | null;
+          created_at: string;
+          updated_at: string;
+          last_success_at: string | null;
+          disabled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token: string;
+          platform: "android" | "ios";
+          device_label?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          last_success_at?: string | null;
+          disabled_at?: string | null;
+        };
+        Update: {
+          device_label?: string | null;
+          disabled_at?: string | null;
+          last_success_at?: string | null;
+          platform?: "android" | "ios";
+          token?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       notification_preferences: {
         Row: {
           user_id: string;
@@ -4187,6 +4220,20 @@ export interface Database {
         };
         Returns: boolean;
       };
+      register_native_push_token: {
+        Args: {
+          p_token: string;
+          p_platform: "android" | "ios";
+          p_device_label?: string | null;
+        };
+        Returns: string | null;
+      };
+      delete_native_push_token: {
+        Args: {
+          p_token: string;
+        };
+        Returns: boolean;
+      };
       claim_notification_deliveries: {
         Args: {
           p_now: string;
@@ -4834,7 +4881,11 @@ export interface Database {
       };
       session_checkin_summary_many: {
         Args: { p_session_ids: string[] };
-        Returns: { session_id: string; has_location: boolean; radius_m: number }[];
+        Returns: {
+          session_id: string;
+          has_location: boolean;
+          radius_m: number;
+        }[];
       };
       list_discussion_sessions: {
         Args: {

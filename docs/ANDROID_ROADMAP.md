@@ -64,12 +64,24 @@ Keputusan arsitektur yang sudah diambil:
 
 ## Fase 3 — Push notification native (FCM)
 
+- [x] Tabel `native_push_tokens` + RPC registrasi di production DB
+      (migration `20261134000000_native_push_tokens`)
+- [x] API `POST /api/push/native-token` + `DELETE` (auth, rate limit,
+      validasi Zod di contracts) — mobile mengirim token FCM ke sini
+      setelah login
+- [x] Pengirim FCM server (`lib/push/fcm-sender.ts`, firebase-admin dari
+      `FIREBASE_SERVICE_ACCOUNT_JSON`) terpasang di keempat jalur
+      pengiriman: cron deadline reminder, cron session reminder, cron
+      event, dan dispatch langsung — WebPush tetap jalan apa adanya,
+      channel native hanya aktif kalau kredensial Firebase terisi
+- [x] Notification channel Android `starstask-reminders` dibuat saat
+      registrasi push di mobile; tap notifikasi membawa URL payload
+      (deep-link penuh menunggu halaman feature di Fase 2 lanjutan)
 - [ ] Buat Firebase project, unduh `google-services.json` ke `android/app/`
-- [ ] Daftarkan token FCM ke server (gantikan/tambah Web Push yang ada)
-- [ ] Notification channel Android: reminder deadline 24 jam & 3 jam,
-      pengingat sesi, publikasi tugas baru
-- [ ] Tap notifikasi membuka halaman yang benar (deep link)
+      (manual, butuh akun Google — belum dikerjakan)
+- [ ] Isi `FIREBASE_SERVICE_ACCOUNT_JSON` di environment deployment (manual)
 - [ ] Uji di device fisik: foreground, background, dan aplikasi ditutup
+      (manual — butuh device + Firebase project di atas)
 
 ## Fase 4 — Release Android
 

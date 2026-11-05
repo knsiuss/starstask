@@ -3752,6 +3752,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      native_push_tokens: {
+        Row: {
+          created_at: string;
+          device_label: string | null;
+          disabled_at: string | null;
+          id: string;
+          last_success_at: string | null;
+          platform: string;
+          token: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          device_label?: string | null;
+          disabled_at?: string | null;
+          id?: string;
+          last_success_at?: string | null;
+          platform: string;
+          token: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          device_label?: string | null;
+          disabled_at?: string | null;
+          id?: string;
+          last_success_at?: string | null;
+          platform?: string;
+          token?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       rate_limits: {
         Row: {
           hits: number;
@@ -4348,7 +4384,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      dm_get_or_create_conversation: { Args: { p_other: string }; Returns: string };
+      dm_get_or_create_conversation: {
+        Args: { p_other: string };
+        Returns: string;
+      };
       accept_class_invitation: { Args: { p_token: string }; Returns: string };
       accept_pending_invitation: {
         Args: { p_invitation_id: string };
@@ -4852,6 +4891,10 @@ export type Database = {
         Args: { p_endpoint: string };
         Returns: boolean;
       };
+      delete_native_push_token: {
+        Args: { p_token: string };
+        Returns: boolean;
+      };
       developer_applied_migrations: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -5334,6 +5377,14 @@ export type Database = {
           p_device_label?: string;
           p_endpoint: string;
           p_p256dh: string;
+        };
+        Returns: string;
+      };
+      register_native_push_token: {
+        Args: {
+          p_device_label?: string;
+          p_platform: string;
+          p_token: string;
         };
         Returns: string;
       };

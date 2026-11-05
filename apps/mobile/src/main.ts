@@ -13,7 +13,7 @@ import { handleAuthDeepLink, signInWithGoogle } from "./lib/auth";
 import { checkInToSession, syncQueuedCheckIns } from "./lib/checkin";
 import { formatTime, loadDashboard } from "./lib/dashboard";
 import { listAttachments, openAttachment } from "./lib/document";
-import { registerNativePush } from "./lib/push";
+import { registerNativePush, sendNativeTokenToServer } from "./lib/push";
 import { getSupabase, isSupabaseConfigured } from "./lib/supabase";
 import { uploadAttachmentFile } from "./lib/upload";
 
@@ -224,7 +224,11 @@ async function refreshSession(): Promise<void> {
 
   if (session) {
     await registerNativePush({
-      onToken: (token) => console.log("[push] token", token),
+      onToken: (token) => {
+        if (session.access_token) {
+          void sendNativeTokenToServer(token, session.access_token);
+        }
+      },
       onNotificationTap: (url) => {
         if (url) {
           console.log("[push] tap", url);

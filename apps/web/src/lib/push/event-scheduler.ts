@@ -1,10 +1,12 @@
 import "server-only";
 
-import {
-  groupSubscriptionsByUser,
-  sendPushSafely,
-} from "@/lib/push/batch";
+import { groupSubscriptionsByUser, sendPushSafely } from "@/lib/push/batch";
 import type { NotificationEventStore } from "@/lib/push/event-store";
+import {
+  groupNativeTokensByUser,
+  sendNativeSafely,
+  type NativePushSender,
+} from "@/lib/push/fcm-sender";
 import {
   isSafeNotificationPath,
   NOTIFICATION_BADGE,
@@ -72,6 +74,7 @@ export function buildEventPayload(
 export async function runNotificationEvents(options: {
   store: NotificationEventStore;
   sender: PushSender;
+  nativeSender?: NativePushSender;
   now?: Date;
   limit?: number;
 }): Promise<NotificationEventSummary> {
@@ -79,10 +82,7 @@ export async function runNotificationEvents(options: {
   const nowMs = now.getTime();
   const nowIso = now.toISOString();
 
-  const claims = await options.store.claimEvents(
-    nowIso,
-    options.limit ?? 50,
-  );
+  const claims = await options.store.claimEvents(nowIso, options.limit ?? 50);
   const summary: NotificationEventSummary = {
     claimed: claims.length,
     sent: 0,
@@ -99,6 +99,13 @@ export async function runNotificationEvents(options: {
     ...new Set(claims.map((claim) => claim.user_id)),
   ]);
   const subscriptionsByUser = groupSubscriptionsByUser(subscriptions);
+  const nativeByUser = groupNativeTokensByUser(
+    options.nativeSender
+      ? await (options.store.loadNativeTokens?.([
+          ...new Set(claims.map((claim) => claim.user_id)),
+        ]) ?? [])
+      : [],
+  );
 
   for (const claim of claims) {
     const payload = buildEventPayload(claim, nowMs);
@@ -115,14 +122,10 @@ export async function runNotificationEvents(options: {
     }
 
     const targets = subscriptionsByUser.get(claim.user_id) ?? [];
+    const nativeTargets = nativeByUser.get(claim.user_id) ?? [];
 
-    if (targets.length === 0) {
-      await options.store.completeEvent(
-        claim.id,
-        "skipped",
-        "no_device",
-        null,
-      );
+    if (targets.length === 0 && nativeTargets.length === 0) {
+      await options.store.completeEvent(claim.id, "skipped", "no_device", null);
       summary.skipped += 1;
       continue;
     }
@@ -140,6 +143,27 @@ export async function runNotificationEvents(options: {
         return outcome;
       }),
     );
+
+    if (options.nativeSender) {
+      const nativeOutcomes = await Promise.all(
+        nativeTargets.map(async (target) => {
+          const outcome = await sendNativeSafely(
+            options.nativeSender as NativePushSender,
+            target,
+            payload,
+          );
+
+          if (outcome.ok) {
+            await options.store.markNativeTokenSuccess?.(target.id, nowIso);
+          } else if (outcome.disableSubscription) {
+            await options.store.disableNativeToken?.(target.id, nowIso);
+          }
+
+          return outcome;
+        }),
+      );
+      outcomes.push(...nativeOutcomes);
+    }
 
     await recordOutcome(options.store, claim, outcomes, nowMs, summary);
   }

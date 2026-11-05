@@ -15,10 +15,7 @@ export type NotificationEventStatus = "sent" | "failed" | "skipped" | "pending";
  * scheduler can be tested with in-memory fakes and a pinned clock.
  */
 export interface NotificationEventStore {
-  claimEvents(
-    nowIso: string,
-    limit: number,
-  ): Promise<NotificationEventClaim[]>;
+  claimEvents(nowIso: string, limit: number): Promise<NotificationEventClaim[]>;
   completeEvent(
     id: string,
     status: NotificationEventStatus,
@@ -28,6 +25,11 @@ export interface NotificationEventStore {
   loadActiveSubscriptions(userIds: string[]): Promise<StoredSubscription[]>;
   markSubscriptionSuccess(subscriptionId: string, atIso: string): Promise<void>;
   disableSubscription(subscriptionId: string, atIso: string): Promise<void>;
+  loadNativeTokens?: (
+    userIds: string[],
+  ) => Promise<import("@/lib/push/store").StoredNativeToken[]>;
+  markNativeTokenSuccess?: (id: string, atIso: string) => Promise<void>;
+  disableNativeToken?: (id: string, atIso: string) => Promise<void>;
 }
 
 /**
@@ -79,5 +81,13 @@ export function createSupabaseNotificationEventStore(): NotificationEventStore {
       devices.markSubscriptionSuccess(subscriptionId, atIso),
     disableSubscription: (subscriptionId, atIso) =>
       devices.disableSubscription(subscriptionId, atIso),
+    loadNativeTokens: async (userIds) =>
+      (await devices.loadNativeTokens?.(userIds)) ?? [],
+    markNativeTokenSuccess: async (id, atIso) => {
+      await devices.markNativeTokenSuccess?.(id, atIso);
+    },
+    disableNativeToken: async (id, atIso) => {
+      await devices.disableNativeToken?.(id, atIso);
+    },
   };
 }

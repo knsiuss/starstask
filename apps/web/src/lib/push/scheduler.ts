@@ -1,10 +1,12 @@
 import "server-only";
 
 import { buildReminderPayload, type ReminderPayload } from "@/lib/push/payload";
+import { groupSubscriptionsByUser, sendPushSafely } from "@/lib/push/batch";
 import {
-  groupSubscriptionsByUser,
-  sendPushSafely,
-} from "@/lib/push/batch";
+  groupNativeTokensByUser,
+  sendNativeSafely,
+  type NativePushSender,
+} from "@/lib/push/fcm-sender";
 import {
   isReminderTypeEnabled,
   MAX_DELIVERY_ATTEMPTS,
@@ -12,10 +14,7 @@ import {
   planReminders,
   REMINDER_HORIZON_MS,
 } from "@/lib/push/reminder-schedule";
-import type {
-  PushSender,
-  PushSendOutcome,
-} from "@/lib/push/sender";
+import type { PushSender, PushSendOutcome } from "@/lib/push/sender";
 import type {
   AudienceEntry,
   CandidateAssignment,
@@ -102,6 +101,7 @@ export function evaluateClaimedDelivery(
 export async function runDeadlineReminders(options: {
   store: ReminderStore;
   sender: PushSender;
+  nativeSender?: NativePushSender;
   now?: Date;
   limit?: number;
 }): Promise<SchedulerSummary> {
@@ -141,6 +141,13 @@ export async function runDeadlineReminders(options: {
     ...new Set(claims.map((claim) => claim.user_id)),
   ]);
   const subscriptionsByUser = groupSubscriptionsByUser(subscriptions);
+  const nativeByUser = groupNativeTokensByUser(
+    options.nativeSender
+      ? await (options.store.loadNativeTokens?.([
+          ...new Set(claims.map((claim) => claim.user_id)),
+        ]) ?? [])
+      : [],
+  );
 
   for (const claim of claims) {
     const decision = evaluateClaimedDelivery(claim, nowMs);
@@ -157,8 +164,9 @@ export async function runDeadlineReminders(options: {
     }
 
     const targets = subscriptionsByUser.get(claim.user_id) ?? [];
+    const nativeTargets = nativeByUser.get(claim.user_id) ?? [];
 
-    if (targets.length === 0) {
+    if (targets.length === 0 && nativeTargets.length === 0) {
       await options.store.completeDelivery(
         claim.id,
         "skipped",
@@ -186,6 +194,27 @@ export async function runDeadlineReminders(options: {
         return outcome;
       }),
     );
+
+    if (options.nativeSender) {
+      const nativeOutcomes = await Promise.all(
+        nativeTargets.map(async (target) => {
+          const outcome = await sendNativeSafely(
+            options.nativeSender as NativePushSender,
+            target,
+            decision.payload,
+          );
+
+          if (outcome.ok) {
+            await options.store.markNativeTokenSuccess?.(target.id, nowIso);
+          } else if (outcome.disableSubscription) {
+            await options.store.disableNativeToken?.(target.id, nowIso);
+          }
+
+          return outcome;
+        }),
+      );
+      outcomes.push(...nativeOutcomes);
+    }
 
     await recordOutcome(options.store, claim, outcomes, nowMs, summary);
   }

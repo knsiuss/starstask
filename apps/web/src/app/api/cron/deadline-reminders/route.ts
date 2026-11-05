@@ -1,5 +1,6 @@
 import { apiError, apiSuccess } from "@/lib/api/responses";
 import { getPushConfig } from "@/lib/push/config";
+import { createNativeSenderFromEnv } from "@/lib/push/fcm-sender";
 import { runDeadlineReminders } from "@/lib/push/scheduler";
 import { createWebPushSender } from "@/lib/push/sender";
 import { createSupabaseReminderStore } from "@/lib/push/store";
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
     const summary = await runDeadlineReminders({
       store: createSupabaseReminderStore(),
       sender: createWebPushSender(config),
+      nativeSender: createNativeSenderFromEnv() ?? undefined,
       limit: 100,
     });
 

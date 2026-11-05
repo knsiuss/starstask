@@ -2,8 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@firebase/util': true
   core-js: true
   esbuild: true
+  protobufjs: true
 minimumReleaseAgeExclude:
   - "@types/node@26.6.6"
   - lucide-react@1.63.0

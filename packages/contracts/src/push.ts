@@ -127,6 +127,45 @@ export const pushUnsubscribeSchema = z
 
 export type PushUnsubscribeInput = z.infer<typeof pushUnsubscribeSchema>;
 
+/**
+ * FCM device token from the Capacitor mobile shell. Length bounds mirror
+ * the database check so a bad token fails validation before it reaches
+ * the registration function.
+ */
+export const nativePushTokenSchema = z
+  .object({
+    token: z
+      .string()
+      .trim()
+      .min(10, "The push token is too short")
+      .max(512, "The push token is too long"),
+    platform: z.enum(["android", "ios"]),
+    deviceLabel: z
+      .string()
+      .trim()
+      .max(60, "Device name must be 60 characters or fewer")
+      .optional()
+      .transform((value) => (value === "" ? undefined : value)),
+  })
+  .strict();
+
+export type NativePushTokenInput = z.infer<typeof nativePushTokenSchema>;
+
+/** Body for removing the current device's native token. */
+export const nativePushUnregisterSchema = z
+  .object({
+    token: z
+      .string()
+      .trim()
+      .min(10, "The push token is too short")
+      .max(512, "The push token is too long"),
+  })
+  .strict();
+
+export type NativePushUnregisterInput = z.infer<
+  typeof nativePushUnregisterSchema
+>;
+
 export const notificationPreferencesSchema = z
   .object({
     pushEnabled: z.boolean().optional(),

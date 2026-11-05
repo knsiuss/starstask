@@ -49,6 +49,12 @@ Push Android memakai `@capacitor/push-notifications` (FCM). Setup
 `google-services.json` + Firebase project dilakukan manual di Android
 Studio; tanpa itu push native belum aktif, Web Push PWA tetap jalan.
 
+Token FCM didaftarkan ke web API (`POST /api/push/native-token`) setelah
+login, disimpan di tabel `native_push_tokens`, dan dipakai scheduler
+server (reminder deadline, reminder sesi, event publikasi) lewat pengirim
+FCM (`FIREBASE_SERVICE_ACCOUNT_JSON` di environment deployment). Tanpa
+kredensial itu channel native dilewati diam-diam.
+
 ## iOS
 
 ```bash

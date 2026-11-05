@@ -1,6 +1,7 @@
 import { apiError, apiSuccess } from "@/lib/api/responses";
 import { isFeatureEnabled } from "@/lib/config/features";
 import { getPushConfig } from "@/lib/push/config";
+import { createNativeSenderFromEnv } from "@/lib/push/fcm-sender";
 import { createWebPushSender } from "@/lib/push/sender";
 import { createSupabaseSessionReminderStore } from "@/lib/push/session-store";
 import { runSessionReminders } from "@/lib/push/session-scheduler";
@@ -56,6 +57,7 @@ export async function GET(request: Request) {
     reminders = await runSessionReminders({
       store: createSupabaseSessionReminderStore(),
       sender: createWebPushSender(pushConfig),
+      nativeSender: createNativeSenderFromEnv() ?? undefined,
       limit: 100,
     });
   } catch (error) {
