@@ -21,6 +21,34 @@ pnpm --filter @starstask/mobile build
 pnpm --filter @starstask/mobile sync  # capacitor sync ios/android
 ```
 
+## Android
+
+```bash
+cd apps/mobile
+pnpm install            # dari root repo: pnpm install
+pnpm build              # vite build -> dist/
+npx cap add android     # pertama kali saja: generate folder android/
+npx cap sync android    # setelah ubah web / plugin
+npx cap open android    # buka di Android Studio, lalu Run / Build APK
+```
+
+Tanpa Android Studio / SDK, APK debug bisa dibuat langsung:
+
+```bash
+cd apps/mobile/android
+./gradlew assembleDebug   # Windows: gradlew.bat assembleDebug
+# hasil: android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Prasyarat: JDK 17+ dan Android SDK (platform + build-tools) terpasang;
+`ANDROID_HOME` menunjuk ke folder SDK. Folder `android/` hasil generate
+di-commit apa adanya (sesuai template Capacitor), jadi tidak perlu
+`cap add` ulang di mesin lain — cukup `cap sync` setelah build web.
+
+Push Android memakai `@capacitor/push-notifications` (FCM). Setup
+`google-services.json` + Firebase project dilakukan manual di Android
+Studio; tanpa itu push native belum aktif, Web Push PWA tetap jalan.
+
 ## iOS
 
 ```bash
