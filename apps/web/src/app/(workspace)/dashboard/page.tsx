@@ -124,6 +124,8 @@ export default async function DashboardPage({
         summary={buildHeaderSummary(overview.stats)}
       />
 
+      <WhatsNewBanner />
+
       <DashboardAttentionBanner pastDeadline={overview.stats.pastDeadline} />
 
       <PendingInvitationsSection initialInvitations={pendingInvitations} />
