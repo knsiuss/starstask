@@ -12,9 +12,10 @@ import {
   UserCheck,
   UserRound,
   Building2,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils/cn";
@@ -166,9 +167,9 @@ export function WorkspaceNav({
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
-          <item.icon
-            aria-hidden="true"
-            className="h-[18px] w-[18px] shrink-0"
+          <NavIcon
+            Icon={item.icon}
+            isActive={isActive}
           />
           <span className={cn("truncate", compact && "sr-only")}>
             {item.label}
@@ -211,6 +212,31 @@ export function WorkspaceNav({
         </NavSection>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Swaps the destination icon for a spinner while its navigation is pending,
+ * so a click on a slow (force-dynamic) route reads as immediate feedback
+ * instead of a frozen screen until the server responds.
+ */
+function NavIcon({ Icon, isActive }: { Icon: LucideIcon; isActive: boolean }) {
+  const { pending } = useLinkStatus();
+
+  if (pending && !isActive) {
+    return (
+      <Loader2
+        aria-hidden="true"
+        className="h-[18px] w-[18px] shrink-0 animate-spin"
+      />
+    );
+  }
+
+  return (
+    <Icon
+      aria-hidden="true"
+      className="h-[18px] w-[18px] shrink-0"
+    />
   );
 }
 
