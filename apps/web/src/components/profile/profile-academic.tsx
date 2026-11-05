@@ -86,7 +86,7 @@ export function ProfileAcademic({
               {classes.map((item) => (
                 <li key={item.id}>
                   <Link
-                    href={`/dashboard/classes/${item.slug}`}
+                    href={`/app/classes/${item.slug}`}
                     className="bg-muted text-foreground hover:bg-hover focus-visible:outline-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     {item.name}

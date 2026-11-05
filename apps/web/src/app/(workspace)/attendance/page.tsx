@@ -150,7 +150,7 @@ export default async function AttendancePage({
                 variant="secondary"
                 className="rounded-full"
               >
-                <Link href={`/dashboard/classes/${classItem.slug}/attendance`}>
+                <Link href={`/app/classes/${classItem.slug}/attendance`}>
                   <Settings
                     aria-hidden="true"
                     className="h-3.5 w-3.5"

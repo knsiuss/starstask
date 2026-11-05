@@ -70,7 +70,7 @@ export function isAllowlistedDeveloperEmail(
  * the student workspace, so they land on and are steered toward /developer.
  */
 export const DEVELOPER_HOME_PATH = "/developer";
-export const MEMBER_HOME_PATH = "/dashboard";
+export const MEMBER_HOME_PATH = "/app";
 
 /**
  * Workspace path prefixes that serve student-facing features only. Used as a
@@ -78,7 +78,7 @@ export const MEMBER_HOME_PATH = "/dashboard";
  * of the student area; every page still enforces its own auth requirements.
  */
 const STUDENT_WORKSPACE_PREFIXES = [
-  "/dashboard",
+  "/app",
   "/assignments",
   "/classes",
   "/leave-requests",

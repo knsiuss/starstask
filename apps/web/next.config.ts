@@ -48,6 +48,17 @@ const nextConfig: NextConfig = {
         destination: "/assignments/:id/edit",
         permanent: false,
       },
+      // The workspace home moved from /dashboard to /app.
+      {
+        source: "/dashboard",
+        destination: "/app",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/:path*",
+        destination: "/app/:path*",
+        permanent: true,
+      },
     ];
   },
   async headers() {

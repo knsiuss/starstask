@@ -98,7 +98,7 @@ function useDismissableMenu() {
 }
 
 function weekHref(offset: number): string {
-  return offset === 0 ? "/dashboard" : `/dashboard?week=${offset}`;
+  return offset === 0 ? "/app" : `/app?week=${offset}`;
 }
 
 /** Labels a week relative to the current one, so the menu reads naturally. */

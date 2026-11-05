@@ -28,7 +28,7 @@ export async function ManageSettingsTab({
     notFound();
   }
 
-  const base = `/dashboard/classes/${classSummary.slug}/manage`;
+  const base = `/app/classes/${classSummary.slug}/manage`;
 
   return (
     <div className="mt-6 space-y-6">

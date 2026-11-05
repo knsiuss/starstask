@@ -68,7 +68,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                   variant="secondary"
                   className="w-full"
                 >
-                  <Link href="/dashboard">Back to dashboard</Link>
+                  <Link href="/app">Back to dashboard</Link>
                 </Button>
               </>
             ) : preview && !preview.valid ? (
@@ -89,7 +89,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                   variant="secondary"
                   className="w-full"
                 >
-                  <Link href="/dashboard">Back to dashboard</Link>
+                  <Link href="/app">Back to dashboard</Link>
                 </Button>
               </>
             ) : preview?.is_member ? (
@@ -103,7 +103,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                   asChild
                   className="w-full"
                 >
-                  <Link href={`/dashboard/classes/${preview.class_slug}`}>
+                  <Link href={`/app/classes/${preview.class_slug}`}>
                     Open class group
                     <ArrowRight
                       aria-hidden="true"

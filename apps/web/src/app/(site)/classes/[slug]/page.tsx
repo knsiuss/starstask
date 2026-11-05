@@ -185,7 +185,7 @@ export default async function ClassPage({
 
           {joined ? (
             <Button asChild>
-              <Link href={`/dashboard/classes/${found.slug}`}>
+              <Link href={`/app/classes/${found.slug}`}>
                 <LayoutDashboard
                   aria-hidden="true"
                   className="h-4 w-4"
@@ -209,7 +209,7 @@ export default async function ClassPage({
               asChild
               variant="secondary"
             >
-              <Link href={`/dashboard/classes/${found.slug}/manage`}>
+              <Link href={`/app/classes/${found.slug}/manage`}>
                 Manage class
               </Link>
             </Button>

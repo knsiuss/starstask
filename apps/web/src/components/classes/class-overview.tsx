@@ -24,7 +24,7 @@ export function ClassOverview({
   data,
   canManage,
 }: ClassOverviewProps) {
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/app/classes/${classSlug}`;
 
   return (
     <div className="mt-5 flex flex-col gap-4 sm:mt-6 sm:gap-6 xl:flex-row xl:items-start">

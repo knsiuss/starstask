@@ -45,6 +45,15 @@ export function ThemeToggle() {
   const [override, setOverride] = React.useState<ThemePreference | null>(null);
   const activeTheme = override ?? theme;
 
+  // Defense in depth: if the boot script in <head> missed (late paint,
+  // cached HTML), re-apply the stored preference once after mount.
+  React.useEffect(() => {
+    const stored = resolveTheme();
+    document.documentElement.classList.toggle("dark", stored === "dark");
+    document.documentElement.style.colorScheme = stored;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggle = () => {
     const next: ThemePreference = activeTheme === "dark" ? "light" : "dark";
 

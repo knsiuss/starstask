@@ -247,7 +247,7 @@ export function VerificationRequestCard({
             <p className="mt-1">
               You have class admin access for this class.{" "}
               <Link
-                href={`/dashboard/classes/${request.classSlug}`}
+                href={`/app/classes/${request.classSlug}`}
                 className="underline underline-offset-4"
               >
                 Open class management

@@ -45,7 +45,7 @@ export function InviteAcceptButton({ token }: InviteAcceptButtonProps) {
 
       const slug = body?.data?.slug;
 
-      router.push(slug ? `/dashboard/classes/${slug}` : "/dashboard");
+      router.push(slug ? `/app/classes/${slug}` : "/app");
       router.refresh();
     } catch {
       setError("Network error. Check your connection and try again.");

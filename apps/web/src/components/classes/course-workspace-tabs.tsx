@@ -33,7 +33,7 @@ export function courseTabHref(
   courseId: string,
   tab: CourseTab,
 ): string {
-  const base = `/dashboard/classes/${slug}/courses/${courseId}`;
+  const base = `/app/classes/${slug}/courses/${courseId}`;
 
   return tab === "overview" ? base : `${base}/${tab}`;
 }

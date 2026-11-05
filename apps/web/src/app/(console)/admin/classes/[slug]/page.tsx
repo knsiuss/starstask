@@ -91,7 +91,7 @@ export default async function AdminClassPage({ params }: AdminClassPageProps) {
             <Link href={`/classes/${found.slug}`}>Public page</Link>
           </Button>
           <Button asChild>
-            <Link href={`/dashboard/classes/${found.slug}/manage`}>
+            <Link href={`/app/classes/${found.slug}/manage`}>
               <ClipboardCheck
                 aria-hidden="true"
                 className="h-4 w-4"

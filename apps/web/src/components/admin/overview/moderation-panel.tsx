@@ -61,7 +61,7 @@ export function ModerationPanel({
             >
               <div className="min-w-0">
                 <Link
-                  href={`/dashboard/classes/${item.class_slug}/review/${item.id}`}
+                  href={`/app/classes/${item.class_slug}/review/${item.id}`}
                   className="hover:text-accent font-medium underline-offset-4 hover:underline"
                 >
                   {item.title}

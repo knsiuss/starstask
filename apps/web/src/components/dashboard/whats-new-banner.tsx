@@ -18,7 +18,7 @@ const SEEN_STORAGE_KEY = "starstask-whats-new-seen";
 const HIGHLIGHTS = [
   {
     text: "Page transitions and loading skeletons — navigation no longer feels frozen.",
-    href: "/dashboard",
+    href: "/app",
   },
   {
     text: "GPS check-in failed? Your class admin can now mark you present manually.",

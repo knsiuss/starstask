@@ -281,7 +281,7 @@ function JoinResultPanel({
           </p>
           <p className="mt-1">
             <Link
-              href={`/dashboard/classes/${result.slug}`}
+              href={`/app/classes/${result.slug}`}
               className="text-accent font-medium hover:underline"
             >
               Open the class

@@ -69,7 +69,7 @@ export function ClassAttendanceMeetings({
     null,
   );
   const [error, setError] = React.useState<string | null>(null);
-  const base = `/dashboard/classes/${classSlug}/attendance`;
+  const base = `/app/classes/${classSlug}/attendance`;
   const apiBase = `/api/classes/${classSlug}/attendance`;
   const openCount = meetings.filter(
     (meeting) => meeting.phase === "open",

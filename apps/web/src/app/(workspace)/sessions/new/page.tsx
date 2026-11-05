@@ -159,7 +159,7 @@ export default async function NewSessionPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <Link
-        href={`/dashboard/classes/${selected.slug}/sessions`}
+        href={`/app/classes/${selected.slug}/sessions`}
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
         <ArrowLeft

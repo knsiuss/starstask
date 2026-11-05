@@ -93,7 +93,7 @@ export default async function ClassDiscoveryPage({
           asChild
           size="lg"
         >
-          <Link href="/dashboard/applications">
+          <Link href="/app/applications">
             <PlusCircle
               aria-hidden="true"
               className="h-4 w-4"

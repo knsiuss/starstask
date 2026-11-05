@@ -20,6 +20,7 @@ import type {
 } from "@starstask/contracts";
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
+import { fetchAllRows } from "@/lib/db/fetch-all";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -594,16 +595,18 @@ export async function listClassMembers(
 ): Promise<ClassMemberView[]> {
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
-    .from("class_members")
-    .select("user_id, joined_via, joined_at")
-    .eq("class_id", classId)
-    .order("joined_at", { ascending: true })
-    .limit(500);
-
-  if (error) {
-    throw new DataAccessError("Could not load class members", error.code);
-  }
+  const data = await fetchAllRows(
+    async (from, to) =>
+      supabase
+        .from("class_members")
+        .select("user_id, joined_via, joined_at")
+        .eq("class_id", classId)
+        .order("joined_at", { ascending: true })
+        .range(from, to),
+    (code) => {
+      throw new DataAccessError("Could not load class members", code);
+    },
+  );
 
   const userIds = (data ?? []).map((row) => row.user_id);
   const [profiles, adminIds, bios] = await Promise.all([
@@ -718,17 +721,19 @@ export async function getClassOptions(): Promise<ClassOption[]> {
 /** Distinct semesters among active classes, for the discovery filter. */
 export async function getClassSemesterOptions(): Promise<string[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("classes")
-    .select("semester")
-    .eq("status", "active")
-    .limit(500);
+  const data = await fetchAllRows(
+    async (from, to) =>
+      supabase
+        .from("classes")
+        .select("semester")
+        .eq("status", "active")
+        .range(from, to),
+    (code) => {
+      throw new DataAccessError("Could not load semesters", code);
+    },
+  );
 
-  if (error) {
-    throw new DataAccessError("Could not load semesters", error.code);
-  }
-
-  return [...new Set((data ?? []).map((row) => row.semester))].sort((a, b) =>
+  return [...new Set(data.map((row) => row.semester))].sort((a, b) =>
     a.localeCompare(b),
   );
 }

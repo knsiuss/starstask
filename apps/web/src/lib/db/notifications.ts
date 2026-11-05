@@ -6,6 +6,7 @@ import {
 } from "@starstask/contracts";
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
+import { decodeCursor, encodeCursor } from "@/lib/db/cursor";
 import { isSafeNotificationPath } from "@/lib/push/payload";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { NotificationEventKindRow } from "@/types/database";
@@ -24,10 +25,14 @@ export type NotificationInboxQuery = {
   page: number;
   pageSize: number;
   unreadOnly: boolean;
+  /** Keyset cursor (`created_at` of the last seen row); page is ignored when set. */
+  cursor?: string | null;
 };
 
 export type NotificationInboxPage = PaginatedResult<NotificationInboxItem> & {
   unreadCount: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 };
 
 type NotificationRow = {
@@ -87,6 +92,8 @@ export async function listNotificationInbox(
 ): Promise<NotificationInboxPage> {
   const supabase = await createSupabaseServerClient();
   const offset = (query.page - 1) * query.pageSize;
+  const cursorTs = decodeCursor(query.cursor);
+  const useCursor = query.cursor !== undefined;
 
   let listQuery = supabase
     .from("notification_events")
@@ -96,10 +103,18 @@ export async function listNotificationInbox(
     listQuery = listQuery.is("read_at", null);
   }
 
+  if (useCursor && cursorTs) {
+    listQuery = listQuery.lt("created_at", cursorTs);
+  }
+
   const [list, unread] = await Promise.all([
-    listQuery
-      .order("created_at", { ascending: false })
-      .range(offset, offset + query.pageSize - 1),
+    useCursor
+      ? listQuery
+          .order("created_at", { ascending: false })
+          .range(0, query.pageSize)
+      : listQuery
+          .order("created_at", { ascending: false })
+          .range(offset, offset + query.pageSize - 1),
     supabase
       .from("notification_events")
       .select("id", { count: "exact", head: true })
@@ -121,7 +136,10 @@ export async function listNotificationInbox(
   }
 
   const total = list.count ?? 0;
-  const items = (list.data ?? []).flatMap((row) => {
+  const rawRows = list.data ?? [];
+  const hasMore = useCursor && rawRows.length > query.pageSize;
+  const pageRows = hasMore ? rawRows.slice(0, query.pageSize) : rawRows;
+  const items = pageRows.flatMap((row) => {
     const mapped = mapNotificationRow(row);
     return mapped ? [mapped] : [];
   });
@@ -133,6 +151,11 @@ export async function listNotificationInbox(
     pageSize: query.pageSize,
     totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
     unreadCount: unread.count ?? 0,
+    nextCursor:
+      hasMore && pageRows.length > 0
+        ? encodeCursor(pageRows[pageRows.length - 1]?.created_at ?? "")
+        : null,
+    hasMore,
   };
 }
 

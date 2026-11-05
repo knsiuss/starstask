@@ -6,4 +6,4 @@ export const SITE_LINKS = [
   { href: "/#about", label: "About" },
 ];
 
-export const SITE_MEMBER_LINKS = [{ href: "/dashboard", label: "Dashboard" }];
+export const SITE_MEMBER_LINKS = [{ href: "/app", label: "Dashboard" }];

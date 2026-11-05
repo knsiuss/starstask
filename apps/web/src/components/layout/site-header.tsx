@@ -24,7 +24,7 @@ export async function SiteHeader() {
         <SiteMobileNav isAuthenticated={Boolean(session)} />
 
         <Link
-          href={session ? "/dashboard" : "/"}
+          href={session ? "/app" : "/"}
           className="flex items-center gap-2 font-semibold tracking-tight"
         >
           <BrandMark size={32} />

@@ -218,7 +218,7 @@ export function ClassApplicationForm({
 
       const id = body?.data?.id ?? applicationId;
 
-      router.push(id ? `/dashboard/applications/${id}?saved=1` : "/dashboard");
+      router.push(id ? `/app/applications/${id}?saved=1` : "/app");
       router.refresh();
     } catch {
       setFormMessage("Network error. Check your connection and try again.");

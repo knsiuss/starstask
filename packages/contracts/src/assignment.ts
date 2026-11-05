@@ -286,6 +286,7 @@ export const myAssignmentsQuerySchema = z.object({
   status: z.enum(ASSIGNMENT_STATUSES).optional(),
   page: z.coerce.number().int().min(1).max(500).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().trim().max(64).optional(),
 });
 
 export type MyAssignmentsQuery = z.infer<typeof myAssignmentsQuerySchema>;

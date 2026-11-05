@@ -90,7 +90,7 @@ export function isClassTab(value: string | undefined): value is ClassTab {
 }
 
 export function classTabHref(slug: string, tab: ClassTab): string {
-  const base = `/dashboard/classes/${slug}`;
+  const base = `/app/classes/${slug}`;
 
   if (tab === "courses") {
     return `${base}/courses`;

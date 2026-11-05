@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
@@ -8,6 +9,12 @@ import { ToastProvider } from "@/components/ui/toast";
 import { getSiteUrl } from "@/lib/env/public";
 
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 const siteUrl = getSiteUrl();
 const siteName = "StarsTask";
@@ -68,11 +75,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body className="min-h-dvh antialiased">
+      <body className={`${inter.variable} min-h-dvh antialiased`}>
         <a
           href="#main-content"
           className="bg-accent text-accent-foreground sr-only rounded-md px-4 py-2 text-sm font-medium focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"

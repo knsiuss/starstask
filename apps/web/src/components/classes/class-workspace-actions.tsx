@@ -41,7 +41,7 @@ export function ClassWorkspaceActions({
   canManage,
   isActive,
 }: ClassWorkspaceActionsProps) {
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/app/classes/${classSlug}`;
 
   return (
     <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">

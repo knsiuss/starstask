@@ -97,7 +97,7 @@ export function AdminNav() {
 
       <div className="border-border mt-4 hidden border-t pt-3 lg:block">
         <Link
-          href="/dashboard"
+          href="/app"
           className="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-md px-3 py-2 text-sm"
         >
           <ArrowLeft

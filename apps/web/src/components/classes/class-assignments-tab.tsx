@@ -63,7 +63,7 @@ export function ClassAssignmentsTab({
   selectedSubjectId,
   submissions,
 }: ClassAssignmentsTabProps) {
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/app/classes/${classSlug}`;
   const selectedSubject = selectedSubjectId
     ? subjects.find((subject) => subject.id === selectedSubjectId)
     : undefined;

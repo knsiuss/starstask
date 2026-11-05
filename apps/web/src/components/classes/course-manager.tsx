@@ -371,7 +371,7 @@ function CourseCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/dashboard/classes/${classSlug}/courses/${course.id}`}
+              href={`/app/classes/${classSlug}/courses/${course.id}`}
               className="hover:text-accent text-sm font-semibold tracking-tight hover:underline"
             >
               {course.name}
@@ -394,7 +394,7 @@ function CourseCard({
           size="sm"
           variant="secondary"
         >
-          <Link href={`/dashboard/classes/${classSlug}/courses/${course.id}`}>
+          <Link href={`/app/classes/${classSlug}/courses/${course.id}`}>
             Open
             <ArrowUpRight
               aria-hidden="true"

@@ -2,16 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { SetupNotice } from "@/components/layout/setup-notice";
 import { DmKeySetup } from "@/components/messages/dm-key-setup";
 import { DmUserSearch } from "@/components/messages/dm-user-search";
-import { StoryRow } from "@/components/messages/story-row";
-import { ConversationList } from "@/components/messages/conversation-list";
-import { BackupKeyButton } from "@/components/messages/backup-key";
+import { MessagesShell } from "@/components/messages/messages-shell";
 import { getSessionUser } from "@/lib/auth/session";
 import { listConversations } from "@/lib/db/direct-messages";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
-import { SetupNotice } from "@/components/layout/setup-notice";
 
 export const metadata: Metadata = {
   title: "Messages",
@@ -42,26 +40,17 @@ export default async function MessagesPage() {
   const conversations = await listConversations();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Messages</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            End-to-end encrypted. The server stores ciphertext only.
-          </p>
-        </div>
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <DmKeySetup />
+        <DmUserSearch />
       </div>
 
-      <StoryRow />
-
-      <DmUserSearch />
-
-      <BackupKeyButton />
-
-      <div className="mt-6">
-        <ConversationList conversations={conversations} />
-      </div>
+      {/* Server stores ciphertext only; decryption happens in the browser. */}
+      <MessagesShell
+        conversations={conversations}
+        myUserId={session.user.id}
+      />
     </div>
   );
 }

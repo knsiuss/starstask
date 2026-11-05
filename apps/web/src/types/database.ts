@@ -4302,6 +4302,22 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Json;
       };
+      developer_list_users: {
+        Args: {
+          p_search?: string | null;
+          p_sort?: string;
+          p_direction?: string;
+          p_page?: number;
+          p_page_size?: number;
+        };
+        Returns: {
+          id: string;
+          display_name: string | null;
+          created_at: string;
+          last_sign_in_at: string | null;
+          total_count: number;
+        }[];
+      };
       developer_applied_migrations: {
         Args: Record<string, never>;
         Returns: Json;

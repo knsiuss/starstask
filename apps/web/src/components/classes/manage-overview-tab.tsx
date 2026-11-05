@@ -76,7 +76,7 @@ export async function ManageOverviewTab({
     getClassDashboardCounts(classId),
     listAuditLogs({ classId, page: 1, pageSize: 5 }),
   ]);
-  const base = `/dashboard/classes/${classSlug}/manage`;
+  const base = `/app/classes/${classSlug}/manage`;
   const metrics = buildMetrics(base, counts);
 
   return (

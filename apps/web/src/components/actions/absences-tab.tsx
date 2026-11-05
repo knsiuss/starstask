@@ -191,7 +191,7 @@ export function AbsenceRequestCard({
 
   return (
     <Link
-      href={`/dashboard/actions?tab=absences&request=${request.id}`}
+      href={`/app/actions?tab=absences&request=${request.id}`}
       className="border-border bg-surface hover:border-accent/60 block rounded-xl border px-4 py-3.5 transition-colors"
     >
       <div className="flex items-start justify-between gap-3">

@@ -41,14 +41,14 @@ describe("updateSession", () => {
   });
 
   it("verifies the session with getClaims and not getUser", async () => {
-    await updateSession(createRequest("/dashboard"));
+    await updateSession(createRequest("/app"));
 
     expect(mocks.getClaims).toHaveBeenCalledTimes(1);
     expect(mocks.getUser).not.toHaveBeenCalled();
   });
 
   it("lets an anonymous request continue without redirecting", async () => {
-    const response = await updateSession(createRequest("/dashboard"));
+    const response = await updateSession(createRequest("/app"));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
@@ -60,7 +60,7 @@ describe("updateSession", () => {
       data: { claims: { email: "dev@example.test" }, error: null },
     });
 
-    const response = await updateSession(createRequest("/dashboard"));
+    const response = await updateSession(createRequest("/app"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("https://app.test/developer");
