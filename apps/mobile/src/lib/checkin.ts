@@ -1,4 +1,4 @@
-import { Geolocation } from "@capacitor/geolocation";
+import * as Location from "expo-location";
 
 import {
   queueOfflineCheckin,
@@ -8,7 +8,7 @@ import {
 import { getSupabase } from "./supabase";
 
 /**
- * GPS check-in for one attendance session (Fase 2).
+ * GPS check-in for one attendance session.
  *
  * The heavy lifting stays server-side: the `check_in_attendance_meeting`
  * RPC re-validates membership, session state, window, identity, accuracy,
@@ -109,9 +109,9 @@ export async function checkInToSession(
     };
   }
 
-  const permission = await Geolocation.requestPermissions();
+  const permission = await Location.requestForegroundPermissionsAsync();
 
-  if (permission.location !== "granted") {
+  if (permission.status !== "granted") {
     return {
       ok: false,
       code: "location_denied",
@@ -119,12 +119,11 @@ export async function checkInToSession(
     };
   }
 
-  const position = await Geolocation.getCurrentPosition({
-    enableHighAccuracy: true,
-    timeout: 10_000,
+  const position = await Location.getCurrentPositionAsync({
+    accuracy: Location.Accuracy.Highest,
   });
 
-  const accuracyM = position.coords.accuracy;
+  const accuracyM = position.coords.accuracy ?? 0;
 
   if (accuracyM > CHECK_IN_ACCURACY_MAX_M) {
     return {
@@ -149,8 +148,8 @@ export async function checkInToSession(
 
   // Server unreachable (or closed window): keep the captured position for
   // the next sync instead of losing the check-in entirely.
-  if (!navigator.onLine || result.code === "checkin_failed") {
-    queueOfflineCheckin({
+  if (result.code === "checkin_failed") {
+    await queueOfflineCheckin({
       sessionId,
       userId,
       latitude: position.coords.latitude,

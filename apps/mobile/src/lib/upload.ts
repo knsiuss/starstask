@@ -1,12 +1,13 @@
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+
 import { getSupabase } from "./supabase";
 
 /**
- * Assignment attachment upload from the mobile shell (Fase 2).
+ * Assignment attachment upload from the Expo shell.
  *
- * The file picker stays in the WebView (`<input type="file">`), which
- * opens the native picker on Android. Validation mirrors the web app:
- * size cap, extension whitelist, and the storage bucket enforces the same
- * MIME list server-side, so an oversized or unlisted file fails loudly.
+ * Validation mirrors the web app: size cap and extension whitelist,
+ * and the storage bucket enforces the same MIME list server-side.
  */
 
 export type UploadResult =
@@ -32,16 +33,16 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   mp3: "audio/mpeg",
 };
 
-export function validateUploadFile(file: File): UploadResult | null {
-  if (file.size <= 0) {
+export function validateUploadFile(name: string, size: number): UploadResult | null {
+  if (size <= 0) {
     return { ok: false, message: "The file is empty." };
   }
 
-  if (file.size > MAX_BYTES) {
+  if (size > MAX_BYTES) {
     return { ok: false, message: "Each file must be 10 MB or smaller." };
   }
 
-  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const extension = name.split(".").pop()?.toLowerCase() ?? "";
 
   if (!MIME_BY_EXTENSION[extension]) {
     return {
@@ -53,12 +54,20 @@ export function validateUploadFile(file: File): UploadResult | null {
   return null;
 }
 
-export async function uploadAttachmentFile(
+export async function pickAndUploadAttachment(
   userId: string,
   assignmentId: string,
-  file: File,
 ): Promise<UploadResult> {
-  const invalid = validateUploadFile(file);
+  const picked = await DocumentPicker.getDocumentAsync({
+    copyToCacheDirectory: true,
+  });
+
+  if (picked.canceled || !picked.assets[0]) {
+    return { ok: false, message: "No file selected." };
+  }
+
+  const file = picked.assets[0];
+  const invalid = validateUploadFile(file.name, file.size ?? 0);
 
   if (invalid) {
     return invalid;
@@ -73,11 +82,16 @@ export async function uploadAttachmentFile(
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
   const mimeType = MIME_BY_EXTENSION[extension] as string;
   const safeName = file.name.replace(/[^\w.\- ]+/g, "_").slice(0, 120);
-  const storagePath = `${userId}/${assignmentId}/${crypto.randomUUID()}-${safeName}`;
+  const storagePath = `${userId}/${assignmentId}/${Date.now()}-${safeName}`;
+
+  const bytes = await FileSystem.readAsStringAsync(file.uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const binary = Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0));
 
   const { error: uploadError } = await supabase.storage
     .from("assignment-attachments")
-    .upload(storagePath, file, {
+    .upload(storagePath, binary, {
       contentType: mimeType,
       upsert: false,
       cacheControl: "private, max-age=0",
@@ -94,7 +108,7 @@ export async function uploadAttachmentFile(
       storage_path: storagePath,
       original_filename: safeName,
       mime_type: mimeType,
-      file_size: file.size,
+      file_size: file.size ?? 0,
     });
 
   if (recordError) {
