@@ -69,11 +69,11 @@ export function describeGeolocationError(error: unknown): string {
   }
 
   if (code === 2) {
-    return "Your location is unavailable right now. Step outside or near a window and try again.";
+    return "Your location is unavailable right now. Step outside or near a window and try again. If you are in the room, ask your class admin to mark you present manually — they must physically verify you first.";
   }
 
   if (code === 3) {
-    return "Getting your location took too long. Try again.";
+    return "Getting your location took too long. Try again. If you are in the room, ask your class admin to mark you present manually — they must physically verify you first.";
   }
 
   return "This browser cannot share your location.";
