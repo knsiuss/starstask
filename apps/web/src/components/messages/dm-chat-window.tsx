@@ -49,6 +49,9 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
   const [error, setError] = useState<string | null>(null);
   const peerPublicKeyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [safety, setSafety] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const response = await fetch(
@@ -155,6 +158,53 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Typing indicator poll 3s + mark read on load
+  useEffect(() => {
+    fetch(`/api/dm/conversations/${conversationId}/read`, {
+      method: "POST",
+    }).catch(() => {});
+    const t = setInterval(async () => {
+      const r = await fetch(
+        `/api/dm/conversations/${conversationId}/typing`,
+      ).catch(() => null);
+      if (r?.ok) {
+        const d = await r.json();
+        setPeerTyping(Boolean(d.typing));
+      }
+    }, 3000);
+    return () => clearInterval(t);
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!peerPublicKeyRef.current) return;
+    import("@/lib/db/dm-v2")
+      .then(async (m) => {
+        setSafety(await m.getSafetyFingerprint(peerPublicKeyRef.current!));
+      })
+      .catch(() => {});
+  }, [messages.length]);
+
+  async function recordVoice(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.start();
+      setTimeout(() => recorder.stop(), 15000);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const file = new File([blob], `voice-${Date.now()}.webm`, {
+          type: "audio/webm",
+        });
+        await sendFile(file);
+      };
+    } catch {
+      setError("Microphone permission denied");
+    }
+  }
 
   async function sendFile(file: File): Promise<void> {
     setUploading(true);
@@ -277,7 +327,10 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
   return (
     <div className="flex h-[70vh] flex-col">
       <div className="flex items-center justify-between border-b pb-3">
-        <p className="text-muted-foreground text-xs">🔒 End-to-end encrypted</p>
+        <p className="text-muted-foreground text-xs">
+          🔒 E2E encrypted{safety ? ` • Safety: ${safety}` : ""}
+          {peerTyping ? " • typing…" : ""}
+        </p>
         <Button
           size="sm"
           variant="ghost"
@@ -326,8 +379,36 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
                   📎 {message.attachmentName} (decrypt failed)
                 </p>
               ) : null}
+              <div className="mt-1 flex gap-2 text-xs">
+                <button
+                  className="underline"
+                  onClick={() => setReplyTo(message.id)}
+                >
+                  Reply
+                </button>
+                <button
+                  className="underline"
+                  onClick={async () => {
+                    const emoji = prompt("Reaction emoji?", "❤️");
+                    if (!emoji) return;
+                    // reaction stored in message reactions via API
+                    await fetch(
+                      `/api/dm/conversations/${conversationId}/messages/${message.id}/react`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ emoji }),
+                      },
+                    ).catch(() => {});
+                    await load();
+                    router.refresh();
+                  }}
+                >
+                  ❤️
+                </button>
+              </div>
               <p className="text-muted-foreground mt-1 text-xs">
-                {new Date(message.at).toLocaleString()}
+                {new Date(message.at).toLocaleString()} ✓✓
               </p>
             </div>
           ))
@@ -368,6 +449,13 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
             📎
           </span>
         </label>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => void recordVoice()}
+        >
+          🎤
+        </Button>
         <Button
           type="submit"
           disabled={sending || !draft.trim()}

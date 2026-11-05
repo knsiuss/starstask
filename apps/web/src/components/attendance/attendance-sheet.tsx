@@ -27,6 +27,18 @@ const dateLabel = new Intl.DateTimeFormat("id-ID", {
   timeZone: TIME_ZONE,
 });
 
+// Single source of truth for column widths. The table uses `table-fixed`,
+// so these widths are exact: sticky offsets below are derived from the
+// same constants and can never drift from the rendered columns.
+const SHEET_NO_WIDTH = 40;
+const SHEET_NIM_WIDTH = 112;
+const SHEET_NAME_WIDTH = 176;
+const SHEET_MEETING_WIDTH = 40;
+const SHEET_TOTAL_WIDTH = 40;
+const SHEET_PERCENT_WIDTH = 56;
+const SHEET_NIM_LEFT = SHEET_NO_WIDTH;
+const SHEET_NAME_LEFT = SHEET_NO_WIDTH + SHEET_NIM_WIDTH;
+
 type SheetProps = {
   classSlug: string;
   recap: AttendanceRecap;

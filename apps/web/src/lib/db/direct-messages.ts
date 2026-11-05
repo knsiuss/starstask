@@ -290,6 +290,11 @@ export async function sendCiphertext(
     throw new DataAccessError("Could not send message", error.code);
   }
 
+  // Push notif (fire-and-forget, no plaintext)
+  import("@/lib/db/dm-notifications")
+    .then((m) => m.notifyDmRecipient(conversationId, me))
+    .catch(() => {});
+
   return message as { id: string };
 }
 
