@@ -14,6 +14,10 @@ import {
   toJakartaDateKey,
 } from "@starstask/shared";
 
+import {
+  DASHBOARD_CACHE_TTL_SECONDS,
+  getCached,
+} from "@/lib/cache/redis-cache";
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { listMyClasses, loadProfiles } from "@/lib/db/classes";
@@ -70,8 +74,19 @@ const RECENT_TASK_LIMIT = 5;
  * Tasks are published assignments in the caller's active classes. A deadline
  * that has passed is reported as a "past deadline" unless the student has
  * already ticked it as done, since the schema has no submitted-work state.
+ *
+ * The result is cached briefly in Redis (per user, short TTL); a cache miss
+ * or outage falls back to the database reads below.
  */
 export async function getDashboardOverview(
+  userId: string,
+): Promise<DashboardOverview> {
+  return getCached(`dashboard:${userId}`, DASHBOARD_CACHE_TTL_SECONDS, () =>
+    loadDashboardOverview(userId),
+  );
+}
+
+async function loadDashboardOverview(
   userId: string,
 ): Promise<DashboardOverview> {
   // Fast path: 1 RPC roundtrip (20261126000000). Falls back to legacy multi-query on error.
