@@ -2,13 +2,12 @@
 
 import { useEffect } from "react";
 
-import posthog from "posthog-js";
-
 /**
  * Identifies the signed-in user to PostHog so feature-flag targeting
  * (including beta rollouts) can be evaluated per user. Renders nothing.
  * Without a PostHog key the provider never initialises and identify is
- * a no-op in posthog-js.
+ * a no-op in posthog-js. posthog-js is imported lazily so it stays out
+ * of the initial bundle.
  */
 export function PostHogIdentify({
   userId,
@@ -22,7 +21,9 @@ export function PostHogIdentify({
       return;
     }
 
-    posthog.identify(userId, { betaTester });
+    void import("posthog-js").then((module) => {
+      module.default.identify(userId, { betaTester });
+    });
   }, [userId, betaTester]);
 
   return null;

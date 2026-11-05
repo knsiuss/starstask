@@ -1,13 +1,43 @@
 "use client";
 
 import { MessageCircleHeart, PencilLine } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 
-import { ChatPane } from "@/components/messages/chat-pane";
 import { ConversationListPanel } from "@/components/messages/conversation-list-panel";
-import { DmUserSearch } from "@/components/messages/dm-user-search";
 import type { ConversationRow } from "@/lib/db/direct-messages";
 import { cn } from "@/lib/utils/cn";
+
+// ChatPane (crypto + realtime + composer) and DmUserSearch are only needed
+// after the user picks a conversation / starts composing, so they load as
+// separate chunks instead of bloating the initial /messages bundle.
+const ChatPane = dynamic(
+  () =>
+    import("@/components/messages/chat-pane").then((module) => module.ChatPane),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center px-6 text-sm text-muted-foreground">
+        Loading chat...
+      </div>
+    ),
+  },
+);
+
+const DmUserSearch = dynamic(
+  () =>
+    import("@/components/messages/dm-user-search").then(
+      (module) => module.DmUserSearch,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center px-6 text-sm text-muted-foreground">
+        Loading...
+      </div>
+    ),
+  },
+);
 
 type Props = {
   conversations: ConversationRow[];

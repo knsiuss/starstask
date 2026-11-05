@@ -1,11 +1,14 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 /**
- * Offline check-in queue for the mobile shell.
+ * Offline check-in queue for the Expo shell.
  *
  * When a check-in cannot reach the server (no signal in a campus
  * basement), the captured position is persisted locally and retried when
  * connectivity returns. Items only leave the queue after the server
  * accepts them — a rejected item stays queued and surfaces its message
- * instead of being silently dropped.
+ * instead of being silently dropped. AsyncStorage replaces the
+ * WebView localStorage the Capacitor shell used.
  */
 
 export type PendingCheckIn = {
@@ -22,39 +25,39 @@ export type PendingCheckIn = {
 
 const QUEUE_KEY = "starstask-mobile-offline-checkins";
 
-export function getOfflineQueue(): PendingCheckIn[] {
+export async function getOfflineQueue(): Promise<PendingCheckIn[]> {
   try {
-    const raw = localStorage.getItem(QUEUE_KEY);
+    const raw = await AsyncStorage.getItem(QUEUE_KEY);
     return raw ? (JSON.parse(raw) as PendingCheckIn[]) : [];
   } catch {
     return [];
   }
 }
 
-function saveQueue(queue: PendingCheckIn[]): void {
+async function saveQueue(queue: PendingCheckIn[]): Promise<void> {
   try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch {
     // Storage full/blocked: the queue simply does not persist this round.
   }
 }
 
-export function queueOfflineCheckin(
+export async function queueOfflineCheckin(
   item: Omit<PendingCheckIn, "id" | "capturedAt">,
-): PendingCheckIn {
+): Promise<PendingCheckIn> {
   const queued: PendingCheckIn = {
     ...item,
-    id: crypto.randomUUID(),
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     capturedAt: new Date().toISOString(),
   };
-  saveQueue([...getOfflineQueue(), queued]);
+  await saveQueue([...(await getOfflineQueue()), queued]);
   return queued;
 }
 
 export async function syncOfflineQueue(
   send: (item: PendingCheckIn) => Promise<boolean>,
 ): Promise<{ synced: number; remaining: number }> {
-  const queue = getOfflineQueue();
+  const queue = await getOfflineQueue();
   const remaining: PendingCheckIn[] = [];
   let synced = 0;
 
@@ -71,6 +74,6 @@ export async function syncOfflineQueue(
     }
   }
 
-  saveQueue(remaining);
+  await saveQueue(remaining);
   return { synced, remaining: remaining.length };
 }
