@@ -24,9 +24,12 @@
 - UTF-8, header row required, max 1000 rows, score 0-100 numeric. Publish is `draft -> published` with audit log; no overwrite of published rows.
 - Pending owner approval; no grading publish path is live until then.
 
-### 5. NIM uniqueness
-- Legacy: `profiles_nim_unique` global (unchanged).
-- New model: `student_identities.student_id` is per-university unique.
+### 5. NIM uniqueness — PREFIXED format (owner idea 2026-11-05)
+- Legacy: `profiles.nim` stays raw + global unique (untouched, until cutover).
+- New model: `student_identities.student_id` = `{PREFIX}-{raw NIM}`, e.g. `UNPAM-241011400217`, `BRAWIJAYA-0000`.
+- Prefix source: `universities.nim_prefix` (new column, migration `20261120000000_nim_prefix.sql`), derived from `short_name` (UNPAM), fallback `code`, fallback `slug`, uppercased alphanumeric.
+- Existing CHECK `student_identities_student_id_format` already allows this format — no schema change needed there.
+- Per-university unique index: `(university_id, lower(student_id))`. Same raw NIM in two universities becomes distinct prefixed values, so no cross-university collision.
 - Dual-write is NOT introduced yet. Cutover requires: (a) backfill student_id from profiles.nim where unambiguous, (b) unique index per university, (c) drop global index only after zero cross-university collisions (see `scripts/reconcile-nim-dry-run.mjs`).
 
 ### 6. Class-media visibility
