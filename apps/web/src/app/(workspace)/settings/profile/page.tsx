@@ -82,8 +82,7 @@ export default async function ProfileSettingsPage() {
   // 5-per-class cap.
   const availableClasses: GrantableClass[] = classes
     .filter(
-      (item) =>
-        item.status === "active" && !representedClasses.has(item.id),
+      (item) => item.status === "active" && !representedClasses.has(item.id),
     )
     .map((item) => ({
       id: item.id,
@@ -160,43 +159,7 @@ export default async function ProfileSettingsPage() {
             )}
           </div>
 
-          {requests.length > 0 ? (
-            <div className="border-border border-t px-5 py-4">
-              <h3 className="text-foreground text-sm font-medium">Requests</h3>
-
-              <div className="mt-3 grid gap-3">
-                {requests.map((request) => (
-                  <VerificationRequestCard
-                    key={request.id}
-                    request={{
-                      id: request.id,
-                      className: request.className,
-                      classSlug: request.classSlug,
-                      status: request.status,
-                      statement: request.statement,
-                      submittedAt: request.submittedAt,
-                      reviewedAt: request.reviewedAt,
-                      reviewNote: request.reviewNote,
-                      hasClassAdminAccess: request.hasClassAdminAccess,
-                    }}
-                    evidence={evidenceByRequest.get(request.id) ?? []}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           <div className="border-border border-t px-5 py-4">
-            {liveClassIds.size > 0 ? (
-              <Alert
-                variant="info"
-                className="mb-3"
-              >
-                A request is already in review. You cannot file a second one for
-                the same class until it is decided.
-              </Alert>
-            ) : null}
-
             <ClassAdminApplyPanel classes={availableClasses} />
           </div>
         </ProfileSection>
