@@ -94,6 +94,11 @@ export function AttendanceMeetingForm({
       >
         {pending ? "Creating…" : "Add meeting"}
       </Button>
+      {location.trim() && scheduledAt ? (
+        <p className="text-muted-foreground w-full text-xs">
+          Lokasi terisi + waktu lewat = langsung open otomatis.
+        </p>
+      ) : null}
       {error ? <p className="text-danger w-full text-sm">{error}</p> : null}
     </form>
   );
