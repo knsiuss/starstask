@@ -1,7 +1,7 @@
 # ADR-002 — University Registry & Activation (DRAFT, pending owner sign-off)
 
 **Date:** 2026-11-05
-**Status:** PROPOSED — implemented 2026-11-05 as draft; activation decisions below require Platform Admin approval before enforcement.
+**Status:** NIM prefix LIVE 2026-11-05 (migration `20261120000000`, 31/31 identities → `UNPAM-...`); other decisions PROPOSED, pending owner sign-off before enforcement.
 
 ## Decisions
 
