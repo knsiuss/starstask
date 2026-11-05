@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ListChecks,
   MessageSquare,
+  MessagesSquare,
   Settings,
   UserCheck,
   UserRound,
@@ -47,6 +48,12 @@ const STUDY_ITEMS: NavItem[] = [
     href: "/leave-requests",
     label: "Absence Requests",
     icon: ClipboardList,
+    requiresAuth: true,
+  },
+  {
+    href: "/messages",
+    label: "Messages",
+    icon: MessagesSquare,
     requiresAuth: true,
   },
 ];

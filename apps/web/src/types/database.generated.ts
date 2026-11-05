@@ -4247,11 +4247,108 @@ export type Database = {
           },
         ];
       };
+      dm_conversations: {
+        Row: { id: string; created_at: string; updated_at: string };
+        Insert: { id?: string; created_at?: string; updated_at?: string };
+        Update: { id?: string; created_at?: string; updated_at?: string };
+        Relationships: [];
+      };
+      dm_participants: {
+        Row: {
+          conversation_id: string;
+          user_id: string;
+          last_read_at: string | null;
+          left_at: string | null;
+        };
+        Insert: {
+          conversation_id: string;
+          user_id: string;
+          last_read_at?: string | null;
+          left_at?: string | null;
+        };
+        Update: {
+          conversation_id?: string;
+          user_id?: string;
+          last_read_at?: string | null;
+          left_at?: string | null;
+        };
+        Relationships: [];
+      };
+      dm_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          created_at: string;
+          edited_at: string | null;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          created_at?: string;
+          edited_at?: string | null;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          body?: string;
+          created_at?: string;
+          edited_at?: string | null;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      dm_blocks: {
+        Row: {
+          blocker_id: string;
+          blocked_id: string;
+          created_at: string;
+        };
+        Insert: {
+          blocker_id: string;
+          blocked_id: string;
+          created_at?: string;
+        };
+        Update: {
+          blocker_id?: string;
+          blocked_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      dm_keys: {
+        Row: {
+          user_id: string;
+          public_key: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          public_key: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          public_key?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      dm_get_or_create_conversation: { Args: { p_other: string }; Returns: string };
       accept_class_invitation: { Args: { p_token: string }; Returns: string };
       accept_pending_invitation: {
         Args: { p_invitation_id: string };
