@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import {
   classJoinResultSchema,
   myProfileSchema,
@@ -18,7 +20,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * These columns have no client grant, so the only way to read them is this
  * SECURITY DEFINER call, which derives the owner from `auth.uid()`.
  */
-export async function getMyProfile(): Promise<MyProfile | null> {
+export const getMyProfile = cache(async (): Promise<MyProfile | null> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("get_my_profile", {});
 
@@ -37,7 +39,7 @@ export async function getMyProfile(): Promise<MyProfile | null> {
   }
 
   return parsed.data;
-}
+});
 
 /**
  * Persists the onboarding form and marks the profile complete.

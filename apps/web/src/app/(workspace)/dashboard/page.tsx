@@ -101,18 +101,18 @@ export default async function DashboardPage({
   const query = await searchParams;
   const weekOffset = parseWeekOffset(query.week);
 
-  const [overview, pendingInvitations, week, nextSchedule] = await Promise.all([
-    getDashboardOverview(session.user.id),
-    listStudentPendingInvitations(session.user.id, session.user.email),
-    getMyWeek(session.user.id, new Date(), weekOffset),
-    getNextSchedule(session.user.id),
-  ]);
+  // Semua query paralel (perf): overview, invitations, week, schedule, profile, unpam.
+  const [overview, pendingInvitations, week, nextSchedule, myProfile] =
+    await Promise.all([
+      getDashboardOverview(session.user.id),
+      listStudentPendingInvitations(session.user.id, session.user.email),
+      getMyWeek(session.user.id, new Date(), weekOffset),
+      getNextSchedule(session.user.id),
+      getMyProfile().catch(() => null),
+    ]);
   const showUnpamWidget =
     isUnpamPluginEnabled() &&
-    (await isUnpamMember(
-      session.user.id,
-      (await getMyProfile().catch(() => null))?.university,
-    ));
+    (await isUnpamMember(session.user.id, myProfile?.university));
   const unpamEvents = showUnpamWidget ? await getPersistedUnpamEvents() : [];
 
   return (

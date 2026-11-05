@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createClient } from "@supabase/supabase-js";
 
 import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
@@ -20,10 +22,10 @@ export function isPluginGloballyEnabled(): boolean {
  * Falls back to legacy free-text check for backwards compat during transition.
  * Pass userId + profileUniversity text.
  */
-export async function isUnpamMember(
+export const isUnpamMember = cache(async (
   userId: string | null,
   profileUniversity: string | null | undefined,
-): Promise<boolean> {
+): Promise<boolean> => {
   const { isUnpamUniversity } = await import(
     "@/features/plugins/unpam/config"
   );
@@ -42,7 +44,7 @@ export async function isUnpamMember(
   if (data && data.length > 0) return true;
   // Fallback during transition: legacy text still honored until all users migrated
   return isUnpamUniversity(profileUniversity);
-}
+});
 
 export type PluginEventRow = {
   title: string;

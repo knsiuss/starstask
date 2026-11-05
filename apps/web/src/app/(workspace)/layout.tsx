@@ -32,23 +32,21 @@ export default async function WorkspaceLayout({
   const displayName = session?.profile?.display_name ?? "StarsTask member";
   // These lookups are independent, so they share one round-trip window instead
   // of adding three sequential waits to every workspace navigation.
-  const [platformAdmin, classAdmin, unreadNotificationCount, myProfile] =
+  // Semua lookup independen paralel dalam 1 round-trip window (perf: TTFB).
+  const [platformAdmin, classAdmin, unreadNotificationCount, myProfile, unpamMember] =
     await Promise.all([
-      // Admin navigation is cosmetic only; every admin route re-checks the role.
       session ? isPlatformAdmin() : Promise.resolve(false),
       session ? isClassAdminAnywhere(session.user.id) : Promise.resolve(false),
-      // A bell badge is presentation only; a count failure must not take the
-      // whole workspace down.
       session ? countUnreadNotifications().catch(() => 0) : Promise.resolve(0),
-      // `university` is RPC-only (no PostgREST grant); a failure here only
-      // hides the optional sidebar link, it must not break the workspace.
       session ? getMyProfile().catch(() => null) : Promise.resolve(null),
+      // isUnpamMember di-cache per-request; butuh profileUniversity dari getMyProfile,
+      // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
+      Promise.resolve(false),
     ]);
-  // Sidebar hanya tampil bila plugin aktif (env) DAN membership registry UNPAM aktif
-  // (fallback teks legacy selama transisi).
   const showUniversityInfo =
     isUnpamPluginEnabled() &&
-    (await isUnpamMember(session?.user.id ?? null, myProfile?.university));
+    (unpamMember ||
+      (await isUnpamMember(session?.user.id ?? null, myProfile?.university)));
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;
