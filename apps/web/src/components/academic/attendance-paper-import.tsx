@@ -42,8 +42,74 @@ export function AttendancePaperImport({
     return initial;
   });
   const [pending, setPending] = React.useState(false);
+  const [parsing, setParsing] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+
+  async function onParsePdf(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setParsing(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("meetingId", meetingId);
+
+      const response = await fetch(
+        `/api/classes/${classSlug}/academic/attendance/paper-parse`,
+        { method: "POST", body: form },
+      );
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: { message?: string };
+        } | null;
+        throw new Error(
+          body?.error?.message ?? "PDF could not be read automatically.",
+        );
+      }
+
+      const body = (await response.json()) as {
+        data: {
+          hits: Array<{ studentCode: string; present: boolean }>;
+          warnings: string[];
+        };
+      };
+      const byCode = new Map(
+        body.data.hits.map((hit) => [hit.studentCode, hit.present]),
+      );
+
+      setPresent((current) => {
+        const next = { ...current };
+
+        for (const entry of entries) {
+          if (entry.studentCode && byCode.has(entry.studentCode)) {
+            next[entry.studentIdentityId] = Boolean(
+              byCode.get(entry.studentCode),
+            );
+          }
+        }
+
+        return next;
+      });
+      setMessage(
+        body.data.warnings.length > 0
+          ? (body.data.warnings[0] ?? null)
+          : `Read ${body.data.hits.length} NIM(s). Verify before saving.`,
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unexpected error.");
+    } finally {
+      setParsing(false);
+    }
+  }
 
   React.useEffect(
     () => () => {
@@ -117,10 +183,24 @@ export function AttendancePaperImport({
     <div className="border-border mt-6 border-t pt-6">
       <h3 className="text-sm font-semibold">Import kertas / scan</h3>
       <p className="text-muted-foreground mt-1 text-sm">
-        Upload foto kertas contengan sebagai referensi, lalu centang siapa yang
-        hadir (centang = present, kosong = absent). Hasil bacaan tidak otomatis
-        — kamu verifikasi manual di sini.
+        Untuk PDF cetak (ada text layer), pakai &quot;Baca otomatis dari
+        PDF&quot; — sistem mencocokkan NIM dan tanda centang per baris, lalu
+        kamu verifikasi. Untuk foto/scan, pakai grid centang manual di bawah
+        (foto hanya referensi).
       </p>
+
+      <label className="mt-3 block">
+        <span className="text-sm font-medium">Baca otomatis dari PDF</span>
+        <input
+          type="file"
+          accept=".pdf"
+          className="mt-1 block w-full text-sm"
+          onChange={onParsePdf}
+        />
+      </label>
+      {parsing ? (
+        <p className="text-muted-foreground mt-1 text-sm">Reading…</p>
+      ) : null}
 
       <label className="mt-3 block">
         <span className="text-sm font-medium">Foto kertas (referensi)</span>
