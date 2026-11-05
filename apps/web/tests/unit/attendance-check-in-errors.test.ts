@@ -5,7 +5,7 @@ import { describeGeolocationError } from "@/lib/geo/position";
 
 describe("describeCheckInFailure", () => {
   it("sends the student to their class without disclosing numbers", () => {
-    expect(describeCheckInFailure("checkin_too_far", undefined)).toBe(
+    expect(describeCheckInFailure("checkin_too_far", undefined)).toContain(
       "Please go to your class meeting point and try again.",
     );
     expect(
@@ -13,7 +13,24 @@ describe("describeCheckInFailure", () => {
         "checkin_too_far",
         "You are 42 m from the meeting point. The allowed radius is 200 m.",
       ),
-    ).toBe("Please go to your class meeting point and try again.");
+    ).toContain("Please go to your class meeting point and try again.");
+    expect(describeCheckInFailure("checkin_too_far", undefined)).not.toContain(
+      "42 m",
+    );
+  });
+
+  it("points GPS failures to the manual admin path", () => {
+    for (const code of [
+      "checkin_too_far",
+      "checkin_imprecise",
+      "checkin_stale_position",
+      "geolocation_unavailable",
+      "geolocation_timeout",
+    ]) {
+      expect(describeCheckInFailure(code, undefined)).toContain(
+        "ask your class admin to mark you present manually",
+      );
+    }
   });
 
   it("distinguishes a window that has not opened from one that closed", () => {

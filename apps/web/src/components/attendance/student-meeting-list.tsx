@@ -191,7 +191,7 @@ function StudentMeetingCard({
       if (Date.now() - capturedAt > CHECKIN_POSITION_MAX_AGE_MS) {
         setResultFailure({
           message:
-            "Your location is stale. Move somewhere with a clearer signal and try again.",
+            "Your location is stale. Move somewhere with a clearer signal and try again. If you are in the room, ask your class admin to mark you present manually — they must physically verify you first.",
           distanceM: null,
           radiusM: meeting.radiusM,
           canRetry: isOpenPhase,
@@ -205,7 +205,7 @@ function StudentMeetingCard({
         accuracy > SESSION_CHECKIN_ACCURACY_MAX_M
       ) {
         setResultFailure({
-          message: `Your GPS signal is not accurate enough (about ${Math.round(accuracy)} m). Move to an area with a clearer signal and try again.`,
+          message: `Your GPS signal is not accurate enough (about ${Math.round(accuracy)} m). Move to an area with a clearer signal and try again. If you are in the room, ask your class admin to mark you present manually — they must physically verify you first.`,
           distanceM: null,
           radiusM: meeting.radiusM,
           canRetry: isOpenPhase,

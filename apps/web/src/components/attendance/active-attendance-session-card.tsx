@@ -139,7 +139,7 @@ export function ActiveAttendanceSessionCard({
       if (Date.now() - capturedAt > CHECKIN_POSITION_MAX_AGE_MS) {
         setResultFailure({
           message:
-            "Your location is stale. Move somewhere with a clearer signal and try again.",
+            "Your location is stale. Move somewhere with a clearer signal and try again. If you are in the room, ask your class admin to mark you present manually — they must physically verify you first.",
           distanceM: null,
           radiusM: session.radiusM,
           canRetry: true,
@@ -150,7 +150,7 @@ export function ActiveAttendanceSessionCard({
 
       if (accuracy > SESSION_CHECKIN_ACCURACY_MAX_M) {
         setResultFailure({
-          message: `Your location is only accurate to about ${Math.round(accuracy)} m. Move somewhere with a clearer signal and try again.`,
+          message: `Your location is only accurate to about ${Math.round(accuracy)} m. Move somewhere with a clearer signal and try again. If you are in the room, ask your class admin to mark you present manually — they must physically verify you first.`,
           distanceM: null,
           radiusM: session.radiusM,
           canRetry: true,
