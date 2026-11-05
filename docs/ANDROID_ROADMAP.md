@@ -52,13 +52,15 @@ Keputusan arsitektur yang sudah diambil:
 
 ## Fase 2 — Paritas fitur inti
 
-- [ ] Dashboard ringan: jadwal hari ini, tugas terdekat, status absensi
-- [ ] Check-in absensi memakai GPS native (`@capacitor/geolocation`)
+- [x] Dashboard ringan: jadwal hari ini, tugas terdekat, status absensi
+- [x] Check-in absensi memakai GPS native (`@capacitor/geolocation`)
       dengan radius check-in yang sama seperti web
-- [ ] Antrean offline check-in dipindah dari `apps/web/src/lib/attendance/offline-queue.ts`
-      ke mobile, tersinkron saat online lagi
-- [ ] Upload lampiran tugas dari penyimpanan/perangkat (izin storage & kamera)
-- [ ] Buka PDF / dokumen lampiran di luar WebView bila perlu
+- [x] Antrean offline check-in (`lib/offline-queue.ts`): posisi tersimpan
+      lokal saat gagal kirim, tersinkron otomatis saat `online` kembali
+- [x] Upload lampiran tugas dari perangkat (file picker WebView →
+      `assignment-attachments` + record `assignment_attachments`)
+- [x] Buka PDF / dokumen lampiran di luar WebView (signed URL dibuka
+      lewat Custom Tab)
 
 ## Fase 3 — Push notification native (FCM)
 

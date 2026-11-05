@@ -1,19 +1,21 @@
 /**
  * StarsTask Mobile entry (Capacitor).
  *
- * Shell only for now: auth (Google via Custom Tab + PKCE deep link) and
- * native push registration. Feature screens land in Fase 2 of
- * docs/ANDROID_ROADMAP.md.
+ * Auth (Google via Custom Tab + PKCE deep link), native push, GPS
+ * check-in with offline queue, attachment upload, and document opening.
+ * Full feature parity lands in Fase 2 of docs/ANDROID_ROADMAP.md.
  */
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
 import { handleAuthDeepLink, signInWithGoogle } from "./lib/auth";
-import { checkInToSession } from "./lib/checkin";
+import { checkInToSession, syncQueuedCheckIns } from "./lib/checkin";
 import { formatTime, loadDashboard } from "./lib/dashboard";
+import { listAttachments, openAttachment } from "./lib/document";
 import { registerNativePush } from "./lib/push";
 import { getSupabase, isSupabaseConfigured } from "./lib/supabase";
+import { uploadAttachmentFile } from "./lib/upload";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -48,9 +50,9 @@ function renderDashboard(
       : `<ul>${data.upcomingAssignments
           .map(
             (assignment) =>
-              `<li>${assignment.subjectName ?? ""} ${assignment.title}${assignment.deadline ? ` — ${formatTime(assignment.deadline)}` : ""}</li>`,
+              `<li>${assignment.subjectName ?? ""} ${assignment.title}${assignment.deadline ? ` — ${formatTime(assignment.deadline)}` : ""} <button type="button" data-attach="${assignment.id}">Attach file</button> <span data-attachments="${assignment.id}"></span></li>`,
           )
-          .join("")}</ul>`;
+          .join("")}</ul><input id="file-picker" type="file" hidden />`;
 
   app.innerHTML = `<h1>StarsTask Mobile</h1><h2>Today</h2>${sessions}<h2>Upcoming assignments</h2>${assignments}`;
   app
@@ -80,6 +82,83 @@ function renderDashboard(
           });
       });
     });
+
+  const filePicker = app.querySelector<HTMLInputElement>("#file-picker");
+  let attachTarget: string | null = null;
+
+  app.querySelectorAll<HTMLButtonElement>("[data-attach]").forEach((button) => {
+    button.addEventListener("click", () => {
+      attachTarget = button.dataset.attach ?? null;
+      filePicker?.click();
+    });
+  });
+
+  filePicker?.addEventListener("change", () => {
+    const file = filePicker.files?.[0];
+    const userId = sessionUserId();
+
+    if (!file || !attachTarget || !userId) {
+      return;
+    }
+
+    const assignmentId = attachTarget;
+    filePicker.value = "";
+    void uploadAttachmentFile(userId, assignmentId, file).then((result) => {
+      if (!result.ok) {
+        renderDashboardError(result.message);
+        return;
+      }
+
+      void refreshDashboard();
+    });
+  });
+
+  void Promise.all(
+    data.upcomingAssignments.map(async (assignment) => {
+      const attachments = await listAttachments(assignment.id);
+      const slot = app.querySelector(`[data-attachments="${assignment.id}"]`);
+
+      if (!slot || attachments.length === 0) {
+        return;
+      }
+
+      for (const attachment of attachments) {
+        const openButton = document.createElement("button");
+        openButton.type = "button";
+        openButton.textContent = `Open ${attachment.filename}`;
+        openButton.addEventListener("click", () => {
+          void openAttachment(attachment.storagePath).catch(() => {
+            renderDashboardError("Could not open the attachment.");
+          });
+        });
+        slot.append(openButton, " ");
+      }
+    }),
+  );
+}
+
+function renderDashboardError(message: string): void {
+  if (!app) {
+    return;
+  }
+
+  const notice = document.createElement("p");
+  notice.textContent = message;
+  app.append(notice);
+}
+
+async function refreshDashboard(): Promise<void> {
+  const userId = sessionUserId();
+
+  if (!userId) {
+    return;
+  }
+
+  const data = await loadDashboard(userId).catch(() => null);
+
+  if (data) {
+    renderDashboard(data);
+  }
 }
 
 function render(state: "loading" | "signed-out" | "signed-in" | "error"): void {
@@ -173,4 +252,16 @@ supabase?.auth.onAuthStateChange((_event, session) => {
   render(session ? "signed-in" : "signed-out");
 });
 
+window.addEventListener("online", () => {
+  void syncQueuedCheckIns()
+    .then((synced) => {
+      if (synced > 0) {
+        return refreshDashboard();
+      }
+      return undefined;
+    })
+    .catch(() => undefined);
+});
+
 void refreshSession();
+void syncQueuedCheckIns().catch(() => undefined);

@@ -1,5 +1,10 @@
 import { Geolocation } from "@capacitor/geolocation";
 
+import {
+  queueOfflineCheckin,
+  syncOfflineQueue,
+  type PendingCheckIn,
+} from "./offline-queue";
 import { getSupabase } from "./supabase";
 
 /**
@@ -8,8 +13,8 @@ import { getSupabase } from "./supabase";
  * The heavy lifting stays server-side: the `check_in_attendance_meeting`
  * RPC re-validates membership, session state, window, identity, accuracy,
  * and radius, so this module only captures the position and forwards it.
- * The database default radius applies when the session has no check-in
- * point configured, matching the web flow.
+ * When the server cannot be reached, the captured position is queued
+ * locally and retried by `syncQueuedCheckIns` once connectivity returns.
  */
 
 export type CheckInResult =
@@ -17,18 +22,13 @@ export type CheckInResult =
 
 const CHECK_IN_ACCURACY_MAX_M = 100;
 
-export async function checkInToSession(
-  sessionId: string,
-  userId: string,
-): Promise<CheckInResult> {
+type ProfileIdentity = { fullName: string; nim: string };
+
+async function loadIdentity(userId: string): Promise<ProfileIdentity | null> {
   const supabase = getSupabase();
 
   if (!supabase) {
-    return {
-      ok: false,
-      code: "not_configured",
-      message: "Supabase is not configured for this build.",
-    };
+    return null;
   }
 
   const { data: profile } = await supabase
@@ -40,7 +40,68 @@ export async function checkInToSession(
   const fullName = (profile?.full_name as string | null)?.trim() ?? "";
   const nim = (profile?.nim as string | null)?.trim() ?? "";
 
-  if (!fullName || !nim) {
+  return fullName && nim ? { fullName, nim } : null;
+}
+
+async function sendCheckIn(
+  sessionId: string,
+  identity: ProfileIdentity,
+  latitude: number,
+  longitude: number,
+  accuracyM: number,
+): Promise<CheckInResult> {
+  const supabase = getSupabase();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      code: "not_configured",
+      message: "Supabase is not configured for this build.",
+    };
+  }
+
+  const { data, error } = await supabase.rpc("check_in_attendance_meeting", {
+    p_session_id: sessionId,
+    p_full_name: identity.fullName,
+    p_nim: identity.nim,
+    p_latitude: latitude,
+    p_longitude: longitude,
+    p_accuracy_m: accuracyM,
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      code: "checkin_failed",
+      message: error.message,
+    };
+  }
+
+  const result = data as {
+    ok?: boolean;
+    code?: string;
+    message?: string;
+    status?: string;
+  };
+
+  if (result.ok) {
+    return { ok: true, status: result.status ?? "present" };
+  }
+
+  return {
+    ok: false,
+    code: result.code ?? "checkin_failed",
+    message: result.message ?? "Check-in failed.",
+  };
+}
+
+export async function checkInToSession(
+  sessionId: string,
+  userId: string,
+): Promise<CheckInResult> {
+  const identity = await loadIdentity(userId);
+
+  if (!identity) {
     return {
       ok: false,
       code: "identity_missing",
@@ -74,37 +135,54 @@ export async function checkInToSession(
     };
   }
 
-  const { data, error } = await supabase.rpc("check_in_attendance_meeting", {
-    p_session_id: sessionId,
-    p_full_name: fullName,
-    p_nim: nim,
-    p_latitude: position.coords.latitude,
-    p_longitude: position.coords.longitude,
-    p_accuracy_m: accuracyM,
-  });
+  const result = await sendCheckIn(
+    sessionId,
+    identity,
+    position.coords.latitude,
+    position.coords.longitude,
+    accuracyM,
+  );
 
-  if (error) {
+  if (result.ok) {
+    return result;
+  }
+
+  // Server unreachable (or closed window): keep the captured position for
+  // the next sync instead of losing the check-in entirely.
+  if (!navigator.onLine || result.code === "checkin_failed") {
+    queueOfflineCheckin({
+      sessionId,
+      userId,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracyM,
+      fullName: identity.fullName,
+      nim: identity.nim,
+    });
+
     return {
       ok: false,
-      code: "checkin_failed",
-      message: error.message,
+      code: "queued_offline",
+      message: "Saved offline — will sync when you are back online.",
     };
   }
 
-  const result = data as {
-    ok?: boolean;
-    code?: string;
-    message?: string;
-    status?: string;
-  };
+  return result;
+}
 
-  if (result.ok) {
-    return { ok: true, status: result.status ?? "present" };
-  }
+/** Retry every queued check-in; returns how many the server accepted. */
+export async function syncQueuedCheckIns(): Promise<number> {
+  const { synced } = await syncOfflineQueue(async (item: PendingCheckIn) => {
+    const result = await sendCheckIn(
+      item.sessionId,
+      { fullName: item.fullName, nim: item.nim },
+      item.latitude,
+      item.longitude,
+      item.accuracyM,
+    );
 
-  return {
-    ok: false,
-    code: result.code ?? "checkin_failed",
-    message: result.message ?? "Check-in failed.",
-  };
+    return result.ok;
+  });
+
+  return synced;
 }
