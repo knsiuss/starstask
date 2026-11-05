@@ -377,7 +377,7 @@ export function DmChatWindow({ conversationId }: { conversationId: string }) {
               onReply={() => setReplyTo(message.id)}
             >
               <div
-                className={`max-w-[80%] rounded-lg px-3 py-2 ${THEME_BUBBLE[theme] ?? THEME_BUBBLE.default}`}
+                className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 shadow-sm ${THEME_BUBBLE[theme] ?? THEME_BUBBLE.default}`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                 {message.attachmentUrl ? (

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { DmKeySetup } from "@/components/messages/dm-key-setup";
 import { DmUserSearch } from "@/components/messages/dm-user-search";
 import { StoryRow } from "@/components/messages/story-row";
-import { ConversationFilter } from "@/components/messages/message-search";
+import { ConversationList } from "@/components/messages/conversation-list";
 import { BackupKeyButton } from "@/components/messages/backup-key";
 import { getSessionUser } from "@/lib/auth/session";
 import { listConversations } from "@/lib/db/direct-messages";
@@ -60,39 +60,7 @@ export default async function MessagesPage() {
       <BackupKeyButton />
 
       <div className="mt-6">
-        {conversations.length === 0 ? (
-          <p className="text-muted-foreground border border-dashed py-10 text-center text-sm">
-            No conversations yet. Search above to start one.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border rounded-lg border">
-            {conversations.map((conversation) => (
-              <li key={conversation.id}>
-                <Link
-                  href={`/messages/${conversation.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-muted"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {conversation.otherName}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {conversation.lastMessage ?? "No messages"}
-                    </p>
-                  </div>
-                  <span
-                    className={
-                      conversation.unread
-                        ? "h-2 w-2 rounded-full bg-blue-600"
-                        : "sr-only"
-                    }
-                    aria-label={conversation.unread ? "Unread" : ""}
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ConversationList conversations={conversations} />
       </div>
     </div>
   );
