@@ -156,6 +156,32 @@ export async function listAssignments(
     Database["public"]["Functions"]["list_assignments"]["Returns"][number]
   >
 > {
+  // Public listing: same filters should hit the same key so repeat views read
+  // from Redis instead of the RPC. Short TTL — listings change a few times a
+  // day, not per-second.
+  const key = [
+    "assignments",
+    query.search ?? "",
+    query.course ?? "",
+    query.semester ?? "",
+    query.type ?? "",
+    query.tag ?? "",
+    query.class ?? "",
+    query.sort,
+    query.page,
+    query.pageSize,
+  ].join("|");
+
+  return getCached(key, 15, () => loadAssignments(query));
+}
+
+async function loadAssignments(
+  query: ListAssignmentsQuery,
+): Promise<
+  PaginatedResult<
+    Database["public"]["Functions"]["list_assignments"]["Returns"][number]
+  >
+> {
   const supabase = await createSupabaseServerClient();
   const offset = (query.page - 1) * query.pageSize;
   const args: Database["public"]["Functions"]["list_assignments"]["Args"] = {
@@ -394,6 +420,14 @@ const MEMBER_CLASS_LIMIT = 200;
  * spellings and detach the submission from the class it came from.
  */
 export async function getMemberCourseOptions(
+  userId: string,
+): Promise<MemberCourseOption[]> {
+  return getCached(`member-courses:${userId}`, 30, () =>
+    loadMemberCourseOptions(userId),
+  );
+}
+
+async function loadMemberCourseOptions(
   userId: string,
 ): Promise<MemberCourseOption[]> {
   const supabase = await createSupabaseServerClient();
