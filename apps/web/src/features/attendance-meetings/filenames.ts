@@ -46,20 +46,15 @@ export function buildChecklistFilename(parts: AttendanceFilenameParts): string {
   return `${classToken(parts)}_${subjectToken(parts)}_Attendance_Checklist.xlsx`;
 }
 
-/** End year of an academic year such as "2025/2026". */
+/**
+ * Recap filename year = tahun kalender saat export (owner: tahun ajaran
+ * sekarang, bukan end year dari academic_year kelas).
+ * academicYear param kept for API compat, diabaikan.
+ */
 export function resolveRecapYear(
   academicYear: string,
   now: Date = new Date(),
 ): number {
-  const years = academicYear.match(/\d{4}/g);
-
-  if (years && years.length > 0) {
-    const last = Number(years[years.length - 1]);
-
-    if (Number.isFinite(last)) {
-      return last;
-    }
-  }
-
+  void academicYear;
   return now.getFullYear();
 }
