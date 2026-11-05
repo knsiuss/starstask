@@ -1,5 +1,6 @@
 import "server-only";
 
+import { aiVisionProvider } from "./ai-vision";
 import { parseOcrText } from "./parse";
 import { pdfTextProvider } from "./pdf-text";
 import type { OcrOutcome, OcrProvider } from "./types";
@@ -17,6 +18,7 @@ export type { OcrOutcome, OcrProvider } from "./types";
  */
 const PROVIDERS: Record<string, OcrProvider> = {
   "pdf-text": pdfTextProvider,
+  "ai-vision": aiVisionProvider,
 };
 
 export const DEFAULT_OCR_PROVIDER = "pdf-text";
@@ -74,7 +76,7 @@ export async function runOcr(input: {
       outcome: {
         status: "unsupported",
         provider: provider.name,
-        reason: "Only PDF documents can be read automatically right now.",
+        reason: "This file type cannot be read automatically right now.",
       },
       suggestion: {},
     };

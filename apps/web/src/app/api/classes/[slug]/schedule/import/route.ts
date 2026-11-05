@@ -57,7 +57,11 @@ export async function POST(
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
-      throw new ApiError(400, "invalid_file", "Choose a PDF file to upload.");
+      throw new ApiError(
+        400,
+        "invalid_file",
+        "Choose a PDF or image file to upload.",
+      );
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -71,17 +75,37 @@ export async function POST(
       bytes[3] === 0x46 &&
       bytes[4] === 0x2d;
 
-    if (!isPdf) {
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const isPng =
+      bytes.length >= 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a;
+
+    let mimeType: string;
+
+    if (isPdf) {
+      mimeType = "application/pdf";
+    } else if (isJpeg) {
+      mimeType = "image/jpeg";
+    } else if (isPng) {
+      mimeType = "image/png";
+    } else {
       throw new ApiError(
         400,
         "invalid_file",
-        "Only PDF files can be read automatically right now.",
+        "Only PDF, JPEG, or PNG files can be read automatically right now.",
       );
     }
 
     const { outcome } = await runOcr({
       bytes,
-      mimeType: "application/pdf",
+      mimeType,
     });
 
     if (outcome.status !== "succeeded") {
