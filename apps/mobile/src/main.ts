@@ -8,6 +8,7 @@
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
+import { Browser } from "@capacitor/browser";
 
 import { handleAuthDeepLink, signInWithGoogle } from "./lib/auth";
 import { checkInToSession, syncQueuedCheckIns } from "./lib/checkin";
@@ -18,6 +19,42 @@ import { getSupabase, isSupabaseConfigured } from "./lib/supabase";
 import { uploadAttachmentFile } from "./lib/upload";
 
 const app = document.querySelector<HTMLDivElement>("#app");
+
+/**
+ * Dashboard fields (titles, subject names) are user-controlled. They are
+ * interpolated into innerHTML templates, so every interpolated value must
+ * be escaped; ids used in query selectors are UUIDs returned by the
+ * server and are safe as attribute values after the same escaping.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/**
+ * Report uncaught JS errors to the log (visible in Logcat and, when the
+ * native bridge is attached, forwarded to Crashlytics). Messages are
+ * logged verbatim from the runtime — never include tokens or personal
+ * data at call sites.
+ */
+function installErrorReporting(): void {
+  window.addEventListener("error", (event) => {
+    console.error("[js-error]", event.message, event.filename, event.lineno);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason =
+      event.reason instanceof Error
+        ? event.reason.message
+        : String(event.reason);
+    console.error("[js-unhandled-rejection]", reason);
+  });
+}
+
+installErrorReporting();
 
 function renderDashboard(
   data: Awaited<ReturnType<typeof loadDashboard>>,
@@ -35,12 +72,12 @@ function renderDashboard(
               session.checkInLatitude !== null &&
               session.checkInLongitude !== null;
             const action = session.checkInStatus
-              ? ` ${session.checkInStatus}`
+              ? ` ${escapeHtml(session.checkInStatus)}`
               : hasLocation
-                ? ` <button type="button" data-checkin="${session.id}">Check in</button>`
+                ? ` <button type="button" data-checkin="${escapeHtml(session.id)}">Check in</button>`
                 : " no check-in point";
 
-            return `<li>${session.subjectName ?? session.title} ${formatTime(session.startsAt)}-${formatTime(session.endsAt)}${action}</li>`;
+            return `<li>${escapeHtml(session.subjectName ?? session.title)} ${formatTime(session.startsAt)}-${formatTime(session.endsAt)}${action}</li>`;
           })
           .join("")}</ul>`;
 
@@ -50,7 +87,7 @@ function renderDashboard(
       : `<ul>${data.upcomingAssignments
           .map(
             (assignment) =>
-              `<li>${assignment.subjectName ?? ""} ${assignment.title}${assignment.deadline ? ` — ${formatTime(assignment.deadline)}` : ""} <button type="button" data-attach="${assignment.id}">Attach file</button> <span data-attachments="${assignment.id}"></span></li>`,
+              `<li>${escapeHtml(assignment.subjectName ?? "")} ${escapeHtml(assignment.title)}${assignment.deadline ? ` — ${formatTime(assignment.deadline)}` : ""} <button type="button" data-attach="${escapeHtml(assignment.id)}">Attach file</button> <span data-attachments="${escapeHtml(assignment.id)}"></span></li>`,
           )
           .join("")}</ul><input id="file-picker" type="file" hidden />`;
 
@@ -230,12 +267,30 @@ async function refreshSession(): Promise<void> {
         }
       },
       onNotificationTap: (url) => {
-        if (url) {
-          console.log("[push] tap", url);
-        }
+        // The shell has no router for web destinations: open the tapped
+        // notification's internal path in a Custom Tab on the web origin,
+        // the same pattern attachments and OAuth already use.
+        void openNotificationDestination(url).catch(() => undefined);
       },
     });
   }
+}
+
+/**
+ * Opens a tapped notification's destination. Server payloads carry
+ * internal paths (e.g. /sessions/<uuid>); anything that is not a safe
+ * internal path is ignored instead of opened.
+ */
+async function openNotificationDestination(url: string | null): Promise<void> {
+  if (!url || !url.startsWith("/") || url.startsWith("//")) {
+    return;
+  }
+
+  const origin =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+    "https://starstask.vercel.app";
+
+  await Browser.open({ url: `${origin}${url}` });
 }
 
 render("loading");
