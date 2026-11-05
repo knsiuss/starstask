@@ -1,9 +1,0 @@
-<!-- Copy into ios/App/App/Info.plist after `npx cap add ios` -->
-<key>NSCameraUsageDescription</key>
-<string>StarsTask needs camera for check-in photo and video call.</string>
-<key>NSMicrophoneUsageDescription</key>
-<string>StarsTask needs microphone for voice note and video call.</string>
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>StarsTask needs location for GPS check-in.</string>
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>StarsTask background location for check-in accuracy.</string>

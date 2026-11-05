@@ -1,11 +1,10 @@
-import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 
 /**
  * Native push registration (FCM on Android).
  *
- * Web Push (PWA) stays the browser path; this is the native path. After
- * registration the token is sent to the web API
+ * After registration the token is sent to the web API
  * (`POST /api/push/native-token`) so the server schedulers can fan out
  * reminder/event pushes to FCM devices as well as WebPush browsers.
  */
@@ -16,7 +15,7 @@ export type PushHandlers = {
 };
 
 const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+  (process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined) ??
   "https://starstask.vercel.app";
 
 /** Registers an FCM token with the web API; best effort, never throws. */
@@ -33,7 +32,7 @@ export async function sendNativeTokenToServer(
       },
       body: JSON.stringify({
         token,
-        platform: Capacitor.getPlatform() === "ios" ? "ios" : "android",
+        platform: Platform.OS === "ios" ? "ios" : "android",
       }),
     });
 
@@ -46,43 +45,36 @@ export async function sendNativeTokenToServer(
 export async function registerNativePush(
   handlers: PushHandlers,
 ): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    return false;
-  }
+  const permission = await Notifications.requestPermissionsAsync();
 
-  const permission = await PushNotifications.requestPermissions();
-
-  if (permission.receive !== "granted") {
+  if (permission.status !== "granted") {
     return false;
   }
 
   // The server sends with this channel id; it must exist before the first
   // native notification arrives or Android drops it silently.
-  await PushNotifications.createChannel({
-    id: "starstask-reminders",
-    name: "Reminders",
-    description: "Assignment and session reminders",
-    importance: 5,
-    visibility: 1,
-  }).catch(() => undefined);
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("starstask-reminders", {
+      name: "Reminders",
+      description: "Assignment and session reminders",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+    }).catch(() => undefined);
+  }
 
-  await PushNotifications.addListener("registration", (token) => {
-    handlers.onToken(token.value);
-  });
-
-  await PushNotifications.addListener("registrationError", (error) => {
-    console.error("[push] registration error", error);
-  });
-
-  await PushNotifications.addListener(
-    "pushNotificationActionPerformed",
-    (action) => {
-      const url = action.notification.data?.url;
+  Notifications.addNotificationReceivedListener(() => undefined);
+  const subscription = Notifications.addNotificationResponseReceivedListener(
+    (response) => {
+      const url = response.notification.request.content.data?.url;
       handlers.onNotificationTap(typeof url === "string" ? url : null);
     },
   );
 
-  await PushNotifications.register();
+  const tokenResponse = await Notifications.getDevicePushTokenAsync();
+
+  if (tokenResponse.type === "android" || tokenResponse.type === "ios") {
+    handlers.onToken(tokenResponse.data);
+  }
 
   return true;
 }

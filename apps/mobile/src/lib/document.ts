@@ -1,13 +1,13 @@
-import { Browser } from "@capacitor/browser";
+import { Linking } from "react-native";
 
 import { getSupabase } from "./supabase";
 
 /**
- * Open a stored attachment outside the WebView.
+ * Open a stored attachment outside the app.
  *
  * Attachments live in a private bucket, so a short-lived signed URL is
- * minted on the server side of the SDK (user JWT) and opened in a Custom
- * Tab — the WebView never navigates away from the app.
+ * minted on the server side of the SDK (user JWT) and opened in the
+ * system browser — the app never navigates away from its own UI.
  */
 
 const SIGNED_URL_TTL_SECONDS = 15 * 60;
@@ -27,7 +27,7 @@ export async function openAttachment(storagePath: string): Promise<void> {
     throw error ?? new Error("Could not open the attachment.");
   }
 
-  await Browser.open({ url: data.signedUrl });
+  await Linking.openURL(data.signedUrl);
 }
 
 export type AttachmentRef = {
