@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  getConversationParticipants,
   getConversationPeerId,
   getPeerPublicKey,
   listMessages,
@@ -9,19 +10,25 @@ import {
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   try {
     const { id } = await params;
+    const url = new URL(request.url);
+    const before = url.searchParams.get("before") ?? undefined;
+    const limitParam = Number(url.searchParams.get("limit") ?? 50);
     const peerId = await getConversationPeerId(id);
-    const [messages, peerPublicKey] = await Promise.all([
-      listMessages(id),
+    const [messages, peerPublicKey, participants] = await Promise.all([
+      listMessages(id, { before, limit: limitParam }),
       getPeerPublicKey(peerId),
+      getConversationParticipants(id),
     ]);
 
     return NextResponse.json({
       messages,
       peerPublicKey,
       peerId,
+      participants,
+      hasMore: messages.length >= (Number.isFinite(limitParam) ? limitParam : 50),
     });
   } catch (error) {
     const code =

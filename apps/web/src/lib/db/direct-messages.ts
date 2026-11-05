@@ -48,6 +48,8 @@ export type ConversationRow = {
   id: string;
   otherUserId: string;
   otherName: string;
+  isGroup: boolean;
+  participantNames: string[];
   lastMessage: typeof ENCRYPTED_PREVIEW | null;
   lastAt: string | null;
   unread: boolean;
@@ -135,14 +137,31 @@ export async function listConversations(): Promise<ConversationRow[]> {
     }
   }
 
+  const participantsByConversation = new Map<string, string[]>();
+
+  for (const part of allParts ?? []) {
+    if (part.user_id === me) continue;
+    const list = participantsByConversation.get(part.conversation_id) ?? [];
+    list.push(part.user_id);
+    participantsByConversation.set(part.conversation_id, list);
+  }
+
   return ids.map((id: any) => {
-    const other = otherByConversation.get(id) ?? "";
+    const participantIds = participantsByConversation.get(id) ?? [];
+    const other = participantIds[0] ?? "";
     const last = lastByConversation.get(id);
+    const isGroup = participantIds.length > 1;
 
     return {
       id,
       otherUserId: other,
-      otherName: nameById.get(other) ?? "User",
+      otherName: isGroup
+        ? `${participantIds.length} members`
+        : (nameById.get(other) ?? "User"),
+      isGroup,
+      participantNames: participantIds.map(
+        (userId: string) => nameById.get(userId) ?? "User",
+      ),
       // Server cannot decrypt; never expose ciphertext as preview.
       lastMessage: last ? ENCRYPTED_PREVIEW : null,
       lastAt: last?.at ?? null,
@@ -153,23 +172,31 @@ export async function listConversations(): Promise<ConversationRow[]> {
 
 export async function listMessages(
   conversationId: string,
+  options?: { before?: string; limit?: number },
 ): Promise<StoredMessage[]> {
   const supabase = (await createSupabaseServerClient()) as any;
-  const { data, error } = await supabase
+  const limit = Math.min(Math.max(options?.limit ?? 50, 1), 100);
+  let query = supabase
     .from("dm_messages")
     .select(
       "id, sender_id, body, created_at, attachment_name, attachment_mime, attachment_size, attachment_path",
     )
     .eq("conversation_id", conversationId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: true })
-    .limit(100);
+    .is("deleted_at", null);
+
+  if (options?.before) {
+    query = query.lt("created_at", options.before);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error) {
     throw new DataAccessError("Could not load messages", error.code);
   }
 
-  return (data ?? []) as StoredMessage[];
+  return ((data ?? []) as StoredMessage[]).reverse();
 }
 
 export async function getConversationPeerId(
@@ -183,13 +210,47 @@ export async function getConversationPeerId(
     .eq("conversation_id", conversationId)
     .neq("user_id", me)
     .is("left_at", null)
-    .single();
+    .limit(1);
 
-  if (error || !data) {
+  if (error || !data?.[0]) {
     throw new DataAccessError("Could not load conversation", error?.code);
   }
 
-  return data.user_id;
+  return data[0].user_id;
+}
+
+export async function getConversationParticipants(
+  conversationId: string,
+): Promise<{ userId: string; name: string }[]> {
+  const supabase = (await createSupabaseServerClient()) as any;
+  const me = await requireUserId();
+  const { data: parts } = await supabase
+    .from("dm_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .is("left_at", null);
+  const userIds: string[] = (parts ?? [])
+    .map((part: any) => part.user_id)
+    .filter((userId: string) => userId !== me);
+
+  if (userIds.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", userIds);
+
+  const nameById = new Map<string, string>(
+    (profiles ?? []).map((profile: any) => [
+      String(profile.id),
+      String(profile.display_name ?? "User"),
+    ]),
+  );
+
+  return userIds.map((userId) => ({
+    userId,
+    name: nameById.get(userId) ?? "User",
+  }));
 }
 
 export async function getPeerPublicKey(
