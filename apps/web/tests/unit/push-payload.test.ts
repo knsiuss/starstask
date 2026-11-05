@@ -102,6 +102,16 @@ describe("isSafeNotificationPath", () => {
     expect(isSafeNotificationPath(`/assignments/${ASSIGNMENT_ID}`)).toBe(true);
   });
 
+  it("accepts a DM conversation path", () => {
+    expect(
+      isSafeNotificationPath("/messages/123e4567-e89b-42d3-a456-426614174000"),
+    ).toBe(true);
+  });
+
+  it("rejects a DM path without a UUID", () => {
+    expect(isSafeNotificationPath("/messages/123")).toBe(false);
+  });
+
   it.each([
     {
       label: "an external URL",

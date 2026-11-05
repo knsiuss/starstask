@@ -5066,6 +5066,7 @@ export type Database = {
         Returns: boolean;
       };
       is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_beta_tester: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_university_member: {
         Args: { p_university_id: string };
         Returns: boolean;

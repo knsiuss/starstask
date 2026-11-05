@@ -37,6 +37,8 @@ const KIND_LABELS: Record<NotificationEventKindRow, string> = {
   class_admin_revoked: "Class role",
   class_assignment_published: "New class post",
   assignment_report_reviewed: "Report",
+  assignment_created: "New assignment",
+  dm_message: "Message",
 };
 
 const KIND_VARIANTS: Record<NotificationEventKindRow, BadgeProps["variant"]> = {
@@ -64,6 +66,8 @@ const KIND_VARIANTS: Record<NotificationEventKindRow, BadgeProps["variant"]> = {
   class_admin_revoked: "neutral",
   class_assignment_published: "accent",
   assignment_report_reviewed: "accent",
+  assignment_created: "accent",
+  dm_message: "accent",
 };
 
 type NotificationInboxListProps = {
