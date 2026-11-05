@@ -101,7 +101,7 @@ export function ClassDirectoryCard({ classItem }: ClassDirectoryCardProps) {
 
         <h2 className="mt-3 text-lg leading-snug font-semibold tracking-tight break-words">
           <Link
-            href={`/dashboard/classes/${classItem.slug}`}
+            href={`/app/classes/${classItem.slug}`}
             className={TITLE_LINK_CLASS}
           >
             {classItem.name}
@@ -164,7 +164,7 @@ export function ClassDirectoryRow({ classItem }: ClassDirectoryCardProps) {
           <div className="flex min-w-0 items-center gap-2">
             <h2 className="truncate text-[15px] leading-snug font-medium">
               <Link
-                href={`/dashboard/classes/${classItem.slug}`}
+                href={`/app/classes/${classItem.slug}`}
                 className={TITLE_LINK_CLASS}
               >
                 {classItem.name}

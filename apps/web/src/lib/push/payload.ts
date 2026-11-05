@@ -77,8 +77,8 @@ export function buildReminderPayload(
 
 /** In-app pages a push notification may open. No external origin is allowed. */
 const STATIC_SAFE_PATHS = new Set([
-  "/dashboard",
-  "/dashboard/review",
+  "/app",
+  "/app/review",
   // The page now redirects to /assignments; database events still emit this
   // path, so dropping it would silently skip their notifications.
   "/my-assignments",

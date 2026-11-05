@@ -262,8 +262,8 @@ export function ClassSubmissionForm({
 
       router.push(
         courseId
-          ? `/dashboard/classes/${classSlug}/courses/${courseId}/assignments?${suffix}`
-          : `/dashboard/classes/${classSlug}?${suffix}`,
+          ? `/app/classes/${classSlug}/courses/${courseId}/assignments?${suffix}`
+          : `/app/classes/${classSlug}?${suffix}`,
       );
       router.refresh();
     } catch {

@@ -41,7 +41,7 @@ export function isManageTab(value: string | undefined): value is ManageTab {
 }
 
 export function manageTabHref(slug: string, tab: ManageTab): string {
-  const base = `/dashboard/classes/${slug}/manage`;
+  const base = `/app/classes/${slug}/manage`;
 
   return tab === "overview" ? base : `${base}?tab=${tab}`;
 }

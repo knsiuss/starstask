@@ -43,7 +43,7 @@ export function DashboardAttentionBanner({
       </div>
 
       <Link
-        href="/dashboard/assignments?due=overdue"
+        href="/app/assignments?due=overdue"
         className="text-danger hover:text-danger/80 inline-flex shrink-0 items-center gap-1.5 rounded-lg text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         Review overdue

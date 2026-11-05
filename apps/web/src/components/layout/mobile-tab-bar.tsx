@@ -22,7 +22,7 @@ type TabItem = {
 };
 
 const TABS: TabItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/app", label: "Dashboard", icon: LayoutDashboard },
   { href: "/assignments", label: "Assignments", icon: Compass },
   { href: "/attendance", label: "Attendance", icon: UserCheck },
   // The aggregated calendar, not `/sessions`: discussion sessions are one event

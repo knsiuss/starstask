@@ -106,7 +106,7 @@ export async function acceptClassInvitation(
     throw toClassApiError(error, "Could not accept the invitation.");
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/app");
   revalidatePath("/classes");
 
   return { classId: data };
@@ -175,7 +175,7 @@ export async function acceptPendingInvitation(
     throw toClassApiError(error, "Could not accept the invitation.");
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/app");
   revalidatePath("/classes");
 
   return { classId: data };
@@ -194,5 +194,5 @@ export async function declineClassInvitation(
     throw toClassApiError(error, "Could not decline the invitation.");
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/app");
 }

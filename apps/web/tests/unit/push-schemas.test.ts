@@ -175,7 +175,7 @@ describe("notificationEventPayloadSchema", () => {
     const parsed = notificationEventPayloadSchema.safeParse({
       title: "Class invitation",
       body: "You were invited to IF-24-01.",
-      url: "/dashboard",
+      url: "/app",
     });
 
     expect(parsed.success).toBe(true);
@@ -197,7 +197,7 @@ describe("notificationEventPayloadSchema", () => {
     expect(
       notificationEventPayloadSchema.safeParse({
         body: "Missing title",
-        url: "/dashboard",
+        url: "/app",
       }).success,
     ).toBe(false);
   });
@@ -207,7 +207,7 @@ describe("notificationEventPayloadSchema", () => {
       notificationEventPayloadSchema.safeParse({
         title: "Invalid body",
         body: 42,
-        url: "/dashboard",
+        url: "/app",
       }).success,
     ).toBe(false);
   });

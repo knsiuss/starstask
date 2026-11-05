@@ -38,7 +38,7 @@ export function DeveloperAccessDenied({
           variant="secondary"
           size="sm"
         >
-          <Link href="/dashboard">Return to the workspace</Link>
+          <Link href="/app">Return to the workspace</Link>
         </Button>
       </Card>
     </div>

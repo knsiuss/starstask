@@ -53,7 +53,7 @@ export function WeeklyScheduleBoard({
                 </p>
                 <p className="text-muted-foreground mt-0.5 text-xs">
                   <Link
-                    href={`/dashboard/classes/${entry.class_slug}`}
+                    href={`/app/classes/${entry.class_slug}`}
                     className="hover:underline"
                   >
                     {entry.class_name}

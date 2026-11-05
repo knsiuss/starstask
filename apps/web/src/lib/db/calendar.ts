@@ -618,7 +618,7 @@ export async function listCalendarEvents(
       subjectName: subject?.name ?? null,
       status: "published",
       owner: "official",
-      href: fields.classSlug ? `/dashboard/classes/${fields.classSlug}` : null,
+      href: fields.classSlug ? `/app/classes/${fields.classSlug}` : null,
       editable: false,
       managedInClass: classLookup.get(entry.class_id)?.isAdmin ?? false,
     });

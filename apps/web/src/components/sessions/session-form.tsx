@@ -268,7 +268,7 @@ export function SessionForm({
       }
 
       router.push(
-        id ? `/sessions/${id}` : `/dashboard/classes/${classSlug}/sessions`,
+        id ? `/sessions/${id}` : `/app/classes/${classSlug}/sessions`,
       );
       router.refresh();
     } catch {

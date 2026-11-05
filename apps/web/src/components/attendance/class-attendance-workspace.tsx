@@ -76,7 +76,7 @@ export function ClassAttendanceWorkspace({
     setPanels([]);
   };
 
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/app/classes/${classSlug}`;
   const openSession = (meeting: AttendanceMeetingListItem) =>
     openPanel({
       kind: "session",

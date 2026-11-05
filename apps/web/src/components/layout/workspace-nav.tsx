@@ -30,7 +30,7 @@ type NavItem = {
 
 const STUDY_ITEMS: NavItem[] = [
   {
-    href: "/dashboard",
+    href: "/app",
     label: "Dashboard",
     icon: LayoutDashboard,
     requiresAuth: true,
@@ -60,11 +60,11 @@ const STUDY_ITEMS: NavItem[] = [
 
 /**
  * Leader destinations render only for users who administer at least one class.
- * The flag is cosmetic; /dashboard/actions re-checks every class role on load.
+ * The flag is cosmetic; /app/actions re-checks every class role on load.
  */
 const LEADER_ITEMS: NavItem[] = [
   {
-    href: "/dashboard/actions",
+    href: "/app/actions",
     label: "Action center",
     icon: ListChecks,
     requiresAuth: true,

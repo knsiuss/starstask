@@ -217,7 +217,7 @@ export function SessionManageActions({
           variant="ghost"
           size="sm"
         >
-          <Link href={`/dashboard/classes/${classSlug}/sessions`}>
+          <Link href={`/app/classes/${classSlug}/sessions`}>
             All sessions in this class
           </Link>
         </Button>

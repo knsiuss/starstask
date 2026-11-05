@@ -23,7 +23,7 @@ export function ClassMembersTab({
   currentUserId,
   inheritedFromClassName,
 }: ClassMembersTabProps) {
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/app/classes/${classSlug}`;
   const adminCount = members.filter((member) => member.is_admin).length;
   const sorted = [...members].sort((first, second) => {
     if (first.is_admin !== second.is_admin) {

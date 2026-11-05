@@ -320,7 +320,7 @@ export default async function AdminAssignmentsPage({
                   >
                     <td className="max-w-[260px] px-4 py-3">
                       <Link
-                        href={`/dashboard/classes/${item.classSlug}/review/${item.id}`}
+                        href={`/app/classes/${item.classSlug}/review/${item.id}`}
                         className="hover:text-accent font-medium underline-offset-4 hover:underline"
                       >
                         {item.title}
@@ -356,7 +356,7 @@ export default async function AdminAssignmentsPage({
                         variant="secondary"
                       >
                         <Link
-                          href={`/dashboard/classes/${item.classSlug}/review/${item.id}`}
+                          href={`/app/classes/${item.classSlug}/review/${item.id}`}
                         >
                           {item.status === "pending_review"
                             ? "Review"

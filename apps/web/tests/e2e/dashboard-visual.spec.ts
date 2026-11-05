@@ -30,7 +30,7 @@ test.describe("dashboard visual capture", () => {
   const TIME_ZONE = "Asia/Jakarta";
   const outputDir =
     process.env.DASHBOARD_SHOT_DIR ??
-    resolve(__dirname, "../../test-results/dashboard-shots");
+    resolve(__dirname, "../../test-results/app-shots");
 
   let admin: SupabaseClient;
   let lecturer: E2eUser;
@@ -251,7 +251,7 @@ test.describe("dashboard visual capture", () => {
           payload: {
             title: "New assignment published",
             body: "Query optimisation lab is now available in Information Systems 2A.",
-            url: "/dashboard/assignments",
+            url: "/app/assignments",
           },
           status: "sent",
           sent_at: new Date(now - hours(2)).toISOString(),
@@ -318,7 +318,7 @@ test.describe("dashboard visual capture", () => {
     await signInBrowser(context, student);
 
     await page.setViewportSize({ width: 1440, height: 1100 });
-    await page.goto("/dashboard");
+    await page.goto("/app");
     await waitForHydration(page);
 
     await expect(
@@ -391,9 +391,9 @@ test.describe("dashboard visual capture", () => {
     });
 
     await page.getByRole("link", { name: "Last week" }).click();
-    await expect(page).toHaveURL(/\/dashboard\?week=-1$/);
+    await expect(page).toHaveURL(/\/app\?week=-1$/);
 
-    await page.goto("/dashboard");
+    await page.goto("/app");
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();

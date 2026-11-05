@@ -30,7 +30,7 @@ type Props = {
  * can actually reach — the routes re-check authorization server-side.
  */
 export function ClassQuickActions({ classSlug, canManage }: Props) {
-  const base = `/dashboard/classes/${classSlug}`;
+  const base = `/app/classes/${classSlug}`;
 
   const actions: Action[] = canManage
     ? [

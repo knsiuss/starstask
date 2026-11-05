@@ -94,7 +94,7 @@ function ClassRow({
 }) {
   return (
     <Link
-      href={`/dashboard/classes/${classItem.slug}`}
+      href={`/app/classes/${classItem.slug}`}
       className="border-border bg-surface hover:border-accent/40 focus-visible:outline-accent group flex items-center gap-3 rounded-xl border p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-4 sm:p-4"
     >
       <span

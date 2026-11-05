@@ -108,7 +108,7 @@ export function AttendanceTab({
   return (
     <div className="mt-4 space-y-4">
       <form
-        action="/dashboard/actions?tab=attendance"
+        action="/app/actions?tab=attendance"
         method="get"
         className="border-border bg-card flex items-center gap-2 rounded-xl border p-3 sm:p-4"
       >
@@ -190,7 +190,7 @@ export function AttendanceTab({
         <ul className="grid gap-3">
           {courses.map((course) => {
             const latest = latestMeeting(course.meetings);
-            const viewHref = `/dashboard/classes/${selected.slug}/courses/${course.id}/attendance`;
+            const viewHref = `/app/classes/${selected.slug}/courses/${course.id}/attendance`;
             const exportHref = `/api/classes/${selected.slug}/attendance/exports/recap?subjectId=${course.id}`;
 
             return (

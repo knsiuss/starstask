@@ -29,8 +29,8 @@ afterEach(() => {
 describe("isStudentWorkspacePath", () => {
   it("matches student workspace pages and their subpaths", () => {
     const paths = [
-      "/dashboard",
-      "/dashboard/classes/slug",
+      "/app",
+      "/app/classes/slug",
       "/assignments",
       "/assignments/abc",
       "/classes",
@@ -68,7 +68,7 @@ describe("isStudentWorkspacePath", () => {
 
   it("does not match prefixes that only share leading characters", () => {
     expect(isStudentWorkspacePath("/assignments-extra")).toBe(false);
-    expect(isStudentWorkspacePath("/dashboardx")).toBe(false);
+    expect(isStudentWorkspacePath("/appx")).toBe(false);
   });
 });
 
@@ -78,19 +78,19 @@ describe("resolveSignedInHomePath", () => {
   });
 
   it("sends everyone else to the workspace dashboard", () => {
-    expect(resolveSignedInHomePath("student@example.com")).toBe("/dashboard");
-    expect(resolveSignedInHomePath(null)).toBe("/dashboard");
+    expect(resolveSignedInHomePath("student@example.com")).toBe("/app");
+    expect(resolveSignedInHomePath(null)).toBe("/app");
   });
 
   it("fails closed to the dashboard when the allowlist is unconfigured", () => {
     delete process.env.DEVELOPER_EMAILS;
 
-    expect(resolveSignedInHomePath("developer@example.com")).toBe("/dashboard");
+    expect(resolveSignedInHomePath("developer@example.com")).toBe("/app");
   });
 
   it("fails closed to the dashboard when the allowlist is malformed", () => {
     process.env.DEVELOPER_EMAILS = "not-an-email";
 
-    expect(resolveSignedInHomePath("developer@example.com")).toBe("/dashboard");
+    expect(resolveSignedInHomePath("developer@example.com")).toBe("/app");
   });
 });

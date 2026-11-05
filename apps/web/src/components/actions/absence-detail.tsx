@@ -79,7 +79,7 @@ export function AbsenceDetail({
   return (
     <div className="mt-4 space-y-4">
       <Link
-        href="/dashboard/actions?tab=absences"
+        href="/app/actions?tab=absences"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
         <ArrowLeft

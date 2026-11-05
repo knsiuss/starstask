@@ -51,7 +51,7 @@ export function CourseAdminMenu({
   classActive,
 }: CourseAdminMenuProps) {
   const router = useRouter();
-  const base = `/dashboard/classes/${classSlug}/courses/${courseId}`;
+  const base = `/app/classes/${classSlug}/courses/${courseId}`;
   const canCreate = classActive && courseStatus === "active";
 
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -93,7 +93,7 @@ export function CourseAdminMenu({
       }
 
       setConfirmOpen(false);
-      router.push(`/dashboard/classes/${classSlug}`);
+      router.push(`/app/classes/${classSlug}`);
       router.refresh();
     } catch {
       setDeleteError("Network error. Check your connection and try again.");
@@ -130,7 +130,7 @@ export function CourseAdminMenu({
             <DropdownMenuLabel>Add to this course</DropdownMenuLabel>
             <DropdownMenuItem asChild>
               <Link
-                href={`/dashboard/classes/${classSlug}/submit?course=${courseId}`}
+                href={`/app/classes/${classSlug}/submit?course=${courseId}`}
                 className="flex items-center gap-2"
               >
                 <PlusCircle
@@ -154,7 +154,7 @@ export function CourseAdminMenu({
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
-                href={`/dashboard/classes/${classSlug}/submit?course=${courseId}&type=class_announcement`}
+                href={`/app/classes/${classSlug}/submit?course=${courseId}&type=class_announcement`}
                 className="flex items-center gap-2"
               >
                 <Megaphone

@@ -157,7 +157,7 @@ export function ClassInfoTab({
       {canManage ? (
         <div className="border-border border-t px-5 py-3">
           <Link
-            href={`/dashboard/classes/${classSummary.slug}/manage`}
+            href={`/app/classes/${classSummary.slug}/manage`}
             className="text-accent hover:text-accent-hover inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline"
           >
             Edit this information in Manage

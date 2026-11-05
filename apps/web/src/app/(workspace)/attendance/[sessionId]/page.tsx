@@ -157,7 +157,7 @@ export default async function AttendanceDetailPage({
             <dt className="text-muted-foreground">Class</dt>
             <dd>
               <Link
-                href={`/dashboard/classes/${entry.classSlug}`}
+                href={`/app/classes/${entry.classSlug}`}
                 className="text-accent hover:underline"
               >
                 {entry.className}
