@@ -5,7 +5,6 @@
 -- left untouched and could be finalized as absent. This trigger mirrors
 -- the approval predicate exactly, so a future meeting for a student on
 -- approved leave starts as excused instead of unrecorded.
-
 CREATE OR REPLACE FUNCTION public.excuse_approved_leave_for_session () returns trigger language plpgsql
 SET
   search_path = public,
