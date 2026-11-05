@@ -15,8 +15,9 @@ import {
 } from "@starstask/shared";
 
 import {
+  DASHBOARD_CACHE_TAG,
   DASHBOARD_CACHE_TTL_SECONDS,
-  getCached,
+  getCachedWithTag,
 } from "@/lib/cache/redis-cache";
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { loadCompletionIds } from "@/lib/db/assignment-completions";
@@ -81,8 +82,11 @@ const RECENT_TASK_LIMIT = 5;
 export async function getDashboardOverview(
   userId: string,
 ): Promise<DashboardOverview> {
-  return getCached(`dashboard:${userId}`, DASHBOARD_CACHE_TTL_SECONDS, () =>
-    loadDashboardOverview(userId),
+  return getCachedWithTag(
+    DASHBOARD_CACHE_TAG,
+    `dashboard:${userId}`,
+    DASHBOARD_CACHE_TTL_SECONDS,
+    () => loadDashboardOverview(userId),
   );
 }
 

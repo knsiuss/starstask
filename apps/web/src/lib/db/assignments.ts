@@ -10,7 +10,14 @@ import type {
 } from "@starstask/contracts";
 
 import type { AssignmentStatusRow, Database, Json } from "@/types/database";
-import { LISTING_CACHE_TTL_SECONDS, getCached } from "@/lib/cache/redis-cache";
+import {
+  DASHBOARD_CACHE_TAG,
+  LISTING_CACHE_TAG,
+  LISTING_CACHE_TTL_SECONDS,
+  getCached,
+  getCachedWithTag,
+  invalidateCacheTag,
+} from "@/lib/cache/redis-cache";
 import { decodeCursor, encodeCursor } from "@/lib/db/cursor";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -172,7 +179,9 @@ export async function listAssignments(
     query.pageSize,
   ].join("|");
 
-  return getCached(key, 15, () => loadAssignments(query));
+  return getCachedWithTag(LISTING_CACHE_TAG, key, 15, () =>
+    loadAssignments(query),
+  );
 }
 
 async function loadAssignments(
@@ -487,69 +496,79 @@ async function loadMemberCourseOptions(
 }
 
 export async function getSemesterOptions(): Promise<string[]> {
-  return getCached("semesters", LISTING_CACHE_TTL_SECONDS, async () => {
-    const supabase = await createSupabaseServerClient();
+  return getCachedWithTag(
+    LISTING_CACHE_TAG,
+    "semesters",
+    LISTING_CACHE_TTL_SECONDS,
+    async () => {
+      const supabase = await createSupabaseServerClient();
 
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
-      "list_published_semesters" as never,
-    );
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "list_published_semesters" as never,
+      );
 
-    if (!rpcError && rpcData) {
-      return (rpcData as unknown as { semester: string }[])
-        .map((row) => row.semester)
-        .sort((a, b) => a.localeCompare(b));
-    }
-
-    const { data, error } = await supabase
-      .from("assignments")
-      .select("semester")
-      .eq("status", "published")
-      .not("semester", "is", null)
-      .limit(1000);
-
-    if (error) {
-      throw new DataAccessError("Could not load semesters", error.code);
-    }
-
-    const semesters = new Set<string>();
-
-    for (const row of data ?? []) {
-      if (row.semester) {
-        semesters.add(row.semester);
+      if (!rpcError && rpcData) {
+        return (rpcData as unknown as { semester: string }[])
+          .map((row) => row.semester)
+          .sort((a, b) => a.localeCompare(b));
       }
-    }
 
-    return [...semesters].sort((a, b) => a.localeCompare(b));
-  });
+      const { data, error } = await supabase
+        .from("assignments")
+        .select("semester")
+        .eq("status", "published")
+        .not("semester", "is", null)
+        .limit(1000);
+
+      if (error) {
+        throw new DataAccessError("Could not load semesters", error.code);
+      }
+
+      const semesters = new Set<string>();
+
+      for (const row of data ?? []) {
+        if (row.semester) {
+          semesters.add(row.semester);
+        }
+      }
+
+      return [...semesters].sort((a, b) => a.localeCompare(b));
+    },
+  );
 }
 
 export async function getPublishedCounts(): Promise<{
   assignments: number;
   courses: number;
 }> {
-  return getCached("published-counts", LISTING_CACHE_TTL_SECONDS, async () => {
-    const supabase = await createSupabaseServerClient();
+  return getCachedWithTag(
+    LISTING_CACHE_TAG,
+    "published-counts",
+    LISTING_CACHE_TTL_SECONDS,
+    async () => {
+      const supabase = await createSupabaseServerClient();
 
-    const [assignments, courses] = await Promise.all([
-      supabase
-        .from("assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "published"),
-      supabase.from("courses").select("id", { count: "exact", head: true }),
-    ]);
+      const [assignments, courses] = await Promise.all([
+        supabase
+          .from("assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "published"),
+        supabase.from("courses").select("id", { count: "exact", head: true }),
+      ]);
 
-    if (assignments.error || courses.error) {
-      throw new DataAccessError(
-        "Could not load statistics",
-        assignments.error?.code ?? courses.error?.code,
-      );
-    }
+      if (assignments.error || courses.error) {
+        throw new DataAccessError(
+          "Could not load statistics",
+          assignments.error?.code ?? courses.error?.code,
+        );
+      }
 
-    return {
-      assignments: assignments.count ?? 0,
-      courses: courses.count ?? 0,
-    };
-  });
+      return {
+        assignments: assignments.count ?? 0,
+        courses: courses.count ?? 0,
+      };
+    },
+  );
 }
 
 export async function getOrCreateCourse(
@@ -631,6 +650,10 @@ export async function insertAssignment(
     throw new DataAccessError("Could not create the assignment", error?.code);
   }
 
+  // A new (or now-published) assignment changes the listing and dashboards.
+  await invalidateCacheTag(LISTING_CACHE_TAG);
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+
   return data.id;
 }
 
@@ -698,6 +721,11 @@ export async function updateAssignmentRecord(
     throw new DataAccessError("Could not update the assignment", error.code);
   }
 
+  if (data !== null) {
+    await invalidateCacheTag(LISTING_CACHE_TAG);
+    await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+  }
+
   return data !== null;
 }
 
@@ -740,6 +768,9 @@ export async function deleteAssignmentRecord(
   if (!deleted) {
     return { deleted: false, storagePaths: [] };
   }
+
+  await invalidateCacheTag(LISTING_CACHE_TAG);
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
 
   return {
     deleted: true,

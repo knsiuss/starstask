@@ -22,6 +22,7 @@ type CacheClient = {
     value: unknown,
     options: { ex: number },
   ) => Promise<unknown>;
+  incr: (key: string) => Promise<number>;
 };
 
 /** Resolves to `null` (miss) when the operation exceeds the timeout. */
@@ -99,8 +100,92 @@ export async function getCached<T>(
   return value;
 }
 
+/**
+ * Tag-based invalidation without key scans. Every tagged entry stores the
+ * tag's generation counter in its key; bumping the counter orphans all old
+ * entries, which then expire by TTL. Best effort: failure is ignored.
+ */
+function generationKey(tag: string): string {
+  return `${CACHE_PREFIX}tag:${tag}:gen`;
+}
+
+async function currentGeneration(
+  client: CacheClient,
+  tag: string,
+): Promise<number> {
+  try {
+    const gen = await withTimeout(client.get<number>(generationKey(tag)));
+
+    return typeof gen === "number" ? gen : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Orphans every cached entry under `tag`. Call after a write that feeds it. */
+export async function invalidateCacheTag(tag: string): Promise<void> {
+  const client = getCacheClient();
+
+  if (!client) {
+    return;
+  }
+
+  try {
+    await withTimeout(client.incr(generationKey(tag)));
+  } catch {
+    // Invalidation is best effort; stale entries expire by TTL anyway.
+  }
+}
+
+/**
+ * Like `getCached`, but entries are namespaced by `tag`'s generation so
+ * `invalidateCacheTag` makes them miss immediately instead of lingering
+ * until TTL.
+ */
+export async function getCachedWithTag<T>(
+  tag: string,
+  key: string,
+  ttlSeconds: number,
+  loader: () => Promise<T>,
+): Promise<T> {
+  const client = getCacheClient();
+
+  if (!client) {
+    return loader();
+  }
+
+  const generation = await currentGeneration(client, tag);
+  const cacheKey = `${CACHE_PREFIX}${tag}:${key}:gen:${generation}`;
+
+  try {
+    const cached = (await withTimeout(client.get<T>(cacheKey))) ?? null;
+
+    if (cached !== null) {
+      return cached;
+    }
+  } catch {
+    // Fall through to the loader; the cache must never break a read.
+  }
+
+  const value = await loader();
+
+  try {
+    await withTimeout(client.set(cacheKey, value, { ex: ttlSeconds }));
+  } catch {
+    // A failed write just means the next read loads again.
+  }
+
+  return value;
+}
+
+/** Tag for the per-user dashboard overview read. */
+export const DASHBOARD_CACHE_TAG = "dashboard";
+
 /** TTL for the per-user dashboard overview read. */
 export const DASHBOARD_CACHE_TTL_SECONDS = DASHBOARD_TTL_SECONDS;
+
+/** Tag for the public assignment listing reads. */
+export const LISTING_CACHE_TAG = "listing";
 
 /** TTL for global listing helpers (semesters, published counts). */
 export const LISTING_CACHE_TTL_SECONDS = 60;

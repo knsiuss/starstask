@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  DASHBOARD_CACHE_TAG,
+  invalidateCacheTag,
+} from "@/lib/cache/redis-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { DataAccessError } from "./assignments";
@@ -60,6 +64,7 @@ export async function setAssignmentCompletion(
       throw new DataAccessError("Could not clear that mark", error.code);
     }
 
+    await invalidateCacheTag(DASHBOARD_CACHE_TAG);
     return;
   }
 
@@ -83,4 +88,6 @@ export async function setAssignmentCompletion(
 
     throw new DataAccessError("Could not save that mark", error.code);
   }
+
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
 }
