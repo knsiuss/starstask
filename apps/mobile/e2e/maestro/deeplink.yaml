@@ -1,0 +1,12 @@
+# Deep link routing: the Supabase PKCE callback must bring the user back
+# into the app instead of leaving them in the browser. The placeholder code
+# is rejected by exchangeCodeForSession, so the app lands on its error
+# state — what matters is that the app foregrounds and stays alive.
+appId: id.starstask.mobile
+---
+- launchApp:
+    clearState: true
+- openLink: id.starstask.mobile://auth/callback?code=e2e-placeholder
+# Rejected code lands on the app's error state, not a browser page.
+- assertVisible: "sign-in failed"
+- takeScreenshot: deeplink-callback

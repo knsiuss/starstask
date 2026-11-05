@@ -59,3 +59,27 @@ export async function handleAuthDeepLink(url: string): Promise<void> {
 export function isNativeAuthAvailable(): boolean {
   return Capacitor.isNativePlatform();
 }
+
+/**
+ * Native Google sign-in entry point called from MainActivity after
+ * Credential Manager + Firebase Auth succeed. The Firebase ID token is
+ * traded for a Supabase session — the user never leaves the app.
+ */
+export async function signInWithNativeGoogleIdToken(
+  idToken: string,
+): Promise<void> {
+  const supabase = getSupabase();
+
+  if (!supabase) {
+    throw new Error("Supabase is not configured for this build.");
+  }
+
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: idToken,
+  });
+
+  if (error) {
+    throw error;
+  }
+}

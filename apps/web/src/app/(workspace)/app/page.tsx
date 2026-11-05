@@ -13,6 +13,7 @@ import {
 } from "@/components/dashboard/dashboard-sections";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { QuickActions } from "@/components/dashboard/quick-actions";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
 import { MyWeekSection } from "@/components/dashboard/my-week-section";
 import { NextSchedule } from "@/components/dashboard/next-schedule";
@@ -125,6 +126,10 @@ export default async function DashboardPage({
       </React.Suspense>
 
       <WhatsNewBanner />
+
+      <div className="mt-5">
+        <QuickActions />
+      </div>
 
       <React.Suspense fallback={null}>
         <InvitationsSection userId={session.user.id} email={session.user.email ?? ""} />

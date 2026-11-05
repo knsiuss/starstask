@@ -1,0 +1,7 @@
+# Debug-only: the Crashlytics smoke-test button exists in debug builds only.
+appId: id.starstask.mobile
+---
+- launchApp:
+    clearState: true
+- assertVisible: "TEST CRASH"
+- takeScreenshot: launch-debug

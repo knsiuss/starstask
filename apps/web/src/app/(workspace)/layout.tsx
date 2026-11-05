@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { PostHogIdentify } from "@/components/analytics/posthog-identify";
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
+import { CommandPalette } from "@/components/layout/command-palette";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
 import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
 import { isUnpamMember } from "@/lib/db/plugins";
@@ -76,6 +77,7 @@ export default async function WorkspaceLayout({
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <CommandPalette />
         <WorkspaceTopbar
           isAuthenticated={isAuthenticated}
           isPlatformAdmin={platformAdmin}
