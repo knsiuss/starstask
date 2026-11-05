@@ -61,8 +61,21 @@ export function buildAttendanceRecap(input: {
     ]),
   );
 
+  // The roster is class-wide, but recap cells only exist for members of
+  // this subject. A class member with no cell at all for this subject
+  // (e.g. a repeat student taking another course) must not get a row here:
+  // an all-not_applicable row would read as 0% and drag the sheet average
+  // down. Late joiners keep their row because the recap still returns an
+  // (ineligible) cell for them. When there are no cells at all there is
+  // nothing to scope by, so the full roster is kept.
+  const enrolledUserIds = new Set(input.cells.map((cell) => cell.userId));
+  const scopedRoster =
+    input.cells.length > 0
+      ? input.roster.filter((member) => enrolledUserIds.has(member.userId))
+      : input.roster;
+
   const students = sortAttendanceRoster(
-    input.roster.map((member): AttendanceRecapStudent => {
+    scopedRoster.map((member): AttendanceRecapStudent => {
       const cells: Record<string, AttendanceMeetingCellStatus> = {};
       const outcomes: AttendanceOutcome[] = [];
       let present = 0;

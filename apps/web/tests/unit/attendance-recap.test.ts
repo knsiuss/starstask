@@ -211,6 +211,40 @@ describe("buildAttendanceRecap", () => {
     expect(citra?.totals.percentage).toBeNull();
   });
 
+  it("excludes a class member with no cell for this subject (e.g. a repeat student)", () => {
+    const repeatStudent: AttendanceRosterMember = {
+      userId: "user-dodi",
+      fullName: "Dodi Repeat",
+      nim: "21120105",
+      displayName: "Dodi",
+      joinedAt: "2026-08-01T00:00:00+07:00",
+    };
+
+    const recap = buildAttendanceRecap({
+      meetings: [meeting({ sessionId: "s1", meetingNumber: 1 })],
+      roster: [...roster, repeatStudent],
+      cells: [
+        {
+          sessionId: "s1",
+          userId: "user-budi",
+          eligible: true,
+          status: "present",
+        },
+        {
+          sessionId: "s1",
+          userId: "user-ani",
+          eligible: true,
+          status: "absent",
+        },
+      ],
+    });
+
+    expect(recap.students.map((entry) => entry.userId)).not.toContain(
+      "user-dodi",
+    );
+    expect(recap.students.map((entry) => entry.userId)).toContain("user-budi");
+  });
+
   it("treats an unknown stored status as not recorded rather than present", () => {
     const recap = buildAttendanceRecap({
       meetings: [meeting({ sessionId: "s1", meetingNumber: 1 })],
