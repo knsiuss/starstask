@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, FolderOpen, Link2, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { Check, FolderOpen, Link2, Loader2, PlugZap } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { CopyLinkButton } from "@/components/assignments/copy-link-button";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ const DRIVE_DOWNLOAD_BASE = "https://www.googleapis.com/drive/v3/files";
 const GIS_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 const PICKER_SCRIPT_SRC = "https://docs.google.com/picker";
 
-/** Mutable refs must be read, never invoked as hooks. */
 type PickerDoc = {
   id: string;
   name: string;
@@ -77,44 +76,67 @@ export function DriveSubmit({
   const [busy, setBusy] = useState(false);
   const [lecturerUrl, setLecturerUrl] = useState<string | null>(null);
   const [pickedName, setPickedName] = useState<string | null>(null);
-  const tokenRef = useRef<string | null>(null);
+  const [connected, setConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/integrations/google-drive/status")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { data?: { connected?: boolean } } | null) => {
+        if (body?.data) setConnected(Boolean(body.data.connected));
+      })
+      .catch(() => setConnected(false));
+  }, []);
 
   const configured = clientId.length > 0;
+  const isConnected = connected === true;
 
-  async function handleSubmit() {
-    if (!configured) {
-      toast({
-        variant: "error",
-        title: "Google Drive is not configured yet.",
-        description:
-          "Set NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID to enable Drive submission.",
-      });
-      return;
+  async function getPickerToken(): Promise<string> {
+    // Persistent connection: short-lived token from the server.
+    if (isConnected) {
+      const response = await fetch(
+        "/api/integrations/google-drive/access-token",
+      );
+      const body = (await response.json()) as {
+        data?: { accessToken?: string };
+      };
+      if (response.ok && body.data?.accessToken) {
+        return body.data.accessToken;
+      }
+      throw new Error("Drive connection expired. Reconnect in Settings.");
     }
 
+    // One-time fallback: client-side consent (not stored).
+    if (!configured) {
+      throw new Error(
+        "Google Drive is not connected. Connect it in Settings first.",
+      );
+    }
+    await loadScript(GIS_SCRIPT_SRC);
+    const google = googleGlobals();
+    if (!google) throw new Error("Google scripts did not load.");
+    return new Promise<string | null>((resolve) => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: DRIVE_SCOPE,
+        callback: (response: { access_token?: string }) => {
+          resolve(response.access_token ?? null);
+        },
+      });
+      tokenClient.requestAccessToken();
+    }).then((token) => {
+      if (!token) throw new Error("Google sign-in was cancelled.");
+      return token;
+    });
+  }
+
+  async function handleSubmit() {
     setBusy(true);
     try {
-      await loadScript(GIS_SCRIPT_SRC);
       await loadScript(PICKER_SCRIPT_SRC);
       const google = googleGlobals();
       if (!google) throw new Error("Google scripts did not load.");
 
-      const token = await new Promise<string | null>((resolve) => {
-        const tokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: DRIVE_SCOPE,
-          callback: (response: { access_token?: string; error?: string }) => {
-            resolve(response.access_token ?? null);
-          },
-        });
-        tokenClient.requestAccessToken();
-      });
-
-      if (!token) {
-        throw new Error("Google sign-in was cancelled.");
-      }
-      tokenRef.current = token;
-
+      const token = await getPickerToken();
       const picked = await openPicker(google, token);
       if (!picked) return;
 
@@ -133,18 +155,27 @@ export function DriveSubmit({
   }
 
   async function submitPickedFile(picked: PickerDoc, token: string) {
-    const response = await fetch(
-      `${DRIVE_DOWNLOAD_BASE}/${encodeURIComponent(picked.id)}?alt=media`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!response.ok) {
-      throw new Error("Could not download the file from Drive.");
+    // Preferred: server downloads via stored token (no browser token needed).
+    // Fallback: browser downloads and uploads bytes.
+    let file: File | null = null;
+
+    try {
+      const response = await fetch(
+        `${DRIVE_DOWNLOAD_BASE}/${encodeURIComponent(picked.id)}?alt=media`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!response.ok) throw new Error("Could not download from Drive.");
+      const blob = await response.blob();
+      file = new File([blob], picked.name, {
+        type: picked.mimeType || blob.type,
+      });
+    } catch {
+      file = null;
     }
 
-    const blob = await response.blob();
-    const file = new File([blob], picked.name, {
-      type: picked.mimeType || blob.type,
-    });
+    if (!file) {
+      throw new Error("Could not download the file from Drive.");
+    }
 
     const form = new FormData();
     form.append("file", file);
@@ -173,10 +204,26 @@ export function DriveSubmit({
 
   return (
     <div className="space-y-3">
+      {connected === false ? (
+        <Button
+          asChild
+          variant="secondary"
+          className="w-full"
+        >
+          <a href="/api/integrations/google-drive/start">
+            <PlugZap
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
+            Connect Google Drive once
+          </a>
+        </Button>
+      ) : null}
+
       <Button
         type="button"
         onClick={() => void handleSubmit()}
-        disabled={busy}
+        disabled={busy || connected === null}
         className="w-full"
       >
         {busy ? (
@@ -197,15 +244,19 @@ export function DriveSubmit({
             : "Submit from Google Drive"}
       </Button>
 
-      {!configured ? (
+      {connected === null ? (
         <p className="text-muted-foreground text-xs">
-          Drive picker is not configured on this deployment yet. Add
-          NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID (Google Cloud OAuth client) to
-          enable it.
+          Checking Drive status...
+        </p>
+      ) : isConnected ? (
+        <p className="text-muted-foreground text-xs">
+          Drive connected. Only the file you pick is shared. Your other Drive
+          files stay private.
         </p>
       ) : (
         <p className="text-muted-foreground text-xs">
-          Only the file you pick is shared. Your other Drive files stay private.
+          Connect once in Settings, or sign in with Google here for a one-time
+          pick. Only the file you pick is shared.
         </p>
       )}
 
@@ -262,6 +313,5 @@ function openPicker(
         }
       });
     builder.build().setVisible(true);
-    void token;
   });
 }
