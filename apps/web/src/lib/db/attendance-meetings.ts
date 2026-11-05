@@ -54,6 +54,7 @@ type StudentMeetingRow = {
 };
 
 type CheckInSettingsRow = {
+  session_id: string;
   has_location: boolean;
   radius_m: number;
 };
@@ -66,7 +67,7 @@ type StudentCheckInRow = {
 };
 
 // `checkin_radius_m` is intentionally absent: the column is not granted to
-// clients, so the radius comes from the `session_checkin_summary` helper.
+// clients, so the radius comes from the `session_checkin_summary_many` RPC.
 const STUDENT_MEETING_COLUMNS =
   "id, class_id, subject_id, meeting_number, meeting_date, title, location, starts_at, ends_at, attendance_opens_at, attendance_closes_at, attendance_opened_at, attendance_closed_at, attendance_finalized_at, late_after_minutes";
 
@@ -451,24 +452,17 @@ export async function getStudentAttendanceMeetingView(
     )
     .slice(0, STUDENT_MEETING_LIMIT);
 
+  // Preserve the old list behavior: radius falls back to 150 when the helper
+  // is unavailable; the check-in function still enforces the real radius.
   const radiusBySession = new Map<string, number>();
-  const settingsResults = await Promise.all(
-    selected.map((row) =>
-      supabase.rpc("session_checkin_summary", { p_session_id: row.id }),
-    ),
+  const { data: settingsData, error: settingsError } = await supabase.rpc(
+    "session_checkin_summary_many",
+    { p_session_ids: selected.map((row) => row.id) },
   );
 
-  for (const [index, result] of settingsResults.entries()) {
-    const session = selected[index];
-
-    if (!session || result.error) {
-      continue;
-    }
-
-    const settings = (result.data ?? [])[0] as CheckInSettingsRow | undefined;
-
-    if (settings) {
-      radiusBySession.set(session.id, settings.radius_m);
+  if (!settingsError) {
+    for (const settings of (settingsData ?? []) as CheckInSettingsRow[]) {
+      radiusBySession.set(settings.session_id, settings.radius_m);
     }
   }
 

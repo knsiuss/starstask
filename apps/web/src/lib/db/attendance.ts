@@ -485,6 +485,7 @@ type ViewerCheckInRow = {
 };
 
 type CheckInSummaryRow = {
+  session_id: string;
   has_location: boolean;
   radius_m: number;
 };
@@ -608,35 +609,24 @@ export async function getAttendanceCheckInView(
     return emptyCheckInView(todayDateKey, true);
   }
 
-  // The raw point is not granted to clients, so ask the derived helper for each
-  // candidate. Today's active set is small, so a handful of calls is cheaper
-  // than widening a column grant just to read `checkin_latitude`.
-  const summaries = await Promise.all(
-    candidates.map((session) =>
-      supabase.rpc("session_checkin_summary", { p_session_id: session.id }),
-    ),
+  // The raw point is not granted to clients, so ask the batched helper once.
+  // Today's active set is small, but avoiding an RPC per candidate keeps this
+  // list cheap when a day has many openings.
+  const { data: settingsData, error: settingsError } = await supabase.rpc(
+    "session_checkin_summary_many",
+    { p_session_ids: candidates.map((session) => session.id) },
   );
   const summaryById = new Map<string, CheckInSummaryRow>();
 
-  for (const [index, result] of summaries.entries()) {
-    const session = candidates[index];
+  if (settingsError) {
+    throw new DataAccessError(
+      "Could not load the check-in settings",
+      settingsError.code,
+    );
+  }
 
-    if (!session) {
-      continue;
-    }
-
-    if (result.error) {
-      throw new DataAccessError(
-        "Could not load the check-in settings",
-        result.error.code,
-      );
-    }
-
-    const summary = (result.data ?? [])[0] as CheckInSummaryRow | undefined;
-
-    if (summary) {
-      summaryById.set(session.id, summary);
-    }
+  for (const summary of (settingsData ?? []) as CheckInSummaryRow[]) {
+    summaryById.set(summary.session_id, summary);
   }
 
   const withLocation = candidates.filter(
