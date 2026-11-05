@@ -23,10 +23,61 @@ export type CourseInviteTokenRow = {
 };
 
 /**
- * Invite tokens for the platform-admin console. The usage policy is
- * unresolved, so creation stays disabled; this is the safe read surface.
+ * Invite tokens for the platform-admin console. Usage policy APPROVED
+ * 2026-11-05 (ADR-002): max_uses default 50, expires +30 days, explicit
+ * values required at creation (no silent default in DB — enforced here).
  * `token_hash` is intentionally never selected.
  */
+export const INVITE_DEFAULT_MAX_USES = 50;
+export const INVITE_DEFAULT_EXPIRES_DAYS = 30;
+
+export async function createCourseInviteToken(
+  client: ServiceClient,
+  actorId: string,
+  input: {
+    universityId: string;
+    offeringId: string;
+    maxUses?: number;
+    expiresAt?: string;
+  },
+): Promise<{ id: string; token: string }> {
+  const maxUses = input.maxUses ?? INVITE_DEFAULT_MAX_USES;
+  const expiresAt =
+    input.expiresAt ??
+    new Date(Date.now() + INVITE_DEFAULT_EXPIRES_DAYS * 86400000).toISOString();
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 1000) {
+    throw new DataAccessError("max_uses must be 1-1000", "22023");
+  }
+  const token = globalThis.crypto.randomUUID() + globalThis.crypto.randomUUID();
+  const hash = await globalThis.crypto.subtle
+    .digest("SHA-256", new TextEncoder().encode(token))
+    .then((b) => Buffer.from(b).toString("hex"));
+  const { data, error } = await client
+    .from("course_invite_tokens")
+    .insert({
+      university_id: input.universityId,
+      offering_id: input.offeringId,
+      token_hash: hash,
+      status: "active",
+      max_uses: maxUses,
+      expires_at: expiresAt,
+      created_by: actorId,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    throw new DataAccessError("Could not create invite token", error?.code);
+  }
+  await recordServiceRoleAudit(client, {
+    actorId,
+    action: "course_invite_created",
+    entityType: "course_invite_token",
+    entityId: data.id,
+    classId: null,
+    universityId: input.universityId,
+  });
+  return { id: data.id, token };
+}
 export async function listCourseInviteTokens(
   universityId?: string,
   limit = 100,
