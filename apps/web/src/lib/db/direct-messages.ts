@@ -353,7 +353,7 @@ export async function sendCiphertext(
 
   // Push notif (fire-and-forget, no plaintext)
   import("@/lib/db/dm-notifications")
-    .then((m) => m.notifyDmRecipient(conversationId, me))
+    .then((m) => m.notifyDmRecipient(conversationId, me, message.id))
     .catch(() => {});
 
   return message as { id: string };

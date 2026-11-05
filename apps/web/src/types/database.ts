@@ -83,7 +83,9 @@ export type NotificationEventKindRow =
   | "verification_revision_requested"
   | "class_admin_revoked"
   | "class_assignment_published"
-  | "assignment_report_reviewed";
+  | "assignment_report_reviewed"
+  | "assignment_created"
+  | "dm_message";
 
 export type VerificationStatusRow =
   "pending" | "needs_revision" | "verified" | "rejected";

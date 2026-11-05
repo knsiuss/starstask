@@ -93,6 +93,9 @@ const CLASS_PATH_PATTERN = /^\/classes\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SESSION_PATH_PATTERN =
   /^\/sessions\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const MESSAGES_PATH_PATTERN =
+  /^\/messages\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Notification clicks may only open an internal app path: a published
  * assignment detail, a class page, or one of the signed-in dashboards.
@@ -107,7 +110,8 @@ export function isSafeNotificationPath(value: string): boolean {
   if (
     STATIC_SAFE_PATHS.has(value) ||
     CLASS_PATH_PATTERN.test(value) ||
-    SESSION_PATH_PATTERN.test(value)
+    SESSION_PATH_PATTERN.test(value) ||
+    MESSAGES_PATH_PATTERN.test(value)
   ) {
     return true;
   }

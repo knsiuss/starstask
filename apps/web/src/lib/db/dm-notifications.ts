@@ -2,10 +2,17 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-/** Push notification trigger for DM: notify other participant (no plaintext in notif). */
+/**
+ * Push/inbox notification for a DM message. The payload carries no
+ * plaintext — only a generic body and the conversation path — because
+ * message bodies are end-to-end encrypted. Uses the same row shape as
+ * enqueue_notification_event (kind + dedupe_key + payload) so the
+ * scheduler can deliver it like every other event.
+ */
 export async function notifyDmRecipient(
   conversationId: string,
   senderId: string,
+  messageId: string,
 ) {
   const supabase = (await createSupabaseServerClient()) as any;
   const { data: parts } = await supabase
@@ -17,10 +24,13 @@ export async function notifyDmRecipient(
   for (const userId of recipients) {
     await supabase.from("notification_events").insert({
       user_id: userId,
-      type: "dm_message",
-      title: "New message",
-      body: "🔒 You have a new encrypted message",
-      data: { conversation_id: conversationId },
+      kind: "dm_message",
+      dedupe_key: `dm:${messageId}:${userId}`,
+      payload: {
+        title: "New message",
+        body: "🔒 You have a new encrypted message",
+        url: `/messages/${conversationId}`,
+      },
     });
   }
 }
