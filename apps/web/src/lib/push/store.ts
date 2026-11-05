@@ -34,6 +34,12 @@ export type AudienceEntry = {
 
 export type StoredSubscription = PushTarget & { userId: string };
 
+export type StoredNativeToken = {
+  id: string;
+  userId: string;
+  token: string;
+};
+
 export type DeliveryInsert =
   Database["public"]["Tables"]["notification_deliveries"]["Insert"];
 
@@ -64,6 +70,14 @@ export interface ReminderStore {
   loadActiveSubscriptions(userIds: string[]): Promise<StoredSubscription[]>;
   markSubscriptionSuccess(subscriptionId: string, atIso: string): Promise<void>;
   disableSubscription(subscriptionId: string, atIso: string): Promise<void>;
+  /**
+   * Native (FCM) channel. Optional so existing test fakes and stores
+   * without native support keep compiling; schedulers skip the channel
+   * when these are absent.
+   */
+  loadNativeTokens?(userIds: string[]): Promise<StoredNativeToken[]>;
+  markNativeTokenSuccess?(id: string, atIso: string): Promise<void>;
+  disableNativeToken?(id: string, atIso: string): Promise<void>;
 }
 
 export function createSupabaseReminderStore(): ReminderStore {
@@ -228,6 +242,53 @@ export function createSupabaseReminderStore(): ReminderStore {
 
       if (error) {
         throw new PushStoreError("Could not disable subscription", error.code);
+      }
+    },
+
+    async loadNativeTokens(userIds) {
+      if (userIds.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from("native_push_tokens")
+        .select("id, user_id, token")
+        .in("user_id", userIds)
+        .is("disabled_at", null);
+
+      if (error) {
+        throw new PushStoreError(
+          "Could not load native push tokens",
+          error.code,
+        );
+      }
+
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        token: row.token,
+      }));
+    },
+
+    async markNativeTokenSuccess(id, atIso) {
+      const { error } = await supabase
+        .from("native_push_tokens")
+        .update({ last_success_at: atIso })
+        .eq("id", id);
+
+      if (error) {
+        throw new PushStoreError("Could not update native token", error.code);
+      }
+    },
+
+    async disableNativeToken(id, atIso) {
+      const { error } = await supabase
+        .from("native_push_tokens")
+        .update({ disabled_at: atIso })
+        .eq("id", id);
+
+      if (error) {
+        throw new PushStoreError("Could not disable native token", error.code);
       }
     },
   };

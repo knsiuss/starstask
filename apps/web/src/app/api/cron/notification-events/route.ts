@@ -1,6 +1,7 @@
 import { apiError, apiSuccess } from "@/lib/api/responses";
 import { createSupabaseNotificationEventStore } from "@/lib/push/event-store";
 import { runNotificationEvents } from "@/lib/push/event-scheduler";
+import { createNativeSenderFromEnv } from "@/lib/push/fcm-sender";
 import { getPushConfig } from "@/lib/push/config";
 import { createWebPushSender } from "@/lib/push/sender";
 import { isAuthorizedCronRequest } from "@/lib/security/cron-auth";
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
     const summary = await runNotificationEvents({
       store: createSupabaseNotificationEventStore(),
       sender: createWebPushSender(config),
+      nativeSender: createNativeSenderFromEnv() ?? undefined,
       limit: 100,
     });
 

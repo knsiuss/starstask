@@ -3,6 +3,7 @@ import "server-only";
 import { getPushConfig } from "@/lib/push/config";
 import { createSupabaseNotificationEventStore } from "@/lib/push/event-store";
 import { runNotificationEvents } from "@/lib/push/event-scheduler";
+import { createNativeSenderFromEnv } from "@/lib/push/fcm-sender";
 import { createWebPushSender } from "@/lib/push/sender";
 import { isServiceRoleConfigured } from "@/lib/supabase/admin";
 
@@ -28,6 +29,7 @@ export async function dispatchNotificationEvents(): Promise<void> {
     const summary = await runNotificationEvents({
       store: createSupabaseNotificationEventStore(),
       sender: createWebPushSender(config),
+      nativeSender: createNativeSenderFromEnv() ?? undefined,
       limit: DISPATCH_BATCH_SIZE,
     });
 

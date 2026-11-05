@@ -5,15 +5,15 @@ const config: CapacitorConfig = {
   appName: "StarsTask",
   webDir: "dist",
   ios: {
-    minimumVersion: "15.0",
-    deploymentTarget: "15.0",
     contentInset: "always",
-    allowsInlineMediaPlayback: true,
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 1000,
       launchAutoHide: true,
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
     },
   },
 };

@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+  NativePushTokenInput,
   NotificationPreferencesInput,
   PushSubscriptionInput,
 } from "@starstask/contracts";
@@ -236,6 +237,43 @@ export async function deletePushDeviceByEndpoint(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("delete_push_subscription", {
     p_endpoint: endpoint,
+  });
+
+  if (error) {
+    throw new DataAccessError("Could not remove this device", error.code);
+  }
+
+  return data ?? false;
+}
+
+/**
+ * Registers an FCM device token from the Capacitor mobile shell.
+ *
+ * Same ownership rule as WebPush: a token already owned by another
+ * account returns `null` instead of transferring ownership.
+ */
+export async function registerNativePushToken(
+  input: NativePushTokenInput,
+): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("register_native_push_token", {
+    p_token: input.token,
+    p_platform: input.platform,
+    p_device_label: input.deviceLabel ?? null,
+  });
+
+  if (error) {
+    throw new DataAccessError("Could not register this device", error.code);
+  }
+
+  return data;
+}
+
+/** Removes the native token owned by the caller (sign-out / opt-out). */
+export async function deleteNativePushToken(token: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("delete_native_push_token", {
+    p_token: token,
   });
 
   if (error) {
