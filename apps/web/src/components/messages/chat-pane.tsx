@@ -6,6 +6,7 @@ import {
   CheckCheck,
   Ellipsis,
   Info,
+  Lock,
   Mic,
   Paperclip,
   Plus,
@@ -106,6 +107,8 @@ export function ChatPane({
   const [editing, setEditing] = useState<RenderMessage | null>(null);
   const [editText, setEditText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const peerPublicKeyRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -564,16 +567,32 @@ export function ChatPane({
               className="h-5 w-5"
             />
           </button>
-          <button
-            type="button"
-            aria-label="Conversation information"
-            className="text-muted-foreground hover:text-foreground flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Info
-              aria-hidden="true"
-              className="h-5 w-5"
-            />
-          </button>
+          <span className="relative">
+            <button
+              type="button"
+              aria-label="Conversation information"
+              aria-expanded={infoOpen}
+              onClick={() => setInfoOpen((open) => !open)}
+              className="text-muted-foreground hover:text-foreground flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <Info
+                aria-hidden="true"
+                className="h-5 w-5"
+              />
+            </button>
+            {infoOpen ? (
+              <span className="bg-surface border-border absolute top-full right-0 z-20 mt-2 flex w-64 items-start gap-2 rounded-xl border p-3 text-xs leading-relaxed shadow-lg">
+                <Lock
+                  aria-hidden="true"
+                  className="text-accent mt-0.5 h-4 w-4 shrink-0"
+                />
+                <span>
+                  Your messages are protected with end-to-end encryption. Only
+                  you and the people you chat with can read them.
+                </span>
+              </span>
+            ) : null}
+          </span>
           <button
             type="button"
             aria-label="More options"
@@ -600,7 +619,7 @@ export function ChatPane({
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search in conversation..."
               aria-label="Search in conversation"
-              className="border-border bg-surface w-full rounded-full border py-2 pr-4 pl-9 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="bg-muted/70 text-foreground placeholder:text-muted-foreground w-full rounded-full py-2 pr-4 pl-9 text-sm transition-colors focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
             />
           </label>
         </div>
@@ -637,237 +656,251 @@ export function ChatPane({
                 {group.label}
               </span>
             </div>
-            <div className="space-y-2">
-              {group.items.map((message) => {
+            <div>
+              {group.items.map((message, index) => {
                 const mine = message.senderId === myUserId;
                 const reactionEntries = Object.entries(message.reactions);
+                const previous = index > 0 ? group.items[index - 1] : undefined;
+                const groupedWithPrevious = Boolean(
+                  previous &&
+                  previous.senderId === message.senderId &&
+                  Date.parse(message.at) - Date.parse(previous.at) <=
+                    5 * 60 * 1000,
+                );
                 return (
-                  <SwipeReply
+                  <div
                     key={message.id}
-                    onReply={() => setReplyTo(message)}
+                    className={
+                      index === 0 ? "" : groupedWithPrevious ? "mt-1" : "mt-3"
+                    }
                   >
-                    <div
-                      className={
-                        mine
-                          ? "message-in flex items-end justify-end gap-2"
-                          : "message-in flex items-end gap-2"
-                      }
-                    >
-                      {!mine ? (
-                        <span className="from-accent to-accent-hover flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold text-white">
-                          {initials(message.senderName ?? displayName)}
-                        </span>
-                      ) : null}
-                      <div className="max-w-[80%] sm:max-w-[60%]">
-                        {!mine && conversation.isGroup && message.senderName ? (
-                          <p className="mb-0.5 px-1 text-[11px] font-medium text-accent dark:text-accent">
-                            {message.senderName}
-                          </p>
-                        ) : null}
-                        {message.replyToId ? (
-                          <p className="text-muted-foreground mb-1 truncate px-1 text-[11px]">
-                            Replying to a message
-                          </p>
-                        ) : null}
-                        <div className="group relative">
-                          <button
-                            type="button"
-                            aria-label={
-                              message.state === "failed"
-                                ? "Failed to send. Tap to retry."
-                                : `Message from ${mine ? "you" : (message.senderName ?? displayName)}`
-                            }
-                            onClick={() => {
-                              if (message.state === "failed") {
-                                void retry(message);
-                              }
-                            }}
-                            className={
-                              mine
-                                ? "block rounded-2xl rounded-br-md bg-gradient-to-br from-accent to-accent-hover px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-white shadow-sm"
-                                : "block rounded-2xl rounded-bl-md bg-slate-100 px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-slate-800 dark:bg-slate-800 dark:text-slate-100"
-                            }
-                          >
-                            {editing?.id === message.id ? (
-                              <span className="block">
-                                <textarea
-                                  value={editText}
-                                  onChange={(event) =>
-                                    setEditText(event.target.value)
-                                  }
-                                  aria-label="Edit message"
-                                  rows={2}
-                                  className="w-full rounded bg-transparent text-inherit focus-visible:outline-2"
-                                />
-                                <span className="mt-1 flex gap-2">
-                                  <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      void saveEdit();
-                                    }}
-                                    onKeyDown={(event) => {
-                                      if (event.key === "Enter")
-                                        void saveEdit();
-                                    }}
-                                    className="cursor-pointer text-xs font-semibold underline underline-offset-2"
-                                  >
-                                    Save
-                                  </span>
-                                  <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      setEditing(null);
-                                    }}
-                                    className="cursor-pointer text-xs underline underline-offset-2"
-                                  >
-                                    Cancel
-                                  </span>
-                                </span>
-                              </span>
-                            ) : (
-                              message.text
-                            )}
-                            {message.attachmentUrl ? (
-                              message.attachmentMime?.startsWith("image/") ? (
-                                <img
-                                  src={message.attachmentUrl}
-                                  alt={message.attachmentName ?? "attachment"}
-                                  className="mt-2 max-h-64 rounded-lg"
-                                />
-                              ) : message.attachmentMime?.startsWith(
-                                  "video/",
-                                ) ? (
-                                <video
-                                  src={message.attachmentUrl}
-                                  controls
-                                  className="mt-2 max-h-64 rounded-lg"
-                                />
-                              ) : message.attachmentMime?.startsWith(
-                                  "audio/",
-                                ) ? (
-                                <audio
-                                  src={message.attachmentUrl}
-                                  controls
-                                  className="mt-2 w-full max-w-56"
-                                />
-                              ) : (
-                                <a
-                                  href={message.attachmentUrl}
-                                  download={message.attachmentName ?? "file"}
-                                  className="mt-2 block text-xs underline underline-offset-2"
-                                >
-                                  {message.attachmentName ?? "Download file"}
-                                </a>
-                              )
-                            ) : message.attachmentName ? (
-                              <span className="mt-1 block text-xs opacity-70">
-                                {message.attachmentName} (decrypt failed)
-                              </span>
-                            ) : null}
-                          </button>
-                          <span className="mt-1 flex items-center gap-1 px-1">
-                            <span className="text-muted-foreground text-[10px]">
-                              {formatTime(message.at)}
-                              {message.edited ? " (edited)" : ""}
-                            </span>
-                            {mine ? (
-                              message.state === "sending" ? (
-                                <span className="text-muted-foreground text-[10px]">
-                                  Sending...
-                                </span>
-                              ) : message.state === "failed" ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void retry(message)}
-                                  className="text-red-600 text-[10px] font-semibold underline underline-offset-2"
-                                  aria-label="Retry sending message"
-                                >
-                                  Failed, tap to retry
-                                </button>
-                              ) : message.state === "read" ? (
-                                <CheckCheck
-                                  aria-label="Read"
-                                  className="h-3.5 w-3.5 text-accent"
-                                />
-                              ) : (
-                                <Check
-                                  aria-label="Sent"
-                                  className="h-3.5 w-3.5 text-muted-foreground"
-                                />
-                              )
-                            ) : null}
+                    <SwipeReply onReply={() => setReplyTo(message)}>
+                      <div
+                        className={
+                          mine
+                            ? "message-in flex items-end justify-end gap-2"
+                            : "message-in flex items-end gap-2"
+                        }
+                      >
+                        {!mine && !groupedWithPrevious ? (
+                          <span className="from-accent to-accent-hover flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold text-white">
+                            {initials(message.senderName ?? displayName)}
                           </span>
-                          {reactionEntries.length > 0 ? (
-                            <span className="mt-0.5 flex flex-wrap gap-1 px-1">
-                              {reactionEntries.map(([emoji, count]) => (
-                                <span
-                                  key={emoji}
-                                  className="bg-muted rounded-full px-1.5 py-0.5 text-[11px]"
-                                >
-                                  {emoji} {count}
-                                </span>
-                              ))}
-                            </span>
+                        ) : null}
+                        <div className="max-w-[80%] sm:max-w-[60%]">
+                          {!mine &&
+                          conversation.isGroup &&
+                          message.senderName &&
+                          !groupedWithPrevious ? (
+                            <p className="mb-0.5 px-1 text-[11px] font-medium text-accent dark:text-accent">
+                              {message.senderName}
+                            </p>
                           ) : null}
-                          <span className="absolute -top-1 right-0 hidden gap-2 group-hover:flex">
+                          {message.replyToId ? (
+                            <p className="text-muted-foreground mb-1 truncate px-1 text-[11px]">
+                              Replying to a message
+                            </p>
+                          ) : null}
+                          <div className="group relative">
                             <button
                               type="button"
-                              aria-label="Reply to message"
-                              onClick={() => setReplyTo(message)}
-                              className="text-muted-foreground text-[11px] underline underline-offset-2"
+                              aria-label={
+                                message.state === "failed"
+                                  ? "Failed to send. Tap to retry."
+                                  : `Message from ${mine ? "you" : (message.senderName ?? displayName)}`
+                              }
+                              onClick={() => {
+                                if (message.state === "failed") {
+                                  void retry(message);
+                                }
+                              }}
+                              className={
+                                mine
+                                  ? "block rounded-2xl rounded-br-md bg-gradient-to-br from-accent to-accent-hover px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-white shadow-sm"
+                                  : "block rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-foreground"
+                              }
                             >
-                              Reply
+                              {editing?.id === message.id ? (
+                                <span className="block">
+                                  <textarea
+                                    value={editText}
+                                    onChange={(event) =>
+                                      setEditText(event.target.value)
+                                    }
+                                    aria-label="Edit message"
+                                    rows={2}
+                                    className="w-full rounded bg-transparent text-inherit focus-visible:outline-2"
+                                  />
+                                  <span className="mt-1 flex gap-2">
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        void saveEdit();
+                                      }}
+                                      onKeyDown={(event) => {
+                                        if (event.key === "Enter")
+                                          void saveEdit();
+                                      }}
+                                      className="cursor-pointer text-xs font-semibold underline underline-offset-2"
+                                    >
+                                      Save
+                                    </span>
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        setEditing(null);
+                                      }}
+                                      className="cursor-pointer text-xs underline underline-offset-2"
+                                    >
+                                      Cancel
+                                    </span>
+                                  </span>
+                                </span>
+                              ) : (
+                                message.text
+                              )}
+                              {message.attachmentUrl ? (
+                                message.attachmentMime?.startsWith("image/") ? (
+                                  <img
+                                    src={message.attachmentUrl}
+                                    alt={message.attachmentName ?? "attachment"}
+                                    className="mt-2 max-h-64 rounded-lg"
+                                  />
+                                ) : message.attachmentMime?.startsWith(
+                                    "video/",
+                                  ) ? (
+                                  <video
+                                    src={message.attachmentUrl}
+                                    controls
+                                    className="mt-2 max-h-64 rounded-lg"
+                                  />
+                                ) : message.attachmentMime?.startsWith(
+                                    "audio/",
+                                  ) ? (
+                                  <audio
+                                    src={message.attachmentUrl}
+                                    controls
+                                    className="mt-2 w-full max-w-56"
+                                  />
+                                ) : (
+                                  <a
+                                    href={message.attachmentUrl}
+                                    download={message.attachmentName ?? "file"}
+                                    className="mt-2 block text-xs underline underline-offset-2"
+                                  >
+                                    {message.attachmentName ?? "Download file"}
+                                  </a>
+                                )
+                              ) : message.attachmentName ? (
+                                <span className="mt-1 block text-xs opacity-70">
+                                  {message.attachmentName} (decrypt failed)
+                                </span>
+                              ) : null}
                             </button>
-                            <span className="relative">
-                              <button
-                                type="button"
-                                aria-label="React to message"
-                                onClick={() => setEmojiFor(message.id)}
-                                className="text-muted-foreground text-[11px] underline underline-offset-2"
-                              >
-                                React
-                              </button>
-                              {emojiFor === message.id ? (
-                                <EmojiPicker
-                                  onPick={(emoji) =>
-                                    void react(message.id, emoji)
-                                  }
-                                  onClose={() => setEmojiFor(null)}
-                                />
+                            <span className="mt-1 flex items-center gap-1 px-1">
+                              <span className="text-muted-foreground text-[10px]">
+                                {formatTime(message.at)}
+                                {message.edited ? " (edited)" : ""}
+                              </span>
+                              {mine ? (
+                                message.state === "sending" ? (
+                                  <span className="text-muted-foreground text-[10px]">
+                                    Sending...
+                                  </span>
+                                ) : message.state === "failed" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void retry(message)}
+                                    className="text-red-600 text-[10px] font-semibold underline underline-offset-2"
+                                    aria-label="Retry sending message"
+                                  >
+                                    Failed, tap to retry
+                                  </button>
+                                ) : message.state === "read" ? (
+                                  <CheckCheck
+                                    aria-label="Read"
+                                    className="h-3.5 w-3.5 text-accent"
+                                  />
+                                ) : (
+                                  <Check
+                                    aria-label="Sent"
+                                    className="h-3.5 w-3.5 text-muted-foreground"
+                                  />
+                                )
                               ) : null}
                             </span>
-                            {mine ? (
-                              <>
+                            {reactionEntries.length > 0 ? (
+                              <span className="mt-0.5 flex flex-wrap gap-1 px-1">
+                                {reactionEntries.map(([emoji, count]) => (
+                                  <span
+                                    key={emoji}
+                                    className="bg-muted rounded-full px-1.5 py-0.5 text-[11px]"
+                                  >
+                                    {emoji} {count}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : null}
+                            <span className="absolute -top-1 right-0 hidden gap-2 group-hover:flex">
+                              <button
+                                type="button"
+                                aria-label="Reply to message"
+                                onClick={() => setReplyTo(message)}
+                                className="text-muted-foreground text-[11px] underline underline-offset-2"
+                              >
+                                Reply
+                              </button>
+                              <span className="relative">
                                 <button
                                   type="button"
-                                  aria-label="Edit message"
-                                  onClick={() => {
-                                    setEditing(message);
-                                    setEditText(message.text);
-                                  }}
+                                  aria-label="React to message"
+                                  onClick={() => setEmojiFor(message.id)}
                                   className="text-muted-foreground text-[11px] underline underline-offset-2"
                                 >
-                                  Edit
+                                  React
                                 </button>
-                                <button
-                                  type="button"
-                                  aria-label="Delete message"
-                                  onClick={() => void remove(message.id)}
-                                  className="text-red-600 text-[11px] underline underline-offset-2"
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            ) : null}
-                          </span>
+                                {emojiFor === message.id ? (
+                                  <EmojiPicker
+                                    onPick={(emoji) =>
+                                      void react(message.id, emoji)
+                                    }
+                                    onClose={() => setEmojiFor(null)}
+                                  />
+                                ) : null}
+                              </span>
+                              {mine ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    aria-label="Edit message"
+                                    onClick={() => {
+                                      setEditing(message);
+                                      setEditText(message.text);
+                                    }}
+                                    className="text-muted-foreground text-[11px] underline underline-offset-2"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label="Delete message"
+                                    onClick={() => void remove(message.id)}
+                                    className="text-red-600 text-[11px] underline underline-offset-2"
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              ) : null}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </SwipeReply>
+                    </SwipeReply>
+                  </div>
                 );
               })}
             </div>
@@ -923,23 +956,37 @@ export function ChatPane({
       ) : null}
 
       <form
-        className="px-4 pb-4 sm:px-6"
+        className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6"
         onSubmit={(event) => {
           event.preventDefault();
           void send();
         }}
       >
-        <div className="border-border bg-surface flex items-end gap-1 rounded-3xl border px-2 py-2 shadow-sm">
-          <button
-            type="button"
-            aria-label="Emoji"
-            className="text-muted-foreground hover:text-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Smile
-              aria-hidden="true"
-              className="h-5 w-5"
-            />
-          </button>
+        <div className="border-border/60 bg-surface flex items-end gap-1 rounded-3xl border px-2 py-2">
+          <span className="relative shrink-0">
+            <button
+              type="button"
+              aria-label="Emoji"
+              aria-expanded={emojiOpen}
+              onClick={() => setEmojiOpen((open) => !open)}
+              className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <Smile
+                aria-hidden="true"
+                className="h-5 w-5"
+              />
+            </button>
+            {emojiOpen ? (
+              <EmojiPicker
+                onPick={(emoji) => {
+                  setDraft(draft + emoji);
+                  setEmojiOpen(false);
+                  composerRef.current?.focus();
+                }}
+                onClose={() => setEmojiOpen(false)}
+              />
+            ) : null}
+          </span>
 
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Message</span>
@@ -961,7 +1008,7 @@ export function ChatPane({
                   void send();
                 }
               }}
-              placeholder="Message..."
+              placeholder="Write a message..."
               aria-label="Type a message"
               className="max-h-30 w-full resize-none bg-transparent px-2 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
             />
