@@ -38,8 +38,60 @@ export function CheckInReviewActions({
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const patchStatus = async (nextStatus: SessionCheckInStatus) => {
+    const response = await fetch(
+      `/api/sessions/${sessionId}/checkins/${checkInId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      },
+    );
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+      throw new Error(body?.error?.message ?? "Could not update this row.");
+    }
+  };
+
   const save = async () => {
     if (isSaving || status === initialStatus) {
+      return;
+    }
+
+    const previousStatus = initialStatus;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      await patchStatus(status);
+
+      toast({
+        variant: "success",
+        title: `${displayName} marked ${SESSION_CHECKIN_STATUS_LABELS[status].toLowerCase()}`,
+        action: {
+          label: "Undo",
+          onClick: () => void revert(previousStatus),
+        },
+      });
+      router.refresh();
+    } catch (error) {
+      setStatus(initialStatus);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Network error. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const revert = async (previousStatus: SessionCheckInStatus) => {
+    if (isSaving) {
       return;
     }
 
@@ -47,32 +99,16 @@ export function CheckInReviewActions({
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/sessions/${sessionId}/checkins/${checkInId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        },
-      );
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setStatus(initialStatus);
-        setError(body?.error?.message ?? "Could not update this row.");
-        return;
-      }
+      await patchStatus(previousStatus);
+      setStatus(previousStatus);
 
       toast({
         variant: "success",
-        title: `${displayName} marked ${SESSION_CHECKIN_STATUS_LABELS[status].toLowerCase()}`,
+        title: `${displayName} reverted to ${SESSION_CHECKIN_STATUS_LABELS[previousStatus].toLowerCase()}`,
       });
       router.refresh();
     } catch {
-      setStatus(initialStatus);
-      setError("Network error. Please try again.");
+      setError("Could not undo this change. Please try again.");
     } finally {
       setIsSaving(false);
     }
