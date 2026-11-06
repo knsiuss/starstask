@@ -27,10 +27,10 @@ type StatItem = {
 };
 
 const TONE_CLASSES: Record<StatTone, string> = {
-  accent: "bg-accent-soft text-accent",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-danger-soft text-danger",
-  success: "bg-success-soft text-success",
+  accent: "tile-blue text-white",
+  warning: "tile-amber text-white",
+  danger: "tile-rose text-white",
+  success: "tile-emerald text-white",
 };
 
 type StatCardsProps = {
@@ -83,12 +83,12 @@ export function StatCards({ stats }: StatCardsProps) {
         <li key={item.label}>
           <Link
             href={item.href}
-            className="border-border bg-surface hover:border-accent/30 focus-visible:outline-accent group flex h-full items-center gap-2.5 rounded-xl border p-3 shadow-[0_1px_2px_rgba(9,9,11,0.03)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-3 sm:p-4"
+            className="glass-card group flex h-full items-center gap-2.5 rounded-2xl p-3 transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-3 sm:p-4"
           >
             <span
               aria-hidden="true"
               className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11",
                 TONE_CLASSES[item.tone],
               )}
             >

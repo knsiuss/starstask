@@ -153,7 +153,7 @@ export function DashboardHeader({
   const zoneLabel = timeZoneLabel(zone);
 
   return (
-    <header className="border-border bg-surface rise-in relative overflow-hidden rounded-2xl border px-4 py-5 sm:px-6 sm:py-6">
+    <header className="glass-card rise-in relative overflow-hidden rounded-2xl px-4 py-5 sm:px-6 sm:py-6">
       <div
         aria-hidden="true"
         className="from-accent-soft via-band to-surface pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l opacity-70 sm:block"
@@ -161,15 +161,18 @@ export function DashboardHeader({
 
       <div className="relative flex items-start justify-between gap-6">
         <div className="min-w-0">
-          <p className="text-muted-foreground text-sm font-medium">
+          <p className="text-muted-foreground text-sm font-medium sm:text-base">
             {greeting},
           </p>
-          <h1 className="text-foreground mt-0.5 truncate text-2xl leading-tight font-semibold tracking-tight sm:text-[30px]">
+          <h1 className="text-foreground mt-0.5 truncate text-[26px] leading-tight font-bold tracking-tight uppercase sm:text-[30px]">
             {name ?? "Welcome"}
           </h1>
-          <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
-            {summary ??
-              "Here is an overview of your academic activities today."}
+          <span
+            aria-hidden="true"
+            className="greet-bar mt-2 block h-1 w-12 rounded-full"
+          />
+          <p className="text-muted-foreground mt-2.5 max-w-xl text-sm leading-relaxed">
+            {summary ?? "Keep going! You've got this."}
           </p>
         </div>
 

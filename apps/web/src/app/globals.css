@@ -148,6 +148,53 @@ select option:checked {
   border: 2px solid var(--color-surface);
 }
 
+/* Mobile dashboard glass cards (mockup language): deep-gradient surface,
+   hairline highlight border, and a soft accent glow. Uses color-mix so it
+   adapts to both themes without per-component overrides. */
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-surface) 92%, transparent),
+    color-mix(in srgb, var(--color-band) 82%, transparent)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--color-accent) 18%, var(--color-border));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
+    0 12px 32px -12px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+/* Engagement gradient bar under the mobile greeting. */
+.greet-bar {
+  background: linear-gradient(90deg, var(--color-accent), transparent);
+}
+
+/* Rounded-l-full icon chips with tonal gradients (quick actions / tiles). */
+.tile-blue {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  box-shadow: 0 6px 16px -6px rgb(37 99 235 / 0.6);
+}
+
+.tile-cyan {
+  background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+  box-shadow: 0 6px 16px -6px rgb(14 165 233 / 0.6);
+}
+
+.tile-amber {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  box-shadow: 0 6px 16px -6px rgb(217 119 6 / 0.6);
+}
+
+.tile-rose {
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+  box-shadow: 0 6px 16px -6px rgb(225 29 72 / 0.6);
+}
+
+.tile-emerald {
+  background: linear-gradient(135deg, #34d399, #059669);
+  box-shadow: 0 6px 16px -6px rgb(5 150 105 / 0.6);
+}
+
 /* Diagonal hatch marking the part of a bar that lies before today. */
 .timeline-bar-past {
   background-image: repeating-linear-gradient(
