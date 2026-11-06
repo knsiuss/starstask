@@ -764,6 +764,265 @@ suspend fun loadAcademicContext(userId: String): AcademicContext? {
 }
 
 // ---------------------------------------------------------------------------
+// Next schedule: nearest upcoming deadline-or-session (web getNextSchedule).
+// ---------------------------------------------------------------------------
+
+data class NextScheduleItem(
+    val kind: String, // "assignment" | "session"
+    val title: String,
+    val className: String,
+    val at: String,
+    val endsAt: String?,
+    val detail: String,
+)
+
+suspend fun loadNextSchedule(userId: String): NextScheduleItem? {
+    val db = SupabaseProvider.client.postgrest
+    val memberships = db.from("class_members").select {
+        filter { eq("user_id", userId) }
+    }.decodeJsonArray().mapNotNull { it.jsonObject["class_id"]?.jsonPrimitive?.content }
+    if (memberships.isEmpty()) return null
+
+    val activeClasses = db.from("classes").select {
+        filter {
+            isIn("id", memberships)
+            eq("status", "active")
+        }
+    }.decodeJsonArray()
+    val classIds = activeClasses.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
+    if (classIds.isEmpty()) return null
+    val classNames = activeClasses.associateBy(
+        { it.jsonObject["id"]!!.jsonPrimitive.content },
+        { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
+    )
+
+    val nowIso = java.time.Instant.now().toString()
+
+    val subjectCourseRows = db.from("class_subjects").select(Columns.raw("course_id")) {
+        filter { isIn("class_id", classIds) }
+    }.decodeJsonArray()
+    val courseIds = subjectCourseRows.mapNotNull {
+        it.jsonObject["course_id"]?.jsonPrimitive?.contentOrNull()
+    }.distinct()
+
+    val scopedTasks = db.from("assignments").select {
+        filter {
+            isIn("class_id", classIds)
+            eq("status", "published")
+            filter("deadline", FilterOperator.IS, null)
+            gte("deadline", nowIso)
+        }
+        order("deadline", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+        limit(5)
+    }.decodeJsonArray()
+
+    val publicTasks = if (courseIds.isEmpty()) {
+        emptyList()
+    } else {
+        db.from("assignments").select {
+            filter {
+                filter("class_id", FilterOperator.IS, null)
+                filter("subject_id", FilterOperator.IS, null)
+                isIn("course_id", courseIds)
+                eq("status", "published")
+                filter("deadline", FilterOperator.IS, null)
+                gte("deadline", nowIso)
+            }
+            order("deadline", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+            limit(5)
+        }.decodeJsonArray()
+    }
+
+    val sessions = db.from("discussion_sessions").select {
+        filter {
+            isIn("class_id", classIds)
+            eq("status", "scheduled")
+            gte("starts_at", nowIso)
+        }
+        order("starts_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+        limit(5)
+    }.decodeJsonArray()
+
+    val courseNames = if (publicTasks.isEmpty()) {
+        emptyMap<String, String?>()
+    } else {
+        db.from("courses").select(Columns.raw("id,name")) {
+            filter {
+                isIn(
+                    "id",
+                    publicTasks.mapNotNull {
+                        it.jsonObject["course_id"]?.jsonPrimitive?.contentOrNull()
+                    }.distinct(),
+                )
+            }
+        }.decodeJsonArray().associateBy(
+            { row -> row.jsonObject["id"]!!.jsonPrimitive.content },
+            { row -> row.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
+        )
+    }
+
+    val candidates = buildList {
+        scopedTasks.forEach { row ->
+            val obj = row.jsonObject
+            val deadline = obj["deadline"]?.jsonPrimitive?.contentOrNull() ?: return@forEach
+            add(
+                NextScheduleItem(
+                    kind = "assignment",
+                    title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Assignment",
+                    className = classNames[obj["class_id"]?.jsonPrimitive?.contentOrNull()] ?: "Class",
+                    at = deadline,
+                    endsAt = null,
+                    detail = "Deadline",
+                ),
+            )
+        }
+        publicTasks.forEach { row ->
+            val obj = row.jsonObject
+            val deadline = obj["deadline"]?.jsonPrimitive?.contentOrNull() ?: return@forEach
+            add(
+                NextScheduleItem(
+                    kind = "assignment",
+                    title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Assignment",
+                    className = courseNames[obj["course_id"]?.jsonPrimitive?.contentOrNull()] ?: "Course",
+                    at = deadline,
+                    endsAt = null,
+                    detail = "Deadline",
+                ),
+            )
+        }
+        sessions.forEach { row ->
+            val obj = row.jsonObject
+            val startsAt = obj["starts_at"]?.jsonPrimitive?.contentOrNull() ?: return@forEach
+            add(
+                NextScheduleItem(
+                    kind = "session",
+                    title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Session",
+                    className = classNames[obj["class_id"]?.jsonPrimitive?.contentOrNull()] ?: "Class",
+                    at = startsAt,
+                    endsAt = obj["ends_at"]?.jsonPrimitive?.contentOrNull(),
+                    detail = if (obj["session_type"]?.jsonPrimitive?.contentOrNull() == "online") "Online session" else "Session",
+                ),
+            )
+        }
+    }
+
+    fun instantOf(iso: String): java.time.Instant = try {
+        java.time.Instant.parse(iso)
+    } catch (_: Exception) {
+        try {
+            java.time.OffsetDateTime.parse(iso).toInstant()
+        } catch (_: Exception) {
+            java.time.Instant.MAX
+        }
+    }
+
+    return candidates.sortedBy { instantOf(it.at) }.firstOrNull()
+}
+
+// ---------------------------------------------------------------------------
+// Academic identity card (web AcademicContextCard): university + student id
+// + home class, with the "not linked" state. Semester/year stays on each
+// class row in My classes.
+// ---------------------------------------------------------------------------
+
+data class AcademicCard(
+    val linked: Boolean,
+    val universityName: String? = null,
+    val studentId: String? = null,
+    val homeClassName: String? = null,
+)
+
+suspend fun loadAcademicCard(userId: String): AcademicCard? {
+    val db = SupabaseProvider.client.postgrest
+    val memberships = try {
+        db.from("university_memberships").select {
+            order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+        }.decodeJsonArray()
+    } catch (_: Exception) {
+        return null
+    }
+
+    val active = memberships.filter {
+        it.jsonObject["status"]?.jsonPrimitive?.contentOrNull() == "active"
+    }
+    // Web resolves identity only when exactly one active membership exists.
+    if (active.size != 1) return AcademicCard(linked = false)
+
+    val onlyActive = active.single()
+    val universityId = onlyActive.jsonObject["university_id"]?.jsonPrimitive?.contentOrNull()
+        ?: return AcademicCard(linked = false)
+
+    val university = try {
+        db.from("universities").select {
+            filter { eq("id", universityId) }
+            limit(1)
+        }.decodeJsonArray().firstOrNull()?.jsonObject
+    } catch (_: Exception) {
+        null
+    }
+    if (university == null || university["status"]?.jsonPrimitive?.contentOrNull() != "active") {
+        return AcademicCard(linked = false)
+    }
+    val universityName = university["short_name"]?.jsonPrimitive?.contentOrNull()
+        ?: university["name"]?.jsonPrimitive?.contentOrNull()
+        ?: return AcademicCard(linked = false)
+
+    val identities = try {
+        db.from("student_identities").select {
+            filter { eq("university_membership_id", onlyActive.jsonObject["id"]!!.jsonPrimitive.content) }
+        }.decodeJsonArray()
+    } catch (_: Exception) {
+        emptyList()
+    }
+    val studentId = identities.firstOrNull()?.jsonObject?.get("student_id")?.jsonPrimitive?.contentOrNull()
+
+    val homeClassName = run {
+        val identityIds = identities.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
+        if (identityIds.isEmpty()) {
+            null
+        } else {
+            try {
+                val home = db.from("class_memberships").select(Columns.raw("class_id")) {
+                    filter {
+                        isIn("student_identity_id", identityIds)
+                        eq("is_home", true)
+                        filter("left_at", FilterOperator.IS, null)
+                    }
+                    limit(1)
+                }.decodeJsonArray().firstOrNull()
+                val homeClassId = home?.jsonObject?.get("class_id")?.jsonPrimitive?.contentOrNull()
+                if (homeClassId == null) {
+                    null
+                } else {
+                    db.from("classes").select(Columns.raw("name")) {
+                        filter { eq("id", homeClassId) }
+                        limit(1)
+                    }.decodeJsonArray().firstOrNull()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull()
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    return AcademicCard(
+        linked = true,
+        universityName = universityName,
+        studentId = studentId,
+        homeClassName = homeClassName,
+    )
+}
+
+fun formatDateShort(iso: String): String =
+    try {
+        java.time.OffsetDateTime.parse(iso)
+            .atZoneSameInstant(java.time.ZoneId.of("Asia/Jakarta"))
+            .format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
+    } catch (_: Exception) {
+        iso.take(10)
+    }
+
+// ---------------------------------------------------------------------------
 // Attendance: GPS check-in (full params), history, recap.
 // Mirrors the web checkin module: the check_in_attendance_meeting RPC
 // re-validates membership, session state, window, identity, accuracy

@@ -38,22 +38,26 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.R
-import id.starstask.mobile.data.AcademicContext
+import id.starstask.mobile.data.AcademicCard
 import id.starstask.mobile.data.DashboardData
 import id.starstask.mobile.data.Invitation
 import id.starstask.mobile.data.LeaveRequest
+import id.starstask.mobile.data.NextScheduleItem
 import id.starstask.mobile.data.NotificationRow
 import id.starstask.mobile.data.ScheduleEntry
 import id.starstask.mobile.data.acceptPendingInvitation
 import id.starstask.mobile.data.declineInvitation
+import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.data.formatTime
-import id.starstask.mobile.data.loadAcademicContext
+import id.starstask.mobile.data.loadAcademicCard
 import id.starstask.mobile.data.loadDashboard
 import id.starstask.mobile.data.loadInvitations
 import id.starstask.mobile.data.loadLeaveRequests
+import id.starstask.mobile.data.loadNextSchedule
 import id.starstask.mobile.data.loadNotifications
 import id.starstask.mobile.data.loadSchedule
 import androidx.compose.ui.tooling.preview.Preview
@@ -98,10 +102,18 @@ fun HomeScreen(
     var leaveRequests by remember { mutableStateOf<List<LeaveRequest>>(emptyList()) }
     var notifications by remember { mutableStateOf<List<NotificationRow>>(emptyList()) }
     var invitations by remember { mutableStateOf<List<Invitation>>(emptyList()) }
-    var academicContext by remember { mutableStateOf<AcademicContext?>(null) }
+    var academicCard by remember { mutableStateOf<AcademicCard?>(null) }
+    var nextSchedule by remember { mutableStateOf<NextScheduleItem?>(null) }
     var invitationBusyId by remember { mutableStateOf<String?>(null) }
     var invitationFeedback by remember { mutableStateOf<String?>(null) }
-    var whatsNewDismissed by remember { mutableStateOf(false) }
+    val appContext = LocalContext.current
+    val whatsNewPrefs = remember {
+        appContext.getSharedPreferences("starstask-whats-new", android.content.Context.MODE_PRIVATE)
+    }
+    // Web parity: dismissal persisted per version, new version shows again.
+    var whatsNewDismissed by remember {
+        mutableStateOf(whatsNewPrefs.getString("starstask-whats-new-seen", null) == "2026-11-05")
+    }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
@@ -111,7 +123,8 @@ fun HomeScreen(
             leaveRequests = loadLeaveRequests(userId)
             notifications = loadNotifications()
             invitations = loadInvitations(userId, userEmail)
-            academicContext = loadAcademicContext(userId)
+            academicCard = loadAcademicCard(userId)
+            nextSchedule = loadNextSchedule(userId)
         } catch (e: Exception) {
             error = "Could not load your dashboard. Check your connection and try again."
         }
@@ -206,24 +219,44 @@ fun HomeScreen(
             )
         }
 
-        if (schedule.isNotEmpty()) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SectionTitle("Next schedule")
+        // Web NextSchedule parity: nearest deadline-or-session, always shown.
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionTitle("Next schedule")
+                Text(
+                    "View all tasks ›",
+                    color = Accent,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.clickable(onClick = onOpenSchedule),
+                )
+            }
+        }
+        item {
+            val item = nextSchedule
+            if (item == null) {
+                Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        "View all tasks ›",
-                        color = Accent,
+                        "No upcoming deadlines or sessions. Enjoy the free time.",
+                        modifier = Modifier.padding(16.dp),
+                        color = MutedForeground,
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.clickable(onClick = onOpenSchedule),
                     )
                 }
-            }
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+            } else {
+                val whenLabel = if (item.kind == "session" && item.endsAt != null) {
+                    "${formatDateShort(item.at)}, ${formatTime(item.at)} – ${formatTime(item.endsAt!!)}"
+                } else {
+                    "${formatDateShort(item.at)} at ${formatTime(item.at)}"
+                }
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenTasks),
+                ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Box(
                             modifier = Modifier
@@ -232,12 +265,17 @@ fun HomeScreen(
                                 .padding(horizontal = 10.dp, vertical = 8.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("📅", color = Accent, style = MaterialTheme.typography.bodyMedium)
+                            Text(if (item.kind == "assignment") "▦" else "📅", color = Accent, style = MaterialTheme.typography.bodyMedium)
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(schedule.first().title, color = Foreground)
+                            Text(item.title, color = Foreground, style = MaterialTheme.typography.bodyMedium)
                             Text(
-                                "${schedule.first().className ?: ""} · ${formatTime(schedule.first().startsAt)}-${formatTime(schedule.first().endsAt)}",
+                                "${item.className} · ${item.detail}",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                "Scheduled for · $whenLabel",
                                 color = MutedForeground,
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -256,6 +294,8 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+        if (schedule.isNotEmpty()) {
             item { SectionTitle("My week") }
             item { MyWeekStrip(schedule = schedule) }
         }
@@ -394,19 +434,9 @@ fun HomeScreen(
             }
         }
 
-        if (academicContext != null) {
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Academic context", style = MaterialTheme.typography.titleMedium, color = Foreground)
-                        Text(
-                            "Semester ${academicContext!!.semester} · ${academicContext!!.academicYear}",
-                            color = MutedForeground,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-            }
+        // Web AcademicContextCard parity: university identity, or unlinked.
+        if (academicCard != null) {
+            item { AcademicIdentityCard(card = academicCard!!) }
         }
 
         item { SectionTitle("Today") }
@@ -572,7 +602,10 @@ fun HomeScreen(
                             "✕",
                             color = MutedForeground,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.clickable { whatsNewDismissed = true },
+                            modifier = Modifier.clickable {
+                                whatsNewPrefs.edit().putString("starstask-whats-new-seen", "2026-11-05").apply()
+                                whatsNewDismissed = true
+                            },
                         )
                     }
                 }
@@ -849,6 +882,40 @@ private fun StatCardTonesPreview() {
             StatCard(label = "Warning", value = 1, icon = "!", tone = "warning")
             StatCard(label = "Danger", value = 2, icon = "✕", tone = "danger")
             StatCard(label = "Success", value = 5, icon = "✓", tone = "success")
+        }
+    }
+}
+
+@Composable
+private fun AcademicIdentityCard(card: AcademicCard) {
+    Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "🎓",
+                color = if (card.linked) Accent else MutedForeground,
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                if (card.linked) {
+                    Text(
+                        card.universityName + if (card.studentId != null) " · ${card.studentId}" else "",
+                        color = Foreground,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        (card.homeClassName?.let { "Home class: $it" } ?: "No home class assigned yet") + " · View academic identity",
+                        color = MutedForeground,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                } else {
+                    Text("Not linked to a university yet", color = Foreground, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Find your university and request access from its operator.",
+                        color = MutedForeground,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
         }
     }
 }
