@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
-import { fileDownload, handleRouteError } from "@/lib/api/responses";
+import {
+  apiSuccess,
+  fileDownload,
+  handleRouteError,
+} from "@/lib/api/responses";
 import {
   getClassAttendanceRecap,
   getClassAttendanceSubject,
@@ -19,6 +23,12 @@ import {
 } from "@/features/attendance-meetings/filenames";
 import { logAttendanceExport } from "@/features/attendance-meetings/meeting-service";
 import { requireClassManager } from "@/features/classes/class-access";
+import { createExportJob } from "@/lib/db/export-jobs";
+import { EXPORT_KIND_ATTENDANCE_RECAP } from "@/lib/queue/export-runner";
+import {
+  enqueueExport,
+  isAsyncExportConfigured,
+} from "@/lib/queue/export-queue";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +67,21 @@ export async function GET(
 
     if (!subject) {
       throw notFound();
+    }
+
+    // Async path: queue the export instead of blocking this request.
+    const wantsAsync = new URL(request.url).searchParams.get("async") === "1";
+
+    if (wantsAsync && isAsyncExportConfigured()) {
+      const job = await createExportJob({
+        userId: session.user.id,
+        kind: EXPORT_KIND_ATTENDANCE_RECAP,
+        params: { classId: found.id, subjectId: subject.id },
+      });
+
+      await enqueueExport(job.id);
+
+      return apiSuccess({ jobId: job.id, status: "pending" }, 202);
     }
 
     const recap = await getClassAttendanceRecap(found.id, subject.id);
