@@ -15,6 +15,7 @@ import {
   listCorrectionAudit,
 } from "@/lib/db/attendance-meetings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { listEvidenceForRequests, listLeaveReportRows } from "@/lib/db/leave";
 import type { ExportJob } from "@/lib/db/export-jobs";
 import {
   buildChecklistWorkbook,
@@ -30,15 +31,29 @@ import {
   resolveRecapYear,
 } from "@/features/attendance-meetings/filenames";
 import { logAttendanceExport } from "@/features/attendance-meetings/meeting-service";
+import { buildLeaveCsv, leaveCsvFilename } from "@/features/leave/reports/csv";
+import {
+  buildCompletePdf,
+  buildSummaryPdf,
+  reportFilename,
+  type EvidenceSource,
+  type ReportClassInfo,
+  type ReportInput,
+} from "@/features/leave/reports/pdf";
+import { buildLeaveZip } from "@/features/leave/reports/zip";
+import { downloadEvidenceBytes } from "@/features/leave/evidence-service";
 
 export const EXPORT_KIND_ATTENDANCE_RECAP = "attendance-recap";
 export const EXPORT_KIND_ATTENDANCE_CHECKLIST = "attendance-checklist";
 export const EXPORT_KIND_ATTENDANCE_MEETING = "attendance-meeting";
 export const EXPORT_KIND_ATTENDANCE_REPORT = "attendance-report";
+export const EXPORT_KIND_LEAVE = "leave-export";
 
 const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const PDF_MIME = "application/pdf";
+const ZIP_MIME = "application/zip";
+const CSV_MIME = "text/csv";
 
 export type ExportResult = {
   bytes: Uint8Array;
@@ -269,11 +284,120 @@ async function runAttendanceReport(job: ExportJob): Promise<ExportResult> {
   return { bytes, filename, mimeType: PDF_MIME };
 }
 
+async function runLeaveExport(job: ExportJob): Promise<ExportResult> {
+  const classId = String(job.params.classId ?? "");
+  const format = String(job.params.format ?? "csv");
+  const from = (job.params.from ?? null) as string | null;
+  const to = (job.params.to ?? null) as string | null;
+
+  const supabase = createSupabaseAdminClient();
+  const { data: classRecord } = await supabase
+    .from("classes")
+    .select("*")
+    .eq("id", classId)
+    .maybeSingle();
+
+  if (!classRecord) {
+    throw new Error("Class not found.");
+  }
+
+  const rows = await listLeaveReportRows({ classId, from, to });
+
+  const classInfo: ReportClassInfo = {
+    name: classRecord.name,
+    slug: classRecord.slug,
+    courseName: classRecord.course_name ?? null,
+    semester: classRecord.semester ?? null,
+    academicYear: classRecord.academic_year ?? null,
+    lecturerName: classRecord.lecturer_name ?? null,
+  };
+
+  const reportInput: ReportInput = {
+    classInfo,
+    from,
+    to,
+    rows,
+    generatedAt: new Date(),
+    generatedBy: "A class admin",
+  };
+
+  if (format === "csv") {
+    return {
+      bytes: new TextEncoder().encode(buildLeaveCsv(rows, classInfo)),
+      filename: leaveCsvFilename(classRecord.slug, from, to),
+      mimeType: CSV_MIME,
+    };
+  }
+
+  if (format === "summary") {
+    const bytes = await buildSummaryPdf(reportInput);
+    return {
+      bytes,
+      filename: reportFilename(classRecord.slug, "summary", from, to),
+      mimeType: PDF_MIME,
+    };
+  }
+
+  const evidenceByRequest = await loadEvidenceForJob(rows.map((row) => row.id));
+
+  if (format === "complete") {
+    const built = await buildCompletePdf(reportInput, evidenceByRequest, {
+      load: downloadEvidenceBytes,
+    });
+
+    return {
+      bytes: built.bytes,
+      filename: reportFilename(classRecord.slug, "complete", from, to),
+      mimeType: PDF_MIME,
+    };
+  }
+
+  const summary = await buildSummaryPdf(reportInput);
+  const built = await buildLeaveZip({
+    summaryPdf: summary,
+    rows,
+    evidenceByRequest,
+    load: downloadEvidenceBytes,
+    manifestCsv: buildLeaveCsv(rows, classInfo),
+  });
+
+  return {
+    bytes: built.bytes,
+    filename: reportFilename(classRecord.slug, "summary", from, to).replace(
+      /\.pdf$/,
+      "-evidence.zip",
+    ),
+    mimeType: ZIP_MIME,
+  };
+}
+
+async function loadEvidenceForJob(
+  requestIds: string[],
+): Promise<Map<string, EvidenceSource[]>> {
+  const grouped = await listEvidenceForRequests(requestIds);
+  const mapped = new Map<string, EvidenceSource[]>();
+
+  for (const [requestId, items] of grouped) {
+    mapped.set(
+      requestId,
+      items.map((item) => ({
+        requestId: item.requestId,
+        storagePath: item.storagePath,
+        originalFilename: item.originalFilename,
+        mimeType: item.mimeType,
+      })),
+    );
+  }
+
+  return mapped;
+}
+
 const RUNNERS: Record<string, (job: ExportJob) => Promise<ExportResult>> = {
   [EXPORT_KIND_ATTENDANCE_RECAP]: runAttendanceRecap,
   [EXPORT_KIND_ATTENDANCE_CHECKLIST]: runAttendanceChecklist,
   [EXPORT_KIND_ATTENDANCE_MEETING]: runAttendanceMeeting,
   [EXPORT_KIND_ATTENDANCE_REPORT]: runAttendanceReport,
+  [EXPORT_KIND_LEAVE]: runLeaveExport,
 };
 
 /** Uploads the generated file to the owner's private exports folder. */

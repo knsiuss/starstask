@@ -109,7 +109,64 @@ export function AttendanceMeetingDashboard({
   React.useEffect(() => {
     pendingRef.current = pending;
   }, [pending]);
+  const [isExporting, setIsExporting] = React.useState(false);
   const exportHref = `/api/classes/${classSlug}/attendance/exports/meeting/${detail.sessionId}`;
+
+  async function downloadMeetingExport() {
+    if (isExporting) return;
+
+    setIsExporting(true);
+
+    try {
+      const response = await fetch(`${exportHref}&async=1`);
+
+      if (response.ok && response.status === 202) {
+        const body = (await response.json()) as { data?: { jobId?: string } };
+        const jobId = body.data?.jobId;
+
+        if (!jobId) {
+          throw new Error("Export queue is not available");
+        }
+
+        toast({ title: "Export queued — preparing your file…" });
+
+        for (let attempt = 0; attempt < 15; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2_000));
+          const status = await fetch(`/api/exports/${jobId}`);
+          if (!status.ok) continue;
+          const job = (await status.json()) as {
+            data?: { status?: string; downloadUrl?: string | null };
+          };
+
+          if (job.data?.status === "done" && job.data.downloadUrl) {
+            window.open(job.data.downloadUrl, "_blank");
+            return;
+          }
+
+          if (job.data?.status === "failed") {
+            throw new Error("Export failed in the background");
+          }
+        }
+
+        throw new Error("Export is taking longer than expected");
+      }
+
+      if (response.ok) {
+        const blob = await response.blob();
+        window.open(URL.createObjectURL(blob), "_blank");
+        return;
+      }
+
+      throw new Error("Export failed");
+    } catch (error) {
+      toast({
+        variant: "error",
+        title: error instanceof Error ? error.message : "Export failed",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   const refresh = React.useCallback(async () => {
     const seq = (refreshSeqRef.current += 1);
@@ -444,17 +501,25 @@ export function AttendanceMeetingDashboard({
           </Button>
 
           <Button
-            asChild
+            type="button"
             size="sm"
             variant="secondary"
+            onClick={() => void downloadMeetingExport()}
+            disabled={isExporting}
+            aria-busy={isExporting}
           >
-            <a href={exportHref}>
+            {isExporting ? (
+              <Loader2
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin"
+              />
+            ) : (
               <Download
                 aria-hidden="true"
                 className="h-4 w-4"
               />
-              Meeting .xlsx
-            </a>
+            )}
+            Meeting .xlsx
           </Button>
 
           <AttendanceShareLinkButton
