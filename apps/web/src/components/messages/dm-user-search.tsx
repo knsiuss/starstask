@@ -65,11 +65,16 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
           id: data.id,
           otherUserId: user.id,
           otherName: user.display_name,
+          otherAvatarUrl: null,
           isGroup: false,
           participantNames: [],
           lastMessage: null,
           lastAt: null,
           unread: false,
+          unreadCount: 0,
+          isPinned: false,
+          isMuted: false,
+          isArchived: false,
         });
         return;
       }
