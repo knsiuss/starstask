@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -25,6 +26,12 @@ type SiteMobileNavProps = {
 /** Drawer for public routes, where the desktop link row does not fit. */
 export function SiteMobileNav({ isAuthenticated }: SiteMobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  // The login page is a single action; a nav drawer there is noise.
+  if (pathname?.startsWith("/login")) {
+    return null;
+  }
 
   const close = () => setIsOpen(false);
 

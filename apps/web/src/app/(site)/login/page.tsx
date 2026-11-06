@@ -57,18 +57,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
-      <Link
-        href="/assignments"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
-      >
-        <ArrowLeft
-          aria-hidden="true"
-          className="h-4 w-4"
-        />
-        Back to assignments
-      </Link>
-
-      <div className="border-border mt-6 rounded-lg border p-6 shadow-[0_1px_2px_rgba(9,9,11,0.04)] sm:p-8">
+      <div className="border-border rounded-lg border p-6 shadow-[0_1px_2px_rgba(9,9,11,0.04)] sm:p-8">
         <BrandMark size={40} />
 
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">
