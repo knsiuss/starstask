@@ -5,6 +5,7 @@ import {
   Animated,
   Button,
   FlatList,
+  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -387,7 +388,12 @@ function LoginScreen({
         ]}
       >
         <View style={styles.logoMark}>
-          <Text style={styles.logoLetter}>S</Text>
+          <Image
+            source={require("../assets/icon.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+            accessibilityLabel="StarsTask logo"
+          />
         </View>
         <Text style={styles.title}>StarsTask</Text>
         <Text style={styles.subtitle}>
@@ -580,10 +586,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 1,
   },
-  logoLetter: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: colors.accent,
+  logoImage: {
+    width: 48,
+    height: 48,
   },
   googleButton: {
     flexDirection: "row",
