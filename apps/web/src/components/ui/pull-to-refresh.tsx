@@ -6,19 +6,32 @@
  * Only engages within scrolled-to-top containers: drag down past the
  * threshold to reload. Desktop is unaffected (pointer events never trigger
  * it), and `prefers-reduced-motion` disables the animation.
+ *
+ * Refresh itself shows the brand mark spinning like X's logo pop — then a
+ * short fade-in on the children re-triggers the key change.
  */
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 
+import { BrandMark } from "@/components/layout/brand-mark";
+
 const PTR_THRESHOLD = 72;
+const REFRESH_ANIM_MS = 900;
 
 export function PullToRefresh({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [pull, setPull] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const startY = useRef<number | null>(null);
 
   function onTouchStart(event: React.TouchEvent) {
+    if (refreshing) {
+      startY.current = null;
+      return;
+    }
+
     const target = event.currentTarget as HTMLElement;
 
     if (target.scrollTop > 0) {
@@ -30,7 +43,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
   }
 
   function onTouchMove(event: React.TouchEvent) {
-    if (startY.current === null) {
+    if (startY.current === null || refreshing) {
       return;
     }
 
@@ -41,13 +54,21 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
   }
 
   function onTouchEnd() {
-    if (pull >= PTR_THRESHOLD) {
+    if (pull >= PTR_THRESHOLD && !refreshing) {
+      setRefreshing(true);
       router.refresh();
+
+      window.setTimeout(() => {
+        setRefreshing(false);
+        setRefreshKey((count) => count + 1);
+      }, REFRESH_ANIM_MS);
     }
 
     startY.current = null;
     setPull(0);
   }
+
+  const showIndicator = pull > 0 || refreshing;
 
   return (
     <div
@@ -58,17 +79,38 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
       <div className="overflow-hidden">
         <div
           aria-hidden="true"
-          className="text-muted-foreground flex justify-center text-xs font-medium transition-[height,opacity]"
+          className="flex items-center justify-center transition-[height,opacity]"
           style={{
-            height: pull > 0 ? Math.min(pull, PTR_THRESHOLD) : 0,
-            opacity: pull > PTR_THRESHOLD * 0.5 ? 1 : 0,
+            height: showIndicator ? 56 : 0,
+            opacity: pull > PTR_THRESHOLD * 0.5 || refreshing ? 1 : 0,
           }}
         >
-          <span className="py-1">
-            {pull >= PTR_THRESHOLD ? "Release to refresh" : "Pull to refresh"}
+          <span className="flex items-center gap-2 py-2">
+            <BrandMark
+              size={28}
+              className={
+                refreshing
+                  ? "st-refresh-orbit"
+                  : pull >= PTR_THRESHOLD
+                    ? "st-refresh-armed"
+                    : undefined
+              }
+            />
+            <span className="text-muted-foreground text-xs font-medium">
+              {refreshing
+                ? "Refreshing…"
+                : pull >= PTR_THRESHOLD
+                  ? "Release to refresh"
+                  : "Pull to refresh"}
+            </span>
           </span>
         </div>
-        {children}
+        <div
+          key={refreshKey}
+          className="st-fade-up"
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

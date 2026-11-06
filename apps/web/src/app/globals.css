@@ -178,6 +178,28 @@ select option:checked {
   animation: st-shimmer 1400ms ease-out 300ms 1 both;
 }
 
+/* Pull-to-refresh brand mark (X-style logo moment). */
+@keyframes st-refresh-orbit {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.st-refresh-orbit {
+  animation: st-refresh-orbit 900ms ease-in-out infinite;
+}
+
+.st-refresh-armed {
+  transform: scale(1.1);
+  transition: transform 180ms ease-out;
+}
+
 /* Diagonal hatch marking the part of a bar that lies before today. */
 .timeline-bar-past {
   background-image: repeating-linear-gradient(
