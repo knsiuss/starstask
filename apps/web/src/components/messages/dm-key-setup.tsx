@@ -7,10 +7,11 @@ import { exportPublicKey, getOrCreateKeyPair } from "@/lib/crypto/e2ee";
 type KeyStatus = "pending" | "ready" | "error";
 
 /**
- * Generates the device keypair on first use and publishes the public
+ * Generates the device keypair on first login and publishes the public
  * half so peers can encrypt. The private half never leaves IndexedDB.
- * Mounted in WorkspaceLayout so keys exist after any workspace page,
- * not just the DM tab — peers can chat as soon as they have signed in.
+ * Mounted in WorkspaceLayout so it runs on the first workspace load
+ * after sign-in, not just the DM tab. If a key is already published on
+ * the server, setup is skipped — generation happens once, at first login.
  */
 export function DmKeySetup() {
   const [status, setStatus] = useState<KeyStatus>("pending");
@@ -20,6 +21,21 @@ export function DmKeySetup() {
 
     async function setup(): Promise<void> {
       try {
+        // First-login only: if the server already holds our public key,
+        // there is nothing to generate or publish.
+        const existing = await fetch("/api/dm/keys/me").then((response) =>
+          response.ok
+            ? (response.json() as Promise<{ publicKey: string | null }>)
+            : Promise.resolve<{ publicKey: string | null }>({ publicKey: null }),
+        );
+
+        if (existing.publicKey) {
+          if (!cancelled) {
+            setStatus("ready");
+          }
+          return;
+        }
+
         const pair = await getOrCreateKeyPair();
         const publicKey = await exportPublicKey(pair);
         const response = await fetch("/api/dm/keys/me", {
