@@ -11,7 +11,7 @@ ALTER TABLE public.drive_submissions
   ADD COLUMN IF NOT EXISTS share_revoked_at timestamptz;
 
 UPDATE public.drive_submissions
-SET share_token_hash = encode(digest(share_token::text, 'sha256'), 'hex')
+SET share_token_hash = encode(extensions.digest(share_token::text, 'sha256'), 'hex')
 WHERE share_token_hash IS NULL;
 
 -- Legacy shares get a 30-day window measured from this migration; new shares

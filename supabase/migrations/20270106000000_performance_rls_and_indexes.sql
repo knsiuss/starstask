@@ -62,29 +62,38 @@ DROP POLICY IF EXISTS assignments_owner_read
 DROP POLICY IF EXISTS assignments_platform_review_read
   ON public.assignments;
 
-CREATE POLICY assignments_authenticated_read
-  ON public.assignments
-  FOR SELECT
-  TO authenticated
-  USING (
-    ((SELECT auth.uid()) = user_id)
-    OR (
-      class_id IS NOT NULL
-      AND (
-        (SELECT is_class_admin(class_id))
-        OR (SELECT is_platform_admin())
-      )
-    )
-    OR (
-      status = 'published'::text
-      AND class_id IS NOT NULL
-      AND (SELECT is_class_member(class_id))
-    )
-    OR (
-      class_id IS NULL
-      AND (SELECT is_platform_admin())
-    )
-  );
+DO $$
+BEGIN
+  BEGIN
+    CREATE POLICY assignments_authenticated_read
+      ON public.assignments
+      FOR SELECT
+      TO authenticated
+      USING (
+        ((SELECT auth.uid()) = user_id)
+        OR (
+          class_id IS NOT NULL
+          AND (
+            (SELECT is_class_admin(class_id))
+            OR (SELECT is_platform_admin())
+          )
+        )
+        OR (
+          status = 'published'::text
+          AND class_id IS NOT NULL
+          AND (SELECT is_class_member(class_id))
+        )
+        OR (
+          class_id IS NULL
+          AND (SELECT is_platform_admin())
+        )
+      );
+  EXCEPTION
+    WHEN duplicate_object THEN
+      NULL;
+  END;
+END
+$$;
 
 -- ---------------------------------------------------------------------
 -- 3. Drop duplicate indexes (identical definitions, verified in prod).

@@ -45,3 +45,5 @@ pnpm-debug.log*
 
 # WorkBuddy AI agent workspace (local only)
 .workbuddy-ai/
+supabase/backups/
+
