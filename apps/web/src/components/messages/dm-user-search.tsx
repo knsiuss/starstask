@@ -33,25 +33,37 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       return;
     }
 
+    const controller = new AbortController();
+
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const response = await fetch(
           `/api/dm/conversations?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal },
         );
         if (!response.ok) throw new Error("Search failed");
         const data = (await response.json()) as { users?: User[] };
         setUsers(data.users ?? []);
         setError(null);
-      } catch {
+      } catch (err) {
+        // Aborted (superseded by newer keystroke) requests are not errors.
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
         setUsers([]);
         setError("Could not search people. Try again.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
-    }, 300);
+    }, 200);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   const needsQuery = query.trim().length < 2;
