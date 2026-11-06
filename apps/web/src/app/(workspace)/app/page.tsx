@@ -13,6 +13,7 @@ import {
 } from "@/components/dashboard/dashboard-sections";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardRealtime } from "@/components/dashboard/dashboard-realtime";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
@@ -125,6 +126,7 @@ export default async function DashboardPage({
   return (
     <PullToRefresh>
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+        <DashboardRealtime />
         <React.Suspense
           fallback={<div className="h-24 animate-pulse rounded bg-muted" />}
         >
