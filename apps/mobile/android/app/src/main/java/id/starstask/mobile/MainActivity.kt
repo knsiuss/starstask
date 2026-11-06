@@ -194,13 +194,14 @@ private suspend fun checkIn(
     }
     val position = capturePosition(context)
         ?: return CheckInResult(false, null, "Location unavailable.")
+    val accuracyM = position.third
     val result = try {
         checkInToSession(
             userId = userId,
             sessionId = sessionId,
             latitude = position.first,
             longitude = position.second,
-            accuracyM = 50.0,
+            accuracyM = accuracyM,
         )
     } catch (_: Exception) {
         null
@@ -214,7 +215,7 @@ private suspend fun checkIn(
                 userId = userId,
                 latitude = position.first,
                 longitude = position.second,
-                accuracyM = 50.0,
+                accuracyM = accuracyM,
                 fullName = "",
                 nim = "",
                 capturedAt = "",

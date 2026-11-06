@@ -1,1 +1,4 @@
 *.apk
+gradle-8.13/
+android/app/build/
+android/.gradle/

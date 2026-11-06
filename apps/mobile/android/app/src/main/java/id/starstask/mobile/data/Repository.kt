@@ -705,6 +705,11 @@ data class RecapSummary(
  * Semester recap for the signed-in student, computed client-side from
  * their own check-ins (the class_attendance_recap RPC is class-manager
  * only, so students get their personal summary instead of the sheet).
+ *
+ * Attendance corrections (record_attendance_correction) and the correction
+ * audit list are likewise organizer-only server-side — the web student UI
+ * does not expose them either, so native does not either. Verification
+ * attempts are recorded server-side by the check-in RPC itself.
  */
 fun summarizeRecap(history: List<AttendanceHistoryEntry>): RecapSummary {
     val present = history.count { it.status == "present" }
