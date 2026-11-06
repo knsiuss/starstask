@@ -1,8 +1,8 @@
+import dynamic from "next/dynamic";
+
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
-import { MyWeekSection } from "@/components/dashboard/my-week-section";
 import { NextSchedule } from "@/components/dashboard/next-schedule";
-import { PendingInvitationsSection } from "@/components/dashboard/pending-invitations-section";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import {
@@ -11,17 +11,52 @@ import {
   getNextSchedule,
   listStudentPendingInvitations,
 } from "@/lib/db/dashboard";
+
+// Interactive sections below the fold ship as separate chunks so the
+// dashboard's first paint does not wait for them.
+const MyWeekSection = dynamic(
+  () =>
+    import("@/components/dashboard/my-week-section").then(
+      (module) => module.MyWeekSection,
+    ),
+  {
+    loading: () => <div className="h-48 animate-pulse rounded bg-muted" />,
+  },
+);
+
+const PendingInvitationsSection = dynamic(
+  () =>
+    import("@/components/dashboard/pending-invitations-section").then(
+      (module) => module.PendingInvitationsSection,
+    ),
+  { loading: () => null },
+);
 function pluralize(count: number, singular: string) {
   return `${count} ${singular}`;
 }
-function buildHeaderSummary(stats: { dueSoon: number; pastDeadline: number }): string | null {
+function buildHeaderSummary(stats: {
+  dueSoon: number;
+  pastDeadline: number;
+}): string | null {
   const parts: string[] = [];
-  if (stats.dueSoon > 0) parts.push(`${stats.dueSoon} ${pluralize(stats.dueSoon, "task")} due in the next 7 days`);
-  if (stats.pastDeadline > 0) parts.push(`${stats.pastDeadline} past ${stats.pastDeadline === 1 ? "deadline" : "deadlines"}`);
+  if (stats.dueSoon > 0)
+    parts.push(
+      `${stats.dueSoon} ${pluralize(stats.dueSoon, "task")} due in the next 7 days`,
+    );
+  if (stats.pastDeadline > 0)
+    parts.push(
+      `${stats.pastDeadline} past ${stats.pastDeadline === 1 ? "deadline" : "deadlines"}`,
+    );
   return parts.length ? `You have ${parts.join(" and ")}.` : null;
 }
 
-export async function HeaderSection({ userId, displayName }: { userId: string; displayName: string | null }) {
+export async function HeaderSection({
+  userId,
+  displayName,
+}: {
+  userId: string;
+  displayName: string | null;
+}) {
   const overview = await getDashboardOverview(userId);
   return (
     <>
@@ -39,7 +74,13 @@ export async function HeaderSection({ userId, displayName }: { userId: string; d
   );
 }
 
-export async function InvitationsSection({ userId, email }: { userId: string; email: string }) {
+export async function InvitationsSection({
+  userId,
+  email,
+}: {
+  userId: string;
+  email: string;
+}) {
   const invitations = await listStudentPendingInvitations(userId, email);
   return <PendingInvitationsSection initialInvitations={invitations} />;
 }
@@ -53,13 +94,22 @@ export async function ScheduleSection({ userId }: { userId: string }) {
   );
 }
 
-export async function WeekAndClassesSection({ userId, weekOffset }: { userId: string; weekOffset: number }) {
+export async function WeekAndClassesSection({
+  userId,
+  weekOffset,
+}: {
+  userId: string;
+  weekOffset: number;
+}) {
   const [week, overview] = await Promise.all([
     getMyWeek(userId, new Date(), weekOffset),
     getDashboardOverview(userId),
   ]);
   return (
-    <div className="mt-5 space-y-5" style={{ "--rise-delay": "120ms" } as React.CSSProperties}>
+    <div
+      className="mt-5 space-y-5"
+      style={{ "--rise-delay": "120ms" } as React.CSSProperties}
+    >
       <MyWeekSection
         week={week}
         nowIso={overview.nowIso}

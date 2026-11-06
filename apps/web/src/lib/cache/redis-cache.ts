@@ -50,8 +50,16 @@ function getCacheClient(): CacheClient | null {
     return cacheClient;
   }
 
-  const url = process.env.CACHE_REDIS_REST_URL?.trim();
-  const token = process.env.CACHE_REDIS_REST_TOKEN?.trim();
+  // `UPSTASH_REDIS_*` is the name actually configured in every environment
+  // (rate limiting uses it too); `CACHE_REDIS_*` stays as an override for a
+  // dedicated cache instance. Without this fallback the cache silently
+  // misses on every read and all listing queries hit the database.
+  const url =
+    process.env.CACHE_REDIS_REST_URL?.trim() ||
+    process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token =
+    process.env.CACHE_REDIS_REST_TOKEN?.trim() ||
+    process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
 
   if (!url || !token) {
     cacheClient = null;
@@ -189,3 +197,9 @@ export const LISTING_CACHE_TAG = "listing";
 
 /** TTL for global listing helpers (semesters, published counts). */
 export const LISTING_CACHE_TTL_SECONDS = 60;
+
+/** Tag for public assignment detail reads (published assignments only). */
+export const ASSIGNMENT_DETAIL_CACHE_TAG = "assignment-detail";
+
+/** TTL for public assignment detail reads. */
+export const ASSIGNMENT_DETAIL_CACHE_TTL_SECONDS = 60;

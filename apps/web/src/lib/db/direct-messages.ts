@@ -49,11 +49,16 @@ export type ConversationRow = {
   id: string;
   otherUserId: string;
   otherName: string;
+  otherAvatarUrl: string | null;
   isGroup: boolean;
   participantNames: string[];
   lastMessage: typeof ENCRYPTED_PREVIEW | null;
   lastAt: string | null;
   unread: boolean;
+  unreadCount: number;
+  isPinned: boolean;
+  isMuted: boolean;
+  isArchived: boolean;
 };
 
 export type StoredMessage = {
@@ -61,6 +66,10 @@ export type StoredMessage = {
   sender_id: string;
   body: string;
   created_at: string;
+  edited_at: string | null;
+  reply_to_id: string | null;
+  reactions: Record<string, string>;
+  is_pinned: boolean;
   attachment_name: string | null;
   attachment_mime: string | null;
   attachment_size: number | null;
@@ -79,15 +88,50 @@ async function requireUserId(): Promise<string> {
   return me;
 }
 
+/**
+ * One-roundtrip conversation list via `list_dm_conversations` RPC.
+ * Falls back to the multi-query logic below when the function is not
+ * deployed yet (rollout safety: the RPC is additive, old reads keep working).
+ */
 export async function listConversations(): Promise<ConversationRow[]> {
   const supabase = (await createSupabaseServerClient()) as any;
+  const { data, error } = await supabase.rpc("list_dm_conversations");
+
+  if (error || !data) {
+    return listConversationsViaQueries();
+  }
+
+  return (data as any[]).map((row) => ({
+    id: row.id,
+    otherUserId: row.other_user_id ?? "",
+    otherName: row.other_name ?? "User",
+    otherAvatarUrl: row.other_avatar_url ?? null,
+    isGroup: Boolean(row.is_group),
+    participantNames: (row.participant_names ?? []).map(String),
+    // Server cannot decrypt; never expose ciphertext as preview.
+    lastMessage: row.last_message ?? null,
+    lastAt: row.last_at ?? null,
+    unread: Boolean(row.unread),
+    unreadCount: Number(row.unread_count ?? 0),
+    isPinned: Boolean(row.is_pinned),
+    isMuted: Boolean(row.is_muted),
+    isArchived: Boolean(row.is_archived),
+  }));
+}
+
+async function listConversationsViaQueries(): Promise<ConversationRow[]> {
+  const supabase = (await createSupabaseServerClient()) as any;
   const me = await requireUserId();
-  const { data: parts } = await supabase
+  const { data: myParts } = await supabase
     .from("dm_participants")
-    .select("conversation_id")
+    .select(
+      "conversation_id, last_read_at, is_pinned, is_muted, is_archived, pinned_at",
+    )
     .eq("user_id", me)
     .is("left_at", null);
-  const ids = (parts ?? []).map((part: any) => part.conversation_id);
+  const ids: string[] = (myParts ?? []).map(
+    (part: any) => part.conversation_id,
+  );
 
   if (ids.length === 0) {
     return [];
@@ -113,13 +157,48 @@ export async function listConversations(): Promise<ConversationRow[]> {
   const { data: profiles } = otherIds.length
     ? await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, avatar_url")
         .in("id", otherIds)
     : { data: [] };
-  const nameById = new Map(
-    (profiles ?? []).map((profile: any) => [profile.id, profile.display_name]),
+  const nameById = new Map<string, string>(
+    (profiles ?? []).map((profile: any) => [
+      String(profile.id),
+      String(profile.display_name ?? "User"),
+    ]),
+  );
+  const avatarById = new Map<string, string | null>(
+    (profiles ?? []).map((profile: any) => [
+      String(profile.id),
+      (profile.avatar_url as string | null) ?? null,
+    ]),
+  );
+  const readAtByConversation = new Map<string, string | null>(
+    (myParts ?? []).map((part: any) => [
+      part.conversation_id,
+      part.last_read_at,
+    ]),
+  );
+  const prefByConversation = new Map<
+    string,
+    {
+      pinned: boolean;
+      muted: boolean;
+      archived: boolean;
+      pinnedAt: string | null;
+    }
+  >(
+    (myParts ?? []).map((part: any) => [
+      part.conversation_id,
+      {
+        pinned: Boolean(part.is_pinned),
+        muted: Boolean(part.is_muted),
+        archived: Boolean(part.is_archived),
+        pinnedAt: part.pinned_at ?? null,
+      },
+    ]),
   );
   const lastByConversation = new Map<string, { at: string; sender: string }>();
+  const unreadByConversation = new Map<string, number>();
 
   for (const message of messages ?? []) {
     if (!lastByConversation.has(message.conversation_id)) {
@@ -128,13 +207,15 @@ export async function listConversations(): Promise<ConversationRow[]> {
         sender: message.sender_id,
       });
     }
-  }
 
-  const otherByConversation = new Map<string, string>();
-
-  for (const part of allParts ?? []) {
-    if (part.user_id !== me) {
-      otherByConversation.set(part.conversation_id, part.user_id);
+    if (message.sender_id !== me) {
+      const readAt = readAtByConversation.get(message.conversation_id) ?? null;
+      if (!readAt || message.created_at > readAt) {
+        unreadByConversation.set(
+          message.conversation_id,
+          (unreadByConversation.get(message.conversation_id) ?? 0) + 1,
+        );
+      }
     }
   }
 
@@ -147,11 +228,18 @@ export async function listConversations(): Promise<ConversationRow[]> {
     participantsByConversation.set(part.conversation_id, list);
   }
 
-  return ids.map((id: any) => {
+  const rows: ConversationRow[] = ids.map((id) => {
     const participantIds = participantsByConversation.get(id) ?? [];
     const other = participantIds[0] ?? "";
     const last = lastByConversation.get(id);
     const isGroup = participantIds.length > 1;
+    const prefs = prefByConversation.get(id) ?? {
+      pinned: false,
+      muted: false,
+      archived: false,
+      pinnedAt: null,
+    };
+    const unreadCount = unreadByConversation.get(id) ?? 0;
 
     return {
       id,
@@ -159,6 +247,7 @@ export async function listConversations(): Promise<ConversationRow[]> {
       otherName: isGroup
         ? `${participantIds.length} members`
         : (nameById.get(other) ?? "User"),
+      otherAvatarUrl: avatarById.get(other) ?? null,
       isGroup,
       participantNames: participantIds.map(
         (userId: string) => nameById.get(userId) ?? "User",
@@ -166,8 +255,20 @@ export async function listConversations(): Promise<ConversationRow[]> {
       // Server cannot decrypt; never expose ciphertext as preview.
       lastMessage: last ? ENCRYPTED_PREVIEW : null,
       lastAt: last?.at ?? null,
-      unread: Boolean(last && last.sender !== me),
+      unread: unreadCount > 0,
+      unreadCount,
+      isPinned: prefs.pinned,
+      isMuted: prefs.muted,
+      isArchived: prefs.archived,
     };
+  });
+
+  // Running feed: pinned first (most-recently pinned first), then newest
+  // activity. Archived rows stay for the Archived tab, sorted last.
+  return rows.sort((a, b) => {
+    if (a.isArchived !== b.isArchived) return a.isArchived ? 1 : -1;
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+    return (b.lastAt ?? "").localeCompare(a.lastAt ?? "");
   });
 }
 
@@ -180,7 +281,7 @@ export async function listMessages(
   let query = supabase
     .from("dm_messages")
     .select(
-      "id, sender_id, body, created_at, attachment_name, attachment_mime, attachment_size, attachment_path, group_wraps",
+      "id, sender_id, body, created_at, edited_at, reply_to_id, reactions, is_pinned, attachment_name, attachment_mime, attachment_size, attachment_path, group_wraps",
     )
     .eq("conversation_id", conversationId)
     .is("deleted_at", null);
@@ -254,7 +355,7 @@ export async function getConversationPeerId(
 
 export async function getConversationParticipants(
   conversationId: string,
-): Promise<{ userId: string; name: string }[]> {
+): Promise<{ userId: string; name: string; avatarUrl: string | null }[]> {
   const supabase = (await createSupabaseServerClient()) as any;
   const me = await requireUserId();
   const { data: parts } = await supabase
@@ -270,7 +371,7 @@ export async function getConversationParticipants(
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, display_name")
+    .select("id, display_name, avatar_url")
     .in("id", userIds);
 
   const nameById = new Map<string, string>(
@@ -279,10 +380,17 @@ export async function getConversationParticipants(
       String(profile.display_name ?? "User"),
     ]),
   );
+  const avatarById = new Map<string, string | null>(
+    (profiles ?? []).map((profile: any) => [
+      String(profile.id),
+      profile.avatar_url ?? null,
+    ]),
+  );
 
   return userIds.map((userId) => ({
     userId,
     name: nameById.get(userId) ?? "User",
+    avatarUrl: avatarById.get(userId) ?? null,
   }));
 }
 
@@ -475,10 +583,12 @@ export async function blockUser(blockedId: string): Promise<void> {
 
 export async function searchUsers(
   query: string,
-): Promise<{ id: string; display_name: string }[]> {
+): Promise<{ id: string; display_name: string; avatar_url: string | null }[]> {
   const normalized = query.trim().slice(0, MAX_PLAINTEXT_LENGTH);
 
-  if (!normalized) {
+  // Discovery is display-name only: never expose email, NIM, or the full
+  // directory. Minimum length avoids directory enumeration.
+  if (normalized.length < 2) {
     return [];
   }
 
@@ -488,7 +598,7 @@ export async function searchUsers(
   const escaped = normalized.replace(/[%_\\]/g, "\\$&");
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name")
+    .select("id, display_name, avatar_url")
     .ilike("display_name", `%${escaped}%`)
     .neq("id", me)
     .limit(10);

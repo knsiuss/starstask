@@ -92,6 +92,7 @@ export type SubmissionSubmitter = {
 export type SubmissionAttachment = {
   id: string;
   storage_path: string;
+  storage_provider: string;
   original_filename: string;
   mime_type: string;
   file_size: number;
@@ -498,7 +499,7 @@ async function loadSubmissionAttachments(
   const { data, error } = await supabase
     .from("assignment_attachments")
     .select(
-      "id, storage_path, original_filename, mime_type, file_size, created_at",
+      "id, storage_path, storage_provider, original_filename, mime_type, file_size, created_at",
     )
     .eq("assignment_id", assignmentId)
     .order("created_at", { ascending: true });

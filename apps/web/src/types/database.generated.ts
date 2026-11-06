@@ -348,6 +348,7 @@ export type Database = {
           mime_type: string;
           original_filename: string;
           storage_path: string;
+          storage_provider: string;
         };
         ComputedFields: never;
         Insert: {
@@ -358,6 +359,7 @@ export type Database = {
           mime_type: string;
           original_filename: string;
           storage_path: string;
+          storage_provider?: string;
         };
         Update: {
           assignment_id?: string;
@@ -367,6 +369,7 @@ export type Database = {
           mime_type?: string;
           original_filename?: string;
           storage_path?: string;
+          storage_provider?: string;
         };
         Relationships: [
           {

@@ -11,6 +11,8 @@ import type {
 
 import type { AssignmentStatusRow, Database, Json } from "@/types/database";
 import {
+  ASSIGNMENT_DETAIL_CACHE_TAG,
+  ASSIGNMENT_DETAIL_CACHE_TTL_SECONDS,
   DASHBOARD_CACHE_TAG,
   LISTING_CACHE_TAG,
   LISTING_CACHE_TTL_SECONDS,
@@ -34,6 +36,7 @@ export class DataAccessError extends Error {
 export type AssignmentAttachment = {
   id: string;
   storage_path: string;
+  storage_provider: string;
   original_filename: string;
   mime_type: string;
   file_size: number;
@@ -153,7 +156,7 @@ const ASSIGNMENT_DETAIL_SELECT = `
   created_at,
   updated_at,
   courses!assignments_course_id_fkey ( name, code, department ),
-  assignment_attachments ( id, storage_path, original_filename, mime_type, file_size, created_at )
+  assignment_attachments ( id, storage_path, storage_provider, original_filename, mime_type, file_size, created_at )
 `;
 
 export async function listAssignments(
@@ -233,34 +236,69 @@ async function loadAssignments(
 /**
  * Cached for the lifetime of one render so `generateMetadata` and the page
  * share the same read instead of fetching the assignment twice.
+ *
+ * Published assignments additionally go through the Redis cache (60s):
+ * their detail is identical for every viewer. Drafts and review-queue
+ * rows are never cached, because another user must not read them through
+ * a shared cache entry.
  */
 export const getAssignmentDetail = cache(
   async (id: string): Promise<AssignmentDetail | null> => {
-    const supabase = await createSupabaseServerClient();
+    const status = await getAssignmentStatus(id);
 
-    const { data, error } = await supabase
-      .from("assignments")
-      .select(ASSIGNMENT_DETAIL_SELECT)
-      .eq("id", id)
-      .maybeSingle<AssignmentRecord>();
-
-    if (error) {
-      throw new DataAccessError("Could not load the assignment", error.code);
+    if (status === "published") {
+      return getCachedWithTag(
+        ASSIGNMENT_DETAIL_CACHE_TAG,
+        id,
+        ASSIGNMENT_DETAIL_CACHE_TTL_SECONDS,
+        () => loadAssignmentDetail(id),
+      );
     }
 
-    if (!data) {
-      return null;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name, avatar_url")
-      .eq("id", data.user_id)
-      .maybeSingle();
-
-    return toAssignmentDetail(data, profile);
+    return loadAssignmentDetail(id);
   },
 );
+
+async function loadAssignmentDetail(
+  id: string,
+): Promise<AssignmentDetail | null> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("assignments")
+    .select(ASSIGNMENT_DETAIL_SELECT)
+    .eq("id", id)
+    .maybeSingle<AssignmentRecord>();
+
+  if (error) {
+    throw new DataAccessError("Could not load the assignment", error.code);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, avatar_url")
+    .eq("id", data.user_id)
+    .maybeSingle();
+
+  return toAssignmentDetail(data, profile);
+}
+
+/** Cheap PK lookup used to decide whether the Redis cache may serve. */
+async function getAssignmentStatus(id: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from("assignments")
+    .select("status")
+    .eq("id", id)
+    .maybeSingle();
+
+  return data?.status ?? null;
+}
 
 export async function getOwnedAssignment(
   id: string,
@@ -653,6 +691,7 @@ export async function insertAssignment(
   // A new (or now-published) assignment changes the listing and dashboards.
   await invalidateCacheTag(LISTING_CACHE_TAG);
   await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
 
   return data.id;
 }
@@ -724,6 +763,7 @@ export async function updateAssignmentRecord(
   if (data !== null) {
     await invalidateCacheTag(LISTING_CACHE_TAG);
     await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+    await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
   }
 
   return data !== null;
@@ -732,12 +772,15 @@ export async function updateAssignmentRecord(
 export async function deleteAssignmentRecord(
   userId: string,
   id: string,
-): Promise<{ deleted: boolean; storagePaths: string[] }> {
+): Promise<{
+  deleted: boolean;
+  attachments: { storagePath: string; storageProvider: string }[];
+}> {
   const supabase = await createSupabaseServerClient();
 
   const { data: existing, error: readError } = await supabase
     .from("assignments")
-    .select("id, assignment_attachments ( storage_path )")
+    .select("id, assignment_attachments ( storage_path, storage_provider )")
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
@@ -747,7 +790,7 @@ export async function deleteAssignmentRecord(
   }
 
   if (!existing) {
-    return { deleted: false, storagePaths: [] };
+    return { deleted: false, attachments: [] };
   }
 
   const { data: deleted, error: deleteError } = await supabase
@@ -766,17 +809,19 @@ export async function deleteAssignmentRecord(
   }
 
   if (!deleted) {
-    return { deleted: false, storagePaths: [] };
+    return { deleted: false, attachments: [] };
   }
 
   await invalidateCacheTag(LISTING_CACHE_TAG);
   await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
 
   return {
     deleted: true,
-    storagePaths: existing.assignment_attachments.map(
-      (row) => row.storage_path,
-    ),
+    attachments: existing.assignment_attachments.map((row) => ({
+      storagePath: row.storage_path,
+      storageProvider: row.storage_provider ?? "supabase",
+    })),
   };
 }
 
@@ -784,6 +829,7 @@ export async function insertAttachmentRecords(
   assignmentId: string,
   attachments: {
     storagePath: string;
+    storageProvider: string;
     originalFilename: string;
     mimeType: string;
     fileSize: number;
@@ -800,6 +846,7 @@ export async function insertAttachmentRecords(
       attachments.map((attachment) => ({
         assignment_id: assignmentId,
         storage_path: attachment.storagePath,
+        storage_provider: attachment.storageProvider,
         original_filename: attachment.originalFilename,
         mime_type: attachment.mimeType,
         file_size: attachment.fileSize,
