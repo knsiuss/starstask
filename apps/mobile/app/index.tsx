@@ -433,7 +433,7 @@ const styles = {
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  googleMark: { width: 22, height: 22 },
+  googleMark: { width: 32, height: 32 },
   googleLabel: {
     flex: 1,
     fontSize: 16,
