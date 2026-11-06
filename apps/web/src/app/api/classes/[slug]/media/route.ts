@@ -10,6 +10,11 @@ import {
   buildClassMediaPath,
   validateClassImage,
 } from "@/lib/storage/class-media";
+import {
+  deleteStoredObject,
+  isB2Configured,
+  uploadToStorageWithKey,
+} from "@/lib/storage/b2";
 import { requireClassManager } from "@/features/classes/class-access";
 
 export const dynamic = "force-dynamic";
@@ -74,11 +79,48 @@ export async function POST(
       throw new ApiError(400, "invalid_file", validation.error);
     }
 
-    const supabase = await createSupabaseServerClient();
     const storagePath = buildClassMediaPath(
       found.id,
       validation.value.objectName,
     );
+
+    // B2 is private, so the stored pointer is the streaming proxy route
+    // (same URL-string shape the UI already renders). Without B2, keep the
+    // public Supabase bucket behaviour.
+    if (isB2Configured()) {
+      const objectKey = `class-media/${storagePath}`;
+
+      try {
+        await uploadToStorageWithKey(
+          objectKey,
+          validation.value.bytes,
+          validation.value.mimeType,
+        );
+      } catch {
+        throw new ApiError(
+          500,
+          "upload_failed",
+          "Could not store the image. Try again.",
+        );
+      }
+
+      const mediaUrl = `/api/media/${objectKey}`;
+      const next = {
+        avatarUrl: kind === "avatar" ? mediaUrl : found.avatar_url,
+        coverUrl: kind === "cover" ? mediaUrl : found.cover_url,
+      };
+
+      try {
+        await setClassMedia(found.id, next);
+      } catch (error) {
+        await deleteStoredObject("b2", objectKey).catch(() => undefined);
+        throw error;
+      }
+
+      return apiSuccess(next);
+    }
+
+    const supabase = await createSupabaseServerClient();
 
     const { error: uploadError } = await supabase.storage
       .from(CLASS_MEDIA_BUCKET)

@@ -51,9 +51,19 @@ export async function uploadToR2(
   bytes: Uint8Array,
   mimeType: string,
 ): Promise<{ url: string; path: string }> {
+  const key = `${randomUUID()}-${objectName}`;
+  const url = await uploadToR2WithKey(key, bytes, mimeType);
+  return { url, path: key };
+}
+
+/** Puts one object at `key` in the R2 bucket; returns a signed GET URL. */
+export async function uploadToR2WithKey(
+  key: string,
+  bytes: Uint8Array,
+  mimeType: string,
+): Promise<string> {
   const config = getR2Config();
   if (!config) throw new Error("R2 not configured");
-  const key = `${randomUUID()}-${objectName}`;
   const client = new S3Client({
     region: "auto",
     endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
@@ -74,11 +84,9 @@ export async function uploadToR2(
   // The bucket is private: only a short-lived signed URL leaves the server,
   // so a leaked link dies with SIGNED_URL_TTL_SECONDS. `R2_PUBLIC_URL` is no
   // longer used; it remains in old deployments only.
-  const url = await getSignedUrl(
+  return getSignedUrl(
     client,
     new GetObjectCommand({ Bucket: config.bucket, Key: key }),
     { expiresIn: SIGNED_URL_TTL_SECONDS },
   );
-
-  return { url, path: key };
 }

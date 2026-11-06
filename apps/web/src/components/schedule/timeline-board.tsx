@@ -684,7 +684,9 @@ function MoreItemsDialog({
                 href={item.href ?? "#"}
                 className="hover:bg-subtle flex items-center gap-2 rounded-md px-2 py-2 text-sm"
                 onClick={
-                  item.href ? undefined : (event) => event.preventDefault()
+                  item.href
+                    ? undefined
+                    : (event: React.MouseEvent) => event.preventDefault()
                 }
               >
                 <span

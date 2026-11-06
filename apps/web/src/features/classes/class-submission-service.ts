@@ -13,11 +13,11 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   assertAttachmentCount,
-  ATTACHMENT_BUCKET,
   buildStoragePath,
   validateAttachmentFile,
   type ValidatedAttachment,
 } from "@/lib/storage/attachments";
+import { deleteStoredObject, uploadToStorageWithKey } from "@/lib/storage/b2";
 import { toClassApiError } from "@/features/classes/errors";
 
 export type ClassSubmissionResult = {
@@ -111,12 +111,10 @@ export async function reviseClassSubmission(params: {
     });
   }
 
-  const uploadedPaths: string[] = [];
+  const uploaded: { storagePath: string; storageProvider: string }[] = [];
 
   try {
-    uploadedPaths.push(
-      ...(await uploadAttachments(params.assignmentId, validated)),
-    );
+    uploaded.push(...(await uploadAttachments(params.assignmentId, validated)));
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.rpc("revise_class_assignment", {
@@ -133,7 +131,7 @@ export async function reviseClassSubmission(params: {
       throw toClassApiError(error, "Could not revise the assignment.");
     }
   } catch (error) {
-    await removeObjects(uploadedPaths);
+    await removeObjects(uploaded);
     throw error;
   }
 }
@@ -164,11 +162,11 @@ async function validateFiles(files: File[]): Promise<ValidatedAttachment[]> {
   return validated;
 }
 
-/** Uploads every file and records it; returns the storage paths it created. */
+/** Uploads every file and records it; returns the stored objects it created. */
 async function uploadAttachments(
   assignmentId: string,
   validated: ValidatedAttachment[],
-): Promise<string[]> {
+): Promise<{ storagePath: string; storageProvider: string }[]> {
   if (validated.length === 0) {
     return [];
   }
@@ -182,7 +180,7 @@ async function uploadAttachments(
     throw new ApiError(401, "unauthorized", "Sign in to continue.");
   }
 
-  const uploadedPaths: string[] = [];
+  const uploaded: { storagePath: string; storageProvider: string }[] = [];
 
   try {
     for (const attachment of validated) {
@@ -191,40 +189,42 @@ async function uploadAttachments(
         assignmentId,
         attachment.objectName,
       );
-      const { error } = await supabase.storage
-        .from(ATTACHMENT_BUCKET)
-        .upload(storagePath, attachment.bytes, {
-          contentType: attachment.mimeType,
-          upsert: false,
-          cacheControl: "private, max-age=0",
-        });
 
-      if (error) {
+      try {
+        const stored = await uploadToStorageWithKey(
+          storagePath,
+          attachment.bytes,
+          attachment.mimeType,
+        );
+        uploaded.push({
+          storagePath: stored.path,
+          storageProvider: stored.provider,
+        });
+      } catch {
         throw new ApiError(
           500,
           "upload_failed",
           "Could not upload the attachments.",
         );
       }
-
-      uploadedPaths.push(storagePath);
     }
 
     await insertAttachmentRecords(
       assignmentId,
       validated.map((attachment, index) => ({
-        storagePath: uploadedPaths[index] ?? "",
+        storagePath: uploaded[index]?.storagePath ?? "",
+        storageProvider: uploaded[index]?.storageProvider ?? "supabase",
         originalFilename: attachment.originalFilename,
         mimeType: attachment.mimeType,
         fileSize: attachment.fileSize,
       })),
     );
   } catch (error) {
-    await removeObjects(uploadedPaths);
+    await removeObjects(uploaded);
     throw error;
   }
 
-  return uploadedPaths;
+  return uploaded;
 }
 
 async function countExistingAttachments(assignmentId: string): Promise<number> {
@@ -241,28 +241,18 @@ async function countExistingAttachments(assignmentId: string): Promise<number> {
   return count ?? 0;
 }
 
-async function removeObjects(paths: string[]): Promise<void> {
-  if (paths.length === 0) {
-    return;
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.storage
-      .from(ATTACHMENT_BUCKET)
-      .remove(paths);
-
-    if (error) {
-      console.error("[storage] class attachment cleanup failed", {
-        count: paths.length,
-        code: error.name,
+async function removeObjects(
+  objects: { storagePath: string; storageProvider: string }[],
+): Promise<void> {
+  for (const object of objects) {
+    try {
+      await deleteStoredObject(object.storageProvider, object.storagePath);
+    } catch (error) {
+      console.error("[storage] class attachment cleanup threw", {
+        provider: object.storageProvider,
+        name: error instanceof Error ? error.name : "unknown",
       });
     }
-  } catch (error) {
-    console.error("[storage] class attachment cleanup threw", {
-      count: paths.length,
-      name: error instanceof Error ? error.name : "unknown",
-    });
   }
 }
 
@@ -281,6 +271,6 @@ async function deleteOwnSubmission(assignmentId: string): Promise<void> {
     return;
   }
 
-  const { storagePaths } = await deleteAssignmentRecord(user.id, assignmentId);
-  await removeObjects(storagePaths);
+  const { attachments } = await deleteAssignmentRecord(user.id, assignmentId);
+  await removeObjects(attachments);
 }
