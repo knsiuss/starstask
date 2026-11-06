@@ -76,7 +76,10 @@ export default async function WorkspaceLayout({
   const showUniversityInfo =
     isUnpamPluginEnabled() &&
     (unpamMember ||
-      (await isUnpamMember(session?.user.id ?? null, myProfile?.university)));
+      (await isUnpamMember(
+        session?.user.id ?? null,
+        myProfile && "university" in myProfile ? myProfile.university : null,
+      )));
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;
