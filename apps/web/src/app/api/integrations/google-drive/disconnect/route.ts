@@ -54,6 +54,7 @@ export async function POST() {
         const refresh = decryptToken(
           data.refresh_token_ciphertext,
           config.encryptionKey,
+          "drive",
         );
         await revokeGoogleToken(refresh);
       }

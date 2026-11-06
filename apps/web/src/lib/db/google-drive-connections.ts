@@ -80,10 +80,20 @@ export async function saveDriveConnection(
         access_token_ciphertext: encryptToken(
           tokens.accessToken,
           config.encryptionKey,
+          "drive",
         ),
-        refresh_token_ciphertext: tokens.refreshToken
-          ? encryptToken(tokens.refreshToken, config.encryptionKey)
-          : null,
+        // Google omits the refresh token on reconnects without consent.
+        // Never overwrite a stored refresh token with null; only a new one
+        // replaces it.
+        ...(tokens.refreshToken
+          ? {
+              refresh_token_ciphertext: encryptToken(
+                tokens.refreshToken,
+                config.encryptionKey,
+                "drive",
+              ),
+            }
+          : {}),
         token_expires_at: tokens.expiresAt,
         status: "connected",
         drive_email: driveEmail,
@@ -151,7 +161,11 @@ export async function getValidDriveAccessToken(
 
   const expiresAt = new Date(data.token_expires_at).getTime();
   if (Number.isFinite(expiresAt) && expiresAt - Date.now() > EXPIRY_SKEW_MS) {
-    return decryptToken(data.access_token_ciphertext, config.encryptionKey);
+    return decryptToken(
+      data.access_token_ciphertext,
+      config.encryptionKey,
+      "drive",
+    );
   }
 
   if (!data.refresh_token_ciphertext) {
@@ -161,6 +175,7 @@ export async function getValidDriveAccessToken(
   const refreshToken = decryptToken(
     data.refresh_token_ciphertext,
     config.encryptionKey,
+    "drive",
   );
   const refreshed = await refreshAccessToken(config, refreshToken);
 
@@ -170,6 +185,7 @@ export async function getValidDriveAccessToken(
       access_token_ciphertext: encryptToken(
         refreshed.accessToken,
         config.encryptionKey,
+        "drive",
       ),
       token_expires_at: refreshed.expiresAt,
       last_refreshed_at: new Date().toISOString(),

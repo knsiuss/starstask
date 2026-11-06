@@ -103,6 +103,36 @@ export async function POST(request: Request, { params }: Params) {
 
     const attachment = body?.attachment as
       { name: string; mime: string; size: number; path: string } | undefined;
+
+    // Client-supplied attachment metadata is untrusted: the object must live
+    // under this conversation's folder, the MIME must be a media type, and the
+    // size must stay inside the client-side cap.
+    if (attachment !== undefined) {
+      const pathValid =
+        typeof attachment.path === "string" &&
+        attachment.path.startsWith(`${id}/`) &&
+        !attachment.path.includes("..");
+      const mimeValid =
+        typeof attachment.mime === "string" &&
+        (attachment.mime.startsWith("image/") ||
+          attachment.mime.startsWith("video/") ||
+          attachment.mime.startsWith("audio/") ||
+          attachment.mime === "application/pdf" ||
+          attachment.mime.startsWith("text/") ||
+          attachment.mime === "application/zip");
+      const sizeValid =
+        Number.isFinite(attachment.size) &&
+        attachment.size > 0 &&
+        attachment.size <= 25 * 1024 * 1024;
+
+      if (!pathValid || !mimeValid || !sizeValid) {
+        return NextResponse.json(
+          { error: "Invalid attachment metadata" },
+          { status: 400 },
+        );
+      }
+    }
+
     const message = await sendCiphertext(
       id,
       ciphertext,

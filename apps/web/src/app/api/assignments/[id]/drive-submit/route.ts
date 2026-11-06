@@ -2,6 +2,7 @@ import { assignmentIdSchema } from "@starstask/contracts";
 
 import { ApiError } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { getSessionUser } from "@/lib/auth/session";
 import { getAssignmentDetail } from "@/lib/db/assignments";
 import { insertDriveSubmission } from "@/lib/db/drive-submissions";
@@ -60,6 +61,10 @@ export async function POST(
         "You cannot submit to your own assignment.",
       );
     }
+
+    // Refuse oversized bodies (or bodies with no declared length) before the
+    // framework buffers the multipart payload into memory.
+    assertUploadContentLength(request);
 
     const form = await request.formData();
     const file = form.get("file");
