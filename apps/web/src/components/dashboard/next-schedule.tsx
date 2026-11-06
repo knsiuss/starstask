@@ -37,11 +37,11 @@ export function NextSchedule({ item }: { item: NextScheduleItem | null }) {
   return (
     <section
       aria-labelledby="next-schedule"
-      className="glass-card rise-in rounded-2xl p-3.5 sm:p-5"
+      className="border-border bg-surface rise-in rounded-xl border p-3.5 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
-          <span className="tile-blue flex h-9 w-9 items-center justify-center rounded-xl text-white">
+          <span className="bg-accent-soft text-accent flex h-9 w-9 items-center justify-center rounded-lg">
             <CalendarDays
               aria-hidden="true"
               className="h-[18px] w-[18px]"
@@ -58,7 +58,7 @@ export function NextSchedule({ item }: { item: NextScheduleItem | null }) {
           href="/schedule"
           className="text-accent hover:text-accent-hover inline-flex items-center gap-1.5 rounded-md text-xs font-semibold transition-colors"
         >
-          View all
+          View all tasks
           <ArrowRight
             aria-hidden="true"
             className="h-3.5 w-3.5"
@@ -69,9 +69,9 @@ export function NextSchedule({ item }: { item: NextScheduleItem | null }) {
       {item ? (
         <Link
           href={item.href}
-          className="glass-card focus-visible:outline-accent mt-3 flex flex-wrap items-center gap-3 rounded-2xl px-3.5 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3.5"
+          className="border-accent/20 bg-band hover:border-accent/40 focus-visible:outline-accent mt-3 flex flex-wrap items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3.5"
         >
-          <span className="tile-cyan flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white">
+          <span className="bg-surface text-accent border-border flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border">
             {item.kind === "assignment" ? (
               <FileText
                 aria-hidden="true"

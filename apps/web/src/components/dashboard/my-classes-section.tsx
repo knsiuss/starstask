@@ -95,12 +95,12 @@ function ClassRow({
   return (
     <Link
       href={`/app/classes/${classItem.slug}`}
-      className="glass-card group flex items-center gap-3 rounded-2xl p-3 transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-4 sm:p-4"
+      className="border-border bg-surface hover:border-accent/40 focus-visible:outline-accent group flex items-center gap-3 rounded-xl border p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-4 sm:p-4"
     >
       <span
         aria-hidden="true"
         style={{ backgroundPosition: imagePosition }}
-        className="border-border h-14 w-14 shrink-0 rounded-xl border bg-[url('/hero-dashboard.svg')] bg-cover shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:h-16 sm:w-16"
+        className="border-border h-14 w-14 shrink-0 rounded-lg border bg-[url('/hero-dashboard.svg')] bg-cover shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:h-16 sm:w-16"
       />
 
       <div className="min-w-0 flex-1">

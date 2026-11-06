@@ -39,33 +39,32 @@
   --radius-lg: 0.75rem;
 }
 
-/* Dark palette (Midnight Navy / Deep Ocean / Royal Blue / Electric Blue /
-   Ice Blue): deep ocean surfaces with electric blue accents. Utilities read
-   these variables, so toggling the `dark` class on <html> re-themes the whole
-   app without touching components. */
+/* Dark palette: the same tokens, re-pointed at deep neutral surfaces with a
+   quieter blue. Utilities read these variables, so toggling the `dark` class
+   on <html> re-themes the whole app without touching components. */
 .dark {
   color-scheme: dark;
 
-  --color-background: #020814;
-  --color-surface: #081226;
-  --color-foreground: #e0efff;
-  --color-muted: #0c2242;
-  --color-muted-foreground: #7fa5d4;
-  --color-subtle: #060f21;
-  --color-border: #16305e;
-  --color-input: #1c3d78;
-  --color-accent: #38bdf8;
-  --color-accent-hover: #7dd3fc;
-  --color-accent-foreground: #02101f;
-  --color-accent-soft: #0f2b56;
-  --color-hover: #0e2c55;
-  --color-band: #0a1f45;
-  --color-danger: #fb7185;
-  --color-danger-soft: #3a1522;
-  --color-success: #34d399;
-  --color-success-soft: #0b2f23;
-  --color-warning: #fbbf24;
-  --color-warning-soft: #33240c;
+  --color-background: #0e1116;
+  --color-surface: #171c24;
+  --color-foreground: #e8eaed;
+  --color-muted: #232a35;
+  --color-muted-foreground: #9aa3af;
+  --color-subtle: #12161d;
+  --color-border: #262f3d;
+  --color-input: #333e4f;
+  --color-accent: #8fb0e8;
+  --color-accent-hover: #a8c2f0;
+  --color-accent-foreground: #0b1220;
+  --color-accent-soft: #1d2a44;
+  --color-hover: #1f2735;
+  --color-band: #16233c;
+  --color-danger: #e07a7a;
+  --color-danger-soft: #3a2226;
+  --color-success: #5cb98a;
+  --color-success-soft: #14291f;
+  --color-warning: #d9a441;
+  --color-warning-soft: #33270f;
 }
 
 @layer base {
@@ -149,22 +148,6 @@ select option:checked {
   border: 2px solid var(--color-surface);
 }
 
-/* Mobile dashboard glass cards (mockup language): deep-gradient surface,
-   hairline highlight border, and a soft accent glow. Uses color-mix so it
-   adapts to both themes without per-component overrides. */
-.glass-card {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-surface) 94%, transparent),
-    color-mix(in srgb, var(--color-band) 86%, transparent)
-  );
-  border: 1px solid
-    color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
-    0 18px 40px -14px color-mix(in srgb, var(--color-accent) 55%, transparent);
-}
-
 /* Entrance shimmer for stat cards: a soft sweep once, never loops. */
 @keyframes st-shimmer {
   from {
@@ -193,37 +176,6 @@ select option:checked {
   );
   transform: translateX(-150%);
   animation: st-shimmer 1400ms ease-out 300ms 1 both;
-}
-
-/* Engagement gradient bar under the mobile greeting. */
-.greet-bar {
-  background: linear-gradient(90deg, var(--color-accent), transparent);
-}
-
-/* Rounded-l-full icon chips with tonal gradients (quick actions / tiles). */
-.tile-blue {
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
-  box-shadow: 0 6px 16px -6px rgb(37 99 235 / 0.6);
-}
-
-.tile-cyan {
-  background: linear-gradient(135deg, #22d3ee, #0ea5e9);
-  box-shadow: 0 6px 16px -6px rgb(14 165 233 / 0.6);
-}
-
-.tile-amber {
-  background: linear-gradient(135deg, #fbbf24, #d97706);
-  box-shadow: 0 6px 16px -6px rgb(217 119 6 / 0.6);
-}
-
-.tile-rose {
-  background: linear-gradient(135deg, #fb7185, #e11d48);
-  box-shadow: 0 6px 16px -6px rgb(225 29 72 / 0.6);
-}
-
-.tile-emerald {
-  background: linear-gradient(135deg, #34d399, #059669);
-  box-shadow: 0 6px 16px -6px rgb(5 150 105 / 0.6);
 }
 
 /* Diagonal hatch marking the part of a bar that lies before today. */
