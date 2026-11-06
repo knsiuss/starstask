@@ -73,12 +73,10 @@ export default async function WorkspaceLayout({
         Promise.resolve(false),
         session ? isBetaTester() : Promise.resolve(false),
       ]);
-  // getMyProfile's shape has no university (private, RPC-only); the session
-  // profile row does. Fall back to it so the check compiles on both types.
+  // getMyProfile's shape has no university (private, RPC-only); fall back to
+  // the typed row and keep the check compiling on both types.
   const profileUniversity =
-    (myProfile as { university?: string | null } | null)?.university ??
-    session?.profile?.university ??
-    null;
+    (myProfile as { university?: string | null } | null)?.university ?? null;
 
   const showUniversityInfo =
     isUnpamPluginEnabled() &&
