@@ -1,6 +1,9 @@
 package id.starstask.mobile.ui.screens
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,19 +29,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import id.starstask.mobile.R
 import id.starstask.mobile.data.AcademicContext
 import id.starstask.mobile.data.DashboardData
 import id.starstask.mobile.data.Invitation
 import id.starstask.mobile.data.LeaveRequest
 import id.starstask.mobile.data.NotificationRow
 import id.starstask.mobile.data.ScheduleEntry
+import id.starstask.mobile.data.acceptPendingInvitation
+import id.starstask.mobile.data.declineInvitation
 import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.loadAcademicContext
 import id.starstask.mobile.data.loadDashboard
@@ -48,14 +59,19 @@ import id.starstask.mobile.data.loadSchedule
 import androidx.compose.ui.tooling.preview.Preview
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.AccentSoft
+import id.starstask.mobile.ui.theme.Band
 import id.starstask.mobile.ui.theme.Border
 import id.starstask.mobile.ui.theme.Danger
+import id.starstask.mobile.ui.theme.DangerSoft
 import id.starstask.mobile.ui.theme.Foreground
+import id.starstask.mobile.ui.theme.MutedFill
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.StarsTaskTheme
+import id.starstask.mobile.ui.theme.Subtle
 import id.starstask.mobile.ui.theme.Surface
 import id.starstask.mobile.ui.theme.Warning
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Mobile home mirroring the web dashboard structure one-to-one:
@@ -83,6 +99,10 @@ fun HomeScreen(
     var notifications by remember { mutableStateOf<List<NotificationRow>>(emptyList()) }
     var invitations by remember { mutableStateOf<List<Invitation>>(emptyList()) }
     var academicContext by remember { mutableStateOf<AcademicContext?>(null) }
+    var invitationBusyId by remember { mutableStateOf<String?>(null) }
+    var invitationFeedback by remember { mutableStateOf<String?>(null) }
+    var whatsNewDismissed by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
         try {
@@ -118,18 +138,47 @@ fun HomeScreen(
     ) {
         item { DashboardHeader(greeting, firstName, summaryParts, dateLabel, now) }
 
+        // Web DashboardAttentionBanner parity: title + guidance + action.
         if ((current?.pastDeadline ?: 0) > 0) {
             item {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFBF3E4)),
+                    colors = CardDefaults.cardColors(containerColor = DangerSoft),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
-                        "⚠ ${current!!.pastDeadline} past deadlines need your attention.",
+                    Row(
                         modifier = Modifier.padding(16.dp),
-                        color = Warning,
-                    )
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Surface)
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("⚠", color = Danger, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "${current!!.pastDeadline} ${if (current.pastDeadline == 1) "task" else "tasks"} past deadline",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Foreground,
+                            )
+                            Text(
+                                "Deadlines that have already passed in your classes. Worth checking whether any of them still accept late work.",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Text(
+                            "Review overdue ›",
+                            color = Danger,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.clickable(onClick = onOpenTasks),
+                        )
+                    }
                 }
             }
         }
@@ -158,16 +207,52 @@ fun HomeScreen(
         }
 
         if (schedule.isNotEmpty()) {
-            item { SectionTitle("Next schedule") }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SectionTitle("Next schedule")
+                    Text(
+                        "View all tasks ›",
+                        color = Accent,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.clickable(onClick = onOpenSchedule),
+                    )
+                }
+            }
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(schedule.first().title, color = Foreground)
-                        Text(
-                            "${schedule.first().className ?: ""} · ${formatTime(schedule.first().startsAt)}-${formatTime(schedule.first().endsAt)}",
-                            color = MutedForeground,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AccentSoft)
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("📅", color = Accent, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(schedule.first().title, color = Foreground)
+                            Text(
+                                "${schedule.first().className ?: ""} · ${formatTime(schedule.first().startsAt)}-${formatTime(schedule.first().endsAt)}",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(Surface)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        ) {
+                            Box(Modifier.size(6.dp).clip(RoundedCornerShape(999.dp)).background(Accent))
+                            Text("Planned", color = Accent, style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
             }
@@ -175,40 +260,135 @@ fun HomeScreen(
             item { MyWeekStrip(schedule = schedule) }
         }
 
-        if (!current?.classes.isNullOrEmpty()) {
-            item { SectionTitle("My classes") }
-            items(current!!.classes, key = { it.id }) { clazz ->
-                Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionTitle("My classes")
+                if (!current?.classes.isNullOrEmpty()) {
+                    Text(
+                        "View all",
+                        color = Accent,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.clickable(onClick = onOpenClasses),
+                    )
+                }
+            }
+        }
+        if (current?.classes.isNullOrEmpty()) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = Subtle), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(AccentSoft)
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Surface)
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(clazz.name.firstOrNull()?.uppercase() ?: "S", color = Accent, style = MaterialTheme.typography.titleMedium)
+                            Text("🎓", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(clazz.name, color = Foreground)
+                            Text("No active classes yet", style = MaterialTheme.typography.bodyMedium, color = Foreground)
+                            Text(
+                                "Join a class group using an invitation link or browse available public classes.",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
                         }
-                        Text("›", color = MutedForeground)
+                        OutlinedButton(onClick = onOpenClasses) { Text("Browse classes") }
+                    }
+                }
+            }
+        } else {
+            items(current!!.classes, key = { it.id }) { clazz ->
+                MyClassRow(clazz = clazz)
+            }
+        }
+
+        if (invitations.isNotEmpty() || invitationFeedback != null) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("✉", color = Accent, style = MaterialTheme.typography.bodyMedium)
+                    SectionTitle("Pending invitations")
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(AccentSoft)
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("${invitations.size}", color = Accent, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
             item {
-                OutlinedButton(onClick = onOpenClasses, modifier = Modifier.fillMaxWidth()) {
-                    Text("View all")
-                }
+                Text(
+                    "Invitations to join class groups. Accepting adds you to the group and all its subjects.",
+                    color = MutedForeground,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
-        }
-
-        if (invitations.isNotEmpty()) {
-            item { SectionTitle("Invitations") }
+            if (invitationFeedback != null) {
+                item { Text(invitationFeedback!!, color = Accent, style = MaterialTheme.typography.bodySmall) }
+            }
             items(invitations, key = { it.id }) { invitation ->
+                val busy = invitationBusyId == invitation.id
                 Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(invitation.className ?: "Class invitation", color = Foreground)
-                        Text("You were invited to join this class.", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(invitation.className ?: "Class invitation", color = Foreground, style = MaterialTheme.typography.bodyMedium)
+                                if (invitation.classSlug != null) {
+                                    Text(invitation.classSlug, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                        Text("🛡 Invited by ${invitation.adminName ?: "Class Admin"}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                        if (invitation.expiresAt != null) {
+                            Text("🕐 Expires ${invitation.expiresAt!!.take(10)}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            Button(
+                                onClick = {
+                                    invitationBusyId = invitation.id
+                                    invitationFeedback = null
+                                    scope.launch {
+                                        try {
+                                            acceptPendingInvitation(invitation.id)
+                                            invitations = invitations.filter { it.id != invitation.id }
+                                            invitationFeedback = "Joined ${invitation.className ?: "the class"}! You now have access to all its subjects."
+                                        } catch (_: Exception) {
+                                            invitationFeedback = "Could not accept this invitation. Please try again."
+                                        } finally {
+                                            invitationBusyId = null
+                                        }
+                                    }
+                                },
+                                enabled = invitationBusyId == null,
+                                colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                                modifier = Modifier.weight(1f),
+                            ) { Text(if (busy) "…" else "✓ Accept") }
+                            OutlinedButton(
+                                onClick = {
+                                    invitationBusyId = invitation.id
+                                    invitationFeedback = null
+                                    scope.launch {
+                                        try {
+                                            declineInvitation(invitation.id)
+                                            invitations = invitations.filter { it.id != invitation.id }
+                                        } catch (_: Exception) {
+                                            invitationFeedback = "Could not decline this invitation. Please try again."
+                                        } finally {
+                                            invitationBusyId = null
+                                        }
+                                    }
+                                },
+                                enabled = invitationBusyId == null,
+                            ) { Text("✕ Decline") }
+                        }
                     }
                 }
             }
@@ -357,15 +537,44 @@ fun HomeScreen(
             }
         }
 
-        item {
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEEF3FC)), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("What's new", style = MaterialTheme.typography.titleMedium, color = Foreground)
-                    Text(
-                        "Encrypted direct messages and GPS check-in are now on mobile.",
-                        color = MutedForeground,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+        if (!whatsNewDismissed) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = AccentSoft), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Surface)
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("✦", color = Accent, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("What's new", style = MaterialTheme.typography.bodyMedium, color = Foreground)
+                            Text(
+                                "Encrypted direct messages and GPS check-in are now on mobile.",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                "Page transitions and loading skeletons — navigation no longer feels frozen.",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                "GPS check-in failed? Your class admin can now mark you present manually.",
+                                color = MutedForeground,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Text(
+                            "✕",
+                            color = MutedForeground,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.clickable { whatsNewDismissed = true },
+                        )
+                    }
                 }
             }
         }
@@ -403,36 +612,44 @@ private fun DashboardHeader(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp)),
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("$greeting,", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
-                Text(name, style = MaterialTheme.typography.headlineMedium, color = Foreground)
-                Text(
-                    if (summaryParts.isNotEmpty()) "You have ${summaryParts.joinToString(" and ")}."
-                    else "Here is an overview of your academic activities today.",
-                    color = MutedForeground,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            // BrandMark parity (web: BrandMark size 88, right side).
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+            // Web header gradient: accent-soft → band → surface, right half.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .align(Alignment.CenterEnd)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(AccentSoft, Band, Surface),
+                        ),
+                    ),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(AccentSoft)
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("★", color = Accent, style = MaterialTheme.typography.headlineSmall)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("$greeting,", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
+                    Text(name, style = MaterialTheme.typography.headlineMedium, color = Foreground)
+                    Text(
+                        if (summaryParts.isNotEmpty()) "You have ${summaryParts.joinToString(" and ")}."
+                        else "Here is an overview of your academic activities today.",
+                        color = MutedForeground,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
-                Text("StarsTask", color = Accent, style = MaterialTheme.typography.bodySmall)
+                // BrandMark parity: real logo-mark.png, web size 88 height.
+                Image(
+                    painter = painterResource(id = R.drawable.logo_mark),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(width = 108.dp, height = 88.dp),
+                )
             }
         }
         Box(
@@ -633,6 +850,125 @@ private fun StatCardTonesPreview() {
             StatCard(label = "Danger", value = 2, icon = "✕", tone = "danger")
             StatCard(label = "Success", value = 5, icon = "✓", tone = "success")
         }
+    }
+}
+
+@Composable
+private fun MyClassRow(clazz: id.starstask.mobile.data.DashboardClass) {
+    Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ClassLandscapeTile(index = clazz.id.hashCode().mod(4))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(clazz.name, color = Foreground, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f, fill = false))
+                    if (clazz.slug.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MutedFill)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(clazz.slug, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    if (clazz.isAdmin) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(AccentSoft)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("Class admin", color = Accent, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                if (clazz.adminName != null) {
+                    Text("🛡 Admin: ${clazz.adminName}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Subtle)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("📖 ${clazz.subjectCount} subject${if (clazz.subjectCount == 1) "" else "s"}", color = Foreground, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Subtle)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("▦ ${clazz.taskCount} task${if (clazz.taskCount == 1) "" else "s"}", color = Foreground, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (clazz.semester.isNotEmpty() || clazz.academicYear.isNotEmpty()) {
+                    Text("${clazz.semester} ${clazz.academicYear}".trim(), color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Text("›", color = MutedForeground, style = MaterialTheme.typography.titleLarge)
+        }
+    }
+}
+
+/**
+ * Brand landscape tile (web `hero-dashboard.svg`): dawn sky + layered
+ * mountains, cropped at a different horizontal offset per class so each
+ * tile reads separately — same 4 positions as web IMAGE_POSITIONS.
+ */
+@Composable
+private fun ClassLandscapeTile(index: Int) {
+    val offsetFractions = listOf(0f, 0.33f, 0.66f, 1f)
+    val fraction = offsetFractions[index % offsetFractions.size]
+    Canvas(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(RoundedCornerShape(8.dp)),
+    ) {
+        val w = size.width
+        val h = size.height
+        // Sky + glow (SVG stops #dce8f8 → #eef2f8 → #fbf8f2; glow #ffe8c8).
+        drawRect(
+            brush = Brush.verticalGradient(
+                listOf(Color(0xFFDCE8F8), Color(0xFFEEF2F8), Color(0xFFFBF8F2)),
+                startY = 0f,
+                endY = h,
+            ),
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0xFFFFE8C8).copy(alpha = 0.95f), Color.Transparent),
+                center = androidx.compose.ui.geometry.Offset(w * 0.72f, h * 0.72f),
+                radius = w * 0.5f,
+            ),
+            radius = w * 0.5f,
+            center = androidx.compose.ui.geometry.Offset(w * 0.72f, h * 0.72f),
+        )
+        // Layered ridges, shifted by the per-class crop fraction.
+        val shift = -fraction * w * 1.2f
+        fun ridge(baseY: Float, amp: Float, color: Color, alpha: Float) {
+            val path = Path().apply {
+                moveTo(shift, baseY)
+                val points = listOf(0f, 0.12f, 0.25f, 0.38f, 0.5f, 0.62f, 0.75f, 0.88f, 1f, 1.12f, 1.25f)
+                points.forEachIndexed { i, xf ->
+                    val y = baseY + java.util.Random((i * 31 + index).toLong()).nextFloat().let { (it - 0.5f) * amp }
+                    lineTo(shift + w * xf, y)
+                }
+                lineTo(shift + w * 1.25f, h)
+                lineTo(shift, h)
+                close()
+            }
+            drawPath(path, color.copy(alpha = alpha))
+        }
+        ridge(h * 0.64f, h * 0.18f, Color(0xFFB9C9DE), 0.75f)
+        ridge(h * 0.74f, h * 0.16f, Color(0xFF8FA6C4), 0.85f)
+        ridge(h * 0.86f, h * 0.14f, Color(0xFF6F88A8), 0.9f)
+        drawRect(Color(0xFFF7F5F0).copy(alpha = 0.9f), topLeft = androidx.compose.ui.geometry.Offset(0f, h * 0.93f), size = androidx.compose.ui.geometry.Size(w, h * 0.07f))
     }
 }
 

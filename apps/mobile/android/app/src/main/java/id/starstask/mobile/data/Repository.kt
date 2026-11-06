@@ -36,7 +36,17 @@ data class DashboardAssignment(
     val subjectName: String?,
 )
 
-data class DashboardClass(val id: String, val name: String)
+data class DashboardClass(
+    val id: String,
+    val name: String,
+    val slug: String = "",
+    val semester: String = "",
+    val academicYear: String = "",
+    val subjectCount: Int = 0,
+    val taskCount: Int = 0,
+    val isAdmin: Boolean = false,
+    val adminName: String? = null,
+)
 
 data class DashboardData(
     val displayName: String?,
@@ -89,8 +99,79 @@ suspend fun loadDashboard(userId: String): DashboardData {
         val obj = it.jsonObject
         val id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null
         val name = obj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
-        DashboardClass(id, name)
+        DashboardClass(
+            id = id,
+            name = name,
+            slug = obj["slug"]?.jsonPrimitive?.contentOrNull() ?: "",
+            semester = obj["semester"]?.jsonPrimitive?.contentOrNull() ?: "",
+            academicYear = obj["academic_year"]?.jsonPrimitive?.contentOrNull() ?: "",
+        )
     }.sortedBy { it.name }
+
+    // Web MyClassesSection chips: subject/task counts, admin badge + name.
+    val subjectCounts = if (classRows.isEmpty()) {
+        emptyMap<String, Int>()
+    } else {
+        db.from("class_subjects").select(Columns.raw("class_id")) {
+            filter { isIn("class_id", classRows.map { it.id }) }
+        }.decodeJsonArray().groupingBy {
+            it.jsonObject["class_id"]!!.jsonPrimitive.content
+        }.eachCount()
+    }
+    val taskCounts = if (classRows.isEmpty()) {
+        emptyMap<String, Int>()
+    } else {
+        db.from("assignments").select(Columns.raw("class_id")) {
+            filter {
+                isIn("class_id", classRows.map { it.id })
+                eq("status", "published")
+            }
+        }.decodeJsonArray().groupingBy {
+            it.jsonObject["class_id"]!!.jsonPrimitive.content
+        }.eachCount()
+    }
+    val adminClassIds = if (classRows.isEmpty()) {
+        emptySet<String>()
+    } else {
+        db.from("class_admins").select {
+            filter {
+                eq("user_id", userId)
+                isIn("class_id", classRows.map { it.id })
+            }
+        }.decodeJsonArray().mapNotNull {
+            it.jsonObject["class_id"]?.jsonPrimitive?.content
+        }.toSet()
+    }
+    val adminNames = run {
+        val creatorIds = db.from("classes").select(Columns.raw("id,created_by")) {
+            filter { isIn("id", classRows.map { c -> c.id }) }
+        }.decodeJsonArray().mapNotNull {
+            val obj = it.jsonObject
+            val cid = obj["id"]?.jsonPrimitive?.content
+            val uid = obj["created_by"]?.jsonPrimitive?.contentOrNull()
+            if (cid != null && uid != null) cid to uid else null
+        }.toMap()
+        if (creatorIds.isEmpty()) {
+            emptyMap<String, String>()
+        } else {
+            db.from("profiles").select(Columns.raw("id,display_name")) {
+                filter { isIn("id", creatorIds.values.toList()) }
+            }.decodeJsonArray().associateBy(
+                { row -> row.jsonObject["id"]!!.jsonPrimitive.content },
+                { row -> row.jsonObject["display_name"]?.jsonPrimitive?.contentOrNull() },
+            ).let { names ->
+                creatorIds.mapValues { (_, uid) -> names[uid] }
+            }
+        }
+    }
+    val enrichedClasses = classRows.map {
+        it.copy(
+            subjectCount = subjectCounts[it.id] ?: 0,
+            taskCount = taskCounts[it.id] ?: 0,
+            isAdmin = it.id in adminClassIds,
+            adminName = adminNames[it.id],
+        )
+    }
 
     val sessions = db.from("discussion_sessions").select {
         filter {
@@ -162,7 +243,7 @@ suspend fun loadDashboard(userId: String): DashboardData {
         dueSoon = dueSoon,
         pastDeadline = pastDeadline,
         newThisWeek = newThisWeek,
-        classes = classRows,
+        classes = enrichedClasses,
         todaySessions = todayRows.map {
             val obj = it.jsonObject
             DashboardSession(
@@ -531,7 +612,33 @@ suspend fun loadProfile(userId: String): Profile? {
     )
 }
 
-data class Invitation(val id: String, val classId: String, val className: String?, val expiresAt: String?)
+data class Invitation(
+    val id: String,
+    val classId: String,
+    val className: String?,
+    val expiresAt: String?,
+    val adminName: String? = null,
+    val classSlug: String? = null,
+)
+
+/** Same SECURITY DEFINER RPCs the web invitation API calls. */
+suspend fun acceptPendingInvitation(invitationId: String) {
+    SupabaseProvider.client.postgrest.rpc(
+        "accept_pending_invitation",
+        kotlinx.serialization.json.buildJsonObject {
+            put("p_invitation_id", kotlinx.serialization.json.JsonPrimitive(invitationId))
+        },
+    )
+}
+
+suspend fun declineInvitation(invitationId: String) {
+    SupabaseProvider.client.postgrest.rpc(
+        "decline_class_invitation",
+        kotlinx.serialization.json.buildJsonObject {
+            put("p_invitation_id", kotlinx.serialization.json.JsonPrimitive(invitationId))
+        },
+    )
+}
 
 data class AcademicContext(val semester: String, val academicYear: String)
 
@@ -584,13 +691,37 @@ suspend fun loadInvitations(userId: String, email: String?): List<Invitation> {
     }.decodeJsonArray()
     val declinedIds = declines.mapNotNull { it.jsonObject["invitation_id"]?.jsonPrimitive?.content }.toSet()
 
-    val classNames = if (classIds.isEmpty()) emptyMap() else {
-        db.from("classes").select {
+    val classNames: List<kotlinx.serialization.json.JsonElement> = if (classIds.isEmpty()) {
+        emptyList()
+    } else {
+        db.from("classes").select(Columns.raw("id,name,slug,created_by")) {
             filter { isIn("id", classIds.toList()) }
-        }.decodeJsonArray().associateBy(
-            { it.jsonObject["id"]!!.jsonPrimitive.content },
-            { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
-        )
+        }.decodeJsonArray()
+    }
+    val classNameById = classNames.associateBy(
+        { it.jsonObject["id"]!!.jsonPrimitive.content },
+        { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
+    )
+    val classSlugById = classNames.associateBy(
+        { it.jsonObject["id"]!!.jsonPrimitive.content },
+        { it.jsonObject["slug"]?.jsonPrimitive?.contentOrNull() },
+    )
+    val creatorNames = run {
+        val byClass = classNames.mapNotNull {
+            val cid = it.jsonObject["id"]?.jsonPrimitive?.content
+            val uid = it.jsonObject["created_by"]?.jsonPrimitive?.contentOrNull()
+            if (cid != null && uid != null) cid to uid else null
+        }.toMap()
+        if (byClass.isEmpty()) {
+            emptyMap<String, String>()
+        } else {
+            db.from("profiles").select(Columns.raw("id,display_name")) {
+                filter { isIn("id", byClass.values.toList()) }
+            }.decodeJsonArray().associateBy(
+                { row -> row.jsonObject["id"]!!.jsonPrimitive.content },
+                { row -> row.jsonObject["display_name"]?.jsonPrimitive?.contentOrNull() },
+            ).let { names -> byClass.mapValues { (_, uid) -> names[uid] } }
+        }
     }
 
     return valid.mapNotNull {
@@ -601,8 +732,10 @@ suspend fun loadInvitations(userId: String, email: String?): List<Invitation> {
         Invitation(
             id = id,
             classId = classId,
-            className = classNames[classId],
+            className = classNameById[classId],
             expiresAt = obj["expires_at"]?.jsonPrimitive?.contentOrNull(),
+            adminName = creatorNames[classId] ?: "Class Admin",
+            classSlug = classSlugById[classId],
         )
     }
 }

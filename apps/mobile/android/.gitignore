@@ -1,0 +1,9 @@
+# Android native build outputs — generated, never commit.
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/

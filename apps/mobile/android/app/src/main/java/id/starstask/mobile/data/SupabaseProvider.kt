@@ -29,7 +29,10 @@ object SupabaseProvider {
                 flowType = FlowType.PKCE
                 host = "auth"
                 scheme = "starstask"
-                defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
+                // Full system browser (not Custom Tab): Custom Tabs do not
+                // reliably forward custom-scheme redirects back to the app
+                // on all Android versions, landing the user on the web.
+                defaultExternalAuthAction = ExternalAuthAction.ExternalBrowser
             }
             install(Postgrest)
             install(Storage)
