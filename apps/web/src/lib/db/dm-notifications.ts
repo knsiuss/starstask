@@ -17,10 +17,14 @@ export async function notifyDmRecipient(
   const supabase = (await createSupabaseServerClient()) as any;
   const { data: parts } = await supabase
     .from("dm_participants")
-    .select("user_id")
+    .select("user_id, is_muted")
     .eq("conversation_id", conversationId)
-    .neq("user_id", senderId);
-  const recipients = (parts ?? []).map((p: any) => p.user_id);
+    .neq("user_id", senderId)
+    .is("left_at", null);
+  // Muted conversations still receive the message, just no push/inbox ping.
+  const recipients = (parts ?? [])
+    .filter((p: any) => !p.is_muted)
+    .map((p: any) => p.user_id);
   for (const userId of recipients) {
     await supabase.from("notification_events").insert({
       user_id: userId,
