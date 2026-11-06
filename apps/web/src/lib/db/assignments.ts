@@ -34,6 +34,7 @@ export class DataAccessError extends Error {
 export type AssignmentAttachment = {
   id: string;
   storage_path: string;
+  storage_provider: string;
   original_filename: string;
   mime_type: string;
   file_size: number;
@@ -153,7 +154,7 @@ const ASSIGNMENT_DETAIL_SELECT = `
   created_at,
   updated_at,
   courses!assignments_course_id_fkey ( name, code, department ),
-  assignment_attachments ( id, storage_path, original_filename, mime_type, file_size, created_at )
+  assignment_attachments ( id, storage_path, storage_provider, original_filename, mime_type, file_size, created_at )
 `;
 
 export async function listAssignments(
@@ -732,12 +733,15 @@ export async function updateAssignmentRecord(
 export async function deleteAssignmentRecord(
   userId: string,
   id: string,
-): Promise<{ deleted: boolean; storagePaths: string[] }> {
+): Promise<{
+  deleted: boolean;
+  attachments: { storagePath: string; storageProvider: string }[];
+}> {
   const supabase = await createSupabaseServerClient();
 
   const { data: existing, error: readError } = await supabase
     .from("assignments")
-    .select("id, assignment_attachments ( storage_path )")
+    .select("id, assignment_attachments ( storage_path, storage_provider )")
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
@@ -747,7 +751,7 @@ export async function deleteAssignmentRecord(
   }
 
   if (!existing) {
-    return { deleted: false, storagePaths: [] };
+    return { deleted: false, attachments: [] };
   }
 
   const { data: deleted, error: deleteError } = await supabase
@@ -766,7 +770,7 @@ export async function deleteAssignmentRecord(
   }
 
   if (!deleted) {
-    return { deleted: false, storagePaths: [] };
+    return { deleted: false, attachments: [] };
   }
 
   await invalidateCacheTag(LISTING_CACHE_TAG);
@@ -774,9 +778,10 @@ export async function deleteAssignmentRecord(
 
   return {
     deleted: true,
-    storagePaths: existing.assignment_attachments.map(
-      (row) => row.storage_path,
-    ),
+    attachments: existing.assignment_attachments.map((row) => ({
+      storagePath: row.storage_path,
+      storageProvider: row.storage_provider ?? "supabase",
+    })),
   };
 }
 
@@ -784,6 +789,7 @@ export async function insertAttachmentRecords(
   assignmentId: string,
   attachments: {
     storagePath: string;
+    storageProvider: string;
     originalFilename: string;
     mimeType: string;
     fileSize: number;
@@ -800,6 +806,7 @@ export async function insertAttachmentRecords(
       attachments.map((attachment) => ({
         assignment_id: assignmentId,
         storage_path: attachment.storagePath,
+        storage_provider: attachment.storageProvider,
         original_filename: attachment.originalFilename,
         mime_type: attachment.mimeType,
         file_size: attachment.fileSize,

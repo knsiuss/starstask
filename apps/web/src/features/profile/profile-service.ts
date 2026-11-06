@@ -18,6 +18,11 @@ import {
   buildAvatarStoragePath,
   validateAvatarFile,
 } from "@/lib/storage/avatars";
+import {
+  deleteStoredObject,
+  isB2Configured,
+  uploadToStorageWithKey,
+} from "@/lib/storage/b2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/features/classes/class-access";
 import { toClassApiError } from "@/features/classes/errors";
@@ -42,11 +47,44 @@ async function storeAvatar(userId: string, avatar: File): Promise<string> {
     throw new ApiError(400, "invalid_file", validation.error);
   }
 
-  const supabase = await createSupabaseServerClient();
   const storagePath = buildAvatarStoragePath(
     userId,
     validation.value.objectName,
   );
+
+  // B2 is private, so the stored pointer is the streaming proxy route (same
+  // URL-string shape the UI already renders). Without B2, keep the public
+  // Supabase bucket behaviour.
+  if (isB2Configured()) {
+    const objectKey = `avatars/${storagePath}`;
+
+    try {
+      await uploadToStorageWithKey(
+        objectKey,
+        validation.value.bytes,
+        validation.value.mimeType,
+      );
+    } catch {
+      throw new ApiError(
+        500,
+        "upload_failed",
+        "Could not store the photo. Try again.",
+      );
+    }
+
+    const avatarUrl = `/api/media/${objectKey}`;
+
+    try {
+      await setMyAvatarUrl(avatarUrl);
+    } catch (error) {
+      await deleteStoredObject("b2", objectKey).catch(() => undefined);
+      throw error;
+    }
+
+    return avatarUrl;
+  }
+
+  const supabase = await createSupabaseServerClient();
 
   const { error: uploadError } = await supabase.storage
     .from(AVATAR_BUCKET)

@@ -595,6 +595,7 @@ export interface Database {
           id: string;
           assignment_id: string;
           storage_path: string;
+          storage_provider: string;
           original_filename: string;
           mime_type: string;
           file_size: number;
@@ -604,6 +605,7 @@ export interface Database {
           id?: string;
           assignment_id: string;
           storage_path: string;
+          storage_provider?: string;
           original_filename: string;
           mime_type: string;
           file_size: number;
