@@ -1,6 +1,20 @@
 "use client";
 
-import { CircleUserRound, PencilLine, Plus, Search, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  BellOff,
+  BellRing,
+  CircleUserRound,
+  Ellipsis,
+  MailOpen,
+  PencilLine,
+  Pin,
+  PinOff,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { PresenceDot } from "@/components/messages/presence-dot";
@@ -27,14 +41,32 @@ export function ConversationListPanel({
   onCompose,
 }: Props) {
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<"all" | "archived">("all");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return conversations;
-    return conversations.filter((c) => c.otherName.toLowerCase().includes(q));
-  }, [conversations, query]);
+    const inTab = conversations.filter((c) =>
+      tab === "archived" ? c.isArchived : !c.isArchived,
+    );
+    if (!q) return inTab;
+    return inTab.filter((c) => c.otherName.toLowerCase().includes(q));
+  }, [conversations, query, tab]);
+
+  async function setPref(
+    conversation: ConversationRow,
+    body: Record<string, unknown>,
+  ): Promise<void> {
+    setMenuFor(null);
+    await fetch(`/api/dm/conversations/${conversation.id}/prefs`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+    window.location.reload();
+  }
 
   const stories = useMemo(
     () => (conversations ?? []).filter((c) => !c.isGroup).slice(0, 8),
@@ -94,6 +126,34 @@ export function ConversationListPanel({
             </button>
           ) : null}
         </label>
+        <div
+          className="mt-3 flex gap-2"
+          role="tablist"
+          aria-label="Conversation filter"
+        >
+          {(
+            [
+              { key: "all", label: "All" },
+              { key: "archived", label: "Archived" },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.key}
+              onClick={() => setTab(item.key)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                tab === item.key
+                  ? "bg-accent text-white"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {stories.length > 0 ? (
@@ -180,17 +240,40 @@ export function ConversationListPanel({
                   )}
                 >
                   <span className="relative shrink-0">
-                    <span className="from-accent to-accent-hover flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
-                      {initials(conversation.otherName)}
-                    </span>
+                    {conversation.otherAvatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- user avatar URL
+                      <img
+                        src={conversation.otherAvatarUrl}
+                        alt=""
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="from-accent to-accent-hover flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+                        {initials(conversation.otherName)}
+                      </span>
+                    )}
                     <PresenceDot
                       online={onlineIds.has(conversation.otherUserId)}
                     />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-semibold">
-                        {conversation.otherName}
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold">
+                          {conversation.otherName}
+                        </span>
+                        {conversation.isPinned ? (
+                          <Pin
+                            aria-label="Pinned"
+                            className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+                          />
+                        ) : null}
+                        {conversation.isMuted ? (
+                          <BellOff
+                            aria-label="Muted"
+                            className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+                          />
+                        ) : null}
                       </span>
                       <span
                         className={cn(
@@ -207,12 +290,118 @@ export function ConversationListPanel({
                       <span className="text-muted-foreground truncate text-xs">
                         {conversation.lastMessage ?? "Encrypted"}
                       </span>
-                      {conversation.unread ? (
-                        <span className="bg-accent flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
-                          1
+                      <span className="flex shrink-0 items-center gap-1">
+                        {conversation.unreadCount > 0 ? (
+                          <span className="bg-accent flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+                            {conversation.unreadCount > 99
+                              ? "99+"
+                              : conversation.unreadCount}
+                          </span>
+                        ) : null}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Conversation actions"
+                          aria-haspopup="menu"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setMenuFor(
+                              menuFor === conversation.id
+                                ? null
+                                : conversation.id,
+                            );
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setMenuFor(
+                                menuFor === conversation.id
+                                  ? null
+                                  : conversation.id,
+                              );
+                            }
+                          }}
+                          className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-full transition-colors"
+                        >
+                          <Ellipsis
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                          />
                         </span>
-                      ) : null}
+                      </span>
                     </span>
+                    {menuFor === conversation.id ? (
+                      <span
+                        role="menu"
+                        aria-label="Conversation actions"
+                        className="bg-surface border-border relative z-10 mt-1 flex flex-col rounded-xl border p-1 shadow-lg"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                          onClick={() =>
+                            void setPref(conversation, {
+                              pinned: !conversation.isPinned,
+                            })
+                          }
+                        >
+                          {conversation.isPinned ? (
+                            <PinOff className="h-4 w-4" />
+                          ) : (
+                            <Pin className="h-4 w-4" />
+                          )}
+                          {conversation.isPinned ? "Unpin" : "Pin"}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                          onClick={() =>
+                            void setPref(conversation, {
+                              muted: !conversation.isMuted,
+                            })
+                          }
+                        >
+                          {conversation.isMuted ? (
+                            <BellRing className="h-4 w-4" />
+                          ) : (
+                            <BellOff className="h-4 w-4" />
+                          )}
+                          {conversation.isMuted ? "Unmute" : "Mute"}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                          onClick={() =>
+                            void setPref(conversation, {
+                              archived: !conversation.isArchived,
+                            })
+                          }
+                        >
+                          {conversation.isArchived ? (
+                            <ArchiveRestore className="h-4 w-4" />
+                          ) : (
+                            <Archive className="h-4 w-4" />
+                          )}
+                          {conversation.isArchived ? "Unarchive" : "Archive"}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                          onClick={() =>
+                            void setPref(conversation, { unread: true })
+                          }
+                        >
+                          <MailOpen className="h-4 w-4" />
+                          Mark as unread
+                        </button>
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               );
