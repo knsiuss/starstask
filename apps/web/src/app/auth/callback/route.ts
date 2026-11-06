@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { ApiError } from "@/lib/api/errors";
 import { resolveSignedInHomePath } from "@/lib/auth/developer";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { recordAuthActivity } from "@/lib/observability/events";
@@ -39,22 +40,13 @@ export async function GET(request: NextRequest) {
     return redirectToLogin("not_configured");
   }
 
-  try {
-    await enforceRateLimit({
-      action: "auth:callback",
-      identifier: getClientIdentifier(request),
-      limit: 30,
-      windowSeconds: 300,
-      onBackendFailure: "closed",
-    });
-  } catch {
-    await recordAuthActivity({
-      eventType: "sign_in_failed",
-      userId: null,
-      reason: "rate_limited",
-    });
-    return redirectToLogin("rate_limited");
-  }
+  // Sign-in rate limiting disabled while operators throttle logins from a
+  // shared network/IP: 30/5min per IP blocked legitimate sign-ins after
+  // heavy retrying during destination testing. Re-enable with a higher,
+  // per-account limit once production is stable in Singapore.
+  void enforceRateLimit;
+  void getClientIdentifier;
+  void recordAuthActivity;
 
   const providerError = requestUrl.searchParams.get("error");
   const code = requestUrl.searchParams.get("code");
