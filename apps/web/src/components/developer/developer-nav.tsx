@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   ArrowLeft,
   Blocks,
   Database,
@@ -32,6 +33,7 @@ const DEVELOPER_ITEMS: DeveloperNavItem[] = [
   { href: "/developer/classes", label: "Classes", icon: GraduationCap },
   { href: "/developer/integrations", label: "Integrations", icon: Blocks },
   { href: "/developer/incidents", label: "Incidents", icon: Siren },
+  { href: "/developer/monitoring", label: "Monitoring", icon: Activity },
 ];
 
 /**

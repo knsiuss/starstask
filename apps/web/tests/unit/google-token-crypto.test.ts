@@ -14,64 +14,97 @@ import {
 } from "@/lib/integrations/google/token-crypto";
 
 const USER_ID = "3f2b6c1e-8a4d-4f6b-9c2e-1d5a7b9c0e3f";
+const DOMAIN = "calendar" as const;
 
 describe("encryptToken / decryptToken", () => {
   const key = randomBytes(32);
 
   it("round-trips a refresh token", () => {
-    const payload = encryptToken("1//refresh-token-value", key);
+    const payload = encryptToken("1//refresh-token-value", key, DOMAIN);
 
     expect(payload.startsWith("v1:")).toBe(true);
     expect(payload).not.toContain("refresh-token-value");
-    expect(decryptToken(payload, key)).toBe("1//refresh-token-value");
+    expect(decryptToken(payload, key, DOMAIN)).toBe("1//refresh-token-value");
   });
 
   it("uses a fresh IV so the same plaintext encrypts differently", () => {
-    const first = encryptToken("same", key);
-    const second = encryptToken("same", key);
+    const first = encryptToken("same", key, DOMAIN);
+    const second = encryptToken("same", key, DOMAIN);
 
     expect(first).not.toBe(second);
-    expect(decryptToken(first, key)).toBe("same");
-    expect(decryptToken(second, key)).toBe("same");
+    expect(decryptToken(first, key, DOMAIN)).toBe("same");
+    expect(decryptToken(second, key, DOMAIN)).toBe("same");
   });
 
   it("rejects a ciphertext encrypted with another key", () => {
-    const payload = encryptToken("secret", key);
+    const payload = encryptToken("secret", key, DOMAIN);
 
-    expect(() => decryptToken(payload, randomBytes(32))).toThrow(
+    expect(() => decryptToken(payload, randomBytes(32), DOMAIN)).toThrow(
       TokenCryptoError,
     );
   });
 
   it("rejects a tampered auth tag", () => {
-    const payload = encryptToken("secret", key);
+    const payload = encryptToken("secret", key, DOMAIN);
     const [version, iv, tag, ciphertext] = payload.split(":");
     const tampered = [version, iv, flipBase64(tag ?? ""), ciphertext].join(":");
 
-    expect(() => decryptToken(tampered, key)).toThrow(TokenCryptoError);
+    expect(() => decryptToken(tampered, key, DOMAIN)).toThrow(TokenCryptoError);
   });
 
   it("rejects a tampered ciphertext", () => {
-    const payload = encryptToken("secret", key);
+    const payload = encryptToken("secret", key, DOMAIN);
     const [version, iv, tag, ciphertext] = payload.split(":");
     const tampered = [version, iv, tag, flipBase64(ciphertext ?? "")].join(":");
 
-    expect(() => decryptToken(tampered, key)).toThrow(TokenCryptoError);
+    expect(() => decryptToken(tampered, key, DOMAIN)).toThrow(TokenCryptoError);
   });
 
   it("rejects an unknown envelope version", () => {
-    expect(() => decryptToken("v2:a:b:c", key)).toThrow(TokenCryptoError);
+    expect(() => decryptToken("v2:a:b:c", key, DOMAIN)).toThrow(
+      TokenCryptoError,
+    );
   });
 
   it("rejects a payload with the wrong number of parts", () => {
-    expect(() => decryptToken("v1:only-two", key)).toThrow(TokenCryptoError);
+    expect(() => decryptToken("v1:only-two", key, DOMAIN)).toThrow(
+      TokenCryptoError,
+    );
   });
 
   it("refuses a key that is not 32 bytes", () => {
-    expect(() => encryptToken("x", randomBytes(16))).toThrow(TokenCryptoError);
-    expect(() => decryptToken("v1:a:b:c", randomBytes(16))).toThrow(
+    expect(() => encryptToken("x", randomBytes(16), DOMAIN)).toThrow(
       TokenCryptoError,
     );
+    expect(() => decryptToken("v1:a:b:c", randomBytes(16), DOMAIN)).toThrow(
+      TokenCryptoError,
+    );
+  });
+});
+
+describe("domain separation", () => {
+  const key = randomBytes(32);
+
+  it("rejects a Drive ciphertext decrypted as Calendar", () => {
+    const payload = encryptToken("drive-secret", key, "drive");
+
+    expect(() => decryptToken(payload, key, "calendar")).toThrow(
+      TokenCryptoError,
+    );
+  });
+
+  it("round-trips within the drive domain", () => {
+    const payload = encryptToken("drive-secret", key, "drive");
+
+    expect(decryptToken(payload, key, "drive")).toBe("drive-secret");
+  });
+
+  it("still decrypts rows written before separation (legacy AAD)", () => {
+    // Rows written before domain separation used the calendar AAD, including
+    // Drive rows. Separated drive rows must remain readable via the fallback.
+    const legacy = encryptToken("old-secret", key, "calendar");
+
+    expect(decryptToken(legacy, key, "drive")).toBe("old-secret");
   });
 });
 

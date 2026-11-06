@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 
+import { safeEqual } from "./token-crypto";
+
 /**
  * OAuth state handling for the optional Calendar connection.
  *
@@ -56,5 +58,6 @@ export function verifyOAuthState(
     return false;
   }
 
-  return boundUserId === userId && boundState === state;
+  // Constant-time comparison: both values are secrets.
+  return boundUserId === userId && safeEqual(boundState, state);
 }
