@@ -96,7 +96,7 @@ export default async function WorkspaceLayout({
           id="main-content"
           // Bottom padding keeps the last row clear of the fixed mobile tabs,
           // including the device safe area on notched phones.
-          className="flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          className="flex-1 pb-[env(safe-area-inset-bottom)] lg:pb-0"
         >
           {children}
         </main>
