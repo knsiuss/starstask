@@ -109,6 +109,20 @@ export async function getDeveloperIntegrationStatus(): Promise<DeveloperIntegrat
       ok: hasEnv("NEXT_PUBLIC_SITE_URL"),
       kind: "configured",
     },
+    {
+      id: "sentry-query",
+      label: "Sentry query (monitoring)",
+      description: "API token, org, and project for the unified dashboard.",
+      ok: hasEnv("SENTRY_API_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT"),
+      kind: "configured",
+    },
+    {
+      id: "posthog-query",
+      label: "PostHog query (monitoring)",
+      description: "Personal API key and project ID for the unified dashboard.",
+      ok: hasEnv("POSTHOG_PERSONAL_API_KEY", "POSTHOG_PROJECT_ID"),
+      kind: "configured",
+    },
   ];
 
   let storageOk = false;

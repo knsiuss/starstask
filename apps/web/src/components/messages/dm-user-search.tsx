@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,6 +10,7 @@ import type { ConversationRow } from "@/lib/db/direct-messages";
 type User = {
   id: string;
   display_name: string;
+  avatar_url: string | null;
 };
 
 type Props = {
@@ -21,7 +22,9 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<User[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -31,26 +34,31 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
     }
 
     const timer = setTimeout(async () => {
+      setLoading(true);
       try {
         const response = await fetch(
           `/api/dm/conversations?q=${encodeURIComponent(trimmed)}`,
         );
-        const data = (await response.json()) as {
-          users?: User[];
-        };
+        if (!response.ok) throw new Error("Search failed");
+        const data = (await response.json()) as { users?: User[] };
         setUsers(data.users ?? []);
+        setError(null);
       } catch {
         setUsers([]);
+        setError("Could not search people. Try again.");
+      } finally {
+        setLoading(false);
       }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [query]);
 
-  const visibleUsers = query.trim().length < 2 ? [] : users;
+  const needsQuery = query.trim().length < 2;
+  const visibleUsers = needsQuery ? [] : users;
 
   async function openChat(user: User): Promise<void> {
-    setBusy(true);
+    setBusyId(user.id);
 
     try {
       const response = await fetch("/api/dm/conversations", {
@@ -65,7 +73,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
           id: data.id,
           otherUserId: user.id,
           otherName: user.display_name,
-          otherAvatarUrl: null,
+          otherAvatarUrl: user.avatar_url,
           isGroup: false,
           participantNames: [],
           lastMessage: null,
@@ -83,8 +91,10 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
         router.push(`/messages/${data.id}`);
         router.refresh();
       }
+    } catch {
+      setError("Could not open chat. Try again.");
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
@@ -114,12 +124,25 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search messages or people..."
-            aria-label="Search messages or people"
+            placeholder="Search by name..."
+            aria-label="Search people by name"
             autoComplete="off"
             autoFocus
-            className="bg-muted/70 text-foreground placeholder:text-muted-foreground w-full rounded-full py-2.5 pr-4 pl-10 text-sm transition-colors focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-muted/70 text-foreground placeholder:text-muted-foreground w-full rounded-full py-2.5 pr-9 pl-10 text-sm transition-colors focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
           />
+          {query ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setQuery("")}
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition-colors"
+            >
+              <X
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+            </button>
+          ) : null}
         </label>
         <p className="text-muted-foreground mt-2 text-xs">
           Type at least 2 characters to find a classmate.
@@ -127,7 +150,29 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-4">
-        {visibleUsers.length > 0 ? (
+        {loading ? (
+          <ul
+            className="space-y-1"
+            aria-label="Searching"
+          >
+            {[0, 1, 2].map((index) => (
+              <li
+                key={index}
+                className="flex items-center gap-3 px-3 py-3"
+              >
+                <span className="bg-muted h-11 w-11 shrink-0 animate-pulse rounded-full" />
+                <span className="min-w-0 flex-1">
+                  <span className="bg-muted block h-3.5 w-32 animate-pulse rounded" />
+                  <span className="bg-muted mt-2 block h-3 w-20 animate-pulse rounded" />
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : error ? (
+          <p className="text-muted-foreground px-3 py-10 text-center text-sm">
+            {error}
+          </p>
+        ) : visibleUsers.length > 0 ? (
           <ul
             role="listbox"
             aria-label="People"
@@ -138,19 +183,30 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
                   type="button"
                   role="option"
                   aria-selected={false}
-                  disabled={busy}
+                  disabled={busyId !== null}
                   onClick={() => void openChat(user)}
                   className="hover:bg-muted/70 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
                 >
-                  <span className="from-accent to-accent-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
-                    {initials(user.display_name)}
-                  </span>
+                  {user.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- user avatar URL
+                    <img
+                      src={user.avatar_url}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="from-accent to-accent-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+                      {initials(user.display_name)}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">
                       {user.display_name}
                     </span>
                     <span className="text-muted-foreground block text-xs">
-                      Tap to start a chat
+                      {busyId === user.id
+                        ? "Opening chat..."
+                        : "Tap to start a chat"}
                     </span>
                   </span>
                 </button>
@@ -159,9 +215,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
           </ul>
         ) : (
           <p className="text-muted-foreground px-3 py-10 text-center text-sm">
-            {query.trim().length < 2
-              ? "Search for people to message."
-              : "No people found."}
+            {needsQuery ? "Search for people to message." : "No people found."}
           </p>
         )}
       </div>

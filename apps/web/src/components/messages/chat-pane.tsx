@@ -63,6 +63,7 @@ export type RenderMessage = {
   replyToId: string | null;
   reactions: Record<string, number>;
   edited: boolean;
+  pinned?: boolean;
 };
 
 type WireMessage = {
@@ -76,6 +77,8 @@ type WireMessage = {
   attachment_path: string | null;
   group_wraps?: Record<string, { iv: string; cipher: string }> | null;
   reply_to_id?: string | null;
+  edited_at?: string | null;
+  is_pinned?: boolean;
 };
 
 const UNDECRYPTABLE = "Encrypted (cannot decrypt on this device)";
@@ -232,7 +235,8 @@ export function ChatPane({
             attachmentUrl,
             replyToId: message.reply_to_id ?? null,
             reactions: {},
-            edited: false,
+            edited: Boolean(message.edited_at),
+            pinned: Boolean(message.is_pinned),
           } satisfies RenderMessage;
         }),
       );
@@ -533,6 +537,31 @@ export function ChatPane({
       { method: "DELETE" },
     ).catch(() => {});
     setMessages((current) => current.filter((m) => m.id !== messageId));
+  }
+
+  async function copyMessage(message: RenderMessage): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setError("Copied to clipboard");
+      window.setTimeout(() => setError(null), 2000);
+    } catch {
+      setError("Could not copy message");
+    }
+  }
+
+  async function togglePin(message: RenderMessage): Promise<void> {
+    const pinned = !message.pinned;
+    await fetch(
+      `/api/dm/conversations/${conversationId}/messages/${message.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned }),
+      },
+    ).catch(() => {});
+    setMessages((current) =>
+      current.map((m) => (m.id === message.id ? { ...m, pinned } : m)),
+    );
   }
 
   async function sendFile(file: File): Promise<void> {
@@ -915,6 +944,7 @@ export function ChatPane({
                               <span className="text-muted-foreground text-[10px]">
                                 {formatTime(message.at)}
                                 {message.edited ? " (edited)" : ""}
+                                {message.pinned ? " · pinned" : ""}
                               </span>
                               {mine ? (
                                 message.state === "sending" ? (
@@ -963,6 +993,26 @@ export function ChatPane({
                                 className="text-muted-foreground text-[11px] underline underline-offset-2"
                               >
                                 Reply
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Copy message"
+                                onClick={() => void copyMessage(message)}
+                                className="text-muted-foreground text-[11px] underline underline-offset-2"
+                              >
+                                Copy
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={
+                                  message.pinned
+                                    ? "Unpin message"
+                                    : "Pin message"
+                                }
+                                onClick={() => void togglePin(message)}
+                                className="text-muted-foreground text-[11px] underline underline-offset-2"
+                              >
+                                {message.pinned ? "Unpin" : "Pin"}
                               </button>
                               <span className="relative">
                                 <button
