@@ -14,6 +14,7 @@ import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
 import { countUnreadNotifications } from "@/lib/db/notifications";
+import { getWorkspaceContext } from "@/lib/db/workspace-context";
 import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
@@ -34,9 +35,12 @@ export default async function WorkspaceLayout({
 
   const isAuthenticated = session !== null;
   const displayName = session?.profile?.display_name ?? "StarsTask member";
-  // These lookups are independent, so they share one round-trip window instead
-  // of adding three sequential waits to every workspace navigation.
-  // Semua lookup independen paralel dalam 1 round-trip window (perf: TTFB).
+  // Fast path: 1 RPC roundtrip for all layout context (20261158000000).
+  // Falls back to the legacy parallel multi-query on error. The session
+  // profile has no university (private, RPC-only), so when the Unpam
+  // plugin is enabled the full profile is still loaded for its check.
+  const context = session ? await getWorkspaceContext() : null;
+  const needsFullProfile = isUnpamPluginEnabled();
   const [
     platformAdmin,
     classAdmin,
@@ -44,16 +48,31 @@ export default async function WorkspaceLayout({
     myProfile,
     unpamMember,
     betaTester,
-  ] = await Promise.all([
-    session ? isPlatformAdmin() : Promise.resolve(false),
-    session ? isClassAdminAnywhere(session.user.id) : Promise.resolve(false),
-    session ? countUnreadNotifications().catch(() => 0) : Promise.resolve(0),
-    session ? getMyProfile().catch(() => null) : Promise.resolve(null),
-    // isUnpamMember di-cache per-request; butuh profileUniversity dari getMyProfile,
-    // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
-    Promise.resolve(false),
-    session ? isBetaTester() : Promise.resolve(false),
-  ]);
+  ] = context
+    ? [
+        context.platformAdmin,
+        context.classAdminAnywhere,
+        context.unreadNotifications,
+        needsFullProfile
+          ? await getMyProfile().catch(() => session?.profile ?? null)
+          : (session?.profile ?? null),
+        false,
+        context.betaTester,
+      ]
+    : await Promise.all([
+        session ? isPlatformAdmin() : Promise.resolve(false),
+        session
+          ? isClassAdminAnywhere(session.user.id)
+          : Promise.resolve(false),
+        session
+          ? countUnreadNotifications().catch(() => 0)
+          : Promise.resolve(0),
+        session ? getMyProfile().catch(() => null) : Promise.resolve(null),
+        // isUnpamMember di-cache per-request; butuh profileUniversity dari getMyProfile,
+        // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
+        Promise.resolve(false),
+        session ? isBetaTester() : Promise.resolve(false),
+      ]);
   const showUniversityInfo =
     isUnpamPluginEnabled() &&
     (unpamMember ||
