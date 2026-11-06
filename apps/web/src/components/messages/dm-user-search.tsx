@@ -33,25 +33,41 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       return;
     }
 
+    // AbortController cancels the previous in-flight search so fast
+    // typing does not stack requests or render stale results.
+    const controller = new AbortController();
+
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const response = await fetch(
           `/api/dm/conversations?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal },
         );
         if (!response.ok) throw new Error("Search failed");
         const data = (await response.json()) as { users?: User[] };
         setUsers(data.users ?? []);
         setError(null);
-      } catch {
+      } catch (searchError) {
+        if (
+          searchError instanceof Error &&
+          searchError.name === "AbortError"
+        ) {
+          return;
+        }
         setUsers([]);
         setError("Could not search people. Try again.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   const needsQuery = query.trim().length < 2;
@@ -150,7 +166,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-4">
-        {loading ? (
+        {loading && visibleUsers.length === 0 ? (
           <ul
             className="space-y-1"
             aria-label="Searching"
