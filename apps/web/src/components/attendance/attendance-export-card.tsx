@@ -194,32 +194,28 @@ export function AttendanceExportCard({
         >
           Recap (.xlsx)
         </AsyncExportButton>
-        <Button
-          asChild
-          size="sm"
-          variant="secondary"
-        >
-          <a href={exportHref("checklist")}>
+        <AsyncExportButton
+          href={exportHref("checklist")}
+          icon={
             <FileSpreadsheet
               aria-hidden="true"
               className="h-4 w-4"
             />
-            Blank checklist
-          </a>
-        </Button>
-        <Button
-          asChild
-          size="sm"
-          variant="secondary"
+          }
         >
-          <a href={exportHref("report")}>
+          Blank checklist
+        </AsyncExportButton>
+        <AsyncExportButton
+          href={exportHref("report")}
+          icon={
             <Download
               aria-hidden="true"
               className="h-4 w-4"
             />
-            Report (.pdf)
-          </a>
-        </Button>
+          }
+        >
+          Report (.pdf)
+        </AsyncExportButton>
       </div>
     </section>
   );

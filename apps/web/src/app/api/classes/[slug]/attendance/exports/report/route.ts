@@ -1,7 +1,17 @@
 import { z } from "zod";
 
 import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
-import { fileDownload, handleRouteError } from "@/lib/api/responses";
+import {
+  apiSuccess,
+  fileDownload,
+  handleRouteError,
+} from "@/lib/api/responses";
+import { createExportJob } from "@/lib/db/export-jobs";
+import { EXPORT_KIND_ATTENDANCE_REPORT } from "@/lib/queue/export-runner";
+import {
+  enqueueExport,
+  isAsyncExportConfigured,
+} from "@/lib/queue/export-queue";
 import {
   getClassAttendanceRecap,
   getClassAttendanceSubject,
@@ -53,6 +63,20 @@ export async function GET(
       throw notFound();
     }
 
+    const wantsAsync = new URL(request.url).searchParams.get("async") === "1";
+
+    if (wantsAsync && isAsyncExportConfigured()) {
+      const job = await createExportJob({
+        userId: session.user.id,
+        kind: EXPORT_KIND_ATTENDANCE_REPORT,
+        params: { classId: found.id, subjectId: subject.id },
+      });
+
+      await enqueueExport(job.id);
+
+      return apiSuccess({ jobId: job.id, status: "pending" }, 202);
+    }
+
     const [recap, audits] = await Promise.all([
       getClassAttendanceRecap(found.id, subject.id),
       listCorrectionAudit(found.id, subject.id),
@@ -68,11 +92,7 @@ export async function GET(
       generatedAt,
     };
 
-    const bytes = await buildAttendanceReportPdf(
-      recap,
-      exportContext,
-      audits,
-    );
+    const bytes = await buildAttendanceReportPdf(recap, exportContext, audits);
     const subjectToken = (subject.code ?? subject.name)
       .replace(/[^A-Za-z0-9]+/g, "_")
       .replace(/^_+|_+$/g, "")
