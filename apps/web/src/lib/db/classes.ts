@@ -21,6 +21,7 @@ import type {
 
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { fetchAllRows } from "@/lib/db/fetch-all";
+import { getCached } from "@/lib/cache/redis-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -593,6 +594,14 @@ export const getClassRole = cache(async function getClassRole(
 export async function listClassMembers(
   classId: string,
 ): Promise<ClassMemberView[]> {
+  // Memberships change rarely; a 60-second cache removes three queries from
+  // every roster view. New joins surface within a minute like everywhere else.
+  return getCached(`class-members:${classId}`, 60, () =>
+    loadClassMembers(classId),
+  );
+}
+
+async function loadClassMembers(classId: string): Promise<ClassMemberView[]> {
   const supabase = await createSupabaseServerClient();
 
   const data = await fetchAllRows(

@@ -53,7 +53,7 @@ export function SessionCheckInList({
 
   return (
     <ul className="mt-3 space-y-2">
-      {checkIns.map((checkIn) => (
+      {checkIns.map((checkIn, index) => (
         <li
           key={checkIn.id}
           className="border-border rounded-lg border px-3 py-2"
@@ -66,6 +66,7 @@ export function SessionCheckInList({
                   alt=""
                   width={24}
                   height={24}
+                  priority={index < 3}
                   className="h-6 w-6 rounded-full"
                   referrerPolicy="no-referrer"
                 />

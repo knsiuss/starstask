@@ -75,6 +75,8 @@ export function DriveSubmit({
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [lecturerUrl, setLecturerUrl] = useState<string | null>(null);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [pickedName, setPickedName] = useState<string | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
 
@@ -186,7 +188,7 @@ export function DriveSubmit({
       { method: "POST", body: form },
     );
     const body = (await submitResponse.json()) as {
-      data?: { lecturerPath?: string };
+      data?: { lecturerPath?: string; submissionId?: string };
       error?: { message?: string };
     };
     if (!submitResponse.ok || !body.data?.lecturerPath) {
@@ -195,11 +197,40 @@ export function DriveSubmit({
 
     const base = getSiteUrl().replace(/\/$/, "");
     setLecturerUrl(`${base}${body.data.lecturerPath}`);
+    setSubmissionId(body.data.submissionId ?? null);
     toast({
       variant: "success",
       title: "Submitted via Drive.",
       description: "Copy the lecturer link below and forward it.",
     });
+  }
+
+  async function revokeLink() {
+    if (!submissionId || revoking) return;
+
+    setRevoking(true);
+
+    try {
+      const response = await fetch(
+        `/api/assignments/${assignmentId}/drive-submissions/${submissionId}/revoke`,
+        { method: "POST" },
+      );
+
+      if (!response.ok) {
+        throw new Error("Could not revoke the link.");
+      }
+
+      setLecturerUrl(null);
+      setSubmissionId(null);
+      toast({ variant: "success", title: "Share link revoked." });
+    } catch (error) {
+      toast({
+        variant: "error",
+        title: error instanceof Error ? error.message : "Revoke failed.",
+      });
+    } finally {
+      setRevoking(false);
+    }
   }
 
   return (
@@ -286,6 +317,23 @@ export function DriveSubmit({
               />
               Open lecturer view
             </a>
+            {submissionId ? (
+              <button
+                type="button"
+                onClick={() => void revokeLink()}
+                disabled={revoking}
+                aria-busy={revoking}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+              >
+                {revoking ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 animate-spin"
+                  />
+                ) : null}
+                Revoke link
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
