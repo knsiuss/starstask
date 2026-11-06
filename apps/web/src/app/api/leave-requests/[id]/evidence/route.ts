@@ -2,6 +2,7 @@ import { leaveRequestIdSchema } from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireSession } from "@/features/classes/class-access";
@@ -57,6 +58,9 @@ export async function POST(request: Request, context: RouteContext) {
         "Each file must be 10 MB or smaller.",
       );
     }
+
+    // Bounded upload: refuse oversized/unlength'd bodies before buffering.
+    assertUploadContentLength(request);
 
     const formData = await request.formData();
     const file = formData.get("file");

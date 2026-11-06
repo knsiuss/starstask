@@ -18,16 +18,25 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { EmojiPicker } from "@/components/messages/emoji-picker";
+import { KeyTrustBanner } from "@/components/messages/key-trust-banner";
 import { PresenceDot } from "@/components/messages/presence-dot";
 import { subscribeConversation } from "@/components/messages/dm-realtime";
 import { SwipeReply } from "@/components/messages/swipe-reply";
 import {
+  buildAad,
   decryptFile,
   decryptMessage,
+  decryptWithDataKey,
   encryptFile,
   encryptMessage,
+  encryptWithDataKey,
+  generateDataKey,
+  getOrCreateKeyPair,
   isAllowedMedia,
+  isReplay,
   MAX_MEDIA_BYTES,
+  unwrapDataKey,
+  wrapDataKey,
 } from "@/lib/crypto/e2ee";
 import type { ConversationRow } from "@/lib/db/direct-messages";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -65,6 +74,7 @@ type WireMessage = {
   attachment_mime: string | null;
   attachment_size: number | null;
   attachment_path: string | null;
+  group_wraps?: Record<string, { iv: string; cipher: string }> | null;
   reply_to_id?: string | null;
 };
 
@@ -111,6 +121,7 @@ export function ChatPane({
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const peerPublicKeyRef = useRef<string | null>(null);
+  const [peerPublicKey, setPeerPublicKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -119,6 +130,7 @@ export function ChatPane({
   const [participants, setParticipants] = useState<
     { userId: string; name: string }[]
   >([]);
+  const memberKeysRef = useRef<Record<string, string>>({});
 
   const conversationId = conversation.id;
 
@@ -126,14 +138,66 @@ export function ChatPane({
     async (wire: WireMessage[], peerPublicKey: string | null) => {
       const supabase = createSupabaseBrowserClient();
       const nameById = new Map(participants.map((p) => [p.userId, p.name]));
+      const memberKeys = memberKeysRef.current;
+      const group = conversation.isGroup;
       return Promise.all(
         wire.map(async (message) => {
           let text = UNDECRYPTABLE;
           let decryptFailed = true;
           let attachmentUrl: string | null = null;
-          if (peerPublicKey) {
+
+          // Replay guard: the same wire twice in one conversation is a
+          // resend/replay, not a new message.
+          if (await isReplay(conversationId, message.body)) {
+            return {
+              id: message.id,
+              senderId: message.sender_id,
+              senderName: nameById.get(message.sender_id),
+              text: "Duplicate message ignored",
+              at: message.created_at,
+              state: "read" as MessageState,
+              decryptFailed: true,
+              attachmentName: message.attachment_name,
+              attachmentMime: message.attachment_mime,
+              attachmentUrl,
+              replyToId: message.reply_to_id ?? null,
+              reactions: {},
+              edited: false,
+            } satisfies RenderMessage;
+          }
+
+          if (group && message.group_wraps && memberKeys) {
             try {
-              text = await decryptMessage(peerPublicKey, message.body);
+              const envelope = (
+                message.group_wraps as Record<
+                  string,
+                  { iv: string; cipher: string }
+                >
+              )[myUserId];
+              if (envelope) {
+                const selfPair = await getOrCreateKeyPair();
+                const senderKey = memberKeys[message.sender_id] ?? "";
+                const dataKey = await unwrapDataKey(
+                  selfPair,
+                  senderKey,
+                  envelope,
+                );
+                text = await decryptWithDataKey(
+                  dataKey,
+                  message.body,
+                  buildAad(conversationId, message.sender_id),
+                );
+                decryptFailed = false;
+              }
+            } catch {
+              text = UNDECRYPTABLE;
+            }
+          } else if (peerPublicKey) {
+            try {
+              text = await decryptMessage(peerPublicKey, message.body, {
+                conversationId,
+                senderId: message.sender_id,
+              });
               decryptFailed = false;
               if (message.attachment_path) {
                 const { data } = await supabase.storage
@@ -173,7 +237,7 @@ export function ChatPane({
         }),
       );
     },
-    [participants],
+    [participants, conversationId, conversation.isGroup, myUserId],
   );
 
   const loadPage = useCallback(
@@ -188,10 +252,13 @@ export function ChatPane({
         messages: WireMessage[];
         peerPublicKey: string | null;
         participants?: { userId: string; name: string }[];
+        memberKeys?: Record<string, string>;
         hasMore?: boolean;
       };
       peerPublicKeyRef.current = data.peerPublicKey;
+      setPeerPublicKey(data.peerPublicKey);
       if (data.participants) setParticipants(data.participants);
+      if (data.memberKeys) memberKeysRef.current = data.memberKeys;
       setHasMore(Boolean(data.hasMore));
       const rendered = await mapWire(data.messages, data.peerPublicKey);
       return rendered;
@@ -288,6 +355,12 @@ export function ChatPane({
       setError("Peer key not ready yet — retry shortly");
       return;
     }
+    const group = conversation.isGroup;
+    const memberKeys = memberKeysRef.current;
+    if (group && Object.keys(memberKeys).length === 0) {
+      setError("Group keys not ready yet — retry shortly");
+      return;
+    }
     const optimistic: RenderMessage = {
       id: `local-${Date.now()}`,
       senderId: myUserId,
@@ -307,13 +380,38 @@ export function ChatPane({
     setReplyTo(null);
     clearDraft();
     try {
-      const ciphertext = await encryptMessage(peerPublicKey, text);
+      let ciphertext: string;
+      let groupWraps:
+        Record<string, { iv: string; cipher: string }> | undefined;
+
+      if (group) {
+        // Per-recipient envelopes: one data key, wrapped for every member
+        // (including self, so the sender can decrypt own messages).
+        const dataKey = await generateDataKey();
+        const selfPair = await getOrCreateKeyPair();
+        const aad = buildAad(conversationId, myUserId);
+        ciphertext = await encryptWithDataKey(dataKey, text, aad);
+        groupWraps = {};
+        const wrapped = await Promise.all(
+          Object.entries(memberKeys).map(async ([memberId, memberKey]) => [
+            memberId,
+            await wrapDataKey(selfPair, memberKey, dataKey),
+          ]),
+        );
+        groupWraps = Object.fromEntries(wrapped);
+      } else {
+        ciphertext = await encryptMessage(peerPublicKey, text, {
+          conversationId,
+          senderId: myUserId,
+        });
+      }
+
       const response = await fetch(
         `/api/dm/conversations/${conversationId}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ciphertext }),
+          body: JSON.stringify({ ciphertext, groupWraps }),
         },
       );
       if (!response.ok) throw new Error("Could not send message");
@@ -346,7 +444,10 @@ export function ChatPane({
     const peerPublicKey = peerPublicKeyRef.current;
     if (!peerPublicKey) return;
     try {
-      const ciphertext = await encryptMessage(peerPublicKey, message.text);
+      const ciphertext = await encryptMessage(peerPublicKey, message.text, {
+        conversationId,
+        senderId: myUserId,
+      });
       const response = await fetch(
         `/api/dm/conversations/${conversationId}/messages`,
         {
@@ -400,7 +501,10 @@ export function ChatPane({
     const peerPublicKey = peerPublicKeyRef.current;
     if (!peerPublicKey) return;
     try {
-      const ciphertext = await encryptMessage(peerPublicKey, editText.trim());
+      const ciphertext = await encryptMessage(peerPublicKey, editText.trim(), {
+        conversationId,
+        senderId: myUserId,
+      });
       const response = await fetch(
         `/api/dm/conversations/${conversationId}/messages/${editing.id}`,
         {
@@ -605,6 +709,11 @@ export function ChatPane({
           </button>
         </div>
       </header>
+
+      <KeyTrustBanner
+        conversationId={conversationId}
+        peerPublicKey={peerPublicKey}
+      />
 
       {searchOpen ? (
         <div className="border-border border-b px-4 py-2 sm:px-5">
