@@ -75,6 +75,9 @@ export async function GET(
         "Content-Length": String(bytes.byteLength),
         // Images are content-addressed by UUID; they never change.
         "Cache-Control": "public, max-age=31536000, immutable",
+        // Let the Vercel edge cache serve repeat views without invoking
+        // this function at all.
+        "CDN-Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {

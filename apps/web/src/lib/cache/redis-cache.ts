@@ -197,3 +197,9 @@ export const LISTING_CACHE_TAG = "listing";
 
 /** TTL for global listing helpers (semesters, published counts). */
 export const LISTING_CACHE_TTL_SECONDS = 60;
+
+/** Tag for public assignment detail reads (published assignments only). */
+export const ASSIGNMENT_DETAIL_CACHE_TAG = "assignment-detail";
+
+/** TTL for public assignment detail reads. */
+export const ASSIGNMENT_DETAIL_CACHE_TTL_SECONDS = 60;
