@@ -111,12 +111,14 @@ export async function WeekAndClassesSection({
       className="mt-5 space-y-5"
       style={{ "--rise-delay": "120ms" } as React.CSSProperties}
     >
-      <MyWeekSection
-        week={week}
-        nowIso={overview.nowIso}
-        weekOffset={weekOffset}
-        canScheduleSessions={overview.classes.some((c) => c.is_admin)}
-      />
+      <div className="hidden sm:block">
+        <MyWeekSection
+          week={week}
+          nowIso={overview.nowIso}
+          weekOffset={weekOffset}
+          canScheduleSessions={overview.classes.some((c) => c.is_admin)}
+        />
+      </div>
       <MyClassesSection classes={overview.classes} />
     </div>
   );
