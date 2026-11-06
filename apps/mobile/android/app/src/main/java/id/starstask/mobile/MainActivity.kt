@@ -160,6 +160,9 @@ fun StarsTaskApp() {
                     },
                     onOpenTasks = { tab = Tab.ASSIGNMENTS },
                     onOpenMessages = { tab = Tab.MESSAGES },
+                    onOpenSchedule = { tab = Tab.ATTENDANCE },
+                    onOpenClasses = { tab = Tab.CLASSES },
+                    onNewAssignment = { tab = Tab.ASSIGNMENTS },
                 )
                 Tab.CLASSES -> id.starstask.mobile.ui.screens.ClassesScreen(userId = userId)
                 Tab.ATTENDANCE -> AttendanceScreen(userId = userId)

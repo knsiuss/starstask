@@ -1,6 +1,7 @@
 package id.starstask.mobile.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,6 +72,9 @@ fun HomeScreen(
     onCheckIn: (String) -> Unit,
     onOpenTasks: () -> Unit = {},
     onOpenMessages: () -> Unit = {},
+    onOpenSchedule: () -> Unit = {},
+    onOpenClasses: () -> Unit = {},
+    onNewAssignment: () -> Unit = {},
 ) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -131,12 +136,12 @@ fun HomeScreen(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                StatCard("Total assignments", current?.totalTasks ?: 0, "▦", "accent", Modifier.weight(1f))
-                StatCard("Due soon", current?.dueSoon ?: 0, "◔", "warning", Modifier.weight(1f))
+                StatCard("Total assignments", current?.totalTasks ?: 0, "▦", "accent", Modifier.weight(1f), hint = "In your classes", delta = current?.newThisWeek ?: 0)
+                StatCard("Due soon", current?.dueSoon ?: 0, "◔", "warning", Modifier.weight(1f), hint = "Within the next 7 days")
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                StatCard("Past deadline", current?.pastDeadline ?: 0, "⚠", "danger", Modifier.weight(1f))
-                StatCard("My classes", current?.classes?.size ?: 0, "🎓", "success", Modifier.weight(1f))
+                StatCard("Past deadline", current?.pastDeadline ?: 0, "⚠", "danger", Modifier.weight(1f), hint = "Needs your attention")
+                StatCard("My classes", current?.classes?.size ?: 0, "🎓", "success", Modifier.weight(1f), hint = "Active membership")
             }
         }
 
@@ -147,6 +152,8 @@ fun HomeScreen(
                 },
                 onOpenTasks = onOpenTasks,
                 onOpenMessages = onOpenMessages,
+                onOpenSchedule = onOpenSchedule,
+                onNewAssignment = onNewAssignment,
             )
         }
 
@@ -186,6 +193,11 @@ fun HomeScreen(
                         }
                         Text("›", color = MutedForeground)
                     }
+                }
+            }
+            item {
+                OutlinedButton(onClick = onOpenClasses, modifier = Modifier.fillMaxWidth()) {
+                    Text("View all")
                 }
             }
         }
@@ -382,32 +394,87 @@ private fun DashboardHeader(
     }
 
     val clockLabel = clock.format(java.time.format.DateTimeFormatter.ofPattern("HH.mm"))
-    val gradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFE8EDFA), Color(0xFFEEF3FC), Color(0xFFFFFFFF)),
-    )
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(gradient)
+            .background(Surface)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("$greeting,", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
-        Text(name, style = MaterialTheme.typography.headlineMedium, color = Foreground)
-        Text(
-            if (summaryParts.isNotEmpty()) "You have ${summaryParts.joinToString(" and ")}."
-            else "Here is an overview of your academic activities today.",
-            color = MutedForeground,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Text(
-            "$dateLabel · $clockLabel WIB",
-            color = MutedForeground,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 12.dp),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("$greeting,", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
+                Text(name, style = MaterialTheme.typography.headlineMedium, color = Foreground)
+                Text(
+                    if (summaryParts.isNotEmpty()) "You have ${summaryParts.joinToString(" and ")}."
+                    else "Here is an overview of your academic activities today.",
+                    color = MutedForeground,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            // BrandMark parity (web: BrandMark size 88, right side).
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(AccentSoft)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("★", color = Accent, style = MaterialTheme.typography.headlineSmall)
+                }
+                Text("StarsTask", color = Accent, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+                .clip(RoundedCornerShape(1.dp))
+                .background(Border),
+        ) {
+            Text("", style = MaterialTheme.typography.bodySmall)
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(AccentSoft).padding(horizontal = 8.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("📅", style = MaterialTheme.typography.bodySmall)
+                }
+                Text(dateLabel, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(AccentSoft).padding(horizontal = 8.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("🕐", style = MaterialTheme.typography.bodySmall)
+                }
+                Text(clockLabel, color = Foreground, style = MaterialTheme.typography.bodySmall)
+                Text("WIB", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            }
+        }
     }
 }
 
@@ -417,7 +484,7 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun StatCard(label: String, value: Int, icon: String, tone: String, modifier: Modifier = Modifier) {
+private fun StatCard(label: String, value: Int, icon: String, tone: String, modifier: Modifier = Modifier, hint: String? = null, delta: Int = 0) {
     val toneBackground = when (tone) {
         "warning" -> Color(0xFFFBF3E4)
         "danger" -> Color(0xFFFBEDED)
@@ -448,7 +515,15 @@ private fun StatCard(label: String, value: Int, icon: String, tone: String, modi
             }
             Column {
                 Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
-                Text("$value", style = MaterialTheme.typography.headlineSmall, color = Foreground)
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("$value", style = MaterialTheme.typography.headlineSmall, color = Foreground)
+                    if (delta > 0) {
+                        Text("↗ +$delta", color = Color(0xFF15803D), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (hint != null) {
+                    Text(hint, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }
@@ -459,15 +534,40 @@ private fun QuickActions(
     onCheckIn: () -> Unit,
     onOpenTasks: () -> Unit,
     onOpenMessages: () -> Unit,
+    onOpenSchedule: () -> Unit = {},
+    onNewAssignment: () -> Unit = {},
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-        androidx.compose.material3.Button(
-            onClick = onCheckIn,
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Accent),
-            modifier = Modifier.weight(1f),
-        ) { Text("✓ Check in") }
-        OutlinedButton(onClick = onOpenTasks, modifier = Modifier.weight(1f)) { Text("▦ Tasks") }
-        OutlinedButton(onClick = onOpenMessages, modifier = Modifier.weight(1f)) { Text("✉ Chat") }
+    // Web parity: horizontal scroll, 5 pill actions.
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+    ) {
+        QuickActionPill(icon = "✓", label = "Check in now", primary = true, onClick = onCheckIn)
+        QuickActionPill(icon = "▦", label = "Submit task", primary = false, onClick = onOpenTasks)
+        QuickActionPill(icon = "📅", label = "Today's schedule", primary = false, onClick = onOpenSchedule)
+        QuickActionPill(icon = "✉", label = "Open messages", primary = false, onClick = onOpenMessages)
+        QuickActionPill(icon = "+", label = "New assignment", primary = false, onClick = onNewAssignment)
+    }
+}
+
+@Composable
+private fun QuickActionPill(
+    icon: String,
+    label: String,
+    primary: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(999.dp),
+        modifier = modifier,
+        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+            containerColor = if (primary) Accent else Surface,
+            contentColor = if (primary) Color.White else Accent,
+        ),
+    ) {
+        Text("$icon $label", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -541,27 +641,57 @@ private fun MyWeekStrip(schedule: List<ScheduleEntry>) {
     val today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta"))
     val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
 
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            (0..6).forEach { offset ->
+                val day = monday.plusDays(offset.toLong())
+                val daySessions = schedule.filter {
+                    id.starstask.mobile.data.jakartaDate(it.startsAt) == day.toString()
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (day == today) id.starstask.mobile.ui.theme.AccentSoft else Surface)
+                        .padding(vertical = 8.dp),
+                ) {
+                    Text(day.dayOfWeek.toString().take(3), style = MaterialTheme.typography.bodySmall, color = MutedForeground)
+                    Text(day.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium, color = Foreground)
+                    Text(
+                        if (daySessions.isEmpty()) "·" else "${daySessions.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Accent,
+                    )
+                }
+            }
+        }
+        // Per-day session lists (web MyWeekSection parity).
         (0..6).forEach { offset ->
             val day = monday.plusDays(offset.toLong())
             val daySessions = schedule.filter {
                 id.starstask.mobile.data.jakartaDate(it.startsAt) == day.toString()
             }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (day == today) id.starstask.mobile.ui.theme.AccentSoft else Surface)
-                    .padding(vertical = 8.dp),
-            ) {
-                Text(day.dayOfWeek.toString().take(3), style = MaterialTheme.typography.bodySmall, color = MutedForeground)
-                Text(day.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium, color = Foreground)
-                Text(
-                    if (daySessions.isEmpty()) "·" else "${daySessions.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Accent,
-                )
+            if (daySessions.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "${day.dayOfWeek} · ${day.dayOfMonth}/${day.monthValue}${if (day == today) " · Today" else ""}",
+                        color = if (day == today) Accent else MutedForeground,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    daySessions.forEach { entry ->
+                        Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(entry.title, color = Foreground)
+                                Text(
+                                    "${formatTime(entry.startsAt)}-${formatTime(entry.endsAt)} · ${entry.className ?: ""}",
+                                    color = MutedForeground,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

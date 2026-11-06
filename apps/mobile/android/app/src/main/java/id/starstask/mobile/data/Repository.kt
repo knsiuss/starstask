@@ -43,6 +43,7 @@ data class DashboardData(
     val totalTasks: Int,
     val dueSoon: Int,
     val pastDeadline: Int,
+    val newThisWeek: Int = 0,
     val classes: List<DashboardClass>,
     val todaySessions: List<DashboardSession>,
     val upcomingAssignments: List<DashboardAssignment>,
@@ -65,7 +66,16 @@ suspend fun loadDashboard(userId: String): DashboardData {
         ?.jsonObject?.get("display_name")?.jsonPrimitive?.contentOrNull()
 
     if (memberships.isEmpty()) {
-        return DashboardData(profile, 0, 0, 0, emptyList(), emptyList(), emptyList())
+        return DashboardData(
+            displayName = profile,
+            totalTasks = 0,
+            dueSoon = 0,
+            pastDeadline = 0,
+            newThisWeek = 0,
+            classes = emptyList(),
+            todaySessions = emptyList(),
+            upcomingAssignments = emptyList(),
+        )
     }
 
     val nowIso = java.time.Instant.now().toString()
@@ -143,12 +153,15 @@ suspend fun loadDashboard(userId: String): DashboardData {
     val totalTasks = countPublished(db, memberships, null)
     val dueSoon = countPublished(db, memberships, nowIso..dueSoonEnd)
     val pastDeadline = countPublished(db, memberships, null, ltDeadline = nowIso)
+    val weekAgo = java.time.Instant.now().minusSeconds(7 * 24 * 3600).toString()
+    val newThisWeek = countPublished(db, memberships, weekAgo..nowIso)
 
     return DashboardData(
         displayName = profile,
         totalTasks = totalTasks,
         dueSoon = dueSoon,
         pastDeadline = pastDeadline,
+        newThisWeek = newThisWeek,
         classes = classRows,
         todaySessions = todayRows.map {
             val obj = it.jsonObject
