@@ -356,13 +356,17 @@ export function ChatPane({
     if (!text) return;
     const peerPublicKey = peerPublicKeyRef.current;
     if (!peerPublicKey) {
-      setError("Peer key not ready yet — retry shortly");
+      setError(
+        "Waiting for the other person to sign in — their encryption key is not published yet. Try again in a moment.",
+      );
       return;
     }
     const group = conversation.isGroup;
     const memberKeys = memberKeysRef.current;
     if (group && Object.keys(memberKeys).length === 0) {
-      setError("Group keys not ready yet — retry shortly");
+      setError(
+        "Waiting for group members to sign in — their encryption keys are not published yet. Try again in a moment.",
+      );
       return;
     }
     const optimistic: RenderMessage = {

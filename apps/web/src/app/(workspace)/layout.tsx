@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { PostHogIdentify } from "@/components/analytics/posthog-identify";
+import { DmKeySetup } from "@/components/messages/dm-key-setup";
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { WorkspaceTopbar } from "@/components/layout/workspace-topbar";
@@ -67,6 +68,10 @@ export default async function WorkspaceLayout({
         userId={session?.user.id ?? null}
         betaTester={betaTester}
       />
+      {/* E2EE keys are generated on any workspace page, not just DM, so a
+          peer who has logged in at all can receive messages immediately —
+          like Instagram, no need to open the DM tab first. */}
+      {isAuthenticated ? <DmKeySetup /> : null}
       <WorkspaceSidebar
         isAuthenticated={isAuthenticated}
         isClassAdmin={classAdmin}

@@ -9,6 +9,8 @@ type KeyStatus = "pending" | "ready" | "error";
 /**
  * Generates the device keypair on first use and publishes the public
  * half so peers can encrypt. The private half never leaves IndexedDB.
+ * Mounted in WorkspaceLayout so keys exist after any workspace page,
+ * not just the DM tab — peers can chat as soon as they have signed in.
  */
 export function DmKeySetup() {
   const [status, setStatus] = useState<KeyStatus>("pending");

@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import {
   Button,
   FlatList,
+  Image,
   Linking,
+  Pressable,
   ScrollView,
   Text,
   View,
@@ -112,15 +114,11 @@ export default function Home() {
 
   if (state === "signed-out") {
     return (
-      <View style={styles.root}>
-        <Text style={styles.h1}>StarsTask Mobile</Text>
-        <Button
-          title="Sign in with Google"
-          onPress={() => {
-            void signInWithGoogle().catch(() => setState("error"));
-          }}
-        />
-      </View>
+      <WelcomeScreen
+        onSignIn={() => {
+          void signInWithGoogle().catch(() => setState("error"));
+        }}
+      />
     );
   }
 
@@ -192,6 +190,93 @@ export default function Home() {
       ) : (
         <Text>No upcoming assignments.</Text>
       )}
+    </ScrollView>
+  );
+}
+
+/**
+ * Signed-out welcome screen. The primary action is Google sign-in;
+ * feature rows explain what the app does and also start sign-in,
+ * since every feature requires an account.
+ */
+function WelcomeScreen({ onSignIn }: { onSignIn: () => void }) {
+  const features = [
+    {
+      glyph: "◎",
+      label: "GPS check-in with offline queue",
+    },
+    {
+      glyph: "▦",
+      label: "Deadlines and class schedules",
+    },
+    {
+      glyph: "⚿",
+      label: "Encrypted direct messages",
+    },
+  ];
+
+  return (
+    <ScrollView
+      style={styles.welcomeRoot}
+      contentContainerStyle={styles.welcomeContent}
+    >
+      <View style={styles.glowTop} />
+      <View style={styles.glowBottom} />
+
+      <View style={styles.logoBadge}>
+        <Image
+          source={require("../assets/icon.png")}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
+      </View>
+
+      <Text style={styles.welcomeTitle}>Welcome Back</Text>
+      <Text style={styles.welcomeSubtitle}>
+        Pick up where you left off — keep your classes and tasks in one
+        place.
+      </Text>
+
+      <Pressable
+        style={styles.googleButton}
+        onPress={onSignIn}
+        accessibilityRole="button"
+        accessibilityLabel="Continue with Google"
+      >
+        <Image
+          source={require("../assets/google-g.png")}
+          style={styles.googleMark}
+          resizeMode="contain"
+        />
+        <Text style={styles.googleLabel}>Continue with Google</Text>
+        <Text style={styles.arrow}>→</Text>
+      </Pressable>
+
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      {features.map((feature) => (
+        <Pressable
+          key={feature.label}
+          style={styles.featureRow}
+          onPress={onSignIn}
+          accessibilityRole="button"
+          accessibilityLabel={feature.label}
+        >
+          <View style={styles.featureBadge}>
+            <Text style={styles.featureGlyph}>{feature.glyph}</Text>
+          </View>
+          <Text style={styles.featureLabel}>{feature.label}</Text>
+          <Text style={styles.arrow}>›</Text>
+        </Pressable>
+      ))}
+
+      <Text style={styles.secureNote}>
+        Secure sign-in via Google · No password stored
+      </Text>
     </ScrollView>
   );
 }
@@ -277,4 +362,124 @@ const styles = {
   row: { paddingVertical: 10, gap: 6, borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
   rowText: { fontSize: 15, color: "#27272a" },
   error: { color: "#dc2626", fontSize: 14 },
+  welcomeRoot: { flex: 1, backgroundColor: "#eef6ff" as const },
+  welcomeContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 72,
+    paddingBottom: 40,
+    alignItems: "center" as const,
+  },
+  glowTop: {
+    position: "absolute" as const,
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(147,197,253,0.35)",
+  },
+  glowBottom: {
+    position: "absolute" as const,
+    bottom: -100,
+    right: -80,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: "rgba(125,211,252,0.28)",
+  },
+  logoBadge: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    backgroundColor: "#ffffff",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    shadowColor: "#3b82f6",
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+    marginBottom: 28,
+  },
+  logoImage: { width: 72, height: 72 },
+  welcomeTitle: {
+    fontSize: 34,
+    fontWeight: "800" as const,
+    color: "#0f2a5c",
+    textAlign: "center" as const,
+  },
+  welcomeSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#64748b",
+    textAlign: "center" as const,
+    marginTop: 10,
+    marginBottom: 32,
+    paddingHorizontal: 12,
+  },
+  googleButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    alignSelf: "stretch" as const,
+    backgroundColor: "#dbeafe",
+    borderRadius: 999,
+    paddingVertical: 16,
+    paddingHorizontal: 22,
+    gap: 12,
+    shadowColor: "#3b82f6",
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  googleMark: { width: 32, height: 32 },
+  googleLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#0f2a5c",
+  },
+  arrow: { fontSize: 20, color: "#0f2a5c", fontWeight: "600" as const },
+  dividerRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    alignSelf: "stretch" as const,
+    marginVertical: 22,
+    gap: 14,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#cbd5e1" },
+  dividerText: { fontSize: 13, color: "#94a3b8" },
+  featureRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    alignSelf: "stretch" as const,
+    backgroundColor: "#ffffff",
+    borderRadius: 999,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 14,
+    marginBottom: 12,
+    shadowColor: "#64748b",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  featureBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#eff6ff",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  featureGlyph: { fontSize: 20, color: "#2563eb", fontWeight: "700" as const },
+  featureLabel: { flex: 1, fontSize: 15, color: "#1e3a5f", fontWeight: "500" as const },
+  secureNote: {
+    fontSize: 12,
+    color: "#64748b",
+    textAlign: "center" as const,
+    marginTop: 20,
+  },
 };

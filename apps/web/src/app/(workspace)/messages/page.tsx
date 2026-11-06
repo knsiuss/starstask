@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SetupNotice } from "@/components/layout/setup-notice";
-import { DmKeySetup } from "@/components/messages/dm-key-setup";
 import { MessagesShell } from "@/components/messages/messages-shell";
 import { getSessionUser } from "@/lib/auth/session";
 import { listConversations } from "@/lib/db/direct-messages";
@@ -39,11 +38,11 @@ export default async function MessagesPage() {
   const conversations = await listConversations();
 
   // Full-bleed workspace: no outer card, no centered container, no top
-  // encryption/user-search clutter. DmKeySetup runs silently so device keys
+  // encryption/user-search clutter. E2EE keys are set up by DmKeySetup in
+  // WorkspaceLayout (runs on every workspace page), so device keys already
   // exist before the first message; user search lives in the compose panel.
   return (
     <div className="flex h-[calc(100dvh-8rem)] w-full flex-col lg:h-[calc(100dvh-4rem)]">
-      <DmKeySetup />
       {/* Server stores ciphertext only; decryption happens in the browser. */}
       <MessagesShell
         conversations={conversations}
