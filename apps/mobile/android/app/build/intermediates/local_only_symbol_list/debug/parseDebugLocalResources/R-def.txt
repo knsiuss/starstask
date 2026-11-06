@@ -1,0 +1,13 @@
+R_DEF: Internal format may change without notice
+local
+color st_accent
+color st_accent_soft
+color st_background
+color st_border
+color st_foreground
+color st_surface
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string title_activity_main
+style Theme.StarsTask
