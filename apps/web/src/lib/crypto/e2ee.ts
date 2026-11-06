@@ -144,19 +144,24 @@ export async function importPublicKey(base64: string): Promise<CryptoKey> {
 }
 
 export type ParsedWire = {
+  version: 1 | 2;
   iv: Uint8Array<ArrayBuffer>;
   ciphertext: Uint8Array<ArrayBuffer>;
 };
 
 export function parseWireFormat(wire: string): ParsedWire | null {
-  const separatorIndex = wire.indexOf(":");
+  // v1 (legacy, no AAD): `iv:ciphertext`
+  // v2 (AAD-bound): `v2:iv:ciphertext`
+  const isV2 = wire.startsWith("v2:");
+  const rest = isV2 ? wire.slice(3) : wire;
+  const separatorIndex = rest.indexOf(":");
 
   if (separatorIndex <= 0) {
     return null;
   }
 
-  const ivPart = wire.slice(0, separatorIndex);
-  const cipherPart = wire.slice(separatorIndex + 1);
+  const ivPart = rest.slice(0, separatorIndex);
+  const cipherPart = rest.slice(separatorIndex + 1);
 
   if (!ivPart || !cipherPart || cipherPart.includes(":")) {
     return null;
@@ -170,7 +175,7 @@ export function parseWireFormat(wire: string): ParsedWire | null {
       return null;
     }
 
-    return { iv, ciphertext };
+    return { version: isV2 ? 2 : 1, iv, ciphertext };
   } catch {
     return null;
   }
@@ -178,6 +183,22 @@ export function parseWireFormat(wire: string): ParsedWire | null {
 
 export function isValidWireFormat(wire: string): boolean {
   return parseWireFormat(wire) !== null;
+}
+
+/**
+ * AAD binding for v2 messages (QA-05). The ciphertext is cryptographically
+ * bound to its conversation + sender + protocol version, so it cannot be
+ * transplanted into another conversation context. v1 messages (no AAD)
+ * remain readable for backward compatibility.
+ */
+export function buildAad(
+  conversationId: string,
+  senderId: string,
+  keyEpoch = 1,
+): Uint8Array<ArrayBuffer> {
+  return new TextEncoder().encode(
+    `starstask-dm-v2|${conversationId}|${senderId}|${keyEpoch}`,
+  );
 }
 
 async function deriveAesKey(
@@ -212,22 +233,26 @@ export async function encryptWithKeyPair(
   selfPair: CryptoKeyPair,
   peerPublicBase64: string,
   plaintext: string,
+  aad?: Uint8Array<ArrayBuffer>,
 ): Promise<string> {
   const key = await deriveAesKey(selfPair, peerPublicBase64);
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
   const cipher = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv, ...(aad ? { additionalData: aad } : {}) },
     key,
     new TextEncoder().encode(plaintext),
   );
 
-  return `${bytesToBase64(iv)}:${bytesToBase64(new Uint8Array(cipher))}`;
+  const body = `${bytesToBase64(iv)}:${bytesToBase64(new Uint8Array(cipher))}`;
+
+  return aad ? `v2:${body}` : body;
 }
 
 export async function decryptWithKeyPair(
   selfPair: CryptoKeyPair,
   peerPublicBase64: string,
   wire: string,
+  aad?: Uint8Array<ArrayBuffer>,
 ): Promise<string> {
   const parsed = parseWireFormat(wire);
 
@@ -235,9 +260,20 @@ export async function decryptWithKeyPair(
     throw new Error("Invalid ciphertext format");
   }
 
+  // v2 wires MUST decrypt with AAD; v1 wires fall back without it (legacy).
+  const expectedAad = parsed.version === 2 ? aad : undefined;
+
+  if (parsed.version === 2 && !expectedAad) {
+    throw new Error("Missing context for AAD-bound message");
+  }
+
   const key = await deriveAesKey(selfPair, peerPublicBase64);
   const plain = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: parsed.iv },
+    {
+      name: "AES-GCM",
+      iv: parsed.iv,
+      ...(expectedAad ? { additionalData: expectedAad } : {}),
+    },
     key,
     parsed.ciphertext,
   );
@@ -248,19 +284,27 @@ export async function decryptWithKeyPair(
 export async function encryptMessage(
   peerPublicBase64: string,
   plaintext: string,
+  context?: { conversationId: string; senderId: string },
 ): Promise<string> {
   const self = await getOrCreateKeyPair();
+  const aad = context
+    ? buildAad(context.conversationId, context.senderId)
+    : undefined;
 
-  return encryptWithKeyPair(self, peerPublicBase64, plaintext);
+  return encryptWithKeyPair(self, peerPublicBase64, plaintext, aad);
 }
 
 export async function decryptMessage(
   peerPublicBase64: string,
   wire: string,
+  context?: { conversationId: string; senderId: string },
 ): Promise<string> {
   const self = await getOrCreateKeyPair();
+  const aad = context
+    ? buildAad(context.conversationId, context.senderId)
+    : undefined;
 
-  return decryptWithKeyPair(self, peerPublicBase64, wire);
+  return decryptWithKeyPair(self, peerPublicBase64, wire, aad);
 }
 
 export async function getSafetyFingerprint(
@@ -273,7 +317,12 @@ export async function getSafetyFingerprint(
   const hex = [...new Uint8Array(hash)]
     .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
     .join("");
-  return hex.match(/.{1,4}/g)?.join("-").slice(0, 29) ?? hex.slice(0, 29);
+  return (
+    hex
+      .match(/.{1,4}/g)
+      ?.join("-")
+      .slice(0, 29) ?? hex.slice(0, 29)
+  );
 }
 
 /** Encrypt file bytes (image/video/files) with conversation key. Returns wire iv:ciphertext base64. */
@@ -292,6 +341,109 @@ export async function encryptFile(
   return `${bytesToBase64(iv)}:${bytesToBase64(new Uint8Array(cipher))}`;
 }
 
+export type GroupEnvelope = {
+  iv: string;
+  cipher: string;
+};
+
+/**
+ * Group encryption (QA-04, per-recipient envelopes):
+ * - a random data key encrypts the message (AAD-bound, v2 wire format);
+ * - the data key itself is wrapped for each member with their ECDH-derived
+ *   key and stored as envelopes the server passes through opaque.
+ * The server never sees the data key; non-members get unusable wraps.
+ */
+export async function generateDataKey(): Promise<Uint8Array<ArrayBuffer>> {
+  const key = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"],
+  );
+
+  return new Uint8Array(await crypto.subtle.exportKey("raw", key));
+}
+
+export async function wrapDataKey(
+  selfPair: CryptoKeyPair,
+  peerPublicBase64: string,
+  dataKey: Uint8Array,
+): Promise<GroupEnvelope> {
+  const recipientKey = await deriveAesKey(selfPair, peerPublicBase64);
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    recipientKey,
+    dataKey as BufferSource,
+  );
+
+  return {
+    iv: bytesToBase64(iv),
+    cipher: bytesToBase64(new Uint8Array(cipher)),
+  };
+}
+
+export async function unwrapDataKey(
+  selfPair: CryptoKeyPair,
+  peerPublicBase64: string,
+  envelope: GroupEnvelope,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const recipientKey = await deriveAesKey(selfPair, peerPublicBase64);
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64ToBytes(envelope.iv) },
+    recipientKey,
+    base64ToBytes(envelope.cipher),
+  );
+
+  return new Uint8Array(plain);
+}
+
+export async function encryptWithDataKey(
+  dataKey: Uint8Array,
+  plaintext: string,
+  aad: Uint8Array<ArrayBuffer>,
+): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    dataKey as BufferSource,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv, additionalData: aad },
+    key,
+    new TextEncoder().encode(plaintext),
+  );
+
+  return `v2:${bytesToBase64(iv)}:${bytesToBase64(new Uint8Array(cipher))}`;
+}
+
+export async function decryptWithDataKey(
+  dataKey: Uint8Array,
+  wire: string,
+  aad: Uint8Array<ArrayBuffer>,
+): Promise<string> {
+  const parsed = parseWireFormat(wire);
+  if (!parsed || parsed.version !== 2) {
+    throw new Error("Invalid ciphertext format");
+  }
+  const key = await crypto.subtle.importKey(
+    "raw",
+    dataKey as BufferSource,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: parsed.iv, additionalData: aad },
+    key,
+    parsed.ciphertext,
+  );
+
+  return new TextDecoder().decode(plain);
+}
+
 export async function decryptFile(
   peerPublicBase64: string,
   wire: string,
@@ -305,6 +457,56 @@ export async function decryptFile(
     key,
     parsed.ciphertext,
   );
+}
+
+/**
+ * Replay guard (QA-05): remembers wire IVs per conversation in IndexedDB so
+ * the same ciphertext cannot be re-rendered as a new message. Exact-duplicate
+ * detection only (not full transcript ordering); capped at 1000 entries per
+ * conversation with simple FIFO trimming.
+ */
+const SEEN_CAP = 1000;
+
+async function seenGet(conversationId: string): Promise<string[]> {
+  const value = await idbGet<string[]>(`seen:${conversationId}`);
+
+  return value ?? [];
+}
+
+async function seenAdd(conversationId: string, ivHex: string): Promise<void> {
+  const entries = await seenGet(conversationId);
+
+  if (entries.includes(ivHex)) {
+    return;
+  }
+
+  const trimmed = [...entries, ivHex].slice(-SEEN_CAP);
+
+  await idbSet(`seen:${conversationId}`, trimmed);
+}
+
+/** Returns true when the IV was already seen for this conversation. */
+export async function isReplay(
+  conversationId: string,
+  wire: string,
+): Promise<boolean> {
+  const parsed = parseWireFormat(wire);
+
+  if (!parsed) {
+    return true;
+  }
+
+  const ivHex = [...parsed.iv]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if ((await seenGet(conversationId)).includes(ivHex)) {
+    return true;
+  }
+
+  await seenAdd(conversationId, ivHex);
+
+  return false;
 }
 
 export const MAX_MEDIA_BYTES = 25 * 1024 * 1024; // 25MB

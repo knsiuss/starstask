@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/api/errors";
 import {
+  getConversationMemberKeys,
   getConversationParticipants,
   getConversationPeerId,
   getPeerPublicKey,
@@ -32,17 +33,20 @@ export async function GET(request: Request, { params }: Params) {
     const before = url.searchParams.get("before") ?? undefined;
     const limitParam = Number(url.searchParams.get("limit") ?? 50);
     const peerId = await getConversationPeerId(id);
-    const [messages, peerPublicKey, participants] = await Promise.all([
-      listMessages(id, { before, limit: limitParam }),
-      getPeerPublicKey(peerId),
-      getConversationParticipants(id),
-    ]);
+    const [messages, peerPublicKey, participants, memberKeys] =
+      await Promise.all([
+        listMessages(id, { before, limit: limitParam }),
+        getPeerPublicKey(peerId),
+        getConversationParticipants(id),
+        getConversationMemberKeys(id),
+      ]);
 
     return NextResponse.json({
       messages,
       peerPublicKey,
       peerId,
       participants,
+      memberKeys,
       hasMore:
         messages.length >= (Number.isFinite(limitParam) ? limitParam : 50),
     });
@@ -87,6 +91,8 @@ export async function POST(request: Request, { params }: Params) {
     const { id } = await params;
     const body = await request.json();
     const ciphertext = body?.ciphertext;
+    const groupWraps = body?.groupWraps as
+      Record<string, { iv: string; cipher: string }> | undefined;
 
     if (typeof ciphertext !== "string" || !ciphertext) {
       return NextResponse.json(
@@ -97,7 +103,12 @@ export async function POST(request: Request, { params }: Params) {
 
     const attachment = body?.attachment as
       { name: string; mime: string; size: number; path: string } | undefined;
-    const message = await sendCiphertext(id, ciphertext, attachment);
+    const message = await sendCiphertext(
+      id,
+      ciphertext,
+      attachment,
+      groupWraps,
+    );
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {

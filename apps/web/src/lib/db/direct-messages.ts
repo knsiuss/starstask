@@ -25,15 +25,16 @@ const MAX_PLAINTEXT_LENGTH = 2000;
 const RATE_LIMIT_PER_MINUTE = 5;
 const RATE_WINDOW_MS = 60000;
 
-/** Wire format check: base64(iv) + ":" + base64(ciphertext). */
+/** Wire format check: `iv:ciphertext` (v1) or `v2:iv:ciphertext` (AAD-bound). */
 export function isCiphertextWireFormat(wire: string): boolean {
   const parts = wire.split(":");
+  const rest = parts[0] === "v2" ? parts.slice(1) : parts;
 
-  if (parts.length !== 2) {
+  if (rest.length !== 2) {
     return false;
   }
 
-  const [ivPart, cipherPart] = parts;
+  const [ivPart, cipherPart] = rest;
 
   return (
     typeof ivPart === "string" &&
@@ -179,7 +180,7 @@ export async function listMessages(
   let query = supabase
     .from("dm_messages")
     .select(
-      "id, sender_id, body, created_at, attachment_name, attachment_mime, attachment_size, attachment_path",
+      "id, sender_id, body, created_at, attachment_name, attachment_mime, attachment_size, attachment_path, group_wraps",
     )
     .eq("conversation_id", conversationId)
     .is("deleted_at", null);
@@ -197,6 +198,38 @@ export async function listMessages(
   }
 
   return ((data ?? []) as StoredMessage[]).reverse();
+}
+
+/** Public keys of every active participant (for group per-recipient envelopes). */
+export async function getConversationMemberKeys(
+  conversationId: string,
+): Promise<Record<string, string>> {
+  const supabase = (await createSupabaseServerClient()) as any;
+  const me = await requireUserId();
+  const { data: parts } = await supabase
+    .from("dm_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .is("left_at", null);
+
+  const userIds: string[] = (parts ?? [])
+    .map((part: any) => part.user_id)
+    .filter((userId: string) => userId !== me);
+
+  if (userIds.length === 0) return {};
+
+  const { data: keys } = await supabase
+    .from("dm_keys")
+    .select("user_id, public_key")
+    .in("user_id", [...userIds, me]);
+
+  const out: Record<string, string> = {};
+
+  for (const row of (keys ?? []) as any[]) {
+    if (row.public_key) out[String(row.user_id)] = String(row.public_key);
+  }
+
+  return out;
 }
 
 export async function getConversationPeerId(
@@ -337,6 +370,8 @@ export async function getOwnPublicKey(): Promise<string | null> {
 /**
  * Stores ciphertext only. Plaintext length is enforced client-side
  * before encryption; the server validates the wire format and size.
+ * Group messages also carry per-recipient key envelopes (`groupWraps`) the
+ * server stores opaquely — it can never unwrap them.
  */
 export async function sendCiphertext(
   conversationId: string,
@@ -347,6 +382,7 @@ export async function sendCiphertext(
     size: number;
     path: string;
   },
+  groupWraps?: Record<string, { iv: string; cipher: string }>,
 ): Promise<{ id: string }> {
   if (!isCiphertextWireFormat(ciphertext)) {
     throw new DataAccessError("Message must be encrypted", "22023");
@@ -382,6 +418,7 @@ export async function sendCiphertext(
       attachment_mime: attachment?.mime ?? null,
       attachment_size: attachment?.size ?? null,
       attachment_path: attachment?.path ?? null,
+      group_wraps: groupWraps ?? null,
     })
     .select("id")
     .single();
