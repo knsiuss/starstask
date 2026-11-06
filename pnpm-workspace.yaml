@@ -6,6 +6,7 @@ allowBuilds:
   core-js: true
   esbuild: true
   protobufjs: true
+  workerd: true
 minimumReleaseAgeExclude:
   - "@types/node@26.6.6"
   - lucide-react@1.63.0
