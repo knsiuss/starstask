@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import * as React from "react";
 
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";

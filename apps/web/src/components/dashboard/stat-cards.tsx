@@ -83,7 +83,7 @@ export function StatCards({ stats }: StatCardsProps) {
         <li key={item.label}>
           <Link
             href={item.href}
-            className="glass-card group flex h-full items-center gap-2.5 rounded-2xl p-3 transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-3 sm:p-4"
+            className="glass-card stat-shimmer group flex h-full items-center gap-2.5 rounded-2xl p-3 transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-3 sm:p-4"
           >
             <span
               aria-hidden="true"

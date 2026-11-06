@@ -165,6 +165,36 @@ select option:checked {
     0 18px 40px -14px color-mix(in srgb, var(--color-accent) 55%, transparent);
 }
 
+/* Entrance shimmer for stat cards: a soft sweep once, never loops. */
+@keyframes st-shimmer {
+  from {
+    transform: translateX(-150%);
+  }
+  to {
+    transform: translateX(150%);
+  }
+}
+
+.stat-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    color-mix(in srgb, white 14%, transparent) 50%,
+    transparent 60%
+  );
+  transform: translateX(-150%);
+  animation: st-shimmer 1400ms ease-out 300ms 1 both;
+}
+
 /* Engagement gradient bar under the mobile greeting. */
 .greet-bar {
   background: linear-gradient(90deg, var(--color-accent), transparent);
@@ -475,7 +505,9 @@ select option:checked {
   .st-glow,
   .st-progress-bar,
   .st-check-pop,
-  .st-screen-fade {
+  .st-screen-fade,
+  .stat-shimmer,
+  .stat-shimmer::after {
     animation: none !important;
   }
 }

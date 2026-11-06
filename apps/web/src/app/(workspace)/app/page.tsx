@@ -14,6 +14,7 @@ import {
 import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { MyClassesSection } from "@/components/dashboard/my-classes-section";
 import { MyWeekSection } from "@/components/dashboard/my-week-section";
 import { NextSchedule } from "@/components/dashboard/next-schedule";
@@ -116,44 +117,67 @@ export default async function DashboardPage({
       ? isUnpamMember(session.user.id, null).catch(() => false)
       : Promise.resolve(false),
   ]);
-  const showUnpamWidget = unpamMember || (await isUnpamMember(session.user.id, myProfile?.university));
+  const showUnpamWidget =
+    unpamMember ||
+    (await isUnpamMember(session.user.id, myProfile?.university));
   const unpamEvents = showUnpamWidget ? await getPersistedUnpamEvents() : [];
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
-      <React.Suspense fallback={<div className="h-24 animate-pulse rounded bg-muted" />}>
-        <HeaderSection userId={session.user.id} displayName={session.profile?.display_name ?? null} />
-      </React.Suspense>
+    <PullToRefresh>
+      <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+        <React.Suspense
+          fallback={<div className="h-24 animate-pulse rounded bg-muted" />}
+        >
+          <HeaderSection
+            userId={session.user.id}
+            displayName={session.profile?.display_name ?? null}
+          />
+        </React.Suspense>
 
-      <WhatsNewBanner />
+        <WhatsNewBanner />
 
-      <div className="mt-5">
-        <QuickActions />
-      </div>
+        <div className="mt-5">
+          <QuickActions />
+        </div>
 
-      <React.Suspense fallback={null}>
-        <InvitationsSection userId={session.user.id} email={session.user.email ?? ""} />
-      </React.Suspense>
-
-      <div className="mt-5">
         <React.Suspense fallback={null}>
-          <AcademicContextCard />
+          <InvitationsSection
+            userId={session.user.id}
+            email={session.user.email ?? ""}
+          />
+        </React.Suspense>
+
+        <div className="mt-5">
+          <React.Suspense fallback={null}>
+            <AcademicContextCard />
+          </React.Suspense>
+        </div>
+
+        {showUnpamWidget ? (
+          <div className="mt-5">
+            <UnpamWidget events={unpamEvents} />
+          </div>
+        ) : null}
+
+        <React.Suspense
+          fallback={
+            <div className="mt-5 h-20 animate-pulse rounded bg-muted" />
+          }
+        >
+          <ScheduleSection userId={session.user.id} />
+        </React.Suspense>
+
+        <React.Suspense
+          fallback={
+            <div className="mt-5 h-64 animate-pulse rounded bg-muted" />
+          }
+        >
+          <WeekAndClassesSection
+            userId={session.user.id}
+            weekOffset={weekOffset}
+          />
         </React.Suspense>
       </div>
-
-      {showUnpamWidget ? (
-        <div className="mt-5">
-          <UnpamWidget events={unpamEvents} />
-        </div>
-      ) : null}
-
-      <React.Suspense fallback={<div className="mt-5 h-20 animate-pulse rounded bg-muted" />}>
-        <ScheduleSection userId={session.user.id} />
-      </React.Suspense>
-
-      <React.Suspense fallback={<div className="mt-5 h-64 animate-pulse rounded bg-muted" />}>
-        <WeekAndClassesSection userId={session.user.id} weekOffset={weekOffset} />
-      </React.Suspense>
-    </div>
+    </PullToRefresh>
   );
 }
