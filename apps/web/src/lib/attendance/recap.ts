@@ -18,6 +18,9 @@ export type AttendanceRecapCell = {
   status: string;
 };
 
+/** NR older than this after finalization counts as absent (24 hours). */
+const NR_ABSENT_AFTER_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Builds the semester matrix.
  *
@@ -113,8 +116,21 @@ export function buildAttendanceRecap(input: {
           absent += 1;
           outcomes.push("absent");
         } else if (status === "not_recorded") {
-          notRecorded += 1;
-          outcomes.push("unrecorded");
+          // Policy: a meeting finalized more than 24h ago with no record
+          // counts as absent (no-show), not merely unrecorded. Recent
+          // meetings stay NR so lecturers can still record late arrivals.
+          const finalizedOverdue =
+            meeting.finalizedAt !== null &&
+            Date.now() - Date.parse(meeting.finalizedAt) >
+              NR_ABSENT_AFTER_MS;
+
+          if (finalizedOverdue) {
+            absent += 1;
+            outcomes.push("absent");
+          } else {
+            notRecorded += 1;
+            outcomes.push("unrecorded");
+          }
         }
       }
 
