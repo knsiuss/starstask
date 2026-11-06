@@ -2,17 +2,40 @@
 
 /**
  * Multi-device key backup (E2EE):
- * - Private key exported JWK, wrapped with passphrase via AES-GCM (PBKDF2 100k).
+ * - Private key exported JWK, wrapped with passphrase via AES-GCM.
+ * - New backups: versioned `v2:<iterations>:salt:iv:cipher` with PBKDF2
+ *   600k + passphrase >= 12 chars. Legacy `salt:iv:cipher` (PBKDF2 100k)
+ *   backups still restore (interoperability), but new backups never use 100k.
  * - Server stores only wrapped ciphertext (dm_key_backup).
- * - Restore on new device: enter passphrase, unwrap, import.
+ * - Restore on new device: enter passphrase, unwrap, import, store under the
+ *   canonical device key, and re-publish the public key.
  */
 
-import { exportPublicKey, getOrCreateKeyPair } from "@/lib/crypto/e2ee";
+import {
+  exportPublicKey,
+  getOrCreateKeyPair,
+  importKeyPairFromJwk,
+  storeSelfKeyPair,
+} from "@/lib/crypto/e2ee";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+const MIN_PASSPHRASE_LENGTH = 12;
+const CURRENT_ITERATIONS = 600_000;
+const LEGACY_ITERATIONS = 100_000;
+const BACKUP_VERSION = "v2";
+
+function assertPassphrase(passphrase: string): void {
+  if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
+    throw new Error(
+      `Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters.`,
+    );
+  }
+}
 
 async function derivePassphraseKey(
   passphrase: string,
   salt: Uint8Array<ArrayBuffer>,
+  iterations: number,
 ): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey(
     "raw",
@@ -26,7 +49,7 @@ async function derivePassphraseKey(
     {
       name: "PBKDF2",
       salt,
-      iterations: 100_000,
+      iterations,
       hash: "SHA-256",
     },
     base,
@@ -51,6 +74,8 @@ function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
 }
 
 export async function backupPrivateKey(passphrase: string): Promise<void> {
+  assertPassphrase(passphrase);
+
   const supabase = createSupabaseBrowserClient();
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
@@ -60,13 +85,19 @@ export async function backupPrivateKey(passphrase: string): Promise<void> {
   const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await derivePassphraseKey(passphrase, salt);
+  const key = await derivePassphraseKey(
+    passphrase,
+    salt,
+    CURRENT_ITERATIONS,
+  );
   const cipher = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
     new TextEncoder().encode(JSON.stringify(jwk)),
   );
   const wrapped = [
+    BACKUP_VERSION,
+    String(CURRENT_ITERATIONS),
     bytesToBase64(salt),
     bytesToBase64(iv),
     bytesToBase64(new Uint8Array(cipher)),
@@ -98,11 +129,34 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
 
   const wrapped = (data as unknown as { wrapped_private_key: string })
     .wrapped_private_key;
-  const [saltB64, ivB64, cipherB64] = wrapped.split(":");
+  const parts = wrapped.split(":");
+  let iterations = LEGACY_ITERATIONS;
+  let saltB64 = parts[0];
+  let ivB64 = parts[1];
+  let cipherB64 = parts[2];
+
+  // v2 backups carry their own iteration count; anything else is the legacy
+  // 100k format and still restores (but is never written anymore).
+  if (parts[0] === BACKUP_VERSION) {
+    const parsedIterations = Number(parts[1]);
+    if (!Number.isInteger(parsedIterations) || parsedIterations < 1) {
+      throw new Error("Invalid backup format");
+    }
+    iterations = parsedIterations;
+    saltB64 = parts[2];
+    ivB64 = parts[3];
+    cipherB64 = parts[4];
+  }
+
   if (!saltB64 || !ivB64 || !cipherB64) {
     throw new Error("Invalid backup format");
   }
-  const key = await derivePassphraseKey(passphrase, base64ToBytes(saltB64));
+
+  const key = await derivePassphraseKey(
+    passphrase,
+    base64ToBytes(saltB64),
+    iterations,
+  );
   const plain = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: base64ToBytes(ivB64) },
     key,
@@ -110,27 +164,20 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
   );
   const jwk = JSON.parse(new TextDecoder().decode(plain)) as JsonWebKey;
 
-  const privateKey = await crypto.subtle.importKey(
-    "jwk",
-    jwk,
-    { name: "ECDH", namedCurve: "P-256" },
-    true,
-    ["deriveKey", "deriveBits"],
-  );
+  const pair = await importKeyPairFromJwk(jwk);
 
-  // Re-derive public from private via ECDH export of matching keypair is
-  // not possible from JWK alone in WebCrypto; store private only and let
-  // next login re-export public via getOrCreateKeyPair flow in dm-key-setup.
-  const db = await new Promise<IDBDatabase>((resolve) => {
-    const req = indexedDB.open("starstask-e2ee", 1);
-    req.onsuccess = () => resolve(req.result);
+  // Store under the canonical device key: anything else would be orphaned
+  // (this was the "self-private-only" bug).
+  await storeSelfKeyPair(pair);
+
+  // Re-publish the public key so peers encrypt to the restored keypair.
+  const publicKey = await exportPublicKey(pair);
+  const response = await fetch("/api/dm/keys/me", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ publicKey }),
   });
-  await new Promise<void>((resolve, reject) => {
-    const req = db
-      .transaction("keys", "readwrite")
-      .objectStore("keys")
-      .put(privateKey, "self-private-only");
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  if (!response.ok) {
+    throw new Error("Key restored locally, but sync failed — retry setup");
+  }
 }
