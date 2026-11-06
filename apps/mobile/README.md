@@ -1,88 +1,34 @@
-# StarsTask Mobile (Capacitor)
+# StarsTask Mobile — Kotlin (Native Android)
 
-PWA first, native via Capacitor. Same codebase as web, offline-first.
+Status: Expo app removed 2026-11-06 (see `docs/ANDROID_PHASE0_AUDIT.md`).
+Replacement: native Kotlin Android app, generated in Android Studio.
 
-## Structure
+## Create the project (Android Studio)
 
-- `src/` — mobile entry (reuse web API + Supabase)
-- Offline check-in queue, push via Web Push, E2EE keys in IndexedDB
+1. New Project → **Empty Views Activity**
+2. Name: `StarsTask`, Package: `id.starstask.mobile`
+   (keep the old Capacitor package id — it is already registered in
+   Firebase `google-services.json`)
+3. Location: `apps/mobile` (use the existing folder; Studio creates
+   `android/` — the Capacitor-era folder was deleted with Expo)
+4. Language: **Kotlin**, Build language: **Kotlin DSL**
+5. Minimum SDK: API 24 (matches the previous app)
 
-## Stack
+## After generation
 
-- Capacitor 6 + Vite + TypeScript
-- Supabase (same project as web)
-- WebCrypto E2EE (same as DM web)
+- Copy the existing `google-services.json` (kept locally, gitignored)
+  into `android/app/` for FCM + Crashlytics.
+- Add the Google OAuth redirect scheme `starstask://auth/callback`
+  to the manifest activity.
+- Backend is unchanged: same Supabase project, same RPCs
+  (`check_in_attendance_meeting`, dashboard reads), same
+  `POST /api/push/native-token` registration, same
+  `native_push_tokens` table.
+- E2EE DM is not ported yet — WebCrypto has no Kotlin equivalent;
+  a future port needs a crypto library + security review.
 
-## Commands (dari root repo)
+## What was removed
 
-```bash
-pnpm --filter @starstask/mobile dev
-pnpm --filter @starstask/mobile build
-pnpm --filter @starstask/mobile sync  # capacitor sync ios/android
-```
-
-## Android
-
-```bash
-cd apps/mobile
-pnpm install            # dari root repo: pnpm install
-pnpm build              # vite build -> dist/
-npx cap add android     # pertama kali saja: generate folder android/
-npx cap sync android    # setelah ubah web / plugin
-npx cap open android    # buka di Android Studio, lalu Run / Build APK
-```
-
-Tanpa Android Studio / SDK, APK debug bisa dibuat langsung:
-
-```bash
-cd apps/mobile/android
-./gradlew assembleDebug   # Windows: gradlew.bat assembleDebug
-# hasil: android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Prasyarat: JDK 17+ dan Android SDK (platform + build-tools) terpasang;
-`ANDROID_HOME` menunjuk ke folder SDK. Folder `android/` hasil generate
-di-commit apa adanya (sesuai template Capacitor), jadi tidak perlu
-`cap add` ulang di mesin lain — cukup `cap sync` setelah build web.
-
-Push Android memakai `@capacitor/push-notifications` (FCM). Setup
-`google-services.json` + Firebase project dilakukan manual di Android
-Studio; tanpa itu push native belum aktif, Web Push PWA tetap jalan.
-
-## E2E (Maestro)
-
-Flow ada di `e2e/maestro/` — launch smoke test, debug launch, dan deep
-link callback. Butuh Maestro CLI
-([install](https://docs.maestro.dev/get-started/quickstart)) dan device
-atau emulator yang terhubung via adb:
-
-```bash
-pnpm --filter @starstask/mobile build
-npx cap sync android
-pnpm --filter @starstask/mobile test:e2e
-```
-
-Token FCM didaftarkan ke web API (`POST /api/push/native-token`) setelah
-login, disimpan di tabel `native_push_tokens`, dan dipakai scheduler
-server (reminder deadline, reminder sesi, event publikasi) lewat pengirim
-FCM (`FIREBASE_SERVICE_ACCOUNT_JSON` di environment deployment). Tanpa
-kredensial itu channel native dilewati diam-diam.
-
-## iOS
-
-```bash
-cd apps/mobile
-npx cap add ios
-# copy ios/Info.plist.snippet.xml into ios/App/App/Info.plist
-npx cap sync ios
-open ios/App/App.xcworkspace
-# Run di iPhone / simulator, deployment target iOS 15+
-```
-
-Push iOS butuh Apple Developer account ($99/tahun) buat TestFlight/App Store.
-Tanpa itu, bisa jalan di simulator + sideload Xcode.
-
-## Status
-
-- Scaffolding only (2026-11-05). Fitur prioritas: check-in offline,
-  dashboard ringan, notifikasi push.
+- `apps/mobile` Expo app (app.json, app/, src/lib, android/, ios/)
+- `@capacitor/*` and Expo dependencies from the workspace
+- `starstask-preview.apk` (Expo preview build) stays local-only
