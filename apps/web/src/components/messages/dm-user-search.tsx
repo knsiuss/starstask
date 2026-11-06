@@ -33,6 +33,8 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       return;
     }
 
+    // AbortController cancels the previous in-flight search so fast
+    // typing does not stack requests or render stale results.
     const controller = new AbortController();
 
     const timer = setTimeout(async () => {
@@ -46,9 +48,11 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
         const data = (await response.json()) as { users?: User[] };
         setUsers(data.users ?? []);
         setError(null);
-      } catch (err) {
-        // Aborted (superseded by newer keystroke) requests are not errors.
-        if (err instanceof DOMException && err.name === "AbortError") {
+      } catch (searchError) {
+        if (
+          searchError instanceof Error &&
+          searchError.name === "AbortError"
+        ) {
           return;
         }
         setUsers([]);
@@ -58,7 +62,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
           setLoading(false);
         }
       }
-    }, 200);
+    }, 300);
 
     return () => {
       clearTimeout(timer);
@@ -162,7 +166,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-4">
-        {loading ? (
+        {loading && visibleUsers.length === 0 ? (
           <ul
             className="space-y-1"
             aria-label="Searching"
