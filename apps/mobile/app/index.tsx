@@ -243,7 +243,11 @@ function WelcomeScreen({ onSignIn }: { onSignIn: () => void }) {
         accessibilityRole="button"
         accessibilityLabel="Continue with Google"
       >
-        <Text style={styles.googleMark}>G</Text>
+        <Image
+          source={require("../assets/google-g.png")}
+          style={styles.googleMark}
+          resizeMode="contain"
+        />
         <Text style={styles.googleLabel}>Continue with Google</Text>
         <Text style={styles.arrow}>→</Text>
       </Pressable>
@@ -429,11 +433,7 @@ const styles = {
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  googleMark: {
-    fontSize: 22,
-    fontWeight: "800" as const,
-    color: "#4285f4",
-  },
+  googleMark: { width: 22, height: 22 },
   googleLabel: {
     flex: 1,
     fontSize: 16,
