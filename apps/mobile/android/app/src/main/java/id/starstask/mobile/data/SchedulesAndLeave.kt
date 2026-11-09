@@ -12,7 +12,9 @@ import kotlinx.serialization.json.put
 
 data class ScheduleEntry(val id: String, val title: String, val startsAt: String, val endsAt: String, val className: String?)
 
-data class LeaveRequest(val id: String, val status: String, val leaveStart: String?, val leaveEnd: String?, val reason: String?)
+// LeaveRequest canonical model lives in LeaveRequests.kt (full web mirror).
+// This alias kept for ScheduleLeaveScreens compat; use LeaveRequests.kt's
+// data class for new code.
 
 data class OnboardingProfile(val fullName: String?, val nim: String?, val onboardedAt: String?)
 
@@ -58,25 +60,8 @@ suspend fun loadSchedule(userId: String): List<ScheduleEntry> {
     }
 }
 
-suspend fun loadLeaveRequests(userId: String): List<LeaveRequest> {
-    val db = SupabaseProvider.client.postgrest
-    val rows = db.from("leave_requests").select {
-        filter { eq("student_id", userId) }
-        order("submitted_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
-        limit(30)
-    }.decodeJsonArray()
-
-    return rows.mapNotNull {
-        val obj = it.jsonObject
-        LeaveRequest(
-            id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
-            status = obj["status"]?.jsonPrimitive?.contentOrNull() ?: "",
-            leaveStart = obj["leave_start_date"]?.jsonPrimitive?.contentOrNull(),
-            leaveEnd = obj["leave_end_date"]?.jsonPrimitive?.contentOrNull(),
-            reason = obj["reason_category"]?.jsonPrimitive?.contentOrNull(),
-        )
-    }
-}
+// loadLeaveRequests now lives in LeaveRequests.kt (web mirror with enrich).
+// This duplicate was causing a redeclaration — removed.
 
 suspend fun loadOnboardingProfile(userId: String): OnboardingProfile? {
     val db = SupabaseProvider.client.postgrest

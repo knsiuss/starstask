@@ -105,6 +105,29 @@ suspend fun openAttachment(context: Context, storagePath: String) {
     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
 }
 
+suspend fun deleteAttachment(attachmentId: String, storagePath: String): Boolean {
+    val db = SupabaseProvider.client.postgrest
+    val storage = SupabaseProvider.client.storage
+    val dbOk = runCatching {
+        db.from("assignment_attachments").delete { filter { eq("id", attachmentId) } }
+    }.isSuccess
+    runCatching { storage.from("assignment-attachments").delete(listOf(storagePath)) }
+    return dbOk
+}
+
+suspend fun renameAttachment(context: Context, attachmentId: String, storagePath: String, newName: String): Boolean {
+    // Rename is metadata-only; storage path is immutable (web pattern).
+    if (newName.isBlank()) return false
+    return runCatching {
+        SupabaseProvider.client.postgrest.from("assignment_attachments").update(
+            kotlinx.serialization.json.buildJsonObject {
+                put("original_filename", kotlinx.serialization.json.JsonPrimitive(newName))
+            },
+        ) { filter { eq("id", attachmentId) } }
+        true
+    }.getOrDefault(false)
+}
+
 private fun queryName(resolver: android.content.ContentResolver, uri: Uri): String? {
     resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
         if (cursor.moveToFirst()) return cursor.getString(0)

@@ -780,7 +780,7 @@ private fun StatCard(label: String, value: Int, icon: String, tone: String, modi
 }
 
 @Composable
-private fun QuickActions(
+private fun QuickActionsInline(
     onCheckIn: () -> Unit,
     onOpenTasks: () -> Unit,
     onOpenMessages: () -> Unit,
@@ -818,71 +818,6 @@ private fun QuickActionPill(
         ),
     ) {
         Text("$icon $label", style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-// Live-preview entry points: open Design mode (split pane) in Android
-// Studio and every edit below re-renders instantly without a device.
-@Preview(showBackground = true, name = "Home — header + stats + actions")
-@Composable
-private fun HomeComponentsPreview() {
-    StarsTaskTheme {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            DashboardHeader(
-                greeting = "Good morning",
-                name = "StarsTask member",
-                summaryParts = listOf("2 sessions today", "1 assignment due"),
-                dateLabel = "Friday, 6 November 2026",
-                now = java.time.ZonedDateTime.of(
-                    2026, 11, 6, 8, 30,
-                    0, 0, java.time.ZoneId.of("Asia/Jakarta"),
-                ),
-            )
-            SectionTitle(text = "Overview")
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                StatCard(
-                    label = "Sessions",
-                    value = 2,
-                    icon = "◐",
-                    tone = "default",
-                    modifier = Modifier.weight(1f),
-                )
-                StatCard(
-                    label = "Due soon",
-                    value = 1,
-                    icon = "!",
-                    tone = "warning",
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            QuickActions(
-                onCheckIn = {},
-                onOpenTasks = {},
-                onOpenMessages = {},
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "Home — stat card tones")
-@Composable
-private fun StatCardTonesPreview() {
-    StarsTaskTheme {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            StatCard(label = "Default", value = 3, icon = "◐", tone = "default")
-            StatCard(label = "Warning", value = 1, icon = "!", tone = "warning")
-            StatCard(label = "Danger", value = 2, icon = "✕", tone = "danger")
-            StatCard(label = "Success", value = 5, icon = "✓", tone = "success")
-        }
     }
 }
 
@@ -983,61 +918,7 @@ private fun MyClassRow(clazz: id.starstask.mobile.data.DashboardClass) {
     }
 }
 
-/**
- * Brand landscape tile (web `hero-dashboard.svg`): dawn sky + layered
- * mountains, cropped at a different horizontal offset per class so each
- * tile reads separately — same 4 positions as web IMAGE_POSITIONS.
- */
-@Composable
-private fun ClassLandscapeTile(index: Int) {
-    val offsetFractions = listOf(0f, 0.33f, 0.66f, 1f)
-    val fraction = offsetFractions[index % offsetFractions.size]
-    Canvas(
-        modifier = Modifier
-            .size(56.dp)
-            .clip(RoundedCornerShape(8.dp)),
-    ) {
-        val w = size.width
-        val h = size.height
-        // Sky + glow (SVG stops #dce8f8 → #eef2f8 → #fbf8f2; glow #ffe8c8).
-        drawRect(
-            brush = Brush.verticalGradient(
-                listOf(Color(0xFFDCE8F8), Color(0xFFEEF2F8), Color(0xFFFBF8F2)),
-                startY = 0f,
-                endY = h,
-            ),
-        )
-        drawCircle(
-            brush = Brush.radialGradient(
-                listOf(Color(0xFFFFE8C8).copy(alpha = 0.95f), Color.Transparent),
-                center = androidx.compose.ui.geometry.Offset(w * 0.72f, h * 0.72f),
-                radius = w * 0.5f,
-            ),
-            radius = w * 0.5f,
-            center = androidx.compose.ui.geometry.Offset(w * 0.72f, h * 0.72f),
-        )
-        // Layered ridges, shifted by the per-class crop fraction.
-        val shift = -fraction * w * 1.2f
-        fun ridge(baseY: Float, amp: Float, color: Color, alpha: Float) {
-            val path = Path().apply {
-                moveTo(shift, baseY)
-                val points = listOf(0f, 0.12f, 0.25f, 0.38f, 0.5f, 0.62f, 0.75f, 0.88f, 1f, 1.12f, 1.25f)
-                points.forEachIndexed { i, xf ->
-                    val y = baseY + java.util.Random((i * 31 + index).toLong()).nextFloat().let { (it - 0.5f) * amp }
-                    lineTo(shift + w * xf, y)
-                }
-                lineTo(shift + w * 1.25f, h)
-                lineTo(shift, h)
-                close()
-            }
-            drawPath(path, color.copy(alpha = alpha))
-        }
-        ridge(h * 0.64f, h * 0.18f, Color(0xFFB9C9DE), 0.75f)
-        ridge(h * 0.74f, h * 0.16f, Color(0xFF8FA6C4), 0.85f)
-        ridge(h * 0.86f, h * 0.14f, Color(0xFF6F88A8), 0.9f)
-        drawRect(Color(0xFFF7F5F0).copy(alpha = 0.9f), topLeft = androidx.compose.ui.geometry.Offset(0f, h * 0.93f), size = androidx.compose.ui.geometry.Size(w, h * 0.07f))
-    }
-}
+
 
 @Composable
 private fun MyWeekStrip(schedule: List<ScheduleEntry>) {

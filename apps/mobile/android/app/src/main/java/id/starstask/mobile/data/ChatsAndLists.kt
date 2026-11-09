@@ -54,7 +54,19 @@ suspend fun loadConversations(userId: String): List<Conversation> {
 
 data class Assignment(val id: String, val title: String, val status: String, val deadline: String?, val className: String?)
 
-data class ClassDetail(val id: String, val name: String, val slug: String, val semester: String, val academicYear: String, val memberCount: Int)
+data class ClassDetail(
+    val id: String,
+    val name: String,
+    val slug: String,
+    val semester: String,
+    val academicYear: String,
+    val memberCount: Int,
+    val classCode: String = "",
+    val isAdmin: Boolean = false,
+    val status: String = "active",
+    val courseName: String = "",
+    val lecturerName: String = "",
+)
 
 data class SessionRow(val id: String, val title: String, val startsAt: String, val endsAt: String, val status: String, val className: String?)
 

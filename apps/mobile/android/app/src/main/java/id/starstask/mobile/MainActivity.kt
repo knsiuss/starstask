@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val label: String) { HOME("Home"), CLASSES("Classes"), ATTENDANCE("Attend"), ASSIGNMENTS("Tasks"), MESSAGES("Chat"), MORE("More"), SETTINGS("Settings") }
+private enum class Tab(val label: String) { HOME("Home"), CLASSES("Classes"), ATTENDANCE("Attend"), ASSIGNMENTS("Assignments"), MESSAGES("Chat"), MORE("More"), SETTINGS("Settings") }
 
 @Composable
 fun StarsTaskApp() {

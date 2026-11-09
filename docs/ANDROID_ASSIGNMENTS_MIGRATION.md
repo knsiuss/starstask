@@ -1,0 +1,49 @@
+# Android Assignments Migration — Web source of truth
+
+Migration of Web `/assignments` workspace to native Kotlin (Compose).
+Web logic is the source of truth for behavior; screenshot is source of truth for visuals.
+
+## 1. Web audit (verified in repo)
+
+| Area | Web source | Behavior |
+|---|---|---|
+| Page | `apps/web/src/app/(workspace)/assignments/page.tsx` | RSC, force-dynamic. Tabs via `?tab=` (default `schedule`); stale page redirects to last page. |
+| Scope | `getWorkspaceScope` (`lib/db/assignment-workspace.ts`) | Active `class_members` of user (max 20 for options); `managesAnyClass` if any admin. Loads active `class_subjects` per class. |
+| Schedule list | `listWorkspaceSchedule` | Merges 3 PostgREST reads (published scoped `class_id IN`, published public `class_id IS NULL AND subject_id IS NULL AND course_id IN catalog`, managed non-published) capped at 500 each, de-dupes by id, then in-memory filter/sort/paginate. Search = `ilike title`; class filter validated against membership; status `upcoming/overdue/no_deadline` are deadline-based, else `status` column; sort newest/oldest/deadline (null deadlines last in deadline sort). Page size 12. |
+| Overview | `getWorkspaceOverview` | Same published set, **only rows with `deadline NOT NULL`** count. `total` = unique rows, `upcoming` = deadline >= now ISO, `expired` = else. `upcomingDeadlines` = nearest 5 upcoming sorted asc. |
+| Requests | `listMyRequests` / `listManagedRequests` | `assignments` with status in `(pending_review, rejected, published)`, limit 50, newest first. Managed joins profiles for submitter name. |
+| Status mapping | `toRequestStatus` (`lib/assignments/workspace.ts`) | `published`→approved; `rejected` with `Revision requested:` prefix→revision_requested else rejected; else pending. Feedback strips prefix. |
+| Deadlines | `@starstask/shared/deadline.ts` | `getDeadlineState`: overdue if instant <= now; due_today if same Jakarta date; else upcoming. `formatDeadline` = `dd MMM yyyy, HH:mm WIB`. Overview urgency compares ISO strings (equivalent for UTC instants). |
+| Header/subtitle | page header | manages → "Manage class tasks, schedules, and publication requests." else "Keep track of tasks and deadlines across your classes." |
+| Create button | `RequestPublicationDialog` | Hidden when no classes. Label: manages → "Create Assignment" else "Request Task Publication". Admin-of-class → `published` immediately; else `pending_review`. Validation: title ≥ 3 chars, description ≥ 10 chars, course required, time requires date. `contentType = lecturer_assignment`, max 3 files, 10 MB each. |
+| Review | `ReviewRequestDialog` → `POST /api/classes/[slug]/submissions/[id]/review` | `approved` (+`confirmPublic`) publishes; `rejected`/`revision` require reason ≥ 3 chars. Revision writes `Revision requested: <reason>` with status `rejected`. |
+| Permissions | `class_members.is_admin` / `role` | Only managed-class admins see extra statuses (`pending_review/rejected/draft`) and review queue. |
+
+## 2. Kotlin mapping
+
+| Web | Kotlin | File |
+|---|---|---|
+| `getWorkspaceScope` | `getWorkspaceScope(userId)` — same queries, `class_members` + `class_subjects` + `classes` enrich | `data/Workspace.kt` |
+| `listWorkspaceSchedule` | `listWorkspaceSchedule(...)` — same 3-way merge; search/status/sort/paginate identical; attachment count via one extra `assignment_attachments` query | `data/Workspace.kt` |
+| `getWorkspaceOverview` | `getWorkspaceOverview(...)` — identical deadline-IS-NOT-NULL rule + sorted top-5 | `data/Workspace.kt` |
+| `toRequestStatus`/`requestFeedback`/`sortScheduleItems`/`deadlineUrgency` | Pure Kotlin ports, same lexicographic ISO semantics | `data/Workspace.kt` |
+| `DeadlineBadge` + `Badge` variants | `StarsTaskBadge`/`DeadlineBadge`/`StatusBadge` mirroring `badge.tsx` (neutral/accent/success/warning/danger) | `ui/components/Badges.kt` |
+| `ScheduleCard` | `ScheduleCard` — badge row, title (max 2), class/subtitle, deadline badge, arrow | `ui/screens/AssignmentsScreen.kt` |
+| `OverviewSidebar` mobile card | `OverviewCard` — 3-column stat card | `ui/screens/AssignmentsScreen.kt` |
+| `RequestCard` + review dialog | `RequestCard` + `ReviewRequestDialog` — approve/reject/revision with same reason rule | `ui/screens/AssignmentsScreen.kt` |
+| `RequestPublicationDialog` | `CreateAssignmentDialog` — class/course dropdowns, title/desc, deadline date+time (Jakarta wall → ISO), file picker (max 3 / 10 MB, same extensions), direct insert (status by admin) + upload via existing `uploadAttachment` | `ui/screens/AssignmentsScreen.kt`, `data/Workspace.kt` |
+| `/assignments` redirect from `/app/assignments` | N/A on native (single destination) | — |
+| Bottom nav | Shared `Tab` enum with icons: Dashboard / Assignments / Attendance / Schedule / Absence (`MainActivity.kt`) | `MainActivity.kt` |
+| Theme tokens | Aligned to `apps/web/src/app/globals.css` light+dark (accent `#45639E`, background `#FAFAF8`) | `ui/theme/Theme.kt` |
+
+### Intentional adaptations (same behavior, native idioms)
+- Filter bar: Web hides it below `lg`; native shows a compact search + chips row so mobile filtering exists without a desktop grid.
+- Create/review use native dialogs + `DatePickerDialog`/`TimePickerDialog` instead of web `<input type=date>`; deadline defaults `23:59` like Web.
+- Review writes directly (`assignments.status`/`rejection_reason`) instead of calling the Next.js API — same end state, enforced by the same DB rows/RLS; no new business rule.
+- Tab state uses `rememberSaveable` so tab survives rotation/recreation.
+- Dashboard totals reuse `getWorkspaceOverview`/`loadDashboard` sources; no duplicated counting logic (final consistency check needs device + live Supabase).
+
+## 3. Verification status
+- Kotlin files I added/rewrote (`Workspace.kt`, `Badges.kt`, `AssignmentsScreen.kt`, `Theme.kt`) report **no compiler errors**; full-module build currently **fails on pre-existing dirty-tree errors** in `Attendance.kt`, `Calendar.kt`, `CalendarDates.kt`, `AttendanceDetailScreens.kt`, `MainActivity.kt:352` (type mismatches on `limit` Long, `AttendanceCounts` map, etc.) — untouched by this change.
+- Web untouched by this change (`git diff` shows only pre-existing `rate-limit.ts`).
+- Screenshot comparison & live data verification require device + configured Supabase (not run here).

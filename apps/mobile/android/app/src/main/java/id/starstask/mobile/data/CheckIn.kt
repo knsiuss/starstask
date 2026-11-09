@@ -1,14 +1,7 @@
 package id.starstask.mobile.data
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -24,19 +17,11 @@ data class CheckInResult(val ok: Boolean, val status: String?, val message: Stri
 
 private const val ACCURACY_MAX_M = 100.0
 
-fun hasLocationPermission(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.ACCESS_FINE_LOCATION,
-    ) == PackageManager.PERMISSION_GRANTED
-
 suspend fun capturePosition(context: Context): Triple<Double, Double, Double>? {
-    val client: FusedLocationProviderClient =
-        LocationServices.getFusedLocationProviderClient(context)
-    val location = client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
-        ?: return null
-    if (location.accuracy > ACCURACY_MAX_M) return null
-    return Triple(location.latitude, location.longitude, location.accuracy.toDouble())
+    val outcome = capturePositionDetailed(context)
+    val fix = (outcome as? CaptureOutcome.Fix)?.position ?: return null
+    if (fix.accuracyM > ACCURACY_MAX_M) return null
+    return Triple(fix.latitude, fix.longitude, fix.accuracyM)
 }
 
 suspend fun checkInToSession(
