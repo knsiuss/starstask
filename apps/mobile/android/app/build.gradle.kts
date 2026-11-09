@@ -35,6 +35,16 @@ android {
             "SUPABASE_PUBLISHABLE_KEY",
             "\"${localProps.getProperty("starstask.supabase.publishableKey", "your-publishable-key")}\""
         )
+        buildConfigField(
+            "String",
+            "SITE_URL",
+            "\"${localProps.getProperty("starstask.site.url", "https://your-site.example.com")}\""
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${localProps.getProperty("starstask.google.webClientId", "TODO_WEB_CLIENT_ID")}\""
+        )
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -77,9 +87,14 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-android:3.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.navigation:navigation-compose:2.9.3")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-messaging")
