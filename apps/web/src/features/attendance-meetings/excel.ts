@@ -8,6 +8,11 @@ import {
   type AttendanceMeetingCellStatus,
 } from "@starstask/contracts";
 
+import {
+  COURSE_GRADE_COMPONENTS,
+  type ExportBrandingInput,
+} from "@starstask/contracts";
+
 import type {
   AttendanceCorrectionAuditEntry,
   AttendanceMeetingDetail,
@@ -15,6 +20,11 @@ import type {
   AttendanceRecap,
 } from "@/lib/attendance/meeting-types";
 import type { ClassSummary } from "@/lib/db/classes";
+import type { CourseComponentGrades } from "@/lib/db/course-grades";
+import {
+  addBrandingFooterNote,
+  addBrandingHeader,
+} from "./excel-header";
 
 const TIME_ZONE = "Asia/Jakarta";
 const HEADER_FILL = "FF0F172A";
@@ -226,19 +236,36 @@ const meetingDateLabel = new Intl.DateTimeFormat("id-ID", {
  * rows, meetings are columns that grow to the right, and each cell is a text
  * code (✓ I S A T). Totals use the sheet formula H / total meetings.
  */
+export type RecapExportExtras = {
+  branding?: ExportBrandingInput;
+  grades?: CourseComponentGrades;
+};
+
+const GRADE_HEADERS = ["Tugas", "UTS", "UAS", "Nilai Akhir"] as const;
+const GRADE_COLUMN_COUNT = 4;
+const GRADE_NUM_FMT = "0.0";
+
 export async function buildRecapWorkbook(
   recap: AttendanceRecap,
   context: AttendanceExportContext,
   audits: AttendanceCorrectionAuditEntry[] = [],
+  extras: RecapExportExtras = {},
 ): Promise<Uint8Array> {
   const workbook = createWorkbook(context.generatedAt);
   const sheet = workbook.addWorksheet("Summary", {
     pageSetup: landscapePageSetup(),
   });
   const meetingCount = recap.meetings.length;
-  const totalColumns = 3 + meetingCount + 6;
+  // Branding without `brandingEnabled` falls back to the legacy sheet.
+  const branding = extras.branding?.brandingEnabled ? extras.branding : null;
+  const grades = extras.grades;
+  const gradeColumnCount = grades ? GRADE_COLUMN_COUNT : 0;
+  const totalColumns = 3 + meetingCount + 6 + gradeColumnCount;
   const firstMeetingColumn = 4;
   const firstTotalColumn = 4 + meetingCount;
+  // The branding header occupies rows 1–5, shifting the course block down by
+  // four rows (the legacy title bar alone filled row 1).
+  const rowShift = branding ? 4 : 0;
 
   sheet.columns = [
     { key: "no", width: 7 },
@@ -251,6 +278,7 @@ export async function buildRecapWorkbook(
     { width: 7 },
     { width: 7 },
     { width: 12 },
+    ...Array.from({ length: gradeColumnCount }, () => ({ width: 11 })),
   ];
 
   const darkFill = {
@@ -265,25 +293,30 @@ export async function buildRecapWorkbook(
     right: { style: "thin", color: { argb: BORDER_COLOR } },
   } as const;
 
-  // Title bar.
-  sheet.mergeCells(1, 1, 1, totalColumns);
-  const titleCell = sheet.getRow(1).getCell(1);
-  titleCell.value = "★ StarsTask — Absensi Mata Kuliah";
-  titleCell.font = { size: 14, bold: true, color: { argb: "FFFFFFFF" } };
-  titleCell.fill = darkFill;
-  titleCell.alignment = { vertical: "middle" };
-  sheet.getRow(1).height = 26;
+  // Title bar — the branding header when configured, the legacy title otherwise.
+  if (branding) {
+    await addBrandingHeader(sheet, branding, context, totalColumns);
+  } else {
+    sheet.mergeCells(1, 1, 1, totalColumns);
+    const titleCell = sheet.getRow(1).getCell(1);
+    titleCell.value = "★ StarsTask — Absensi Mata Kuliah";
+    titleCell.font = { size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+    titleCell.fill = darkFill;
+    titleCell.alignment = { vertical: "middle" };
+    sheet.getRow(1).height = 26;
+  }
 
   // Course block (left) and summary stats (right), from real class data.
-  const courseRow = sheet.getRow(3);
-  sheet.mergeCells(3, 1, 3, 3);
+  const courseRowNumber = 3 + rowShift;
+  const courseRow = sheet.getRow(courseRowNumber);
+  sheet.mergeCells(courseRowNumber, 1, courseRowNumber, 3);
   courseRow.getCell(1).value = subjectLabel(context.subject);
   courseRow.getCell(1).font = { size: 16, bold: true };
-  sheet.mergeCells(4, 1, 4, 3);
+  sheet.mergeCells(courseRowNumber + 1, 1, courseRowNumber + 1, 3);
   courseRow.getCell(1).value = context.subject.name;
   courseRow.getCell(1).font = { size: 11, color: { argb: MUTED_TEXT } };
 
-  const infoRows = [5, 6, 7];
+  const infoRows = [5 + rowShift, 6 + rowShift, 7 + rowShift];
   const infoValues = [
     `Kelas  : ${context.classInfo.class_code ?? context.classInfo.name}`,
     `Dosen  : ${subjectLecturer(context)}`,
@@ -320,8 +353,8 @@ export async function buildRecapWorkbook(
 
   stats.forEach(([label, value], index) => {
     const column = statsStartColumn + index * 2;
-    const labelRow = sheet.getRow(3);
-    const valueRow = sheet.getRow(4);
+    const labelRow = sheet.getRow(courseRowNumber);
+    const valueRow = sheet.getRow(courseRowNumber + 1);
     sheet.mergeCells(3, column, 3, column + 1);
     sheet.mergeCells(4, column, 4, column + 1);
     labelRow.getCell(column).value = label;
@@ -347,8 +380,8 @@ export async function buildRecapWorkbook(
   });
 
   // Two-row header: group row + meeting numbers/dates.
-  const groupRowNumber = 9;
-  const headerRowNumber = 10;
+  const groupRowNumber = 9 + rowShift;
+  const headerRowNumber = 10 + rowShift;
   const groupRow = sheet.getRow(groupRowNumber);
   const headerRow = sheet.getRow(headerRowNumber);
   const fixedHeaders = ["No.", "NIM", "Nama Mahasiswa"];
@@ -393,6 +426,14 @@ export async function buildRecapWorkbook(
     groupRow.getCell(column).value = label;
   });
 
+  if (grades) {
+    GRADE_HEADERS.forEach((label, index) => {
+      const column = firstTotalColumn + totalHeaders.length + index;
+      sheet.mergeCells(groupRowNumber, column, headerRowNumber, column);
+      groupRow.getCell(column).value = label;
+    });
+  }
+
   for (const row of [groupRow, headerRow]) {
     row.height = 20;
     for (let column = 1; column <= totalColumns; column += 1) {
@@ -428,7 +469,7 @@ export async function buildRecapWorkbook(
       meetingCount === 0
         ? null
         : Math.round((student.totals.present / meetingCount) * 1_000) / 10;
-    const values: (string | number)[] = [
+    const values: (string | number | null)[] = [
       index + 1,
       student.nim ?? "—",
       student.fullName,
@@ -445,7 +486,29 @@ export async function buildRecapWorkbook(
       student.totals.late,
       percentage === null ? "—" : percentage,
     ];
-    dataRow.values = values;
+
+    // Grade columns stay blank when a component has no recorded score, so
+    // the final grade never invents a zero the lecturer did not enter.
+    const gradeValues: (string | number | null)[] = [];
+
+    if (grades) {
+      const scores = COURSE_GRADE_COMPONENTS.map(
+        (component) => grades[`${student.userId}:${component}`],
+      );
+      const presentScores = scores.filter(
+        (score): score is number =>
+          typeof score === "number" && Number.isFinite(score),
+      );
+      const finalGrade =
+        presentScores.length === 0
+          ? null
+          : presentScores.reduce((sum, score) => sum + score, 0) /
+            presentScores.length;
+
+      gradeValues.push(scores[0] ?? null, scores[1] ?? null, scores[2] ?? null, finalGrade);
+    }
+
+    dataRow.values = [...values, ...gradeValues];
     dataRow.height = 18;
 
     for (let column = 1; column <= totalColumns; column += 1) {
@@ -484,7 +547,8 @@ export async function buildRecapWorkbook(
       };
     }
 
-    const percentageCell = dataRow.getCell(totalColumns);
+    const percentageColumn = firstTotalColumn + totalHeaders.length - 1;
+    const percentageCell = dataRow.getCell(percentageColumn);
     percentageCell.alignment = { horizontal: "right", vertical: "middle" };
     percentageCell.numFmt = '0.0"%"';
     percentageCell.fill = {
@@ -493,6 +557,16 @@ export async function buildRecapWorkbook(
       fgColor: { argb: "FFDCFCE7" },
     };
     percentageCell.font = { bold: true, size: 11 };
+
+    if (grades) {
+      for (let offset = 0; offset < GRADE_COLUMN_COUNT; offset += 1) {
+        const gradeCell = dataRow.getCell(
+          percentageColumn + 1 + offset,
+        );
+        gradeCell.alignment = { horizontal: "center", vertical: "middle" };
+        gradeCell.numFmt = GRADE_NUM_FMT;
+      }
+    }
   });
 
   const lastDataRow = firstDataRow + recap.students.length - 1;
@@ -552,6 +626,32 @@ export async function buildRecapWorkbook(
     `• Exported at ${formatDateTime(context.generatedAt.toISOString())} via StarsTask.`;
   for (let offset = 1; offset <= 3; offset += 1) {
     sheet.getRow(noteRowNumber + offset).getCell(1).font = { size: 10 };
+  }
+
+  let summaryRow = noteRowNumber + 5;
+
+  if (grades) {
+    summaryRow = addGradeSummary(sheet, summaryRow, recap, grades);
+  }
+
+  if (grades && branding) {
+    summaryRow = addAttendanceGraduationSummary(
+      sheet,
+      summaryRow,
+      recap,
+      grades,
+      branding.passingThreshold,
+    );
+  }
+
+  if (branding) {
+    addBrandingFooterNote(
+      sheet,
+      summaryRow,
+      totalColumns,
+      branding,
+      formatDateTime(context.generatedAt.toISOString()),
+    );
   }
 
   sheet.autoFilter = {
@@ -907,6 +1007,141 @@ function addMetadataRows(
   });
 
   return startRow + rows.length + 1;
+}
+
+function studentFinalGrades(
+  recap: AttendanceRecap,
+  grades: CourseComponentGrades,
+): (number | null)[] {
+  return recap.students.map((student) => {
+    const presentScores = COURSE_GRADE_COMPONENTS.flatMap((component) => {
+      const score = grades[`${student.userId}:${component}`];
+
+      return typeof score === "number" && Number.isFinite(score)
+        ? [score]
+        : [];
+    });
+
+    if (presentScores.length === 0) {
+      return null;
+    }
+
+    return (
+      presentScores.reduce((sum, score) => sum + score, 0) /
+      presentScores.length
+    );
+  });
+}
+
+function componentScores(
+  recap: AttendanceRecap,
+  grades: CourseComponentGrades,
+  component: (typeof COURSE_GRADE_COMPONENTS)[number],
+): number[] {
+  const scores: number[] = [];
+
+  for (const student of recap.students) {
+    const score = grades[`${student.userId}:${component}`];
+
+    if (typeof score === "number" && Number.isFinite(score)) {
+      scores.push(score);
+    }
+  }
+
+  return scores;
+}
+
+function averageOrDash(scores: number[]): number | string {
+  if (scores.length === 0) {
+    return "—";
+  }
+
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+/** "Rekapitulasi Nilai": class-wide grade statistics, blanks ignored. */
+function addGradeSummary(
+  sheet: ExcelJS.Worksheet,
+  startRow: number,
+  recap: AttendanceRecap,
+  grades: CourseComponentGrades,
+): number {
+  const finals = studentFinalGrades(recap, grades).filter(
+    (score): score is number => score !== null,
+  );
+  const rows: [string, number | string][] = [
+    ["Rata-rata Tugas", averageOrDash(componentScores(recap, grades, "tugas"))],
+    ["Rata-rata UTS", averageOrDash(componentScores(recap, grades, "uts"))],
+    ["Rata-rata UAS", averageOrDash(componentScores(recap, grades, "uas"))],
+    ["Rata-rata Nilai Akhir", averageOrDash(finals)],
+    ["Rata-rata Kelas", averageOrDash(finals)],
+    ["Nilai Tertinggi", finals.length === 0 ? "—" : Math.max(...finals)],
+    ["Nilai Terendah", finals.length === 0 ? "—" : Math.min(...finals)],
+  ];
+
+  addSummaryBlock(sheet, startRow, "Rekapitulasi Nilai", rows);
+
+  return startRow + rows.length + 2;
+}
+
+/** "Ringkasan Kehadiran & Kelulusan" against the configured threshold. */
+function addAttendanceGraduationSummary(
+  sheet: ExcelJS.Worksheet,
+  startRow: number,
+  recap: AttendanceRecap,
+  grades: CourseComponentGrades,
+  passingThreshold: number,
+): number {
+  const meetingCount = recap.meetings.length;
+  const finals = studentFinalGrades(recap, grades);
+  const passed = finals.filter(
+    (final) => final !== null && final >= passingThreshold,
+  ).length;
+  const notPassed = finals.filter(
+    (final) => final !== null && final < passingThreshold,
+  ).length;
+  const attendance =
+    meetingCount === 0 || recap.students.length === 0
+      ? "—"
+      : `${(
+          recap.students.reduce(
+            (sum, student) => sum + student.totals.present,
+            0,
+          ) /
+          (meetingCount * recap.students.length) *
+          100
+        ).toFixed(1).replace(".", ",")}%`;
+  const rows: [string, number | string][] = [
+    ["Total Mahasiswa", recap.students.length],
+    ["Rata-rata Kehadiran", attendance],
+    ["Lulus", passed],
+    ["Tidak Lulus", notPassed],
+  ];
+
+  addSummaryBlock(sheet, startRow, "Ringkasan Kehadiran & Kelulusan", rows);
+
+  return startRow + rows.length + 2;
+}
+
+function addSummaryBlock(
+  sheet: ExcelJS.Worksheet,
+  startRow: number,
+  title: string,
+  rows: [string, number | string][],
+): void {
+  sheet.getRow(startRow).getCell(1).value = title;
+  sheet.getRow(startRow).getCell(1).font = { bold: true, size: 12 };
+
+  rows.forEach(([label, value], index) => {
+    const row = sheet.getRow(startRow + 1 + index);
+    row.getCell(1).value = label;
+    row.getCell(1).font = { bold: true, color: { argb: MUTED_TEXT } };
+    sheet.mergeCells(startRow + 1 + index, 1, startRow + 1 + index, 2);
+    row.getCell(3).value = value;
+    if (typeof value === "number") {
+      row.getCell(3).numFmt = GRADE_NUM_FMT;
+    }
+  });
 }
 
 function addTotalsBlock(

@@ -14,6 +14,8 @@ import {
   getAttendanceMeetingDetail,
   listCorrectionAudit,
 } from "@/lib/db/attendance-meetings";
+import { listCourseComponentGrades } from "@/lib/db/course-grades";
+import { loadBrandingForExport } from "@/features/export-branding/service";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listEvidenceForRequests, listLeaveReportRows } from "@/lib/db/leave";
 import type { ExportJob } from "@/lib/db/export-jobs";
@@ -88,6 +90,13 @@ async function runAttendanceRecap(job: ExportJob): Promise<ExportResult> {
 
   const recap = await getClassAttendanceRecap(classId, subject.id);
   const audits = await listCorrectionAudit(classId, subject.id);
+  const classRowForBranding = found as {
+    institution?: string | null;
+  };
+  const [branding, grades] = await Promise.all([
+    loadBrandingForExport(classId, classRowForBranding),
+    listCourseComponentGrades(classId, subject.id),
+  ]);
   const generatedAt = new Date();
   const classRow = found as {
     name?: string;
@@ -107,7 +116,10 @@ async function runAttendanceRecap(job: ExportJob): Promise<ExportResult> {
     generatedAt,
   };
 
-  const bytes = await buildRecapWorkbook(recap, exportContext, audits);
+  const bytes = await buildRecapWorkbook(recap, exportContext, audits, {
+    branding,
+    grades,
+  });
   const filename = buildRecapFilename({
     classCode: classRow.class_code ?? "CLASS",
     className: classRow.name ?? "Class",
