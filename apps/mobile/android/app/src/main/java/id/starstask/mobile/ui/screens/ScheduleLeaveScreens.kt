@@ -32,7 +32,7 @@ import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
 
 @Composable
-fun ScheduleScreen(userId: String) {
+fun ScheduleScreenLegacy(userId: String) {
     var rows by remember { mutableStateOf<List<ScheduleEntry>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
 

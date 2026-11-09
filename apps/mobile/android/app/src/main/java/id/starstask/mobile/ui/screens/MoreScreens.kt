@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import id.starstask.mobile.data.loadConversations
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
@@ -33,35 +32,55 @@ import id.starstask.mobile.ui.theme.Surface
  */
 @Composable
 fun MessagesScreen(userId: String) {
-    var conversations by remember { mutableStateOf<List<id.starstask.mobile.data.Conversation>>(emptyList()) }
+    // E2EE DM list (P0 wiring). The native DmChat data layer already
+    // decrypts on-device (DmCrypto + DmKeys); this screen surfaces it.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var conversations by remember { mutableStateOf<List<id.starstask.mobile.data.DmConversation>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(userId) {
         try {
-            conversations = loadConversations(userId)
+            conversations = id.starstask.mobile.data.listDmConversations(context, userId)
         } catch (e: Exception) {
             error = "Could not load chats."
+        } finally {
+            loading = false
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Messages", style = MaterialTheme.typography.headlineSmall, color = Foreground)
         Text(
-            "🔒 Encrypted direct messages — open a conversation on web to read them.",
+            "End-to-end encrypted — decrypted on this device only.",
             color = MutedForeground,
             style = MaterialTheme.typography.bodySmall,
         )
-        if (error != null) Text(error!!, color = Foreground)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(conversations, key = { it.id }) { conversation ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Surface),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(conversation.otherName, color = Foreground)
-                        Text("🔒 Encrypted", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+        if (loading) {
+            Text("Loading conversations…", color = MutedForeground)
+        } else if (error != null) {
+            Text(error!!, color = Foreground)
+        } else if (conversations.isEmpty()) {
+            Text("No conversations yet. Start one from the web or by searching a classmate.", color = MutedForeground)
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(conversations, key = { it.id }) { conversation ->
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Surface),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(conversation.otherName, color = Foreground)
+                            if (conversation.lastPlaintext != null) {
+                                Text(conversation.lastPlaintext, color = MutedForeground, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                            } else {
+                                Text("Encrypted message", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (conversation.unreadCount > 0) {
+                                Text("${conversation.unreadCount} unread", color = id.starstask.mobile.ui.theme.Accent, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                 }
             }
