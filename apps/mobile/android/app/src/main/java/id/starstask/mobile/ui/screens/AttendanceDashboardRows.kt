@@ -40,8 +40,9 @@ import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.MutedForeground
+import id.starstask.mobile.ui.theme.SoftFill
 
-// Grouped-list rows, mirroring AssignmentsReference: 12sp code pill on
+// Grouped-list rows, mirroring the assignments reference: 12sp code pill on
 // #EEF1F7, 16sp title, 13sp meta, 20dp chevron in AssignmentSecondary.
 
 internal val STATUS_OPTIONS =
@@ -110,7 +111,7 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(Color(0xFFEEF1F7))
+                    .background(SoftFill)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center,
             ) {

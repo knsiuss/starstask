@@ -67,7 +67,6 @@ import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.components.WebCompactCard
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.Border
-import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface

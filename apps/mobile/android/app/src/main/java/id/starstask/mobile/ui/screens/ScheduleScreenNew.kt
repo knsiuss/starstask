@@ -52,6 +52,8 @@ import id.starstask.mobile.ui.theme.AssignmentBackground
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
 
 private enum class ScheduleMode { WEEK, MONTH, LIST }
 
@@ -181,7 +183,7 @@ fun ScheduleScreen(
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color.White)
-                            .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(12.dp))
+                            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
                             .clickable { showFilters = true }
                             .padding(12.dp),
                     )
@@ -217,7 +219,7 @@ fun ScheduleScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(999.dp))
-                            .background(Color(0xFFEEF1F7))
+                            .background(SoftFill)
                             .clickable { offerCreate("personal") }
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center,
@@ -265,7 +267,7 @@ fun ScheduleScreen(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .clip(RoundedCornerShape(999.dp))
-                            .background(Color(0xFFEEF1F7))
+                            .background(SoftFill)
                             .clickable { reloadTick++ }
                             .padding(horizontal = 20.dp, vertical = 12.dp),
                     )
@@ -342,7 +344,7 @@ fun ScheduleScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
                         .background(Surface)
-                        .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp))
+                        .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -466,7 +468,7 @@ private fun ScheduleModeSelector(mode: ScheduleMode, onSelect: (ScheduleMode) ->
                     .weight(1f)
                     .clip(RoundedCornerShape(999.dp))
                     .background(bg)
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(999.dp))
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
                     .clickable { onSelect(value) }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center,
@@ -545,7 +547,7 @@ private fun NavCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
             .size(48.dp)
             .clip(RoundedCornerShape(999.dp))
             .background(Color.White)
-            .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(999.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
@@ -572,7 +574,7 @@ private fun UpcomingSection(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             Row(
                 modifier = Modifier
@@ -608,7 +610,7 @@ private fun UpcomingSection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(if (alt) Color(0xFFF7F8FA) else Color.Transparent)
+                            .background(if (alt) AssignmentBackground else Color.Transparent)
                             .clickable { onOpen(bar) }
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,

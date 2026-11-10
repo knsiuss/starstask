@@ -31,36 +31,6 @@ val ASSIGNMENT_SORT_LABELS = mapOf(
     "deadline" to "Deadline",
 )
 
-val COURSE_ASSIGNMENT_FILTERS = listOf(
-    "all",
-    "upcoming",
-    "in-progress",
-    "submitted",
-    "closed",
-)
-
-val COURSE_ASSIGNMENT_FILTER_LABELS = mapOf(
-    "all" to "All",
-    "upcoming" to "Upcoming",
-    "in-progress" to "In progress",
-    "submitted" to "Submitted",
-    "closed" to "Closed",
-)
-
-val COURSE_ASSIGNMENT_SORTS = listOf(
-    "due-soonest",
-    "due-latest",
-    "recent",
-    "title",
-)
-
-val COURSE_ASSIGNMENT_SORT_LABELS = mapOf(
-    "due-soonest" to "Due date (soonest)",
-    "due-latest" to "Due date (latest)",
-    "recent" to "Recently published",
-    "title" to "Title (A–Z)",
-)
-
 // Calendar days (Asia/Jakarta) that count as "due soon" on the course overview.
 const val UPCOMING_DUE_SOON_DAYS = 3
 

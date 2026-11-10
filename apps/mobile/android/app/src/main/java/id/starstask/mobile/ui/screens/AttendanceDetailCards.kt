@@ -53,7 +53,6 @@ import id.starstask.mobile.ui.theme.Border
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.DangerSoft
 import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.Muted
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Success
 import id.starstask.mobile.ui.theme.SuccessSoft

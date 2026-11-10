@@ -31,12 +31,6 @@ fun attendanceCsv(entries: List<AttendanceEntry>): String {
     return if (lines.isBlank()) header else "$header\n$lines"
 }
 
-fun shareAttendanceCsv(context: Context, entries: List<AttendanceEntry>) {
-    val file = File(context.cacheDir, "attendance-export.csv")
-    file.writeText(attendanceCsv(entries))
-    shareFile(context, file, "text/csv", "Attendance export")
-}
-
 fun attendancePdfBytes(
     title: String,
     summary: AttendanceCounts,
@@ -66,12 +60,6 @@ fun attendancePdfBytes(
     doc.writeTo(baos)
     doc.close()
     return baos.toByteArray()
-}
-
-fun shareAttendancePdf(context: Context, title: String, summary: AttendanceCounts, entries: List<AttendanceEntry>) {
-    val file = File(context.cacheDir, "attendance-export.pdf")
-    file.writeBytes(attendancePdfBytes(title, summary, entries))
-    shareFile(context, file, "application/pdf", "Attendance report")
 }
 
 private fun shareFile(context: Context, file: File, mime: String, chooserTitle: String) {

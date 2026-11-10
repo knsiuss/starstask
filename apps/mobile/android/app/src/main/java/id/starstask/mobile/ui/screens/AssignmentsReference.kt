@@ -32,10 +32,12 @@ import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.Muted
 
-private val CardBorder = Color(0xFFE9EBF0)
-private val BadgeBlueBg = Color(0xFFEEF1F7)
-private val BadgeGrayBg = Color(0xFFF2F3F5)
+private val BadgeBlueBg = SoftFill
+private val BadgeGrayBg = Muted
 private val StatusBlue = Color(0xFF526B9F)
 private val StatusRed = Color(0xFFB85454)
 private val PinkBg = Color(0xFFFBEEF0)
@@ -48,14 +50,14 @@ fun ReferenceStats(overview: WorkspaceOverview) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Surface)
-            .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
             .padding(vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ReferenceStat(value = overview.total.toString(), label = "Total Tasks", color = AssignmentForeground, modifier = Modifier.weight(1f))
-        Box(Modifier.size(width = 0.5.dp, height = 36.dp).background(CardBorder))
+        Box(Modifier.size(width = 0.5.dp, height = 36.dp).background(AssignmentBorder))
         ReferenceStat(value = overview.upcoming.toString(), label = "Upcoming", color = AssignmentForeground, modifier = Modifier.weight(1f))
-        Box(Modifier.size(width = 0.5.dp, height = 36.dp).background(CardBorder))
+        Box(Modifier.size(width = 0.5.dp, height = 36.dp).background(AssignmentBorder))
         ReferenceStat(value = overview.expired.toString(), label = "Expired", color = StatusRed, modifier = Modifier.weight(1f))
     }
 }
@@ -127,7 +129,12 @@ fun ReferenceScheduleHeader(count: Int, onOpenSort: () -> Unit) {
 }
 
 @Composable
-fun ReferenceAssignmentCard(item: WorkspaceScheduleItem, onOpen: () -> Unit, onDismiss: (() -> Unit)? = null) {
+fun ReferenceAssignmentCard(
+    item: WorkspaceScheduleItem,
+    onOpen: () -> Unit,
+    onDismiss: (() -> Unit)? = null,
+    onOpenAttachments: (() -> Unit)? = null,
+) {
     val state = getDeadlineState(item.deadline)
     val isOverdue = state == DeadlineState.OVERDUE
     val courseLabel = if (!item.courseCode.isNullOrBlank()) "${item.courseCode} · ${item.courseName}" else item.courseName
@@ -139,7 +146,7 @@ fun ReferenceAssignmentCard(item: WorkspaceScheduleItem, onOpen: () -> Unit, onD
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Surface)
-            .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
             .clickable(onClick = onOpen)
             .padding(16.dp),
     ) {
@@ -167,8 +174,15 @@ fun ReferenceAssignmentCard(item: WorkspaceScheduleItem, onOpen: () -> Unit, onD
             }
             Box(Modifier.weight(1f))
             if (item.attachmentCount > 0) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Lucide.Paperclip, contentDescription = "Attachments", tint = AssignmentSecondary, modifier = Modifier.size(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .clickable { onOpenAttachments?.invoke() ?: onOpen() }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                ) {
+                    Icon(Lucide.Paperclip, contentDescription = "Open attachments", tint = AssignmentSecondary, modifier = Modifier.size(16.dp))
                     Text(item.attachmentCount.toString(), color = AssignmentSecondary, fontSize = 13.sp)
                 }
             }

@@ -33,7 +33,6 @@ import id.starstask.mobile.data.listLeaveForwardings
 import id.starstask.mobile.data.loadClassLeaveRequests
 import id.starstask.mobile.data.reviewLeaveRequest
 import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.components.WebAlert

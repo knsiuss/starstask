@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.R
 import id.starstask.mobile.ui.navigation.DrawerDestination
+import id.starstask.mobile.ui.navigation.baseRoute
 import id.starstask.mobile.ui.navigation.accountDestinations
 import id.starstask.mobile.ui.navigation.studyDestinations
 import id.starstask.mobile.ui.theme.Accent
@@ -99,7 +100,7 @@ fun StarsTaskDrawerContent(
             studyDestinations.forEach { dest ->
                 DrawerDestinationItem(
                     destination = dest,
-                    selected = currentRoute == dest.route,
+                    selected = baseRoute(currentRoute) == baseRoute(dest.route),
                     onClick = { onDestinationClick(dest) },
                 )
             }
@@ -113,7 +114,7 @@ fun StarsTaskDrawerContent(
             accountDestinations.forEach { dest ->
                 DrawerDestinationItem(
                     destination = dest,
-                    selected = currentRoute == dest.route,
+                    selected = baseRoute(currentRoute) == baseRoute(dest.route),
                     onClick = { onDestinationClick(dest) },
                 )
             }

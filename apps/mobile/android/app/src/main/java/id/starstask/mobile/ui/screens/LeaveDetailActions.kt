@@ -27,7 +27,6 @@ import id.starstask.mobile.data.submitLeaveRequestById
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.components.WebInput
-import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.MutedForeground
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

@@ -39,6 +39,8 @@ import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Spacing
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.SuccessSoft
+import id.starstask.mobile.ui.theme.Success
 
 /**
  * Course detail mirroring the design reference: title hero, deadline row,
@@ -299,8 +301,8 @@ fun CourseDetailScreen(
                         Text("Status", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
                         Badge(
                             text = assignment.status.replaceFirstChar { it.uppercase() },
-                            bg = Color(0xFFECFDF5),
-                            fg = Color(0xFF15803D),
+                            bg = SuccessSoft,
+                            fg = Success,
                         )
                     }
                 }

@@ -44,6 +44,8 @@ import id.starstask.mobile.ui.screens.SettingsHubScreen
 import kotlinx.coroutines.launch
 
 private const val ROUTE_ADMIN_CONSOLE = "admin-console"
+private const val ASSIGNMENTS_WITH_ARG_ROUTE = "assignments?openRequest={openRequest}"
+private const val ASSIGNMENTS_OPEN_REQUEST_ROUTE = "assignments?openRequest=true"
 private const val ROUTE_DEVELOPER_CONSOLE = "developer-console"
 private const val ROUTE_GRADES = "grades/{classId}"
 
@@ -126,11 +128,21 @@ fun StarsTaskNavHost(
                             onOpenMessages = { navigateTo(DrawerDestination.MESSAGES.route) },
                             onOpenSchedule = { navigateTo(DrawerDestination.SCHEDULE.route) },
                             onOpenClasses = { navigateTo(DrawerDestination.CLASSES.route) },
-                            onNewAssignment = { navigateTo(DrawerDestination.ASSIGNMENTS.route) },
+                            onNewAssignment = { navigateTo(ASSIGNMENTS_OPEN_REQUEST_ROUTE) },
+                            onOpenNotifications = { navigateTo(DrawerDestination.NOTIFICATIONS.route) },
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            onOpenLeave = { navigateTo(DrawerDestination.LEAVE.route) },
                         )
                     }
-                    composable(DrawerDestination.ASSIGNMENTS.route) {
-                        AssignmentsWorkspaceScreen(userId = userId)
+                    composable(
+                        ASSIGNMENTS_WITH_ARG_ROUTE,
+                        arguments = listOf(androidx.navigation.navArgument("openRequest") {
+                            type = androidx.navigation.NavType.BoolType
+                            defaultValue = false
+                        }),
+                    ) { entry ->
+                        val autoOpenRequest = entry.arguments?.getBoolean("openRequest") == true
+                        AssignmentsWorkspaceScreen(userId = userId, autoOpenRequest = autoOpenRequest)
                     }
                     composable(DrawerDestination.CLASSES.route) {
                         ClassesScreen(
@@ -147,7 +159,8 @@ fun StarsTaskNavHost(
                     composable(DrawerDestination.LEAVE.route) {
                         LeaveRequestsScreen(
                             userId = userId,
-                            onBack = { navController.popBackStack() },
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            onOpenNotifications = { navigateTo(DrawerDestination.NOTIFICATIONS.route) },
                         )
                     }
                     composable(DrawerDestination.MESSAGES.route) {

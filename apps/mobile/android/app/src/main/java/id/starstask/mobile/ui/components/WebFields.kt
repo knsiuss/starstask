@@ -42,6 +42,8 @@ import id.starstask.mobile.ui.theme.SuccessSoft
 import id.starstask.mobile.ui.theme.Surface
 import id.starstask.mobile.ui.theme.Warning
 import id.starstask.mobile.ui.theme.WarningSoft
+import id.starstask.mobile.ui.theme.Muted
+import id.starstask.mobile.ui.theme.AccentSoft
 
 // Web page scaffold: bg-background (#fafaf8), gutter and section rhythm from
 // the canonical spacing scale (web `px-3 sm:px-6 py-4 sm:py-8` and `mt-5`).

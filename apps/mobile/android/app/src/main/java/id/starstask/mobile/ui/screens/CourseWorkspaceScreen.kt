@@ -58,6 +58,10 @@ import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentBackground
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.WarningSoft
+import id.starstask.mobile.ui.theme.Warning
 import kotlinx.coroutines.launch
 
 // Mirrors web COURSE_TABS exactly: Overview, Assignments, Materials, Announcements, Members, Attendance, Schedule.
@@ -71,8 +75,6 @@ private val COURSE_TABS = listOf(
     "Attendance" to "attendance",
     "Schedule" to "schedule",
 )
-
-private val CardBorder = Color(0xFFE9EBF0)
 
 @Composable
 fun CourseWorkspaceScreen(clazz: ClassDetail, course: ClassCourse, onBack: () -> Unit) {
@@ -113,7 +115,7 @@ fun CourseWorkspaceScreen(clazz: ClassDetail, course: ClassCourse, onBack: () ->
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color.White)
-                            .border(0.5.dp, CardBorder, RoundedCornerShape(12.dp))
+                            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
                             .clickable { onBack() }
                             .padding(12.dp),
                     )
@@ -187,13 +189,13 @@ private fun CourseOverviewStatsClean(counts: id.starstask.mobile.data.CourseCont
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                StatTileClean(icon = Lucide.ClipboardList, label = "Assignments", value = counts?.assignments ?: 0, bg = Color(0xFFEEF1F7), tint = AssignmentAccent)
+                StatTileClean(icon = Lucide.ClipboardList, label = "Assignments", value = counts?.assignments ?: 0, bg = SoftFill, tint = AssignmentAccent)
                 StatTileClean(icon = Lucide.BookOpen, label = "Materials", value = counts?.materials ?: 0, bg = Color(0xFFEAF5EE), tint = Color(0xFF2E7D4F))
-                StatTileClean(icon = Lucide.Megaphone, label = "Announcements", value = counts?.announcements ?: 0, bg = Color(0xFFFBF3E4), tint = Color(0xFF8A5A1E))
-                StatTileClean(icon = Lucide.Activity, label = "Activities", value = (counts?.assignments ?: 0) + (counts?.announcements ?: 0), bg = Color(0xFFEEF1F7), tint = AssignmentAccent)
+                StatTileClean(icon = Lucide.Megaphone, label = "Announcements", value = counts?.announcements ?: 0, bg = WarningSoft, tint = Warning)
+                StatTileClean(icon = Lucide.Activity, label = "Activities", value = (counts?.assignments ?: 0) + (counts?.announcements ?: 0), bg = SoftFill, tint = AssignmentAccent)
             }
         }
     }
@@ -234,14 +236,14 @@ private fun CourseInfoCardClean(clazz: ClassDetail, course: ClassCourse) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             InfoRowClean("Code", course.code ?: "Not set")
-            HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRowClean("Semester", clazz.semester.ifBlank { "Not set" })
-            HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRowClean("Lecturer", course.lecturerName ?: "Not set")
-            HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -277,7 +279,7 @@ private fun CourseUpcomingSection(tasks: List<id.starstask.mobile.data.ExploreAs
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (upcoming.isEmpty()) {
                 EmptyTextClean("No upcoming deadlines in this course.")
@@ -285,14 +287,14 @@ private fun CourseUpcomingSection(tasks: List<id.starstask.mobile.data.ExploreAs
                 if (dueSoon.isNotEmpty()) {
                     SubLabelClean("Due soon")
                     dueSoon.forEachIndexed { index, item ->
-                        if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                        if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                         CourseAssignmentRowClean(title = item.title, deadline = item.deadline)
                     }
                 }
                 if (later.isNotEmpty()) {
                     SubLabelClean("Later")
                     later.forEachIndexed { index, item ->
-                        if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                        if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                         CourseAssignmentRowClean(title = item.title, deadline = item.deadline)
                     }
                 }
@@ -310,13 +312,13 @@ private fun CourseAnnouncementsSection(announcements: List<id.starstask.mobile.d
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (announcements.isEmpty()) {
                 EmptyTextClean("No announcements yet.")
             } else {
                 announcements.forEachIndexed { index, item ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
                         Text(item.title, color = AssignmentAccent, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         if (item.description.isNotBlank()) {
@@ -338,13 +340,13 @@ private fun CourseRecentSection(tasks: List<id.starstask.mobile.data.ExploreAssi
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (tasks.isEmpty()) {
                 EmptyTextClean("No assignments yet.")
             } else {
                 tasks.take(6).forEachIndexed { index, item ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     CourseAssignmentRowClean(title = item.title, deadline = item.deadline)
                 }
             }
@@ -361,13 +363,13 @@ private fun CourseMaterialsSection(materials: List<id.starstask.mobile.data.Cour
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (materials.isEmpty()) {
                 EmptyTextClean("No learning material in this course yet.")
             } else {
                 materials.take(3).forEachIndexed { index, material ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
                         Text(material.title, color = AssignmentForeground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(material.kind, color = AssignmentSecondary, fontSize = 13.sp)
@@ -387,13 +389,13 @@ private fun CourseAssignmentsTabClean(tasks: List<id.starstask.mobile.data.Explo
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (tasks.isEmpty()) {
                 EmptyTextClean("No assignments yet.")
             } else {
                 tasks.forEachIndexed { index, item ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     CourseAssignmentRowClean(title = item.title, deadline = item.deadline)
                 }
             }
@@ -419,7 +421,7 @@ private fun CourseMaterialsTabClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Add material", color = AssignmentForeground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
@@ -451,13 +453,13 @@ private fun CourseMaterialsTabClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (materials.isEmpty()) {
                 EmptyTextClean("No materials yet.")
             } else {
                 materials.forEachIndexed { index, material ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
                         Text(material.title, color = AssignmentForeground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         Text("${material.kind} • ${material.resourceUrl ?: ""}", color = AssignmentSecondary, fontSize = 13.sp)
@@ -477,19 +479,19 @@ private fun CourseMembersTabClean(members: List<String>, admins: List<id.starsta
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (members.isEmpty()) {
                 EmptyTextClean("No members loaded.")
             } else {
                 members.forEachIndexed { index, name ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
-                            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xFFEEF1F7)),
+                            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(999.dp)).background(SoftFill),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(name.take(1).uppercase(), color = AssignmentAccent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -507,10 +509,10 @@ private fun CourseMembersTabClean(members: List<String>, admins: List<id.starsta
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
-                    .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
             ) {
                 admins.forEachIndexed { index, admin ->
-                    if (index > 0) HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -521,7 +523,7 @@ private fun CourseMembersTabClean(members: List<String>, admins: List<id.starsta
                             color = AssignmentAccent,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0xFFEEF1F7)).padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(SoftFill).padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
                 }
@@ -537,7 +539,7 @@ private fun CourseEmptyBoxClean(title: String, description: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
             .padding(horizontal = 24.dp, vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -561,7 +563,7 @@ private fun CourseTabStripClean(items: List<Pair<String, String>>, activeKey: St
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(if (active) AssignmentAccent else Color.White)
-                    .border(0.5.dp, CardBorder, RoundedCornerShape(999.dp))
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
                     .clickable { onSelect(key) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {

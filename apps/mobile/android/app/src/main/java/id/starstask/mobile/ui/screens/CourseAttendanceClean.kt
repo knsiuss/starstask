@@ -27,12 +27,14 @@ import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.WarningSoft
+import id.starstask.mobile.ui.theme.Warning
 
 // Role gate: only class admin (canManage) can create attendance meetings.
 // Non-admin tapping "New meeting" gets a notice — no fake form, no dead
 // button. This mirrors web role.canManage in attendance/page.tsx.
-
-private val CardBorder = Color(0xFFE9EBF0)
 
 @Composable
 fun CourseAttendanceTabClean(
@@ -72,13 +74,13 @@ fun CourseAttendanceTabClean(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFFBF3E4))
+                    .background(WarningSoft)
                     .border(0.5.dp, Color(0xFFF3D4D9), RoundedCornerShape(20.dp))
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
                 Text(
                     "This course is archived. Its attendance history is still available, but new meetings cannot be created.",
-                    color = Color(0xFF8A5A1E),
+                    color = Warning,
                     fontSize = 13.sp,
                 )
             }
@@ -95,7 +97,7 @@ fun CourseAttendanceTabClean(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(if (isAdmin) Accent else Color(0xFFEEF1F7))
+                    .background(if (isAdmin) Accent else SoftFill)
                     .clickable {
                         if (isAdmin) {
                             onNewMeeting()
@@ -127,8 +129,8 @@ fun CourseAttendanceTabClean(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFEEF1F7))
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp))
+                    .background(SoftFill)
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
                     .padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -158,7 +160,7 @@ fun CourseAttendanceTabClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp))
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
                 .padding(horizontal = 24.dp, vertical = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),

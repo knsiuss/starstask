@@ -76,9 +76,3 @@ suspend fun loadDriveConnection(userId: String): DriveConnectionPublic? {
 }
 
 /** Web disconnect calls a server route that revokes + deletes tokens. Native shell has no OAuth client; show status only. */
-fun calendarErrorLabel(category: String?): String = when (category) {
-    "invalid_grant" -> "Google revoked the permission. Reconnect to keep syncing."
-    "transient" -> "Google did not respond. Try again in a moment."
-    "invalid_request" -> "Google rejected the request. Reconnect to try again."
-    else -> "The last sync failed. Reconnect to try again."
-}

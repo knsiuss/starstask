@@ -38,6 +38,7 @@ import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.AssignmentBorder
 
 // Check-in / History list sections. Background is the assignment off-white;
 // lists are white grouped surfaces with 0.5.dp #E9EBF0 borders and 20.dp corners.
@@ -73,7 +74,7 @@ fun CourseAttendanceSection(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
                     .background(Surface)
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
             ) {
                 rows.forEachIndexed { index, row ->
                     CourseRow(
@@ -84,7 +85,7 @@ fun CourseAttendanceSection(
                             },
                     )
                     if (index < rows.lastIndex) {
-                        HorizontalDivider(color = Color(0xFFE9EBF0))
+                        HorizontalDivider(color = AssignmentBorder)
                     }
                 }
             }
@@ -108,7 +109,7 @@ fun ActiveSection(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
                     .background(Surface)
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp))
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -193,14 +194,14 @@ fun HistorySection(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
                             .background(Surface)
-                            .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
                     ) {
                         group.forEachIndexed { index, entry ->
                             HistoryRow(entry = entry) {
                                 onOpenSession(entry)
                             }
                             if (index < group.lastIndex) {
-                                HorizontalDivider(color = Color(0xFFE9EBF0))
+                                HorizontalDivider(color = AssignmentBorder)
                             }
                         }
                     }

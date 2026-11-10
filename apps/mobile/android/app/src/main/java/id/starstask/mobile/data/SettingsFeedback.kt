@@ -9,6 +9,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import id.starstask.mobile.ui.theme.Success
 
 // Native mirror of web feedback (packages/contracts/src/feedback.ts +
 // apps/web/src/lib/db/feedback.ts): categories, 10-2000 char message,

@@ -2,10 +2,9 @@ package id.starstask.mobile.ui.screens
 
 import id.starstask.mobile.data.CalendarTimelineItem
 import id.starstask.mobile.data.addDaysToDateKey
-import id.starstask.mobile.data.addDaysToDateKey
 
 // Timeline helpers (web shared/calendar.ts): marked days + grouping.
-// Extracted from ScheduleLeaveScreens.kt to keep that file focused.
+// Schedule agenda timeline helpers; extracted to keep ScheduleScreenNew focused.
 
 /** Days touched by at least one item span (web buildMarkedDayKeys). */
 fun buildMarkedDayKeys(items: List<CalendarTimelineItem>): Set<String> {

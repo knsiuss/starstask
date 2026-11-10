@@ -14,19 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * Effective theme flag for dashboard tokens. True system dark mode or a user
+ * toggle in MainActivity. Composables here read this so dashboard dark mode
+ * honours the override instead of the raw system setting.
+ */
+val LocalDarkTheme = androidx.compose.runtime.compositionLocalOf { false }
+
 // Design tokens mirror apps/web/src/app/globals.css @theme.
 // Web radii: --radius-sm 6dp, --radius-md 8dp, --radius-lg 12dp, rounded-xl
 // 12dp and rounded-2xl 16dp (header) are the Tailwind utilities used on cards.
-val RadiusSmall = 6.dp
-val RadiusMedium = 8.dp
 val RadiusCard = 12.dp
-val RadiusXl = 16.dp
 val RadiusPill = 999.dp
-val WebCardElevation = 1.dp
-val WebPagePadding = 16.dp
-val WebCardPadding = 20.dp
-val WebCompactCardPadding = 12.dp
-val WebButtonHeight = 40.dp
 
 /**
  * Canonical spacing scale. Web uses the Tailwind 4px grid through utilities
@@ -73,19 +72,16 @@ val Surface = Color(0xFFFFFFFF)
 val Foreground = Color(0xFF292D34)
 val Muted = Color(0xFFF0F1F3)
 val MutedFill = Muted
+val SoftFill = Color(0xFFEEF1F7)
 val MutedForeground = Color(0xFF646B76)
 val Subtle = Color(0xFFF7F7F5)
 val Border = Color(0xFFE7E7E3)
 val Accent = Color(0xFF45639E)
-val AccentHover = Color(0xFF3A5588)
 val AccentSoft = Color(0xFFE8EDFA)
 val Band = Color(0xFFEEF3FC)
 /* Dark navy surface for the mission section. Text pairs below are the only
    foregrounds verified against it (14.3:1 and 7.7:1). */
 val Navy = Color(0xFF16203A)
-val NavyForeground = Color(0xFFEEF2FB)
-val NavyMuted = Color(0xFFA8B4CC)
-val NavyBorder = Color(0xFF2A3752)
 
 /* Classes redesign v2 (web `ClassDirectoryCard` parity): pure-white cards
    on a light-grey page, no navy hero, soft accent-soft cover strip and
@@ -109,18 +105,10 @@ val DarkForeground = Color(0xFFE8EAED)
 val DarkMutedForeground = Color(0xFF9AA3AF)
 val DarkBorder = Color(0xFF262F3D)
 val DarkAccent = Color(0xFF8FB0E8)
-val DarkAccentSoft = Color(0xFF1D2A44)
-val DarkBand = Color(0xFF16233C)
 val DarkMuted = Color(0xFF232A35)
-val DarkSubtle = Color(0xFF12161D)
-val DarkInput = Color(0xFF333E4F)
-val DarkHover = Color(0xFF1F2735)
 val DarkSuccess = Color(0xFF5CB98A)
-val DarkSuccessSoft = Color(0xFF14291F)
 val DarkWarning = Color(0xFFD9A441)
-val DarkWarningSoft = Color(0xFF33270F)
 val DarkDanger = Color(0xFFE07A7A)
-val DarkDangerSoft = Color(0xFF3A2226)
 
 // Assignments redesign tokens (premium minimal). Existing global tokens are
 // untouched so Dashboard and other modules keep their current look.
@@ -129,8 +117,6 @@ val AssignmentAccent = Color(0xFF526B9F)
 val AssignmentForeground = Color(0xFF202534)
 val AssignmentSecondary = Color(0xFF858B98)
 val AssignmentBorder = Color(0xFFE9EBF0)
-val AssignmentRadiusCard = 20.dp
-val AssignmentRadiusBadge = 999.dp
 
 val StarsTaskShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -165,12 +151,14 @@ fun StarsTaskTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkScheme else LightScheme,
-        typography = StarsTaskTypography,
-        shapes = StarsTaskShapes,
-        content = content,
-    )
+    androidx.compose.runtime.CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkScheme else LightScheme,
+            typography = StarsTaskTypography,
+            shapes = StarsTaskShapes,
+            content = content,
+        )
+    }
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)

@@ -38,6 +38,8 @@ import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
 
 // Page header + Active Attendance card, mirroring Assignments: 30.sp title,
 // 14.sp subtitle, 20.dp rounded cards, 0.5.dp #E9EBF0 border, no shadow.
@@ -76,7 +78,7 @@ fun ActiveAttendanceCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Surface)
-            .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -88,7 +90,7 @@ fun ActiveAttendanceCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(999.dp))
-                    .background(Color(0xFFEEF1F7)),
+                    .background(SoftFill),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -125,7 +127,7 @@ fun ActiveAttendanceCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(999.dp))
-                            .background(Color(0xFFEEF1F7))
+                            .background(SoftFill)
                             .clickable { onOpenManageClass(managedClass) }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,

@@ -52,6 +52,9 @@ import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.Muted
 import kotlinx.coroutines.launch
 
 // Mirrors web CoursesPage (/app/classes/[slug]/courses):
@@ -136,10 +139,10 @@ fun ClassCoursesTab(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
             ) {
                 courses.forEachIndexed { index, course ->
-                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     val assignmentCount = counts[course.id] ?: 0
                     Row(
                         modifier = Modifier
@@ -152,7 +155,7 @@ fun ClassCoursesTab(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFFEEF1F7)),
+                                .background(SoftFill),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
@@ -183,7 +186,7 @@ fun ClassCoursesTab(
                                         fontSize = 11.sp,
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(Color(0xFFF0F1F3))
+                                            .background(Muted)
                                             .padding(horizontal = 6.dp, vertical = 3.dp),
                                     )
                                 }

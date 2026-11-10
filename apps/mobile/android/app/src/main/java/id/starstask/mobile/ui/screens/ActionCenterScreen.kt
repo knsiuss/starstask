@@ -28,6 +28,8 @@ import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Spacing
 import id.starstask.mobile.ui.theme.Warning
 import id.starstask.mobile.ui.theme.WarningSoft
+import id.starstask.mobile.ui.theme.Muted
+import id.starstask.mobile.ui.theme.AccentSoft
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,6 +50,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
@@ -377,7 +380,7 @@ private fun ActionClassDropdown(
             onValueChange = {},
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true),
             shape = RoundedCornerShape(8.dp),
             colors = TextFieldDefaults.colors(unfocusedIndicatorColor = id.starstask.mobile.ui.theme.Input),
             textStyle = MaterialTheme.typography.bodyMedium,
@@ -407,7 +410,7 @@ private fun ClassActionsCard(row: ActionCenterRow) {
                 if (sub.isNotBlank()) Text(sub, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
             }
             Box(
-                modifier = Modifier.background(if (row.total > 0) WarningSoft else androidx.compose.ui.graphics.Color(0xFFF0F1F3), RoundedCornerShape(999.dp)).padding(horizontal = Spacing.Md, vertical = Spacing.Xxs),
+                modifier = Modifier.background(if (row.total > 0) WarningSoft else Muted, RoundedCornerShape(999.dp)).padding(horizontal = Spacing.Md, vertical = Spacing.Xxs),
             ) {
                 Text("${row.total} ${if (row.total == 1) "action" else "actions"}", color = if (row.total > 0) Warning else MutedForeground, style = MaterialTheme.typography.labelSmall)
             }
@@ -562,7 +565,7 @@ private fun FilterDropdown(
             readOnly = true,
             enabled = enabled,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor().padding(top = Spacing.Xs),
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).padding(top = Spacing.Xs),
             shape = RoundedCornerShape(8.dp),
             colors = TextFieldDefaults.colors(unfocusedIndicatorColor = id.starstask.mobile.ui.theme.Input),
             textStyle = MaterialTheme.typography.bodySmall,

@@ -44,6 +44,3 @@ internal fun storeListing(key: String, page: AssignmentPage) {
     listingCache[key] = CacheEntry(System.currentTimeMillis(), page)
 }
 
-internal fun clearListingCache() {
-    listingCache.clear()
-}

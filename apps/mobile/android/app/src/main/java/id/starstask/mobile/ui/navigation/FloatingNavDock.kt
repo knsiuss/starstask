@@ -31,6 +31,7 @@ import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.DurationSoftMs
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.AssignmentBorder
 
 @Composable
 fun FloatingNavDock(
@@ -51,13 +52,13 @@ fun FloatingNavDock(
                 .shadow(4.dp, RoundedCornerShape(999.dp))
                 .clip(RoundedCornerShape(999.dp))
                 .background(Surface.copy(alpha = 0.94f))
-                .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(999.dp))
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             destinations.forEach { dest ->
-                val selected = currentRoute == dest.route
+                val selected = baseRoute(currentRoute) == baseRoute(dest.route)
                 val pillColor by animateColorAsState(
                     targetValue = if (selected) Accent.copy(alpha = 0.22f) else Color.Transparent,
                     animationSpec = tween(DurationSoftMs),

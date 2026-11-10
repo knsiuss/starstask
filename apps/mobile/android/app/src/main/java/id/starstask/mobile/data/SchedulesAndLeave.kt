@@ -10,10 +10,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 
-data class ScheduleEntry(val id: String, val title: String, val startsAt: String, val endsAt: String, val className: String?)
+data class ScheduleEntry(val id: String, val title: String, val startsAt: String, val endsAt: String, val className: String?, val classCode: String? = null)
 
 // LeaveRequest canonical model lives in LeaveRequests.kt (full web mirror).
-// This alias kept for ScheduleLeaveScreens compat; use LeaveRequests.kt's
+// Alias kept for schedule/leave parity; canonical leave code lives in LeaveRequests.kt.
 // data class for new code.
 
 data class OnboardingProfile(val fullName: String?, val nim: String?, val onboardedAt: String?)
@@ -47,6 +47,14 @@ suspend fun loadSchedule(userId: String): List<ScheduleEntry> {
             { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
         )
     }
+    val codes = if (classIds.isEmpty()) emptyMap() else {
+        db.from("classes").select {
+            filter { isIn("id", classIds.toList()) }
+        }.decodeJsonArray().associateBy(
+            { it.jsonObject["id"]!!.jsonPrimitive.content },
+            { it.jsonObject["class_code"]?.jsonPrimitive?.contentOrNull() },
+        )
+    }
 
     return rows.mapNotNull {
         val obj = it.jsonObject
@@ -56,6 +64,7 @@ suspend fun loadSchedule(userId: String): List<ScheduleEntry> {
             startsAt = obj["starts_at"]?.jsonPrimitive?.contentOrNull() ?: "",
             endsAt = obj["ends_at"]?.jsonPrimitive?.contentOrNull() ?: "",
             className = obj["class_id"]?.jsonPrimitive?.contentOrNull()?.let(names::get),
+            classCode = obj["class_id"]?.jsonPrimitive?.contentOrNull()?.let(codes::get),
         )
     }
 }

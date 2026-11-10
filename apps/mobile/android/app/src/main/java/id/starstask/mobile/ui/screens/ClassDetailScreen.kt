@@ -50,6 +50,8 @@ import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentBackground
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
 
 // Class detail — Apple-clean like Assignments/Schedule/Profile.
 // One LazyColumn on #F7F8FA, grouped white lists, plain ListItem rows.
@@ -64,8 +66,6 @@ private val CLASS_TABS = listOf(
     "Attendance" to "attendance",
     "Class Info" to "info",
 )
-
-private val CardBorder = Color(0xFFE9EBF0)
 
 @Composable
 fun ClassDetailScreen(
@@ -219,7 +219,7 @@ private fun ClassTabStripClean(
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(if (active) AssignmentAccent else Color.White)
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(999.dp))
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
                     .clickable { onSelect(key) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
@@ -279,7 +279,7 @@ private fun OverviewStatsClean(stats: ClassOverviewStats) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -324,19 +324,19 @@ private fun QuickActionsClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             QuickRowClean(icon = Lucide.BookOpen, label = "Courses", onClick = onOpenCourses)
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.ClipboardList, label = "Assignments", onClick = onOpenAssignments)
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.Users, label = "Members", onClick = onOpenMembers)
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.CalendarDays, label = "Schedule", onClick = onOpenSchedule)
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.Info, label = "Class info", onClick = onOpenInfo)
             if (isAdmin) {
-                androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                 QuickRowClean(icon = Lucide.Settings, label = "Manage class", onClick = onOpenManage)
             }
         }
@@ -355,7 +355,7 @@ private fun RecentAssignmentsClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (assignments.isEmpty()) {
                 Text(
@@ -366,7 +366,7 @@ private fun RecentAssignmentsClean(
                 )
             } else {
                 assignments.forEachIndexed { index, item ->
-                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     val state = getDeadlineState(item.deadline)
                     Row(
                         modifier = Modifier
@@ -425,10 +425,10 @@ private fun ClassPostsClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             posts.forEachIndexed { index, post ->
-                if (index > 0) androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -458,7 +458,7 @@ internal fun ClassAssignmentsTabClean(assignments: List<ExploreAssignment>, load
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (loading) {
                 Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
@@ -473,7 +473,7 @@ internal fun ClassAssignmentsTabClean(assignments: List<ExploreAssignment>, load
                 )
             } else {
                 assignments.forEachIndexed { index, item ->
-                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -512,7 +512,7 @@ internal fun ClassMembersTabClean(members: List<String>, loading: Boolean = fals
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (loading) {
                 Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
@@ -527,7 +527,7 @@ internal fun ClassMembersTabClean(members: List<String>, loading: Boolean = fals
                 )
             } else {
                 members.forEachIndexed { index, name ->
-                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -538,7 +538,7 @@ internal fun ClassMembersTabClean(members: List<String>, loading: Boolean = fals
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(999.dp))
-                                .background(Color(0xFFEEF1F7)),
+                                .background(SoftFill),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -571,18 +571,18 @@ internal fun ClassInfoTabClean(clazz: ClassDetail, memberCount: Int) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             InfoRow("Class code", clazz.classCode.ifBlank { "—" })
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRow("Semester", clazz.semester.ifBlank { "—" })
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRow("Academic year", clazz.academicYear.ifBlank { "—" })
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRow("Members", memberCount.toString())
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRow("Lecturer", clazz.lecturerName.ifBlank { "—" })
-            androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+            androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             InfoRow("Status", clazz.status.ifBlank { "Active" })
         }
     }
@@ -640,7 +640,7 @@ internal fun ClassEmptyBox(title: String, description: String, modifier: Modifie
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),

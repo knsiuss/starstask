@@ -31,7 +31,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.StudentAttendanceView
 import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentBorder
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface

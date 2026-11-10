@@ -25,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import id.starstask.mobile.ui.icons.Ios
+import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.AccentSoft
 import id.starstask.mobile.ui.theme.Border
@@ -53,11 +53,11 @@ fun QuickActions(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
-        QuickActionPill(Ios.CalendarCheck, "Check in now", onClick = onCheckIn)
-        QuickActionPill(Ios.ClipboardList, "Submit task", onClick = onOpenTasks)
-        QuickActionPill(Ios.CalendarDays, "Today's schedule", onClick = onOpenSchedule)
-        QuickActionPill(Ios.MessageCircle, "Open messages", onClick = onOpenMessages)
-        QuickActionPill(Ios.Plus, "New assignment", onClick = onNewAssignment)
+        QuickActionPill(Lucide.CalendarCheck, "Check in now", onClick = onCheckIn)
+        QuickActionPill(Lucide.ClipboardList, "Submit task", onClick = onOpenTasks)
+        QuickActionPill(Lucide.CalendarDays, "Today's schedule", onClick = onOpenSchedule)
+        QuickActionPill(Lucide.MessageCircle, "Open messages", onClick = onOpenMessages)
+        QuickActionPill(Lucide.Plus, "New assignment", onClick = onNewAssignment)
         // End spacer so the last pill has breathing room when scrolled.
         androidx.compose.foundation.layout.Box(modifier = Modifier.size(width = 8.dp, height = 1.dp))
     }

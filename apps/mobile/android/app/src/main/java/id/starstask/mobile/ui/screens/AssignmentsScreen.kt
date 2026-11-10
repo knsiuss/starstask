@@ -1,5 +1,6 @@
 package id.starstask.mobile.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.starstask.mobile.data.Assignment
 import id.starstask.mobile.data.WorkspaceRequest
 import id.starstask.mobile.data.WorkspaceScheduleItem
 import id.starstask.mobile.data.getWorkspaceOverview
@@ -58,17 +60,24 @@ import id.starstask.mobile.ui.theme.AssignmentBackground
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.Muted
+import id.starstask.mobile.ui.theme.Danger
 import kotlinx.coroutines.launch
 
-private val SearchBg = Color(0xFFF2F3F5)
-private val FilterBg = Color(0xFFEEF1F7)
+private val SearchBg = Muted
+private val FilterBg = SoftFill
 
 @Composable
 fun AssignmentsWorkspaceScreen(
     userId: String,
-    onOpenAssignment: (WorkspaceScheduleItem) -> Unit = {},
+    onOpenAssignment: ((WorkspaceScheduleItem) -> Unit)? = null,
     onOpenRequestApproved: (WorkspaceRequest) -> Unit = {},
+    autoOpenRequest: Boolean = false,
 ) {
+    var activeAssignment by remember { mutableStateOf<WorkspaceScheduleItem?>(null) }
+    val open: (WorkspaceScheduleItem) -> Unit = onOpenAssignment ?: { item -> activeAssignment = item }
+
     val scopeState = remember { mutableStateOf<id.starstask.mobile.data.WorkspaceScope?>(null) }
     var overview by remember { mutableStateOf<id.starstask.mobile.data.WorkspaceOverview?>(null) }
     var scheduleItems by remember { mutableStateOf<List<WorkspaceScheduleItem>>(emptyList()) }
@@ -87,7 +96,7 @@ fun AssignmentsWorkspaceScreen(
     var page by remember { mutableStateOf(1) }
     var typeFilter by remember { mutableStateOf<String?>(null) }
     var showFilterSheet by remember { mutableStateOf(false) }
-    var showCreate by remember { mutableStateOf(false) }
+    var showCreate by remember { mutableStateOf(autoOpenRequest) }
     var reviewTarget by remember { mutableStateOf<WorkspaceRequest?>(null) }
     var refreshTick by remember { mutableStateOf(0) }
     var showSort by remember { mutableStateOf(false) }
@@ -137,6 +146,23 @@ fun AssignmentsWorkspaceScreen(
                 showCreate = false
                 refreshTick++
             },
+        )
+        return
+    }
+
+    val detail = activeAssignment
+    if (detail != null) {
+        BackHandler(onBack = { activeAssignment = null })
+        AssignmentDetailScreen(
+            userId = userId,
+            assignment = Assignment(
+                id = detail.id,
+                title = detail.title,
+                status = detail.status,
+                deadline = detail.deadline,
+                className = detail.className ?: detail.courseName,
+            ),
+            onBack = { activeAssignment = null },
         )
         return
     }
@@ -223,7 +249,7 @@ fun AssignmentsWorkspaceScreen(
                 ReferenceDeadlineAlert(
                     overview = overview!!,
                     onOpenAssignment = { id ->
-                        scheduleItems.firstOrNull { it.id == id }?.let(onOpenAssignment)
+                        scheduleItems.firstOrNull { it.id == id }?.let(open)
                     },
                 )
             }
@@ -231,7 +257,7 @@ fun AssignmentsWorkspaceScreen(
 
         if (error != null) {
             item {
-                Text(error!!, color = Color(0xFFA94A4A), style = MaterialTheme.typography.bodySmall)
+                Text(error!!, color = Danger, style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -375,10 +401,11 @@ fun AssignmentsWorkspaceScreen(
             items(visibleItems, key = { it.id }) { item ->
                 ReferenceAssignmentCard(
                     item = item,
-                    onOpen = { onOpenAssignment(item) },
+                    onOpen = { open(item) },
                     onDismiss = {
                         scopeCoroutine.launch { hideAssignment(context, item.id) }
                     },
+                    onOpenAttachments = { open(item) },
                 )
             }
             if (scheduleTotalPages > 1) {

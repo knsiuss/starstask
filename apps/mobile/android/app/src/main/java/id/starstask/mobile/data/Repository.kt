@@ -42,6 +42,7 @@ data class DashboardClass(
     val slug: String = "",
     val semester: String = "",
     val academicYear: String = "",
+    val classCode: String? = null,
     val subjectCount: Int = 0,
     val taskCount: Int = 0,
     val isAdmin: Boolean = false,
@@ -103,6 +104,7 @@ suspend fun loadDashboard(userId: String): DashboardData {
             slug = obj["slug"]?.jsonPrimitive?.contentOrNull() ?: "",
             semester = obj["semester"]?.jsonPrimitive?.contentOrNull() ?: "",
             academicYear = obj["academic_year"]?.jsonPrimitive?.contentOrNull() ?: "",
+            classCode = obj["class_code"]?.jsonPrimitive?.contentOrNull(),
         )
     }.sortedBy { it.name }
 

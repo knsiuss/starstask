@@ -55,6 +55,8 @@ import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentBackground
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.SoftFill
 import kotlinx.coroutines.launch
 
 /**
@@ -147,7 +149,7 @@ fun ProfileScreen(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(999.dp))
-                                .background(Color(0xFFEEF1F7))
+                                .background(SoftFill)
                                 .clickable { retryTick++ }
                                 .padding(horizontal = 20.dp, vertical = 12.dp),
                         )
@@ -306,7 +308,7 @@ fun ProfileIdentityHeaderClean(
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
     ) {
         // Cover band
         Box(
@@ -334,7 +336,7 @@ fun ProfileIdentityHeaderClean(
                             .size(28.dp)
                             .clip(CircleShape)
                             .background(Color.White)
-                            .border(0.5.dp, Color(0xFFE9EBF0), CircleShape)
+                            .border(0.5.dp, AssignmentBorder, CircleShape)
                             .clickable(onClick = onAvatarClick),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -354,7 +356,7 @@ fun ProfileIdentityHeaderClean(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
-                        .background(Color(0xFFEEF1F7))
+                        .background(SoftFill)
                         .clickable(onClick = onEditClick)
                         .padding(horizontal = 20.dp, vertical = 10.dp),
                 )
@@ -414,14 +416,14 @@ fun ProfileMetaSectionClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             ProfileRowClean("Full name", profile.fullName?.takeIf { it.isNotBlank() } ?: "Not set")
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             ProfileRowClean("Nickname", "@${profile.nickname}")
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             ProfileRowClean("Email", email ?: "Not available")
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             ProfileRowClean("Joined", joinedDate ?: "—")
         }
         GroupLabel("Academic")
@@ -430,12 +432,12 @@ fun ProfileMetaSectionClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             ProfileRowClean("Student ID", profile.nim ?: "Not set")
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             ProfileRowClean("University", profile.university ?: "Not set")
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             ProfileRowClean("Declared class", profile.declaredClassName ?: "Not set")
         }
     }
@@ -500,7 +502,7 @@ fun ProfileClassesSectionClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             if (classes.isEmpty()) {
                 Text(
@@ -511,7 +513,7 @@ fun ProfileClassesSectionClean(
                 )
             } else {
                 classes.forEachIndexed { index, clazz ->
-                    if (index > 0) HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -542,10 +544,10 @@ fun ProfileClassesSectionClean(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
-                    .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
             ) {
                 administered.forEachIndexed { index, clazz ->
-                    if (index > 0) HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+                    if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -572,7 +574,7 @@ fun ProfileClassesSectionClean(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(Color(0xFFEEF1F7))
+                    .background(SoftFill)
                     .clickable(onClick = onClaimClick)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             )
@@ -594,14 +596,14 @@ fun ProfileQuickActionsClean(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             QuickRowClean(icon = Lucide.GraduationCap, label = "My classes", onClick = onOpenClasses)
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.Settings, label = "Console", onClick = onOpenAdminConsole)
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.Terminal, label = "Developer", onClick = onOpenDeveloperConsole)
-            HorizontalDivider(color = Color(0xFFE9EBF0), modifier = Modifier.padding(start = 16.dp))
+            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.LogOut, label = "Sign out", destructive = true, onClick = onSignOut)
         }
     }

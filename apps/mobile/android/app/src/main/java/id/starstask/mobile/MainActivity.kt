@@ -25,7 +25,10 @@ import id.starstask.mobile.data.syncQueuedCheckIns
 import id.starstask.mobile.ui.navigation.StarsTaskNavHost
 import id.starstask.mobile.ui.screens.SplashScreen
 import id.starstask.mobile.ui.screens.WelcomeScreen
+import id.starstask.mobile.data.setThemeMode
+import id.starstask.mobile.data.themeModeFlow
 import id.starstask.mobile.ui.theme.StarsTaskTheme
+import androidx.compose.foundation.isSystemInDarkTheme
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -42,7 +45,15 @@ class MainActivity : ComponentActivity() {
         SupabaseProvider.client.handleDeeplinks(intent)
         enableEdgeToEdge()
         setContent {
-            StarsTaskTheme {
+            val systemDark = isSystemInDarkTheme()
+            val themeModeFlowLocal = androidx.compose.runtime.remember { themeModeFlow(this@MainActivity) }
+            val themeMode by themeModeFlowLocal.collectAsState(initial = null)
+            val darkTheme = when (themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> systemDark
+            }
+            StarsTaskTheme(darkTheme = darkTheme) {
                 StarsTaskApp()
             }
         }

@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.CalendarAssignmentBar
 import id.starstask.mobile.data.WorkspaceClassOption
-import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.Border
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Foreground
@@ -41,6 +40,7 @@ import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Success
 import id.starstask.mobile.ui.theme.Warning
 import id.starstask.mobile.ui.theme.Surface as SurfaceColor
+import id.starstask.mobile.ui.theme.AccentSoft
 
 data class CourseOption(
     val key: String,
@@ -171,7 +171,7 @@ fun CalendarCourseFilterSheet(
                 Row(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
                         .border(1.dp, Border, RoundedCornerShape(8.dp))
-                        .background(if (checked) Color(0xFFE8EDFA) else SurfaceColor)
+                        .background(if (checked) AccentSoft else SurfaceColor)
                         .clickable { onToggleCourse(option.key) }
                         .padding(horizontal = Spacing.Xl, vertical = Spacing.Lg),
                     verticalAlignment = Alignment.CenterVertically,

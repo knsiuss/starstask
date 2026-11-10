@@ -105,7 +105,6 @@ private fun parseWire(wire: String): ParsedWire? {
     }
 }
 
-fun isValidDmWire(wire: String): Boolean = parseWire(wire) != null
 
 fun encryptDmMessage(
     self: DeviceKeyPair,

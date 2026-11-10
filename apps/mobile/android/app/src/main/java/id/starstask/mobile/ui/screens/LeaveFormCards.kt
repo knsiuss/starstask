@@ -52,6 +52,7 @@ import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Danger
+import id.starstask.mobile.ui.theme.Success
 
 val leaveReasonCategories: List<String> = listOf("illness", "family_matter", "other")
 

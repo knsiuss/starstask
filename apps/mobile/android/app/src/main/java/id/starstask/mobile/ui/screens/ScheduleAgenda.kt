@@ -30,12 +30,13 @@ import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Success
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.AssignmentBackground
 
 // Quiet agenda rows — no dividers, no rails. Rows breathe via spacing and
 // a small dot for kind; time sits on the right like Apple Calendar.
 
-private val CardBorder = Color(0xFFE9EBF0)
-private val RowAlt = Color(0xFFF7F8FA)
+private val RowAlt = AssignmentBackground
 
 private fun scheduleDot(item: CalendarTimelineItem): Color {
     val completed = item.kind == "assignment" && item.isCompleted
@@ -163,7 +164,7 @@ fun ScheduleDayGroup(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(Surface)
-                .border(0.5.dp, CardBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             items.forEachIndexed { index, item ->
                 ScheduleEventItem(

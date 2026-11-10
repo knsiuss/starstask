@@ -27,6 +27,7 @@ import id.starstask.mobile.data.splitIntoWeeks
 import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentForeground
 import id.starstask.mobile.ui.theme.AssignmentSecondary
+import id.starstask.mobile.ui.theme.AssignmentBorder
 
 // Calendar strip/grid sit directly on #F7F8FA. No card chrome — mobile
 // is a distinct state, not a desktop board squeezed into a phone.
@@ -277,7 +278,7 @@ fun ScheduleEmptyBox(title: String, description: String, modifier: Modifier = Mo
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .border(0.5.dp, Color(0xFFE9EBF0), RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),

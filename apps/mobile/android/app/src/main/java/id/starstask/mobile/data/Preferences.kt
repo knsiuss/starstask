@@ -19,15 +19,9 @@ private val Context.prefs: DataStore<Preferences> by preferencesDataStore(name =
 val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 val WHATS_NEW_SEEN_KEY = stringPreferencesKey("whats_new_seen")
 
-fun themeModeFlow(context: Context): Flow<String> =
-    context.prefs.data.map { it[THEME_MODE_KEY] ?: "system" }
-
 suspend fun setThemeMode(context: Context, mode: String) {
     context.prefs.edit { it[THEME_MODE_KEY] = mode }
 }
-
-fun whatsNewSeenFlow(context: Context): Flow<String?> =
-    context.prefs.data.map { it[WHATS_NEW_SEEN_KEY] }
 
 suspend fun setWhatsNewSeen(context: Context, version: String) {
     context.prefs.edit { it[WHATS_NEW_SEEN_KEY] = version }
@@ -44,3 +38,6 @@ suspend fun hideAssignment(context: Context, assignmentId: String) {
         prefs[HIDDEN_ASSIGNMENTS_KEY] = (current + assignmentId).distinct().joinToString(",")
     }
 }
+
+fun themeModeFlow(context: Context): Flow<String?> =
+    context.prefs.data.map { it[THEME_MODE_KEY] }

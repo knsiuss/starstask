@@ -48,17 +48,12 @@ import id.starstask.mobile.data.loadStudentAttendance
 import id.starstask.mobile.ui.components.StatusBadge
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.AccentSoft
 import id.starstask.mobile.ui.theme.Border
-import id.starstask.mobile.ui.theme.Danger
-import id.starstask.mobile.ui.theme.DangerSoft
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.Muted
 import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Success
 import id.starstask.mobile.ui.theme.SuccessSoft
 import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.Warning
 import id.starstask.mobile.ui.theme.WarningSoft
 
 // Course detail: web apps/web/src/app/(workspace)/attendance/courses/[courseId]/page.tsx

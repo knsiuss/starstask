@@ -102,7 +102,6 @@ private val ENGLISH = Locale.ENGLISH
 private val DAY_LABEL = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", ENGLISH)
 private val GROUP_LABEL = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", ENGLISH)
 private val MONTH_LABEL = DateTimeFormatter.ofPattern("MMMM yyyy", ENGLISH)
-private val SHORT_DATE = DateTimeFormatter.ofPattern("d MMM", ENGLISH)
 private val SHORT_DAY = DateTimeFormatter.ofPattern("EEE dd", ENGLISH)
 private val SHORT_DAY_MONTH = DateTimeFormatter.ofPattern("d MMM", ENGLISH)
 private val TIME_LABEL = DateTimeFormatter.ofPattern("HH:mm", ENGLISH)
@@ -114,7 +113,6 @@ fun formatGroupLabel(dateKey: String): String = parseDateKey(dateKey)?.format(GR
 
 fun formatMonthLabel(dateKey: String): String = parseDateKey(dateKey)?.format(MONTH_LABEL) ?: "Invalid date"
 
-fun formatShortDate(dateKey: String): String = parseDateKey(dateKey)?.format(SHORT_DATE) ?: dateKey
 
 /** `Fri 06`, for a week column header. */
 fun formatShortDay(dateKey: String): String = parseDateKey(dateKey)?.format(SHORT_DAY) ?: dateKey
