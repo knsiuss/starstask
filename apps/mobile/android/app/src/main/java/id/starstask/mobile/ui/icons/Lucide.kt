@@ -52,6 +52,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -71,6 +72,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -82,6 +84,7 @@ object Lucide {
                     LineTo(12f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -93,6 +96,7 @@ object Lucide {
                     LineTo(12.01f, 16f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -112,6 +116,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -120,6 +125,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 9v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -128,6 +134,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -147,6 +154,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 5H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -155,6 +163,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 12H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -163,6 +172,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 19H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -182,6 +192,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(2f, 3f, 20f, 5f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -190,6 +201,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -198,6 +210,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 12h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -217,6 +230,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(2f, 3f, 20f, 5f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -225,6 +239,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 8v11a2 2 0 0 0 2 2h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -233,6 +248,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 8v11a2 2 0 0 1-2 2h-2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -241,6 +257,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 15 3-3 3 3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -249,6 +266,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 12v9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -268,6 +286,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m3 16 4 4 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -276,6 +295,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 20V4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -284,6 +304,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21 8-4-4-4 4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -292,6 +313,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 4v16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -311,6 +333,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m12 19-7-7 7-7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -319,6 +342,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 12H5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -338,6 +362,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 12h14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -346,6 +371,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m12 5 7 7-7 7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -365,6 +391,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 7h10v10").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -373,6 +400,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 17 17 7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -392,6 +420,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -400,6 +429,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4.929 4.929 19.07 19.071").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -419,6 +449,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.268 21a2 2 0 0 0 3.464 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -427,6 +458,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -446,6 +478,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.268 21a2 2 0 0 0 3.464 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -454,6 +487,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -462,6 +496,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m2 2 20 20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -470,6 +505,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -489,6 +525,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.268 21a2 2 0 0 0 3.464 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -497,6 +534,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 8c0-2.3-.8-4.3-2-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -505,6 +543,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -513,6 +552,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 2C2.8 3.7 2 5.7 2 8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -532,6 +572,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -540,6 +581,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(14f, 2f, 8f, 8f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -559,6 +601,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 5v16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -567,6 +610,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -586,6 +630,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 5v16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -594,6 +639,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 12 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -602,6 +648,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 6V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2h4.001A2 2 0 0022 17v-1.344").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -621,6 +668,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -640,6 +688,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -648,6 +697,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 10 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -667,6 +717,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m14.5 7.5-5 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -675,6 +726,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -683,6 +735,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9.5 7.5 5 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -702,6 +755,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -710,6 +764,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(2f, 6f, 20f, 14f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -729,6 +784,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 12h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -737,6 +793,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 8h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -745,6 +802,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 21v-3a2 2 0 0 0-4 0v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -753,6 +811,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -761,6 +820,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -780,6 +840,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(4f, 2f, 16f, 20f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -791,6 +852,7 @@ object Lucide {
                     LineTo(16f, 6f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -802,6 +864,7 @@ object Lucide {
                     LineTo(16f, 18f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -810,6 +873,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 10h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -818,6 +882,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 10h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -826,6 +891,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 10h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -834,6 +900,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 14h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -842,6 +909,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 14h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -850,6 +918,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 18h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -858,6 +927,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 18h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -877,6 +947,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -885,6 +956,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -893,6 +965,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 18f, 18f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -901,6 +974,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 9h18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -909,6 +983,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 15 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -928,6 +1003,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M 19 3 L 5 3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -936,6 +1012,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M 21 13 L 21 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -944,6 +1021,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M 21 5 A2 2 0 0 0 19 3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -952,6 +1030,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M 3 19 A2 2 0 0 0 5 21").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -960,6 +1039,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M 3 5 L 3 19").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -968,6 +1048,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M 5 3 A2 2 0 0 0 3 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -976,6 +1057,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 19 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -984,6 +1066,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -992,6 +1075,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 9h18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1000,6 +1084,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 21 L12.5 21").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1008,6 +1093,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1027,6 +1113,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 14v2.2l1.6 1").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1035,6 +1122,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1043,6 +1131,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 7.338V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2.338").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1051,6 +1140,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 9h5.859").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1059,6 +1149,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1067,6 +1158,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(16f, 16f, 6f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1086,6 +1178,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1094,6 +1187,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1102,6 +1196,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 18f, 18f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1110,6 +1205,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 9h18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1118,6 +1214,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 13h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1126,6 +1223,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 13h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1134,6 +1232,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 13h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1142,6 +1241,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1150,6 +1250,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1158,6 +1259,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1177,6 +1279,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 18h6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1185,6 +1288,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1193,6 +1297,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 15v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1201,6 +1306,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 11.5V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h8.3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1209,6 +1315,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 9h18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1217,6 +1324,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1236,6 +1344,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 18f, 18f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1244,6 +1353,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1252,6 +1362,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 9h18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1260,6 +1371,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 2v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1268,6 +1380,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 13h-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1276,6 +1389,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13 17H7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1284,6 +1398,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 13h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1292,6 +1407,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1311,6 +1427,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1319,6 +1436,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 13f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1338,6 +1456,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 6 9 17l-5-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1357,6 +1476,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M18 6 7 17l-5-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1365,6 +1485,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m22 10-7.5 7.5L13 16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1384,6 +1505,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1392,6 +1514,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 9-5.5 5.5L8 12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1411,6 +1534,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m6 9 6 6 6-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1430,6 +1554,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m15 18-6-6 6-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1449,6 +1574,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 18 6-6-6-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1468,6 +1594,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1487,6 +1614,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1498,6 +1626,7 @@ object Lucide {
                     LineTo(12f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1509,6 +1638,7 @@ object Lucide {
                     LineTo(12.01f, 16f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1528,6 +1658,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1536,6 +1667,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 9-5.5 5.5L8 12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1555,6 +1687,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1563,6 +1696,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 12h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1571,6 +1705,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 8v8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1590,6 +1725,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17.925 20.056a6 6 0 0 0-11.851.001").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1598,6 +1734,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 11f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1606,6 +1743,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1625,6 +1763,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(8f, 2f, 8f, 4f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1633,6 +1772,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1641,6 +1781,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 14 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1660,6 +1801,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(8f, 2f, 8f, 4f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1668,6 +1810,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1676,6 +1819,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 11h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1684,6 +1828,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 16h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1692,6 +1837,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 11h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1700,6 +1846,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 16h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1719,6 +1866,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 4h2a2 2 0 0 1 2 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1727,6 +1875,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.34 15.664a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1735,6 +1884,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 22H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1743,6 +1893,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(8f, 2f, 8f, 4f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1762,6 +1913,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1770,6 +1922,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 6v6l4 2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1789,6 +1942,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1797,6 +1951,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 6v6h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1816,6 +1971,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 13v8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1824,6 +1980,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1832,6 +1989,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m8 17 4-4 4 4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1851,6 +2009,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1870,6 +2029,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1878,6 +2038,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1897,6 +2058,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(8f, 8f, 14f, 14f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1905,6 +2067,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1924,6 +2087,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 20v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1932,6 +2096,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1940,6 +2105,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 20v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1948,6 +2114,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1956,6 +2123,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 12h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1964,6 +2132,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 17h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1972,6 +2141,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 7h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1980,6 +2150,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 12h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1988,6 +2159,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 17h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -1996,6 +2168,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 7h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2004,6 +2177,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 20v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2012,6 +2186,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2020,6 +2195,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(4f, 4f, 16f, 16f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2028,6 +2204,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(8f, 8f, 8f, 8f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2047,6 +2224,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2058,6 +2236,7 @@ object Lucide {
                     LineTo(18f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2069,6 +2248,7 @@ object Lucide {
                     LineTo(2f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2080,6 +2260,7 @@ object Lucide {
                     LineTo(12f, 2f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2091,6 +2272,7 @@ object Lucide {
                     LineTo(12f, 18f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2110,6 +2292,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2118,6 +2301,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 21h14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2137,6 +2321,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 5f, 0f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2145,6 +2330,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 5V19A9 3 0 0 0 21 19V5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2153,6 +2339,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 12A9 3 0 0 0 21 12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2172,6 +2359,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 15V3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2180,6 +2368,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2188,6 +2377,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m7 10 5 5 5-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2207,6 +2397,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2215,6 +2406,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(19f, 12f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2223,6 +2415,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(5f, 12f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2242,6 +2435,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 3h6v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2250,6 +2444,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 14 21 3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2258,6 +2453,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2277,6 +2473,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2285,6 +2482,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2304,6 +2502,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2312,6 +2511,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14.084 14.158a3 3 0 0 1-4.242-4.242").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2320,6 +2520,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2328,6 +2529,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m2 2 20 20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2347,6 +2549,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2355,6 +2558,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 2v5a1 1 0 0 0 1 1h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2363,6 +2567,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m14 20 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2382,6 +2587,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2390,6 +2596,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 2v5a1 1 0 0 0 1 1h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2398,6 +2605,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(10f, 12f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2406,6 +2614,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2425,6 +2634,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2433,6 +2643,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14.487 7.858A1 1 0 0 1 14 7V2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2441,6 +2652,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2449,6 +2661,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 18h1").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2468,6 +2681,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2476,6 +2690,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 2v5a1 1 0 0 0 1 1h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2484,6 +2699,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 19h6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2492,6 +2708,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 16v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2511,6 +2728,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2519,6 +2737,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 2v5a1 1 0 0 0 1 1h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2527,6 +2746,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 13h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2535,6 +2755,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 13h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2543,6 +2764,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 17h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2551,6 +2773,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 17h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2570,6 +2793,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2578,6 +2802,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 2v5a1 1 0 0 0 1 1h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2586,6 +2811,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 9H8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2594,6 +2820,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 13H8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2602,6 +2829,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 17H8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2621,6 +2849,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2629,6 +2858,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 9v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2637,6 +2867,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2656,6 +2887,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2675,6 +2907,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2683,6 +2916,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6.453 15h11.094").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2691,6 +2925,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8.5 2h7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2710,6 +2945,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2718,6 +2954,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 13 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2737,6 +2974,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2756,6 +2994,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 10V9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2764,6 +3003,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 10V9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2772,6 +3012,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 16a5 5 0 016 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2780,6 +3021,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2799,6 +3041,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m12 14 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2807,6 +3050,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3.34 19a10 10 0 1 1 17.32 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2826,6 +3070,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2834,6 +3079,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2842,6 +3088,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 12h20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2861,6 +3108,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2869,6 +3117,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 10v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2877,6 +3126,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 12.5V16a6 3 0 0 0 12 0v-3.5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2896,6 +3146,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 16h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2904,6 +3155,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2912,6 +3164,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.946 12.013H2.054").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2920,6 +3173,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 16h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2942,6 +3196,7 @@ object Lucide {
                     LineTo(20f, 9f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2953,6 +3208,7 @@ object Lucide {
                     LineTo(20f, 15f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2964,6 +3220,7 @@ object Lucide {
                     LineTo(8f, 21f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2975,6 +3232,7 @@ object Lucide {
                     LineTo(14f, 21f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -2994,6 +3252,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3002,6 +3261,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 3v5h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3010,6 +3270,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 7v5l4 2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3029,6 +3290,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3037,6 +3299,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3056,6 +3319,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 5h6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3064,6 +3328,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 2v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3072,6 +3337,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3080,6 +3346,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3088,6 +3355,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(9f, 9f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3120,6 +3388,7 @@ object Lucide {
                     LineTo(12f, 0f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3128,6 +3397,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3147,6 +3417,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3155,6 +3426,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 16v-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3163,6 +3435,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 8h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3182,6 +3455,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3190,6 +3464,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3198,6 +3473,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3217,6 +3493,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 7f, 9f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3225,6 +3502,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(14f, 3f, 7f, 5f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3233,6 +3511,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(14f, 12f, 7f, 9f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3241,6 +3520,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 16f, 7f, 5f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3260,6 +3540,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 7f, 7f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3268,6 +3549,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(14f, 3f, 7f, 7f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3276,6 +3558,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(14f, 14f, 7f, 7f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3284,6 +3567,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 14f, 7f, 7f, 1f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3303,6 +3587,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 6 4 14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3311,6 +3596,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 6v14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3319,6 +3605,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 8v12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3327,6 +3614,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 4v16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3346,6 +3634,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 17H7A5 5 0 0 1 7 7h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3354,6 +3643,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 7h2a5 5 0 1 1 0 10h-2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3365,6 +3655,7 @@ object Lucide {
                     LineTo(16f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3384,6 +3675,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 5h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3392,6 +3684,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 12h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3400,6 +3693,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 19h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3408,6 +3702,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 5h13").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3416,6 +3711,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 12h13").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3424,6 +3720,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 19h13").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3443,6 +3740,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13 5h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3451,6 +3749,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13 12h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3459,6 +3758,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13 19h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3467,6 +3767,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m3 17 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3475,6 +3776,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m3 7 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3494,6 +3796,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 12a9 9 0 1 1-6.219-8.56").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3516,6 +3819,7 @@ object Lucide {
                     LineTo(5f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3527,6 +3831,7 @@ object Lucide {
                     LineTo(22f, 12f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3538,6 +3843,7 @@ object Lucide {
                     LineTo(12f, 5f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3549,6 +3855,7 @@ object Lucide {
                     LineTo(12f, 22f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3557,6 +3864,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 7f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3565,6 +3873,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3584,6 +3893,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 11f, 18f, 11f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3592,6 +3902,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 11V7a5 5 0 0 1 10 0v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3611,6 +3922,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m10 17 5-5-5-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3619,6 +3931,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 12H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3627,6 +3940,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3646,6 +3960,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 17 5-5-5-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3654,6 +3969,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 12H9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3662,6 +3978,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3681,6 +3998,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3689,6 +4007,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(2f, 4f, 20f, 16f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3708,6 +4027,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3716,6 +4036,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3735,6 +4056,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3743,6 +4065,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3751,6 +4074,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 16v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3759,6 +4083,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 19h6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3778,6 +4103,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3786,6 +4112,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 10f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3805,6 +4132,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 3h6v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3813,6 +4141,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21 3-7 7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3821,6 +4150,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m3 21 7-7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3829,6 +4159,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 21H3v-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3848,6 +4179,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3856,6 +4188,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3864,6 +4197,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 6v8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3883,6 +4217,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 5h16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3891,6 +4226,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 12h16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3899,6 +4235,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 19h16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3918,6 +4255,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3937,6 +4275,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3945,6 +4284,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7.828 13.07A3 3 0 0 1 12 8.764a3 3 0 0 1 5.004 2.224 3 3 0 0 1-.832 2.083l-3.447 3.62a1 1 0 0 1-1.45-.001z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3964,6 +4304,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3983,6 +4324,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -3991,6 +4333,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4010,6 +4353,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 19v3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4018,6 +4362,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 10v2a7 7 0 0 1-14 0v-2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4032,6 +4377,7 @@ object Lucide {
                     Close,
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4051,6 +4397,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 12h14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4070,6 +4417,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4089,6 +4437,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4097,6 +4446,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(19f, 12f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4105,6 +4455,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(5f, 12f, 1f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4124,6 +4475,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M18 8L22 12L18 16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4132,6 +4484,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 12H22").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4151,6 +4504,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4159,6 +4513,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 6h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4167,6 +4522,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 10h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4175,6 +4531,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 14h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4183,6 +4540,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 18h4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4191,6 +4549,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4210,6 +4569,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4218,6 +4578,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(13.5f, 6.5f, 0.5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4226,6 +4587,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(17.5f, 10.5f, 0.5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4234,6 +4596,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(6.5f, 12.5f, 0.5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4242,6 +4605,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(8.5f, 7.5f, 0.5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4261,6 +4625,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 18f, 18f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4269,6 +4634,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 3v18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4277,6 +4643,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 15-3-3 3-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4296,6 +4663,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(3f, 3f, 18f, 18f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4304,6 +4672,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 3v18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4312,6 +4681,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m14 9 3 3-3 3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4331,6 +4701,36 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+        }.build()
+    }
+
+    val PenLine: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "PenLine",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+                addPath(
+                    pathData = PathParser().parsePathString("M13 21h8").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+                addPath(
+                    pathData = PathParser().parsePathString("M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4350,6 +4750,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4358,6 +4759,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m15 5 4 4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4377,6 +4779,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13 21h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4385,6 +4788,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m15 5 4 4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4393,6 +4797,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4412,6 +4817,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 17v5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4420,6 +4826,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4439,6 +4846,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 17v5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4447,6 +4855,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 9.34V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H7.89").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4455,6 +4864,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m2 2 20 20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4463,6 +4873,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h11").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4482,6 +4893,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4501,6 +4913,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4509,6 +4922,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4528,6 +4942,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4536,6 +4951,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m2 22 3-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4544,6 +4960,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7.5 13.5 10 11").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4552,6 +4969,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.5 16.5 13 14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4560,6 +4978,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m18 3-4 4h6l-4 4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4579,6 +4998,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 12h14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4587,6 +5007,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 5v14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4606,6 +5027,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4614,6 +5036,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 12h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4622,6 +5045,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 8v8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4641,6 +5065,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 3h20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4649,6 +5074,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4657,6 +5083,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m7 21 5-5 5 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4676,6 +5103,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4684,6 +5112,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 3v5h-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4692,6 +5121,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4700,6 +5130,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 16H3v5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4719,6 +5150,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4727,6 +5159,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 3v5h5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4746,6 +5179,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4754,6 +5188,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4762,6 +5197,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 3v4a1 1 0 0 0 1 1h7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4781,6 +5217,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 12h-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4789,6 +5226,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 8h-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4797,6 +5235,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 17V5a2 2 0 0 0-2-2H4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4805,6 +5244,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4824,6 +5264,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21 21-4.34-4.34").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4832,6 +5273,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(11f, 11f, 8f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4851,6 +5293,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m13.5 8.5-5 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4859,6 +5302,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m8.5 8.5 5 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4867,6 +5311,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(11f, 11f, 8f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4875,6 +5320,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21 21-4.3-4.3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4894,6 +5340,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4902,6 +5349,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21.854 2.147-10.94 10.939").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4921,6 +5369,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4929,6 +5378,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6 12h16").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4948,6 +5398,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4956,6 +5407,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4975,6 +5427,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 17H5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4983,6 +5436,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 7h-9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4991,6 +5445,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(17f, 17f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -4999,6 +5454,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(7f, 7f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5018,6 +5474,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(18f, 5f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5026,6 +5483,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(6f, 12f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5034,6 +5492,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(18f, 19f, 3f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5045,6 +5504,7 @@ object Lucide {
                     LineTo(15.42f, 17.49f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5056,6 +5516,27 @@ object Lucide {
                     LineTo(8.59f, 10.49f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+        }.build()
+    }
+
+    val Shield: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Shield",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+                addPath(
+                    pathData = PathParser().parsePathString("M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5075,6 +5556,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5083,6 +5565,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 8v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5091,6 +5574,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 16h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5110,6 +5594,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5118,6 +5603,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 12 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5137,6 +5623,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m2 2 20 20").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5145,6 +5632,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5153,6 +5641,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5172,6 +5661,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7 18v-6a5 5 0 1 1 10 0v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5180,6 +5670,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5188,6 +5679,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 12h1").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5196,6 +5688,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M18.5 4.5 18 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5204,6 +5697,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 12h1").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5212,6 +5706,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 2v1").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5220,6 +5715,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m4.929 4.929.707.707").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5228,6 +5724,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 12v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5247,6 +5744,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 5H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5255,6 +5753,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 19H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5263,6 +5762,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 3v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5271,6 +5771,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 17v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5279,6 +5780,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 12h-9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5287,6 +5789,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 19h-5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5295,6 +5798,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 5h-7").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5303,6 +5807,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 10v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5311,6 +5816,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 12H3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5330,6 +5836,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(5f, 2f, 14f, 20f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5338,6 +5845,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 18h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5357,6 +5865,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15 10V9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5365,6 +5874,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16.472 15a6 6 0 01-8.943 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5373,6 +5883,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M9 10V9").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5381,6 +5892,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5400,6 +5912,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5408,6 +5921,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 2v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5416,6 +5930,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 4h-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5424,6 +5939,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(4f, 20f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5443,6 +5959,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5462,6 +5979,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5470,6 +5988,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5478,6 +5997,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 20v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5486,6 +6006,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m4.93 4.93 1.41 1.41").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5494,6 +6015,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m17.66 17.66 1.41 1.41").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5502,6 +6024,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 12h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5510,6 +6033,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 12h2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5518,6 +6042,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m6.34 17.66-1.41 1.41").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5526,6 +6051,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m19.07 4.93-1.41 1.41").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5545,6 +6071,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5553,6 +6080,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5561,6 +6089,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(10.5f, 6.5f, 0.5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5580,6 +6109,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 19h8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5588,6 +6118,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m4 17 6-6-6-6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5607,6 +6138,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10 11v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5615,6 +6147,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14 11v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5623,6 +6156,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5631,6 +6165,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M3 6h18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5639,6 +6174,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5658,6 +6194,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 7h6v6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5666,6 +6203,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m22 7-8.5 8.5-5-5L2 17").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5685,6 +6223,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5693,6 +6232,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 9v4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5701,6 +6241,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 17h.01").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5720,6 +6261,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m19 5 3-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5728,6 +6270,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m2 22 3-3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5736,6 +6279,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5744,6 +6288,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M7.5 13.5 10 11").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5752,6 +6297,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M10.5 16.5 13 14").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5760,6 +6306,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5779,6 +6326,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 3v12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5787,6 +6335,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m17 8-5-5-5 5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5795,6 +6344,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5814,6 +6364,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M12 13v8").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5822,6 +6373,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5830,6 +6382,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m8 17 4-4 4 4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5849,6 +6402,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5857,6 +6411,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 7f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5876,6 +6431,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 11 2 2 4-4").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5884,6 +6440,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5892,6 +6449,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(9f, 7f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5911,6 +6469,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5919,6 +6478,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(9f, 7f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5930,6 +6490,7 @@ object Lucide {
                     LineTo(16f, 11f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5949,6 +6510,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5957,6 +6519,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(9f, 7f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5968,6 +6531,7 @@ object Lucide {
                     LineTo(19f, 14f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5979,6 +6543,7 @@ object Lucide {
                     LineTo(16f, 11f),
                 ),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -5998,6 +6563,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 8f, 5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6006,6 +6572,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M20 21a8 8 0 0 0-16 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6025,6 +6592,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6033,6 +6601,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M16 3.128a4 4 0 0 1 0 7.744").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6041,6 +6610,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 21v-2a4 4 0 0 0-3-3.87").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6049,6 +6619,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(9f, 7f, 4f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6068,6 +6639,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M18 21a8 8 0 0 0-16 0").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6076,6 +6648,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(10f, 8f, 5f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6084,6 +6657,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6103,6 +6677,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6111,6 +6686,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(roundedRectPath(2f, 6f, 14f, 12f, 2f, 2f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6130,6 +6706,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6149,6 +6726,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M18 6 6 18").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6157,6 +6735,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m6 6 12 12").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6176,6 +6755,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString(arcPath(12f, 12f, 10f)).toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6184,6 +6764,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m15 9-6 6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6192,6 +6773,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("m9 9 6 6").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6211,6 +6793,7 @@ object Lucide {
                 addPath(
                     pathData = PathParser().parsePathString("M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z").toNodes(),
                     stroke = strokeSpec,
+                    strokeLineWidth = 2f,
                     strokeLineCap = StrokeCap.Round,
                     strokeLineJoin = StrokeJoin.Round,
                     strokeLineMiter = 4f,
@@ -6265,7 +6848,8 @@ object MaterialIconAliases {
     val Delete: ImageVector get() = Lucide.Trash2
     val Edit: ImageVector get() = Lucide.Pencil
     val Settings: ImageVector get() = Lucide.Settings
-    val Shield: ImageVector get() = Lucide.ShieldCheck
+    val Shield: ImageVector get() = Lucide.Shield
+    val PenLine: ImageVector get() = Lucide.PenLine
     val Send: ImageVector get() = Lucide.Send
     val Search: ImageVector get() = Lucide.Search
     val Info: ImageVector get() = Lucide.Info

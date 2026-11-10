@@ -25,19 +25,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.IntegrationKind
 import id.starstask.mobile.data.openIntegrationConnect
 import id.starstask.mobile.data.IntegrationStatus
 import id.starstask.mobile.data.NotificationPrefs
-import id.starstask.mobile.data.currentFcmToken
-import id.starstask.mobile.data.deleteNativePushToken
 import id.starstask.mobile.data.loadCalendarStatus
 import id.starstask.mobile.data.loadDriveStatus
 import id.starstask.mobile.data.loadNotificationPrefs
-import id.starstask.mobile.data.registerNativePushToken
+import id.starstask.mobile.data.notificationsGranted
+import id.starstask.mobile.data.registerCurrentToken
 import id.starstask.mobile.data.saveNotificationPrefs
+import id.starstask.mobile.data.setCachedPushEnabled
+import id.starstask.mobile.data.unregisterAllPush
 import id.starstask.mobile.ui.components.WebBadge
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
@@ -156,6 +161,7 @@ private val timezoneOptions = listOf("Asia/Jakarta", "Asia/Makassar", "Asia/Jaya
 @Composable
 fun NotificationSettingsScreen(userId: String) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var prefs by remember { mutableStateOf<NotificationPrefs?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
@@ -165,22 +171,67 @@ fun NotificationSettingsScreen(userId: String) {
             ?: NotificationPrefs().also { notice = "Could not load preferences." }
     }
 
-    fun save(next: NotificationPrefs) {
+    fun enablePush(next: NotificationPrefs) {
         scope.launch {
             saving = true
             runCatching {
                 saveNotificationPrefs(userId, next)
-                if (next.pushEnabled) {
-                    val token = currentFcmToken()
-                    registerNativePushToken(token, "Android")
-                } else {
-                    val token = runCatching { currentFcmToken() }.getOrNull()
-                    if (token != null) deleteNativePushToken(token)
-                }
-            }.onSuccess { notice = "Saved." }
+                registerCurrentToken(context)
+                setCachedPushEnabled(context, true)
+            }.onSuccess {
+                prefs = next
+                notice = "Saved."
+            }
                 .onFailure { notice = "Could not save: ${it.message}" }
             saving = false
         }
+    }
+
+    fun save(next: NotificationPrefs) {
+        if (!next.pushEnabled) {
+            scope.launch {
+                saving = true
+                runCatching {
+                    saveNotificationPrefs(userId, next)
+                    unregisterAllPush(context)
+                }.onSuccess {
+                    prefs = next
+                    notice = "Saved."
+                }
+                    .onFailure { notice = "Could not save: ${it.message}" }
+                saving = false
+            }
+            return
+        }
+        // Android 13+ needs runtime POST_NOTIFICATIONS. Saved only after
+        // the user grants it; denying leaves push off rather than silently
+        // enabled-with-no-delivery.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationsGranted(context)) {
+            notice = "Izinkan notifikasi dulu — baru bisa dinyalakan."
+            return
+        }
+        enablePush(next)
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val pending = prefs?.copy(pushEnabled = true)
+        if (granted && pending != null) {
+            enablePush(pending)
+        } else {
+            notice = "Notifikasi tidak diizinkan — push tetap mati."
+        }
+    }
+
+    fun onPushToggle(enabled: Boolean) {
+        val current = prefs ?: return
+        val next = current.copy(pushEnabled = enabled)
+        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationsGranted(context)) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        save(next)
     }
 
     Column(
@@ -202,7 +253,7 @@ fun NotificationSettingsScreen(userId: String) {
         PrefToggle(
             label = "Push notifications",
             checked = current.pushEnabled,
-            onChange = { save(current.copy(pushEnabled = it)) },
+            onChange = { onPushToggle(it) },
         )
         PrefToggle(
             label = "Assignment reminder — 24h before deadline",

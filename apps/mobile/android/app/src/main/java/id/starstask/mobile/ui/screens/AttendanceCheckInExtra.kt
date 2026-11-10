@@ -48,18 +48,12 @@ import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.hasLocationPermission
 import id.starstask.mobile.ui.components.WebAlert
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Border
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Success
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.Muted
-import id.starstask.mobile.ui.theme.SuccessSoft
+import id.starstask.mobile.ui.theme.mockColors
 import kotlinx.coroutines.launch
 
 @Composable
 fun PhaseBadge(open: Boolean, phase: String) {
+    val palette = mockColors()
     val label = when (phase) {
         "open" -> "Open"
         "before" -> "Not opened yet"
@@ -69,12 +63,12 @@ fun PhaseBadge(open: Boolean, phase: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(if (open) id.starstask.mobile.ui.theme.SuccessSoft else id.starstask.mobile.ui.theme.Muted)
+            .background(if (open) palette.goodBg else palette.chip)
             .padding(horizontal = Spacing.Md, vertical = 3.dp),
     ) {
         Text(
             label,
-            color = if (open) Success else MutedForeground,
+            color = if (open) palette.goodFg else palette.muted,
             style = MaterialTheme.typography.labelSmall,
         )
     }
@@ -85,12 +79,13 @@ fun MeetingLine(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
 ) {
+    val palette = mockColors()
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(top = 2.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(14.dp))
-        Text(text, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+        Icon(icon, contentDescription = null, tint = palette.muted, modifier = Modifier.size(14.dp))
+        Text(text, color = palette.muted, style = MaterialTheme.typography.bodySmall)
     }
 }

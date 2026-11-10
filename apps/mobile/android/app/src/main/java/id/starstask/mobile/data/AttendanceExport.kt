@@ -15,6 +15,27 @@ import java.io.File
  * matches what the student sees. No new API is invented.
  */
 
+private fun csvCell(value: String): String {
+    val cleaned = value.replace("\r", " ").replace("\n", " ")
+    val trimmed = cleaned.trimStart()
+    val prefixed = if (trimmed.startsWith("=") || trimmed.startsWith("+") || trimmed.startsWith("-") || trimmed.startsWith("@")) {
+        "'$cleaned"
+    } else {
+        cleaned
+    }
+    return "\"" + prefixed.replace("\"", "\"\"") + "\""
+}
+
+fun membersCsv(className: String, members: List<DirectoryMember>): String {
+    val esc: (String) -> String = { csvCell(it) }
+    val header = listOf("class", "name", "role", "is_admin").joinToString(",") { esc(it) }
+    val lines = members.joinToString("\n") { member ->
+        listOf(className, member.name, member.role, if (member.isAdmin) "true" else "false")
+            .joinToString(",") { esc(it) }
+    }
+    return if (lines.isBlank()) header else "$header\n$lines"
+}
+
 fun attendanceCsv(entries: List<AttendanceEntry>): String {
     fun esc(value: String): String = "\"" + value.replace("\"", "\"\"") + "\""
     val header = listOf(
@@ -62,7 +83,7 @@ fun attendancePdfBytes(
     return baos.toByteArray()
 }
 
-private fun shareFile(context: Context, file: File, mime: String, chooserTitle: String) {
+fun shareFile(context: Context, file: File, mime: String, chooserTitle: String) {
     val uri: Uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = mime

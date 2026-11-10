@@ -1,14 +1,18 @@
 package id.starstask.mobile
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import id.starstask.mobile.data.REMINDER_CHANNEL_ID
+import id.starstask.mobile.data.cachedPushEnabled
+import id.starstask.mobile.data.ensureReminderChannel
+import id.starstask.mobile.data.registerCurrentToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Native FCM receive path. Web push dispatch writes notification_events
@@ -16,6 +20,21 @@ import com.google.firebase.messaging.RemoteMessage
  * never DM plaintext — DM push carries no message content).
  */
 class StarsTaskMessagingService : FirebaseMessagingService() {
+
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        // Token rotation: only registered while the user has opted in.
+        if (!cachedPushEnabledBlocking()) return
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching { registerCurrentToken(applicationContext) }
+        }
+    }
+
+    private fun cachedPushEnabledBlocking(): Boolean {
+        var enabled = false
+        kotlinx.coroutines.runBlocking { enabled = cachedPushEnabled(applicationContext) }
+        return enabled
+    }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -25,13 +44,8 @@ class StarsTaskMessagingService : FirebaseMessagingService() {
     }
 
     private fun showNotification(title: String, body: String) {
-        val channelId = "starstask_notifications"
-        val manager = getSystemService(NotificationManager::class.java) ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.getNotificationChannel(channelId) ?: manager.createNotificationChannel(
-                NotificationChannel(channelId, "Notifications", NotificationManager.IMPORTANCE_DEFAULT),
-            )
-        }
+        val channelId = REMINDER_CHANNEL_ID
+        ensureReminderChannel(this)
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }

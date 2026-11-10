@@ -49,14 +49,9 @@ import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.hasLocationPermission
 import id.starstask.mobile.ui.components.WebAlert
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.AccentSoft
-import id.starstask.mobile.ui.theme.Border
+import id.starstask.mobile.ui.theme.mockColors
 import id.starstask.mobile.ui.theme.Danger
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Success
-import id.starstask.mobile.ui.theme.Surface
 import kotlinx.coroutines.launch
 @Composable
 fun ActiveMeetingCard(
@@ -65,6 +60,7 @@ fun ActiveMeetingCard(
     userId: String,
     onChanged: () -> Unit,
 ) {
+    val palette = mockColors()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var formOpen by remember(meeting.sessionId) { mutableStateOf(false) }
@@ -163,11 +159,11 @@ fun ActiveMeetingCard(
     }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Surface),
+        colors = CardDefaults.cardColors(containerColor = palette.card),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Border, RoundedCornerShape(12.dp)),
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
     ) {
         Column(modifier = Modifier.padding(Spacing.Section), verticalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Xl)) {
@@ -175,16 +171,16 @@ fun ActiveMeetingCard(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(AccentSoft),
+                        .background(palette.accentSoft),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Lucide.CalendarDays, contentDescription = null, tint = Accent, modifier = Modifier.size(22.dp))
+                    Icon(Lucide.CalendarDays, contentDescription = null, tint = palette.accent, modifier = Modifier.size(22.dp))
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Md), verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             meeting.subjectName,
-                            color = Foreground,
+                            color = palette.ink,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.weight(1f, fill = false),
                         )
@@ -195,7 +191,7 @@ fun ActiveMeetingCard(
                     } else {
                         meeting.className
                     }
-                    Text(meetingLine, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Text(meetingLine, color = palette.muted, style = MaterialTheme.typography.bodySmall)
                     MeetingLine(icon = Lucide.CalendarDays, text = formatDateShort(meeting.startsAt))
                     MeetingLine(
                         icon = Lucide.CalendarClock,
@@ -216,7 +212,7 @@ fun ActiveMeetingCard(
                 StatusBadge(status = localStatus!!)
                 Text(
                     "Checked in at ${formatTime(localCheckedInAt ?: meeting.startsAt)} ${id.starstask.mobile.data.timezoneLabel(meeting.timeZone)}",
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (openNow) {
@@ -231,17 +227,17 @@ fun ActiveMeetingCard(
             } else if (!identityReady) {
                 Text(
                     "Add your full name and NIM in your profile before checking in.",
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
 
             if (formOpen && openNow) {
-                HorizontalDivider(color = Border)
-                Text("Confirm your identity", color = Foreground, style = MaterialTheme.typography.titleSmall)
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
+                Text("Confirm your identity", color = palette.ink, style = MaterialTheme.typography.titleSmall)
                 Text(
                     "The server checks these values against your verified profile, plus the meeting window, membership, GPS accuracy, and radius.",
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Lg)) {

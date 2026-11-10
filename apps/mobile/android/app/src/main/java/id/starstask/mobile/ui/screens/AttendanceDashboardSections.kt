@@ -33,33 +33,31 @@ import id.starstask.mobile.data.ManagedAttendanceClass
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.components.WebEmptyState
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.AssignmentBorder
-import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.mockColors
 
-// Page header + Active Attendance card, mirroring Assignments: 30.sp title,
-// 14.sp subtitle, 20.dp rounded cards, 0.5.dp #E9EBF0 border, no shadow.
+// Page header + Active Attendance card: 30.sp Bold ink title, 15.sp muted
+// subtitle, 20.dp rounded cards, 1.dp cardBorder, no shadow.
 
 @Composable
 fun AttendancePageHeader(
     selectedTab: String,
     onSelectTab: (String) -> Unit,
 ) {
+    val palette = mockColors()
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             "Attendance",
-            color = AssignmentForeground,
+            color = palette.ink,
             fontSize = 30.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp,
+            lineHeight = 36.sp,
         )
         Text(
             "Track your attendance across your enrolled courses.",
-            color = AssignmentSecondary,
-            fontSize = 14.sp,
+            color = palette.muted,
+            fontSize = 15.sp,
+            lineHeight = 21.sp,
         )
     }
     AttendanceSegmentedTabs(selected = selectedTab, onSelect = onSelectTab)
@@ -73,13 +71,14 @@ fun ActiveAttendanceCard(
     onOpenManageClass: (ManagedAttendanceClass) -> Unit,
     onBrowseClasses: () -> Unit,
 ) {
+    val palette = mockColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(Surface)
-            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .padding(horizontal = Spacing.Block, vertical = Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(
@@ -90,28 +89,29 @@ fun ActiveAttendanceCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(999.dp))
-                    .background(SoftFill),
+                    .background(palette.accentSoft),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Lucide.CalendarDays,
                     contentDescription = null,
-                    tint = AssignmentAccent,
+                    tint = palette.accent,
                     modifier = Modifier.size(20.dp),
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Active Attendance",
-                    color = AssignmentSecondary,
+                    color = palette.muted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
                     period ?: "No active semester",
-                    color = AssignmentForeground,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    color = palette.ink,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 26.sp,
                     maxLines = 2,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -127,7 +127,7 @@ fun ActiveAttendanceCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(999.dp))
-                            .background(SoftFill)
+                            .background(palette.chip)
                             .clickable { onOpenManageClass(managedClass) }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -136,12 +136,12 @@ fun ActiveAttendanceCard(
                         Icon(
                             Lucide.Settings,
                             contentDescription = null,
-                            tint = AssignmentAccent,
+                            tint = palette.accent,
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
                             "Manage ${managedClass.slug.ifBlank { managedClass.name }}",
-                            color = AssignmentForeground,
+                            color = palette.ink,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
@@ -150,7 +150,7 @@ fun ActiveAttendanceCard(
                         Icon(
                             Lucide.ChevronRight,
                             contentDescription = null,
-                            tint = AssignmentSecondary,
+                            tint = palette.muted,
                             modifier = Modifier.size(20.dp),
                         )
                     }

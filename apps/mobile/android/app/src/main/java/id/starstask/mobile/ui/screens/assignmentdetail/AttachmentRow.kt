@@ -1,6 +1,7 @@
 package id.starstask.mobile.ui.screens.assignmentdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,9 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -37,14 +37,14 @@ import id.starstask.mobile.data.downloadAttachmentBytes
 import id.starstask.mobile.data.formatFileSize
 import id.starstask.mobile.data.previewable
 import id.starstask.mobile.ui.components.WebButton
-import id.starstask.mobile.ui.components.WebSectionTitle
+import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.Spacing
+import id.starstask.mobile.ui.theme.mockColors
+import androidx.compose.material3.MaterialTheme
 
-// Attachments card for the assignment detail: list entries plus inline image/PDF preview.
+// Attachments section for the assignment detail, styled like the leave detail
+// evidence section: rounded card, labelSmall→bodyMedium hierarchy, accent actions.
 @Composable
 fun AttachmentsCard(
     attachments: List<AttachmentRef>,
@@ -54,17 +54,47 @@ fun AttachmentsCard(
     onRename: (AttachmentRef, String) -> Unit,
     onDelete: (AttachmentRef) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        WebSectionTitle("Attachments (${attachments.size})")
-        Text(
-            "Images and PDFs preview here. Download links expire after 15 minutes; files are checked for type and size on upload.",
-            color = MutedForeground,
-            fontSize = 12.sp,
-        )
+    val palette = mockColors()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .padding(Spacing.Block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Attachments (${attachments.size})",
+                style = MaterialTheme.typography.titleSmall,
+                color = palette.ink,
+                fontWeight = FontWeight.SemiBold,
+            )
+            WebButton(
+                label = "Add",
+                onClick = onAttach,
+                variant = WebButtonVariant.LINK,
+                enabled = !busy,
+                icon = Lucide.Paperclip,
+            )
+        }
         if (busy) {
-            Text("Uploading…", color = MutedForeground, fontSize = 13.sp)
-        } else {
-            WebButton(label = "Attach file", onClick = onAttach)
+            Text(
+                "Uploading…",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.muted,
+            )
+        } else if (attachments.isEmpty()) {
+            Text(
+                "No documents attached yet. PDF, JPG, PNG, up to 10 MB each.",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.muted,
+            )
         }
         attachments.forEach { attachment ->
             AttachmentRow(
@@ -84,6 +114,7 @@ private fun AttachmentRow(
     onRename: (AttachmentRef, String) -> Unit,
     onDelete: (AttachmentRef) -> Unit,
 ) {
+    val palette = mockColors()
     var preview by remember(attachment.id) { mutableStateOf<android.graphics.Bitmap?>(null) }
     var previewFailed by remember(attachment.id) { mutableStateOf(false) }
     var loading by remember(attachment.id) { mutableStateOf(false) }
@@ -101,56 +132,71 @@ private fun AttachmentRow(
         }
     }
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFEEF1F7)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val icon = if (attachment.mimeType?.startsWith("image/") == true) Lucide.FileImage else Lucide.FileText
-                    Icon(icon, contentDescription = null, tint = Accent, modifier = Modifier.size(20.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(attachment.filename, color = Foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    val meta = listOfNotNull(
-                        attachment.mimeType?.substringAfter('/')?.uppercase(),
-                        attachment.fileSize?.let { formatFileSize(it) },
-                    ).joinToString(" · ")
-                    if (meta.isNotBlank()) {
-                        Text(meta, color = MutedForeground, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
-                    }
-                }
-                TextButton(onClick = { onOpen(attachment) }) { Text("Open", color = Accent) }
-                TextButton(onClick = { renameOpen = true; draftName = attachment.filename }) { Text("Rename", color = MutedForeground) }
-                TextButton(onClick = { deleteOpen = true }) { Text("Delete", color = MutedForeground) }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(palette.accentSoft),
+                contentAlignment = Alignment.Center,
+            ) {
+                val icon = if (attachment.mimeType?.startsWith("image/") == true) Lucide.FileImage else Lucide.FileText
+                Icon(icon, contentDescription = null, tint = palette.accent, modifier = Modifier.size(20.dp))
             }
-            if (preview != null) {
-                val bitmap = preview!!
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF5F6F8)),
-                ) {
-                    androidx.compose.foundation.Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = attachment.filename,
-                        contentScale = ContentScale.FillWidth,
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
-                    )
-                }
-            } else if (loading) {
-                Text("Loading preview…", color = MutedForeground, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    attachment.filename,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.ink,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val meta = listOfNotNull(
+                    attachment.mimeType?.substringAfter('/')?.uppercase(),
+                    attachment.fileSize?.let { formatFileSize(it) },
+                ).joinToString(" · ")
+                Text(
+                    meta,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.muted,
+                )
             }
+            IconButton(onClick = { onOpen(attachment) }) {
+                Icon(Lucide.ExternalLink, contentDescription = "Open", tint = palette.accent)
+            }
+            IconButton(onClick = { renameOpen = true; draftName = attachment.filename }) {
+                Icon(Lucide.Pencil, contentDescription = "Rename", tint = palette.muted)
+            }
+            IconButton(onClick = { deleteOpen = true }) {
+                Icon(Lucide.Trash2, contentDescription = "Delete", tint = palette.riskFg)
+            }
+        }
+        if (preview != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(palette.accentSofter),
+            ) {
+                androidx.compose.foundation.Image(
+                    bitmap = preview!!.asImageBitmap(),
+                    contentDescription = attachment.filename,
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp),
+                )
+            }
+        } else if (loading) {
+            Text(
+                "Loading preview…",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.muted,
+            )
         }
     }
 
@@ -159,7 +205,7 @@ private fun AttachmentRow(
             onDismissRequest = { renameOpen = false },
             title = { Text("Rename attachment") },
             text = {
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = draftName,
                     onValueChange = { draftName = it },
                     label = { Text("File name") },
@@ -172,7 +218,7 @@ private fun AttachmentRow(
                     renameOpen = false
                     val name = draftName.trim()
                     if (name.isNotEmpty()) onRename(attachment, name)
-                }) { Text("Save", color = Accent) }
+                }) { Text("Save", color = palette.accent) }
             },
             dismissButton = { TextButton(onClick = { renameOpen = false }) { Text("Cancel") } },
         )
@@ -187,7 +233,7 @@ private fun AttachmentRow(
                 TextButton(onClick = {
                     deleteOpen = false
                     onDelete(attachment)
-                }) { Text("Delete", color = Color(0xFFA94A4A)) }
+                }) { Text("Delete", color = palette.riskFg) }
             },
             dismissButton = { TextButton(onClick = { deleteOpen = false }) { Text("Cancel") } },
         )

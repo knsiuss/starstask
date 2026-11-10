@@ -68,7 +68,7 @@ fun FloatingNavDock(
                     ambientColor = Color.Black.copy(alpha = 0.09f),
                 )
                 .clip(dockShape)
-                .background(palette.card.copy(alpha = 0.78f))
+                .background(palette.card.copy(alpha = 0.80f))
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -76,7 +76,7 @@ fun FloatingNavDock(
             destinations.forEach { dest ->
                 val selected = baseRoute(currentRoute) == baseRoute(dest.route)
                 val pillColor by animateColorAsState(
-                    targetValue = if (selected) palette.accent.copy(alpha = 0.14f) else Color.Transparent,
+                    targetValue = if (selected) palette.accent.copy(alpha = 0.16f) else Color.Transparent,
                     animationSpec = tween(DurationSoftMs, easing = EasingOutCubic),
                     label = "dockPill",
                 )
@@ -85,28 +85,29 @@ fun FloatingNavDock(
                     animationSpec = tween(DurationSoftMs, easing = EasingOutCubic),
                     label = "dockTint",
                 )
+                // same tint drives icon stroke color and label text
                 Column(
                     modifier = Modifier
-                        .width(62.dp)
-                        .heightIn(min = 52.dp)
+                        .width(66.dp)
+                        .heightIn(min = 54.dp)
                         .clip(pillShape)
                         .background(pillColor)
                         .clickable(onClickLabel = dest.bottomBarLabel) { onNavigate(dest.route) }
-                        .padding(horizontal = 2.dp, vertical = 7.dp),
+                        .padding(horizontal = 2.dp, vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     Icon(
                         imageVector = dest.icon,
                         contentDescription = dest.bottomBarLabel,
                         tint = tint,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                     Text(
                         dest.bottomBarLabel,
                         color = tint,
-                        fontSize = 10.sp,
-                        lineHeight = 12.sp,
+                        fontSize = 12.sp,
+                        lineHeight = 14.sp,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                         maxLines = 1,
                     )

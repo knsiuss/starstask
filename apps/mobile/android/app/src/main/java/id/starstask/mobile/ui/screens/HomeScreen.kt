@@ -2,10 +2,9 @@ package id.starstask.mobile.ui.screens
 
 // Redesigned pastel dashboard: top bar (brand + theme toggle + unread
 // notifications badge), gradient greeting hero with task-publication CTA,
-// past-deadline alert card, "This Week" strip, "Upcoming Sessions" tiles,
-// then grouped white cards for assignments, classes, invitations, today's
-// sessions (with GPS check-in), academic identity, absence requests,
-// notifications, and the what's-new card. All data comes from the same
+// past-deadline alert card, "This Week" strip,
+// then grouped white cards for assignments, classes, invitations,
+// academic identity, and the what's-new card. All data comes from the same
 // Supabase loaders as before; nothing is hardcoded except general
 // interface copy (section titles, button labels, empty states).
 
@@ -45,8 +44,6 @@ import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.AcademicCard
 import id.starstask.mobile.data.DashboardData
 import id.starstask.mobile.data.Invitation
-import id.starstask.mobile.data.LeaveRequest
-import id.starstask.mobile.data.NotificationRow
 import id.starstask.mobile.data.ScheduleEntry
 import id.starstask.mobile.data.acceptPendingInvitation
 import id.starstask.mobile.data.declineInvitation
@@ -54,16 +51,13 @@ import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.loadAcademicCard
 import id.starstask.mobile.data.loadDashboard
 import id.starstask.mobile.data.loadInvitations
-import id.starstask.mobile.data.loadLeaveRequests
-import id.starstask.mobile.data.loadNotifications
 import id.starstask.mobile.data.loadSchedule
-import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.components.BadgeVariant
+import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.screens.dashboard.DashAlertCard
 import id.starstask.mobile.ui.screens.dashboard.DashHero
 import id.starstask.mobile.ui.screens.dashboard.DashSectionHeader
-import id.starstask.mobile.ui.screens.dashboard.DashSessionTile
 import id.starstask.mobile.ui.screens.dashboard.DashWeekStrip
 import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.DashRadiusPill
@@ -81,14 +75,10 @@ fun HomeScreen(
     onOpenSchedule: () -> Unit = {},
     onOpenClasses: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
-    onOpenNotifications: () -> Unit = {},
-    onOpenLeave: () -> Unit = {},
 ) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var schedule by remember { mutableStateOf<List<ScheduleEntry>>(emptyList()) }
-    var leaveRequests by remember { mutableStateOf<List<LeaveRequest>>(emptyList()) }
-    var notifications by remember { mutableStateOf<List<NotificationRow>>(emptyList()) }
     var invitations by remember { mutableStateOf<List<Invitation>>(emptyList()) }
     var academicCard by remember { mutableStateOf<AcademicCard?>(null) }
     var invitationBusyId by remember { mutableStateOf<String?>(null) }
@@ -106,8 +96,6 @@ fun HomeScreen(
         try {
             data = loadDashboard(userId)
             schedule = loadSchedule(userId)
-            leaveRequests = loadLeaveRequests(userId)
-            notifications = loadNotifications()
             invitations = loadInvitations(userId, userEmail)
             academicCard = loadAcademicCard(userId)
         } catch (e: Exception) {
@@ -117,18 +105,12 @@ fun HomeScreen(
 
     val current = data
     val palette = dashColors()
-    val upcomingSessions = remember(schedule) {
-        val now = java.time.Instant.now()
-        schedule.filter {
-            runCatching { java.time.Instant.parse(it.startsAt) }.getOrNull()?.let { it.isAfter(now) } ?: false
-        }.take(3)
-    }
     val assignmentDeadlines = remember(current) {
         current?.upcomingAssignments?.mapNotNull { it.deadline } ?: emptyList()
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(palette.pageBackground).padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxSize().background(palette.pageBackground).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 104.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -147,15 +129,6 @@ fun HomeScreen(
 
         item { DashSectionHeader("This Week", actionLabel = "View Calendar", onAction = onOpenSchedule) }
         item { DashWeekStrip(schedule = schedule, assignmentDeadlines = assignmentDeadlines) }
-
-        item { DashSectionHeader("Upcoming Sessions", actionLabel = "See all", onAction = onOpenSchedule) }
-        if (upcomingSessions.isEmpty()) {
-            item { DashEmptyTile(text = "No upcoming sessions this week.") }
-        } else {
-            items(upcomingSessions, key = { it.id }) { entry ->
-                DashSessionTile(entry = entry, onClick = onOpenSchedule)
-            }
-        }
 
         item { DashSectionHeader("Upcoming Assignments", actionLabel = "See all", onAction = onOpenTasks) }
         if (current?.upcomingAssignments.isNullOrEmpty()) {
@@ -266,73 +239,6 @@ fun HomeScreen(
 
         if (academicCard != null) {
             item { DashAcademicIdentityCard(card = academicCard!!) }
-        }
-
-        item { DashSectionHeader("Today") }
-        if (current?.todaySessions.isNullOrEmpty()) {
-            item { DashEmptyTile(text = "No sessions today.") }
-        } else {
-            items(current!!.todaySessions, key = { it.id }) { session ->
-                DashGroupedCard {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(session.subjectName ?: session.title, color = palette.text, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                "${formatTime(session.startsAt)} - ${formatTime(session.endsAt)}" +
-                                    (session.checkInStatus?.let { " · $it" } ?: ""),
-                                color = palette.muted,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        if (session.checkInStatus == null &&
-                            session.checkInLatitude != null &&
-                            session.checkInLongitude != null
-                        ) {
-                            Button(
-                                onClick = { onCheckIn(session.id) },
-                                colors = ButtonDefaults.buttonColors(containerColor = palette.accent, contentColor = androidx.compose.ui.graphics.Color.White),
-                            ) { Text("Check in") }
-                        }
-                    }
-                }
-            }
-        }
-
-        item { DashSectionHeader("Absence Requests", actionLabel = "See all", onAction = onOpenLeave) }
-        if (leaveRequests.isEmpty()) {
-            item { DashEmptyTile(text = "No absence requests.") }
-        } else {
-            items(leaveRequests, key = { it.id }) { request ->
-                DashGroupedCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(request.status.replaceFirstChar { it.uppercase() }, color = palette.text)
-                        Text(
-                            "${request.leaveStart ?: ""} → ${request.leaveEnd ?: ""} · ${request.reason ?: ""}",
-                            color = palette.muted,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-            }
-        }
-
-        item { DashSectionHeader("Notifications", actionLabel = "See all", onAction = onOpenNotifications) }
-        if (notifications.isEmpty()) {
-            item { DashEmptyTile(text = "No notifications.") }
-        } else {
-            items(notifications.take(3), key = { it.id }) { notification ->
-                DashGroupedCard(onClick = onOpenNotifications) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(notification.title, color = palette.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (notification.body.isNotEmpty()) {
-                            Text(notification.body, color = palette.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        if (notification.readAt == null) {
-                            StarsTaskBadge(label = "Unread", variant = BadgeVariant.ACCENT)
-                        }
-                    }
-                }
-            }
         }
 
         if (!whatsNewDismissed) {

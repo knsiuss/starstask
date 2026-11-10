@@ -47,12 +47,7 @@ import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.loadStudentAttendance
 import id.starstask.mobile.ui.components.StatusBadge
 import id.starstask.mobile.ui.components.WebAlert
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Border
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.Muted
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.mockColors
 
 // Course detail: web apps/web/src/app/(workspace)/attendance/courses/[courseId]/page.tsx
 // Mirrors the attached screenshot: back link, course code + name, 4 overview
@@ -69,6 +64,7 @@ fun CourseAttendanceDetailScreen(
     onBack: () -> Unit,
     onEntryClick: (sessionId: String) -> Unit,
 ) {
+    val palette = mockColors()
     var detail by remember { mutableStateOf<id.starstask.mobile.data.StudentAttendanceView?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
@@ -104,7 +100,7 @@ fun CourseAttendanceDetailScreen(
         item(key = "back") {
             Text(
                 "← Attendance",
-                color = MutedForeground,
+                color = palette.muted,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.clickable(onClick = onBack),
             )
@@ -120,11 +116,11 @@ fun CourseAttendanceDetailScreen(
             item(key = "title") {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     if (courseCode != null) {
-                        Text(courseCode, color = MutedForeground, style = MaterialTheme.typography.labelSmall)
+                        Text(courseCode, color = palette.muted, style = MaterialTheme.typography.labelSmall)
                     }
-                    Text(courseName, color = Foreground, style = MaterialTheme.typography.headlineSmall)
+                    Text(courseName, color = palette.ink, style = MaterialTheme.typography.headlineSmall)
                     if (className != null) {
-                        Text(className, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                        Text(className, color = palette.muted, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -147,7 +143,7 @@ fun CourseAttendanceDetailScreen(
                 AttendanceOverallCard(summary = summary)
             }
             item(key = "history-title") {
-                Text("Session history", color = Foreground, style = MaterialTheme.typography.titleLarge)
+                Text("Session history", color = palette.ink, style = MaterialTheme.typography.titleLarge)
             }
             item(key = "history") {
                 AttendanceHistoryBox(entries = view.entries, onEntryClick = onEntryClick)
@@ -162,20 +158,21 @@ fun CourseAttendanceDetailScreen(
 fun AttendanceOverallCard(
     summary: AttendanceCounts,
 ) {
+    val palette = mockColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(Spacing.Section),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xl),
     ) {
         Column {
-            Text("Overall attendance", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            Text("Overall attendance", color = palette.muted, style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Md), verticalAlignment = Alignment.Bottom) {
-                Text(formatAttendancePercentage(summary.percentage), color = Foreground, style = MaterialTheme.typography.headlineMedium)
+                Text(formatAttendancePercentage(summary.percentage), color = palette.ink, style = MaterialTheme.typography.headlineMedium)
                 Text(
                     if (summary.eligible == 0) "no eligible sessions yet" else "${summary.attended} attended of ${summary.eligible} eligible",
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -184,12 +181,12 @@ fun AttendanceOverallCard(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(Muted)
+                    .background(palette.chip)
                     .padding(horizontal = Spacing.Lg, vertical = Spacing.Xs),
             ) {
                 Text(
                     "${summary.pending} ${if (summary.pending == 1) "session pending" else "sessions pending"}",
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
@@ -208,8 +205,8 @@ fun AttendanceOverallCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .border(1.dp, Border, RoundedCornerShape(10.dp))
-                        .background(Muted)
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                        .background(palette.chip)
                         .padding(horizontal = Spacing.Lg, vertical = Spacing.Md),
                 ) {
                     Text("", style = MaterialTheme.typography.bodySmall)
@@ -218,7 +215,7 @@ fun AttendanceOverallCard(
         }
         Text(
             "Present and late count as attended. The percentage divides those by present, late, absent, and unrecorded sessions. Excused absences and sessions that have not finished are left out.",
-            color = MutedForeground,
+            color = palette.muted,
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -226,13 +223,14 @@ fun AttendanceOverallCard(
 
 @Composable
 private fun SummaryStat(label: String, value: Int, modifier: Modifier = Modifier) {
+    val palette = mockColors()
     Column(
         modifier = modifier
-            .border(1.dp, Border, RoundedCornerShape(10.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
             .padding(horizontal = Spacing.Lg, vertical = Spacing.Md),
     ) {
-        Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
-        Text(value.toString(), color = Foreground, style = MaterialTheme.typography.titleMedium)
+        Text(label, color = palette.muted, style = MaterialTheme.typography.bodySmall)
+        Text(value.toString(), color = palette.ink, style = MaterialTheme.typography.titleMedium)
     }
 }
 
@@ -245,18 +243,19 @@ fun AttendanceHistoryBox(
     entries: List<AttendanceEntry>,
     onEntryClick: (sessionId: String) -> Unit,
 ) {
+    val palette = mockColors()
     if (entries.isEmpty()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, Border, RoundedCornerShape(12.dp))
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                 .padding(Spacing.Section),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text("No attendance records yet.", color = Foreground, style = MaterialTheme.typography.bodyMedium)
+            Text("No attendance records yet.", color = palette.ink, style = MaterialTheme.typography.bodyMedium)
             Text(
                 "Finished sessions appear here once they happen.",
-                color = MutedForeground,
+                color = palette.muted,
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -266,7 +265,7 @@ fun AttendanceHistoryBox(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Border, RoundedCornerShape(12.dp)),
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             val visible = entries.take(2)
@@ -289,14 +288,14 @@ fun AttendanceHistoryBox(
                     onClick = { onEntryClick(entry.sessionId) },
                 )
                 if (index < visible.lastIndex) {
-                    HorizontalDivider(color = Border)
+                    HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
                 }
             }
             if (entries.size > 2) {
-                HorizontalDivider(color = Border)
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
                 Text(
                     "${entries.size} sessions — scroll inside this box for older ones.",
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = Spacing.Xl, vertical = Spacing.Md),
                 )

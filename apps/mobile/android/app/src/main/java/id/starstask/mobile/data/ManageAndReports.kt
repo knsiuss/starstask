@@ -83,10 +83,21 @@ fun csvForReports(assignments: List<ExploreAssignment>): String {
     return if (lines.isBlank()) header else "$header\n$lines"
 }
 
-suspend fun joinClassByCode(code: String): String {
+suspend fun joinClassByCode(code: String): String = acceptClassInvitationToken(code)
+
+/**
+ * Redeems a class invitation token the same way the web does (RPC
+ * `accept_class_invitation`); expiry, revocation, usage limits, class state,
+ * and the optional email restriction are verified server-side.
+ */
+suspend fun acceptClassInvitationToken(token: String): String {
+    val trimmed = token.trim()
+    if (trimmed.isEmpty()) {
+        throw IllegalArgumentException("Enter the invitation code.")
+    }
     val result = SupabaseProvider.client.postgrest.rpc(
-        "accept_pending_invitation",
-        buildJsonObject { put("p_invitation_id", JsonPrimitive(code.trim())) },
+        "accept_class_invitation",
+        buildJsonObject { put("p_token", JsonPrimitive(trimmed)) },
     )
     return result.decodeJsonPrimitive().content
 }

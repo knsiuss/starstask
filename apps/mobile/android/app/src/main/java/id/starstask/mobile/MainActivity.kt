@@ -19,8 +19,10 @@ import id.starstask.mobile.data.PendingCheckIn
 import id.starstask.mobile.data.SupabaseProvider
 import id.starstask.mobile.data.capturePosition
 import id.starstask.mobile.data.checkInToSession
+import id.starstask.mobile.data.ensureReminderChannel
 import id.starstask.mobile.data.hasLocationPermission
 import id.starstask.mobile.data.queueOfflineCheckin
+import id.starstask.mobile.data.syncPushRegistration
 import id.starstask.mobile.data.syncQueuedCheckIns
 import id.starstask.mobile.ui.navigation.StarsTaskNavHost
 import id.starstask.mobile.ui.screens.SplashScreen
@@ -43,6 +45,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SupabaseProvider.client.handleDeeplinks(intent)
+        ensureReminderChannel(this)
         enableEdgeToEdge()
         setContent {
             val systemDark = isSystemInDarkTheme()
@@ -80,6 +83,14 @@ fun StarsTaskApp() {
     LaunchedEffect(userId) {
         if (userId != null) {
             scope.launch { syncQueuedCheckIns(context) }
+        }
+    }
+
+    // Re-register the FCM token if the user opted in (covers rotation and
+    // reinstalls). No-op when push is off.
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            scope.launch { runCatching { syncPushRegistration(context) } }
         }
     }
 

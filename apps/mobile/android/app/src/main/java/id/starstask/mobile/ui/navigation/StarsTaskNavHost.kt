@@ -36,6 +36,9 @@ import id.starstask.mobile.ui.screens.ActionCenterScreen
 import id.starstask.mobile.ui.screens.AdminConsoleScreen
 import id.starstask.mobile.ui.screens.AssignmentsWorkspaceScreen
 import id.starstask.mobile.ui.screens.AttendanceScreen
+import id.starstask.mobile.ui.screens.AttendanceCoursesAllScreen
+import id.starstask.mobile.ui.screens.CourseAttendanceDetailScreen
+import id.starstask.mobile.ui.screens.AttendanceSessionDetailScreen
 import id.starstask.mobile.ui.screens.ClassesScreen
 import id.starstask.mobile.ui.screens.DeveloperConsoleScreen
 import id.starstask.mobile.ui.screens.FeedbackScreen
@@ -157,8 +160,6 @@ fun StarsTaskNavHost(
                             onOpenSchedule = { navigateTo(DrawerDestination.SCHEDULE.route) },
                             onOpenClasses = { navigateTo(DrawerDestination.CLASSES.route) },
                             onNewAssignment = { navigateTo(ASSIGNMENTS_OPEN_REQUEST_ROUTE) },
-                            onOpenNotifications = { navigateTo(DrawerDestination.NOTIFICATIONS.route) },
-                            onOpenLeave = { navigateTo(DrawerDestination.LEAVE.route) },
                         )
                     }
                     composable(
@@ -178,7 +179,59 @@ fun StarsTaskNavHost(
                         )
                     }
                     composable(DrawerDestination.ATTENDANCE.route) {
-                        AttendanceScreen(userId = userId)
+                        AttendanceScreen(
+                            userId = userId,
+                            onOpenCourse = { (subjectId, name, code) ->
+                                navController.navigate("attendance/course/${routeArg(subjectId)}/${routeArg(name)}/${routeArg(code ?: "-")}/-")
+                            },
+                            onOpenSession = { sid -> navController.navigate("attendance/session/${routeArg(sid)}") },
+                            onViewAllCourses = { navigateTo(ATTENDANCE_COURSES_ROUTE) },
+                            onManageClass = { navigateTo(DrawerDestination.CLASSES.route) },
+                            onBrowseClasses = { navigateTo(DrawerDestination.CLASSES.route) },
+                        )
+                    }
+                    composable(ATTENDANCE_COURSES_ROUTE) {
+                        AttendanceCoursesAllScreen(
+                            userId = userId,
+                            onBack = { navController.popBackStack() },
+                            onOpenCourse = { (subjectId, name, code) ->
+                                navController.navigate("attendance/course/${routeArg(subjectId)}/${routeArg(name)}/${routeArg(code ?: "-")}/-")
+                            },
+                        )
+                    }
+                    composable(
+                        ATTENDANCE_COURSE_ROUTE,
+                        arguments = listOf(
+                            androidx.navigation.navArgument("subjectId") { type = androidx.navigation.NavType.StringType },
+                            androidx.navigation.navArgument("courseName") { type = androidx.navigation.NavType.StringType },
+                            androidx.navigation.navArgument("courseCode") { type = androidx.navigation.NavType.StringType },
+                            androidx.navigation.navArgument("className") { type = androidx.navigation.NavType.StringType },
+                        ),
+                    ) { entry ->
+                        val subjectId = entry.arguments?.getString("subjectId").orEmpty()
+                        val courseName = entry.arguments?.getString("courseName").orEmpty()
+                        val courseCode = entry.arguments?.getString("courseCode")?.takeIf { it != "-" }
+                        val className = entry.arguments?.getString("className")?.takeIf { it != "-" }
+                        CourseAttendanceDetailScreen(
+                            userId = userId,
+                            subjectId = subjectId,
+                            courseName = courseName,
+                            courseCode = courseCode,
+                            className = className,
+                            onBack = { navController.popBackStack() },
+                            onEntryClick = { sid -> navController.navigate("attendance/session/${routeArg(sid)}") },
+                        )
+                    }
+                    composable(
+                        ATTENDANCE_SESSION_ROUTE,
+                        arguments = listOf(androidx.navigation.navArgument("sessionId") { type = androidx.navigation.NavType.StringType }),
+                    ) { entry ->
+                        val sessionId = entry.arguments?.getString("sessionId").orEmpty()
+                        AttendanceSessionDetailScreen(
+                            userId = userId,
+                            sessionId = sessionId,
+                            onBack = { navController.popBackStack() },
+                        )
                     }
                     composable(DrawerDestination.SCHEDULE.route) {
                         ScheduleScreen(userId = userId)
@@ -187,7 +240,6 @@ fun StarsTaskNavHost(
                         LeaveRequestsScreen(
                             userId = userId,
                             onOpenDrawer = { scope.launch { drawerState.open() } },
-                            onOpenNotifications = { navigateTo(DrawerDestination.NOTIFICATIONS.route) },
                         )
                     }
                     composable(DrawerDestination.MESSAGES.route) {

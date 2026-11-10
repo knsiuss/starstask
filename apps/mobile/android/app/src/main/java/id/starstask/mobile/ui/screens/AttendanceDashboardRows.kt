@@ -37,13 +37,10 @@ import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.summarizeAttendance
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.components.StarsTaskBadge
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.mockColors
 
-// Grouped-list rows, mirroring the assignments reference: 12sp code pill on
-// #EEF1F7, 16sp title, 13sp meta, 20dp chevron in AssignmentSecondary.
+// Grouped-list rows: 12sp code chip on palette.chip, 16sp SemiBold ink
+// title, 13sp muted meta, 20dp chevron in muted.
 
 internal val STATUS_OPTIONS =
     listOf(
@@ -71,6 +68,7 @@ internal fun SectionHeader(
     subtitle: String? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
+    val palette = mockColors()
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,7 +77,7 @@ internal fun SectionHeader(
         Column(modifier = Modifier.weight(1f, fill = false)) {
             Text(
                 title,
-                color = AssignmentForeground,
+                color = palette.ink,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -87,7 +85,7 @@ internal fun SectionHeader(
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = AssignmentSecondary,
+                    color = palette.muted,
                     modifier = Modifier.padding(PaddingValues(top = 2.dp)),
                 )
             }
@@ -98,6 +96,7 @@ internal fun SectionHeader(
 
 @Composable
 internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
+    val palette = mockColors()
     val hasSessions = row.status != CourseAttendanceStatus.NoSessions
     Row(
         modifier = Modifier
@@ -111,13 +110,13 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(SoftFill)
+                    .background(palette.chip)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     row.code,
-                    color = AssignmentForeground,
+                    color = palette.ink,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -127,14 +126,14 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 row.name,
-                color = AssignmentForeground,
+                color = palette.ink,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
             Text(
                 row.className,
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 13.sp,
                 maxLines = 1,
                 modifier = Modifier.padding(top = 2.dp),
@@ -146,7 +145,7 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
                 } else {
                     "No sessions yet"
                 },
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
@@ -157,7 +156,7 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     formatAttendancePercentage(row.counts.percentage),
-                    color = AssignmentForeground,
+                    color = palette.ink,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -170,14 +169,14 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
         } else {
             Text(
                 "-",
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 16.sp,
             )
         }
         Icon(
             Lucide.ChevronRight,
             contentDescription = null,
-            tint = AssignmentSecondary,
+            tint = palette.muted,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -185,6 +184,7 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
 
 @Composable
 internal fun HistoryRow(entry: AttendanceEntry, onClick: () -> Unit) {
+    val palette = mockColors()
     val timeLine =
         buildString {
             append(formatTime(entry.startsAt))
@@ -213,28 +213,28 @@ internal fun HistoryRow(entry: AttendanceEntry, onClick: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 entry.title,
-                color = AssignmentForeground,
+                color = palette.ink,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
             Text(
                 methodLine,
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 13.sp,
                 maxLines = 1,
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(
                 formatDateShort(entry.startsAt),
-                color = AssignmentForeground,
+                color = palette.ink,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 6.dp),
             )
             Text(
                 timeLine,
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 12.sp,
             )
         }
@@ -249,7 +249,7 @@ internal fun HistoryRow(entry: AttendanceEntry, onClick: () -> Unit) {
             Icon(
                 Lucide.ChevronRight,
                 contentDescription = null,
-                tint = AssignmentSecondary,
+                tint = palette.muted,
                 modifier = Modifier.size(20.dp),
             )
         }

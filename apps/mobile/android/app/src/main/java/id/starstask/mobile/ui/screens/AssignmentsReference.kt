@@ -140,76 +140,69 @@ fun ReferenceAssignmentCard(
     val palette = dashColors()
     val state = getDeadlineState(item.deadline)
     val isOverdue = state == DeadlineState.OVERDUE
-    val courseLabel = if (!item.courseCode.isNullOrBlank()) "${item.courseCode} · ${item.courseName}" else item.courseName
-    val classLabel = item.className ?: courseLabel
-    val leftTint = if (isOverdue) PinkBg else BadgeBlueBg
+    val classLabel = item.className ?: item.courseName
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Surface)
-            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .clickable(onClick = onOpen)
-            .padding(16.dp),
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                item.classCode ?: courseLabel,
-                color = palette.text,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(if (isOverdue) BadgeGrayBg else BadgeBlueBg).padding(horizontal = 8.dp, vertical = 4.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                "Published",
-                color = StatusBlue,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(BadgeBlueBg).padding(horizontal = 8.dp, vertical = 4.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (isOverdue && onDismiss != null) {
-                Icon(Lucide.X, contentDescription = "Remove assignment", tint = palette.muted, modifier = Modifier.size(18.dp).clickable(onClick = onDismiss))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                if (!item.courseCode.isNullOrBlank()) {
+                    Text(
+                        "${item.courseCode} · ${item.courseName}",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = palette.muted,
+                    )
+                }
+                Text(
+                    item.title,
+                    color = palette.text,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    classLabel,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = palette.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Box(Modifier.weight(1f))
-            if (item.attachmentCount > 0) {
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
-                        .clickable { onOpenAttachments?.invoke() ?: onOpen() }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .background(BadgeBlueBg)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Lucide.Paperclip, contentDescription = "Open attachments", tint = palette.muted, modifier = Modifier.size(16.dp))
-                    Text(item.attachmentCount.toString(), color = palette.muted, fontSize = 13.sp)
+                    Text(
+                        "Published",
+                        color = StatusBlue,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                if (isOverdue && onDismiss != null) {
+                    Icon(Lucide.X, contentDescription = "Remove assignment", tint = palette.muted, modifier = Modifier.size(18.dp).clickable(onClick = onDismiss))
                 }
             }
-            Icon(Lucide.ChevronRight, contentDescription = "Open assignment", tint = palette.muted, modifier = Modifier.size(20.dp))
         }
-        Text(
-            item.title,
-            color = palette.text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 10.dp),
-        )
-        Text(
-            classLabel,
-            color = palette.muted,
-            fontSize = 13.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 2.dp),
-        )
         Row(
-            modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -218,25 +211,36 @@ fun ReferenceAssignmentCard(
                     Lucide.CalendarDays,
                     contentDescription = null,
                     tint = if (isOverdue) StatusRed else StatusBlue,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(14.dp),
                 )
                 Text(
                     item.deadline?.let { formatDeadline(it) } ?: "No deadline",
                     color = if (isOverdue) StatusRed else palette.text,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(leftTint).padding(horizontal = 8.dp, vertical = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                if (isOverdue) "●  Overdue" else "●  Upcoming",
-                color = if (isOverdue) StatusRed else StatusBlue,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (item.attachmentCount > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable { onOpenAttachments?.invoke() ?: onOpen() }
+                            .padding(horizontal = 2.dp, vertical = 2.dp),
+                    ) {
+                        Icon(Lucide.Paperclip, contentDescription = "Open attachments", tint = palette.muted, modifier = Modifier.size(14.dp))
+                        Text(item.attachmentCount.toString(), color = palette.muted, fontSize = 12.sp)
+                    }
+                }
+                Text(
+                    if (isOverdue) "Overdue" else "Upcoming",
+                    color = if (isOverdue) StatusRed else StatusBlue,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }

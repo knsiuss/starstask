@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,8 @@ private val Context.prefs: DataStore<Preferences> by preferencesDataStore(name =
 
 val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 val WHATS_NEW_SEEN_KEY = stringPreferencesKey("whats_new_seen")
+private val FCM_TOKEN_KEY = stringPreferencesKey("fcm_token")
+private val PUSH_ENABLED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("push_enabled_cache")
 
 suspend fun setThemeMode(context: Context, mode: String) {
     context.prefs.edit { it[THEME_MODE_KEY] = mode }
@@ -41,3 +44,19 @@ suspend fun hideAssignment(context: Context, assignmentId: String) {
 
 fun themeModeFlow(context: Context): Flow<String?> =
     context.prefs.data.map { it[THEME_MODE_KEY] }
+
+suspend fun cachedFcmToken(context: Context): String? =
+    context.prefs.data.map { it[FCM_TOKEN_KEY] }.first()
+
+suspend fun setCachedFcmToken(context: Context, token: String?) {
+    context.prefs.edit { prefs ->
+        if (token == null) prefs.remove(FCM_TOKEN_KEY) else prefs[FCM_TOKEN_KEY] = token
+    }
+}
+
+suspend fun cachedPushEnabled(context: Context): Boolean =
+    context.prefs.data.map { it[PUSH_ENABLED_KEY] ?: false }.first()
+
+suspend fun setCachedPushEnabled(context: Context, enabled: Boolean) {
+    context.prefs.edit { it[PUSH_ENABLED_KEY] = enabled }
+}

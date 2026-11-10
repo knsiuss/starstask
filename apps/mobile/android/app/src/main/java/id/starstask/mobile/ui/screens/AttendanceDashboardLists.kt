@@ -34,31 +34,30 @@ import id.starstask.mobile.data.jakartaDate
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.components.WebEmptyState
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.mockColors
 
-// Check-in / History list sections. Background is the assignment off-white;
-// lists are white grouped surfaces with 0.5.dp #E9EBF0 borders and 20.dp corners.
+// Check-in / History list sections. Page background is the mock page brush;
+// lists are white grouped (or dark #161D2B) surfaces with 1.dp palette.cardBorder and 20.dp corners.
 
 @Composable
 fun CourseAttendanceSection(
     rows: List<CourseAttendanceRow>,
     onOpenCourse: (Triple<String, String, String?>) -> Unit,
-    onViewAll: () -> Unit = {},
+    onViewAll: (() -> Unit)? = null,
 ) {
+    val palette = mockColors()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
         SectionHeader(
             title = "Course Attendance",
-            trailing = {
-                TextButton(onClick = onViewAll) {
-                    Text(
-                        "View all",
-                        color = AssignmentAccent,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+            trailing = onViewAll?.let { action ->
+                {
+                    TextButton(onClick = action) {
+                        Text(
+                            "View all",
+                            color = palette.accent,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             },
         )
@@ -73,8 +72,8 @@ fun CourseAttendanceSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Surface)
-                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                    .background(palette.card)
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp)),
             ) {
                 rows.forEachIndexed { index, row ->
                     CourseRow(
@@ -85,7 +84,7 @@ fun CourseAttendanceSection(
                             },
                     )
                     if (index < rows.lastIndex) {
-                        HorizontalDivider(color = AssignmentBorder)
+                        HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
                     }
                 }
             }
@@ -101,6 +100,7 @@ fun ActiveSection(
     userId: String,
     onChanged: () -> Unit,
 ) {
+    val palette = mockColors()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
         SectionHeader(title = heading)
         if (active.isEmpty()) {
@@ -108,8 +108,8 @@ fun ActiveSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Surface)
-                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
+                    .background(palette.card)
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -118,13 +118,13 @@ fun ActiveSection(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(AssignmentAccent.copy(alpha = 0.1f)),
+                        .background(palette.accentSoft),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Lucide.CalendarDays,
                         contentDescription = null,
-                        tint = AssignmentAccent,
+                        tint = palette.accent,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -132,12 +132,12 @@ fun ActiveSection(
                     Text(
                         "No active attendance sessions.",
                         style = MaterialTheme.typography.titleSmall,
-                        color = AssignmentForeground,
+                        color = palette.ink,
                     )
                     Text(
                         "Your instructors have not opened an attendance session yet.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MutedForeground,
+                        color = palette.muted,
                     )
                 }
             }
@@ -160,6 +160,7 @@ fun HistorySection(
     entries: List<AttendanceEntry>,
     onOpenSession: (AttendanceEntry) -> Unit,
 ) {
+    val palette = mockColors()
     // Cheap date grouping using the same Jakarta day key as the date filters.
     val grouped = entries.groupBy { jakartaDate(it.startsAt) }
         .entries.sortedByDescending { it.key }
@@ -186,22 +187,22 @@ fun HistorySection(
                     Text(
                         formatDateShort(group.first().startsAt),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MutedForeground,
+                        color = palette.muted,
                         modifier = Modifier.padding(start = 2.dp),
                     )
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Surface)
-                            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                            .background(palette.card)
+                            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp)),
                     ) {
                         group.forEachIndexed { index, entry ->
                             HistoryRow(entry = entry) {
                                 onOpenSession(entry)
                             }
                             if (index < group.lastIndex) {
-                                HorizontalDivider(color = AssignmentBorder)
+                                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
                             }
                         }
                     }
@@ -217,7 +218,9 @@ fun HistoryToolbar(
     onOpenFilters: () -> Unit,
     onExportCsv: () -> Unit,
     onExportPdf: () -> Unit,
+    canExport: Boolean = true,
 ) {
+    val palette = mockColors()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -231,22 +234,22 @@ fun HistoryToolbar(
                 Icon(
                     Lucide.SlidersHorizontal,
                     contentDescription = null,
-                    tint = AssignmentAccent,
+                    tint = palette.accent,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
                     "Filter" + if (selectedCount > 0) " ($selectedCount)" else "",
-                    color = AssignmentAccent,
+                    color = palette.accent,
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
-            TextButton(onClick = onExportCsv) {
-                Text("CSV", color = AssignmentAccent, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onExportCsv, enabled = canExport) {
+                Text("CSV", color = if (canExport) palette.accent else palette.muted, style = MaterialTheme.typography.bodyMedium)
             }
-            TextButton(onClick = onExportPdf) {
-                Text("PDF", color = AssignmentAccent, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onExportPdf, enabled = canExport) {
+                Text("PDF", color = if (canExport) palette.accent else palette.muted, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -259,6 +262,7 @@ fun PagerRow(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
+    val palette = mockColors()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -270,7 +274,7 @@ fun PagerRow(
         Text(
             "Page $currentPage of $totalPages",
             style = MaterialTheme.typography.bodySmall,
-            color = MutedForeground,
+            color = palette.muted,
         )
         TextButton(onClick = onNext, enabled = currentPage < totalPages) {
             Text("Next")

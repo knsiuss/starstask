@@ -16,16 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,44 +29,67 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.AttendanceCounts
 import id.starstask.mobile.data.AttendanceEntry
-import id.starstask.mobile.data.formatAttendancePercentage
 import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.loadStudentAttendance
 import id.starstask.mobile.ui.components.StatusBadge
 import id.starstask.mobile.ui.components.WebAlert
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Border
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.Muted
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.SuccessSoft
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.WarningSoft
+import id.starstask.mobile.ui.theme.mockColors
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 
 // Course detail: web apps/web/src/app/(workspace)/attendance/courses/[courseId]/page.tsx
 // (overview metrics + attendance summary + full session history). Membership is
 // checked server-side by the same class-scoped query used by the list.
 @Composable
 fun AttendanceSessionDetailScreen(
-    entry: AttendanceEntry?,
+    userId: String? = null,
+    sessionId: String? = null,
+    entry: AttendanceEntry? = null,
     onBack: () -> Unit,
 ) {
-    if (entry == null) {
+    val palette = mockColors()
+    val provided = entry
+    var loading by remember { mutableStateOf(provided == null && userId != null && sessionId != null) }
+    var resolvedEntry by remember { mutableStateOf<AttendanceEntry?>(provided) }
+    var resolvedError by remember { mutableStateOf(false) }
+    LaunchedEffect(userId, sessionId) {
+        if (provided == null && userId != null && sessionId != null) {
+            loading = true
+            runCatching {
+                id.starstask.mobile.data.loadStudentAttendance(userId).entries.firstOrNull { it.sessionId == sessionId }
+            }.onSuccess { loaded ->
+                resolvedEntry = loaded
+                resolvedError = loaded == null
+            }.onFailure { resolvedError = true }
+            loading = false
+        }
+    }
+    val resolved: AttendanceEntry? = provided ?: resolvedEntry
+    val loadFailed = resolvedError
+    if (resolved == null) {
         Column(
             modifier = Modifier.fillMaxSize().padding(Spacing.Page),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Attendance record not found.", color = MutedForeground)
+            if (loading) {
+                CircularProgressIndicator()
+            } else {
+                Text(
+                    if (loadFailed) "Could not load this attendance record." else "Attendance record not found.",
+                    color = palette.muted,
+                )
+                androidx.compose.material3.TextButton(onClick = onBack) { Text("Back") }
+            }
         }
         return
     }
+
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.Section, vertical = Spacing.Xl),
@@ -82,29 +98,29 @@ fun AttendanceSessionDetailScreen(
         item(key = "back") {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Lucide.ArrowLeft, contentDescription = "Back", tint = Foreground)
+                    Icon(Lucide.ArrowLeft, contentDescription = "Back", tint = palette.ink)
                 }
-                Text("Back to attendance", color = MutedForeground, style = MaterialTheme.typography.bodyMedium)
+                Text("Back to attendance", color = palette.muted, style = MaterialTheme.typography.bodyMedium)
             }
         }
         item(key = "title") {
             Column {
-                Text(entry.title, color = Foreground, style = MaterialTheme.typography.headlineSmall)
+                Text(resolved.title, color = palette.ink, style = MaterialTheme.typography.headlineSmall)
                 Text(
                     listOfNotNull(
-                        entry.className,
-                        entry.subjectName,
-                        if (entry.sessionType == "online") "Online" else "In person",
+                        resolved.className,
+                        resolved.subjectName,
+                        if (resolved.sessionType == "online") "Online" else "In person",
                     ).joinToString(" · "),
-                    color = MutedForeground,
+                    color = palette.muted,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 4.dp),
                 )
-                StatusBadge(status = entry.status, modifier = Modifier.padding(top = 10.dp))
+                StatusBadge(status = resolved.status, modifier = Modifier.padding(top = 10.dp))
             }
         }
 
-        when (entry.status) {
+        when (resolved.status) {
             "pending" -> item(key = "note") {
                 NoteCard("This session has not finished yet, so it is not counted in your attendance percentage.")
             }
@@ -128,45 +144,45 @@ fun AttendanceSessionDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Border, RoundedCornerShape(12.dp))
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                     .padding(horizontal = Spacing.Xxl),
             ) {
-                SessionDetailRow("Class", entry.className + " · " + entry.academicYear + " · " + entry.semester)
-                HorizontalDivider(color = Border)
-                SessionDetailRow("Subject", entry.subjectName ?: "No linked subject")
-                HorizontalDivider(color = Border)
-                SessionDetailRow("Session date", formatDateShort(entry.startsAt))
-                HorizontalDivider(color = Border)
-                SessionDetailRow("Scheduled time", "${formatTime(entry.startsAt)}–${formatTime(entry.endsAt)} ${id.starstask.mobile.data.timezoneLabel(entry.timeZone)}")
-                HorizontalDivider(color = Border)
+                SessionDetailRow("Class", resolved.className + " · " + resolved.academicYear + " · " + resolved.semester)
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
+                SessionDetailRow("Subject", resolved.subjectName ?: "No linked subject")
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
+                SessionDetailRow("Session date", formatDateShort(resolved.startsAt))
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
+                SessionDetailRow("Scheduled time", "${formatTime(resolved.startsAt)}–${formatTime(resolved.endsAt)} ${id.starstask.mobile.data.timezoneLabel(resolved.timeZone)}")
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
                 SessionDetailRow(
                     "Actual check-in",
-                    if (entry.checkedInAt != null) {
-                        "${formatDateShort(entry.checkedInAt)}, ${formatTime(entry.checkedInAt)}"
+                    if (resolved.checkedInAt != null) {
+                        "${formatDateShort(resolved.checkedInAt)}, ${formatTime(resolved.checkedInAt)}"
                     } else {
                         "Not checked in"
                     },
                 )
-                HorizontalDivider(color = Border)
-                SessionDetailRow("Recorded by", recordedByLabel(entry))
-                if (entry.location != null) {
-                    HorizontalDivider(color = Border)
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
+                SessionDetailRow("Recorded by", recordedByLabel(resolved))
+                if (resolved.location != null) {
+                    HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Xl),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
                     ) {
-                        Icon(Lucide.MapPin, contentDescription = null, tint = MutedForeground)
-                        Text(entry.location, color = Foreground, style = MaterialTheme.typography.bodyMedium)
+                        Icon(Lucide.MapPin, contentDescription = null, tint = palette.muted)
+                        Text(resolved.location, color = palette.ink, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-                HorizontalDivider(color = Border)
-                SessionDetailRow("Notes", entry.note ?: "No notes on this record.")
+                HorizontalDivider(color = palette.hairline, thickness = 0.5.dp)
+                SessionDetailRow("Notes", resolved.note ?: "No notes on this record.")
             }
         }
         item(key = "foot") {
             Text(
                 "Only you and your class admins can see this record. Students cannot change attendance; ask your class admin if something looks wrong.",
-                color = MutedForeground,
+                color = palette.muted,
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -185,21 +201,23 @@ fun recordedByLabel(entry: AttendanceEntry): String {
 
 @Composable
 fun SessionDetailRow(label: String, value: String) {
+    val palette = mockColors()
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Xl),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Xl),
     ) {
-        Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.35f))
-        Text(value, color = Foreground, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(label, color = palette.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.35f))
+        Text(value, color = palette.ink, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
 fun NoteCard(text: String, isWarning: Boolean = false, isSuccess: Boolean = false) {
+    val palette = mockColors()
     val bg = when {
-        isWarning -> id.starstask.mobile.ui.theme.WarningSoft
-        isSuccess -> id.starstask.mobile.ui.theme.SuccessSoft
-        else -> id.starstask.mobile.ui.theme.Muted
+        isWarning -> palette.fairBg
+        isSuccess -> palette.goodBg
+        else -> palette.chip
     }
     Box(
         modifier = Modifier
@@ -208,7 +226,7 @@ fun NoteCard(text: String, isWarning: Boolean = false, isSuccess: Boolean = fals
             .background(bg)
             .padding(Spacing.Xl),
     ) {
-        Text(text, color = Foreground, style = MaterialTheme.typography.bodySmall)
+        Text(text, color = palette.ink, style = MaterialTheme.typography.bodySmall)
     }
 }
 

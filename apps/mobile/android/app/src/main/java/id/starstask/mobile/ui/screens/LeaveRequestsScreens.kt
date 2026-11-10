@@ -145,7 +145,7 @@ private fun LeaveRequestsListScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = Spacing.Section, vertical = Spacing.Sm),
+                    .padding(start = Spacing.Section, end = Spacing.Section, top = Spacing.Sm, bottom = 104.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.Xxl),
             ) {
                 item(key = "topbar") {

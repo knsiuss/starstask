@@ -20,20 +20,24 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.StudentAttendanceView
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.mockColors
 
 // Filter redesign: replaces the 7 permanent chips + per-field AlertDialogs.
 // One Filter button opens this sheet; selections are staged locally and
@@ -52,7 +56,6 @@ fun AttendanceFilterSheet(
     initialFrom: String?,
     initialTo: String?,
     onDismiss: () -> Unit,
-    onOpenDate: (String) -> Unit,
     onApply: (
         classId: String?,
         subjectId: String?,
@@ -63,19 +66,21 @@ fun AttendanceFilterSheet(
         to: String?,
     ) -> Unit,
 ) {
-    var classId = initialClassId
-    var subjectId = initialSubjectId
-    var status = initialStatus
-    var semester = initialSemester
-    var year = initialYear
-    var from = initialFrom
-    var to = initialTo
+    val palette = mockColors()
+    var classId by remember { mutableStateOf(initialClassId) }
+    var subjectId by remember { mutableStateOf(initialSubjectId) }
+    var status by remember { mutableStateOf(initialStatus) }
+    var semester by remember { mutableStateOf(initialSemester) }
+    var year by remember { mutableStateOf(initialYear) }
+    var from by remember { mutableStateOf(initialFrom) }
+    var to by remember { mutableStateOf(initialTo) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var dateTarget by remember { mutableStateOf<String?>(null) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Surface,
+        containerColor = palette.card,
     ) {
         LazyColumn(
             modifier = Modifier
@@ -88,7 +93,7 @@ fun AttendanceFilterSheet(
                 Text(
                     "Filters",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Foreground,
+                    color = palette.ink,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -144,7 +149,7 @@ fun AttendanceFilterSheet(
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
                     Text(
                         "Date range",
-                        color = MutedForeground,
+                        color = palette.muted,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -153,13 +158,13 @@ fun AttendanceFilterSheet(
                             label = "From date",
                             value = from,
                             modifier = Modifier.weight(1f),
-                            onClick = { onOpenDate("from") },
+                            onClick = { dateTarget = "from" },
                         )
                         AttendanceDateField(
                             label = "To date",
                             value = to,
                             modifier = Modifier.weight(1f),
-                            onClick = { onOpenDate("to") },
+                            onClick = { dateTarget = "to" },
                         )
                     }
                 }
@@ -182,16 +187,55 @@ fun AttendanceFilterSheet(
                         },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Text("Reset filters", color = MutedForeground)
+                        Text("Reset filters", color = palette.muted)
                     }
                     TextButton(
                         onClick = { onApply(classId, subjectId, status, semester, year, from, to) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Text("Apply filters", color = AssignmentAccent, fontWeight = FontWeight.SemiBold)
+                        Text("Apply filters", color = palette.accent, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
+        }
+    }
+
+    if (dateTarget != null) {
+        val isFrom = dateTarget == "from"
+        val initial = if (isFrom) from else to
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis =
+                initial?.let { raw ->
+                    runCatching {
+                        java.time.LocalDate.parse(raw)
+                            .atStartOfDay(java.time.ZoneOffset.UTC)
+                            .toInstant()
+                            .toEpochMilli()
+                    }.getOrNull()
+                },
+        )
+        DatePickerDialog(
+            onDismissRequest = { dateTarget = null },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let { millis ->
+                            val date =
+                                java.time.Instant.ofEpochMilli(millis)
+                                    .atZone(java.time.ZoneOffset.UTC)
+                                    .toLocalDate()
+                                    .toString()
+                            if (isFrom) from = date else to = date
+                        }
+                        dateTarget = null
+                    },
+                ) { Text("OK", color = palette.accent) }
+            },
+            dismissButton = {
+                TextButton(onClick = { dateTarget = null }) { Text("Cancel", color = palette.muted) }
+            },
+        ) {
+            DatePicker(state = state)
         }
     }
 }
@@ -204,10 +248,11 @@ private fun AttendanceFilterGroup(
     selected: String?,
     onSelect: (String?) -> Unit,
 ) {
+    val palette = mockColors()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
         Text(
             label,
-            color = MutedForeground,
+            color = palette.muted,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
         )
@@ -218,7 +263,7 @@ private fun AttendanceFilterGroup(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (active) AssignmentAccent.copy(alpha = 0.08f) else Surface)
+                    .background(if (active) palette.accentSoft else palette.card)
                     .clickable { onSelect(value) }
                     .padding(horizontal = Spacing.Md, vertical = Spacing.Xl),
                 verticalAlignment = Alignment.CenterVertically,
@@ -226,7 +271,7 @@ private fun AttendanceFilterGroup(
             ) {
                 Text(
                     text,
-                    color = if (active) AssignmentAccent else Foreground,
+                    color = if (active) palette.accent else palette.ink,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
@@ -236,7 +281,7 @@ private fun AttendanceFilterGroup(
                     Icon(
                         Lucide.Check,
                         contentDescription = "Selected",
-                        tint = AssignmentAccent,
+                        tint = palette.accent,
                         modifier = Modifier.size(Spacing.Section),
                     )
                 }
@@ -252,16 +297,17 @@ private fun AttendanceDateField(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val palette = mockColors()
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(Surface)
+            .background(palette.card)
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Text(
             value ?: "Select date",
-            color = if (value == null) MutedForeground else Foreground,
+            color = if (value == null) palette.muted else palette.ink,
             style = MaterialTheme.typography.bodyMedium,
         )
     }

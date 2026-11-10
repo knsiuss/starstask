@@ -58,10 +58,17 @@ fun CreateAssignmentDialog(
     userId: String,
     onDismiss: () -> Unit,
     onCreated: () -> Unit,
+    initialClassId: String? = null,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var classId by remember { mutableStateOf(scope.classes.firstOrNull()?.id ?: "") }
+    var classId by remember {
+        mutableStateOf(
+            initialClassId?.takeIf { target -> scope.classes.any { it.id == target } }
+                ?: scope.classes.firstOrNull()?.id
+                ?: "",
+        )
+    }
     val selectedClass = scope.classes.firstOrNull { it.id == classId } ?: scope.classes.firstOrNull()
     var subjectId by remember { mutableStateOf(selectedClass?.subjects?.firstOrNull()?.id ?: "") }
     var title by remember { mutableStateOf("") }

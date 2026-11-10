@@ -1,6 +1,7 @@
 package id.starstask.mobile.ui.screens.assignmentdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,111 +10,168 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.AssignmentDetail
-import id.starstask.mobile.ui.components.StarsTaskBadge
-import id.starstask.mobile.ui.components.BadgeVariant
+import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.Spacing
+import id.starstask.mobile.ui.theme.mockColors
+import androidx.compose.material3.MaterialTheme
 
+// Leave-request style detail cards: labelSmall (muted) + bodyMedium (ink),
+// 20.dp radius, 1.dp cardBorder, mockColors, Spacing.Block padding.
 @Composable
 fun InformationCard(detail: AssignmentDetail) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+    val palette = mockColors()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .padding(Spacing.Block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Lucide.Info, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(16.dp))
-                Text("Assignment information", color = Foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp))
-            }
-            Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                InfoRow(label = "Course", value = detail.courseName)
-                if (!detail.courseCode.isNullOrBlank()) InfoRow(label = "Course code", value = detail.courseCode!!)
-                if (!detail.courseDepartment.isNullOrBlank()) InfoRow(label = "Department", value = detail.courseDepartment!!)
-                if (!detail.semester.isNullOrBlank()) InfoRow(label = "Semester", value = detail.semester!!)
-                if (!detail.lecturerName.isNullOrBlank()) InfoRow(label = "Lecturer", value = detail.lecturerName!!)
-                if (!detail.academicYear.isNullOrBlank()) InfoRow(label = "Academic year", value = detail.academicYear!!)
-                if (!detail.assignmentType.isNullOrBlank()) InfoRow(label = "Type", value = detail.assignmentType!!.replaceFirstChar { it.uppercase() })
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Status", color = MutedForeground, fontSize = 13.sp)
-                    StatusChip(status = detail.status)
-                }
-            }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Lucide.Info, contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
+            Text(
+                "Assignment information",
+                style = MaterialTheme.typography.titleSmall,
+                color = palette.ink,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        DetailValueRow(label = "Course", value = detail.courseName)
+        detail.courseCode?.takeIf { it.isNotBlank() }?.let { DetailValueRow(label = "Course code", value = it) }
+        detail.courseDepartment?.takeIf { it.isNotBlank() }?.let { DetailValueRow(label = "Department", value = it) }
+        detail.semester?.takeIf { it.isNotBlank() }?.let { DetailValueRow(label = "Semester", value = it) }
+        detail.lecturerName?.takeIf { it.isNotBlank() }?.let { DetailValueRow(label = "Lecturer", value = it) }
+        detail.academicYear?.takeIf { it.isNotBlank() }?.let { DetailValueRow(label = "Academic year", value = it) }
+        detail.assignmentType?.takeIf { it.isNotBlank() }?.let { DetailValueRow(label = "Type", value = it.replaceFirstChar { c -> c.uppercase() }) }
+        DetailValueRow(
+            label = "Status",
+            value = statusLabel(detail.status),
+            trailing = { StatusChip(detail.status) },
+        )
+    }
+}
+
+@Composable
+private fun DetailValueRow(
+    label: String,
+    value: String,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    val palette = mockColors()
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = palette.muted)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = palette.ink, modifier = Modifier.weight(1f).padding(end = 12.dp))
+            trailing?.invoke()
         }
     }
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = MutedForeground, fontSize = 13.sp)
-        Text(value, color = Foreground, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(start = 16.dp))
+fun StatusChip(status: String, modifier: Modifier = Modifier) {
+    val palette = mockColors()
+    val (label, fg, bg) = when (status) {
+        "published" -> Triple("Published", palette.goodFg, palette.goodBg)
+        "pending_review", "pending" -> Triple("Pending", palette.fairFg, palette.fairBg)
+        "rejected", "revision" -> Triple("Needs changes", palette.riskFg, palette.riskBg)
+        "draft" -> Triple("Draft", palette.muted, palette.chip)
+        else -> Triple(statusLabel(status), palette.muted, palette.chip)
+    }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(bg)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Text(label, color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
-@Composable
-fun StatusChip(status: String) {
-    val (label, variant) = when (status) {
-        "published" -> "Published" to BadgeVariant.ACCENT
-        "pending_review", "pending" -> "Pending" to BadgeVariant.WARNING
-        "rejected", "revision" -> "Needs changes" to BadgeVariant.DANGER
-        "draft" -> "Draft" to BadgeVariant.NEUTRAL
-        else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() } to BadgeVariant.NEUTRAL
-    }
-    StarsTaskBadge(label = label, variant = variant)
+fun statusLabel(status: String): String = when (status) {
+    "published" -> "Published"
+    "pending_review", "pending" -> "Pending"
+    "rejected" -> "Rejected"
+    "revision" -> "Needs changes"
+    "draft" -> "Draft"
+    else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
-
-fun breadcrumbText(title: String): String = "Assignments > $title"
 
 @Composable
 fun ContributorCard(displayName: String?, avatarUrl: String?, createdAt: String) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+    val palette = mockColors()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .padding(Spacing.Block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Lucide.Users, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(16.dp))
-                Text("Contributor", color = Foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Lucide.Users, contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
+            Text(
+                "Contributor",
+                style = MaterialTheme.typography.titleSmall,
+                color = palette.ink,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
+        ) {
+            val initials = displayName
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?.split(" ", " ")
+                ?.filter { it.isNotBlank() }
+                ?.take(2)
+                ?.joinToString("") { it.first().uppercaseChar().toString() }
+                ?: "?"
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(palette.accentSoft),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(initials, color = palette.accent, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             }
-            Row(modifier = Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val initials = displayName
-                    ?.trim()
-                    ?.takeIf { it.length >= 2 }
-                    ?.substring(0, 2)
-                    ?.uppercase()
-                    ?: (displayName?.firstOrNull()?.uppercase() ?: "?")
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(androidx.compose.ui.graphics.Color(0xFFE8EDFA)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(initials, color = Accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
-                Column {
-                    Text(displayName ?: "Unknown contributor", color = Foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                    if (createdAt.isNotBlank()) {
-                        Text("Contributed ${id.starstask.mobile.data.formatDateShort(createdAt)}", color = MutedForeground, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
-                    }
+            Column {
+                Text(
+                    displayName ?: "Unknown contributor",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.ink,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                )
+                if (createdAt.isNotBlank()) {
+                    Text(
+                        "Contributed ${formatDateShort(createdAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.muted,
+                    )
                 }
             }
         }
@@ -122,35 +180,40 @@ fun ContributorCard(displayName: String?, avatarUrl: String?, createdAt: String)
 
 @Composable
 fun RevisionHistoryCard(revisions: List<id.starstask.mobile.data.AssignmentRevision>) {
+    val palette = mockColors()
     if (revisions.isEmpty()) return
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .padding(Spacing.Block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Lucide.History, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(16.dp))
-                Text("Revision history", color = Foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Lucide.History, contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
+            Text(
+                "Revision history",
+                style = MaterialTheme.typography.titleSmall,
+                color = palette.ink,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        revisions.forEach { rev ->
+            val kind = when (rev.changeKind) {
+                "created" -> "Published"
+                "moderated" -> "Status changed"
+                else -> "Updated"
             }
-            Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                revisions.forEach { rev ->
-                    val kind = when (rev.changeKind) {
-                        "created" -> "Published"
-                        "moderated" -> "Status changed"
-                        else -> "Updated"
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(kind, color = Foreground, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                            val fields = rev.changedFields.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: ""
-                            if (fields.isNotBlank()) {
-                                Text(fields, color = MutedForeground, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
-                            }
-                        }
-                        Text(id.starstask.mobile.data.formatDateShort(rev.createdAt), color = MutedForeground, fontSize = 12.sp)
-                    }
+            Column {
+                Text(kind, style = MaterialTheme.typography.bodyMedium, color = palette.ink, fontWeight = FontWeight.Medium)
+                val fields = rev.changedFields.takeIf { it.isNotEmpty() }?.joinToString(", ").orEmpty()
+                if (fields.isNotBlank()) {
+                    Text(fields, style = MaterialTheme.typography.bodySmall, color = palette.muted)
                 }
+                Text(formatDateShort(rev.createdAt), style = MaterialTheme.typography.labelSmall, color = palette.muted)
             }
         }
     }

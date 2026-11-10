@@ -150,3 +150,13 @@ suspend fun getClassDependencies(classId: String): ClassDependencies {
     val canDelete = members == 0 && assignments == 0 && submissions == 0
     return ClassDependencies(members, assignments, submissions, canDelete)
 }
+
+suspend fun removeClassMember(classId: String, userId: String) {
+    SupabaseProvider.client.postgrest.rpc(
+        "remove_class_member",
+        buildJsonObject {
+            put("p_class_id", JsonPrimitive(classId))
+            put("p_user_id", JsonPrimitive(userId))
+        },
+    )
+}

@@ -64,3 +64,9 @@ apps/mobile/android/ui*.xml
 apps/mobile/android/shot*.png
 apps/mobile/android/errors.txt
 
+# Agent scratch workspace (screenshots, temp copies)
+.scratch/
+
+
+.vercel
+.env*

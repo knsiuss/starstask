@@ -4,6 +4,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -25,20 +27,25 @@ android {
                 file.inputStream().use { load(it) }
             }
         }
+        // Supabase public (publishable) URL + key — safe to keep as defaults:
+        // identical to NEXT_PUBLIC_* values shipped in the web bundle.
+        val defaultSupabaseUrl = "https://xlkscbfljzuegvrybmah.supabase.co"
+        val defaultSupabasePublishableKey = "sb_publishable_UpeobYLenEWXYxfdIRZTFw_ZOdtjt4Q"
         buildConfigField(
             "String",
             "SUPABASE_URL",
-            "\"${localProps.getProperty("starstask.supabase.url", "https://your-project-ref.supabase.co")}\""
+            "\"${localProps.getProperty("starstask.supabase.url", defaultSupabaseUrl)}\""
         )
         buildConfigField(
             "String",
             "SUPABASE_PUBLISHABLE_KEY",
-            "\"${localProps.getProperty("starstask.supabase.publishableKey", "your-publishable-key")}\""
+            "\"${localProps.getProperty("starstask.supabase.publishableKey", defaultSupabasePublishableKey)}\""
         )
+        val defaultSiteUrl = "http://localhost:3000"
         buildConfigField(
             "String",
             "SITE_URL",
-            "\"${localProps.getProperty("starstask.site.url", "https://your-site.example.com")}\""
+            "\"${localProps.getProperty("starstask.site.url", defaultSiteUrl)}\""
         )
         // Google OAuth Web client ID — public identifier (same one Supabase
         // Auth uses server-side), safe to keep as default so fresh clones and
@@ -98,9 +105,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
-    implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-messaging")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
