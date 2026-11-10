@@ -17,13 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import id.starstask.mobile.ui.components.BrandMark
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusPillShape
+import id.starstask.mobile.ui.theme.DashRadiusPill
 import id.starstask.mobile.ui.theme.dashColors
 
 @Composable
@@ -66,11 +65,11 @@ fun DashTopBar(
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .clip(DashRadiusPillShape)
-                            .background(Color(0xFFE5484D))
+                            .clip(DashRadiusPill)
+                            .background(palette.badge)
                             .padding(horizontal = 5.dp, vertical = 2.dp),
                     ) {
-                        Text(label, color = Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text(label, color = androidx.compose.ui.graphics.Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                     }
                 }
             }

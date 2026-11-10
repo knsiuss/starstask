@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.components.BrandMark
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusCardShape
+import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
 import java.util.Locale
 
@@ -54,7 +54,7 @@ fun DashHero(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(DashRadiusCardShape)
+            .clip(DashRadiusCard)
             .background(Brush.horizontalGradient(listOf(palette.heroStart, palette.heroEnd)))
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusPillShape
+import id.starstask.mobile.ui.theme.DashRadiusPill
 import id.starstask.mobile.ui.theme.LocalDarkTheme
 
 private val GradientStartLight = Color(0xFF4F8CFF)
@@ -54,11 +54,11 @@ fun GradientPillButton(
             .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
             .shadow(
                 elevation = if (dark) 0.dp else 8.dp,
-                shape = DashRadiusPillShape,
+                shape = DashRadiusPill,
                 ambientColor = AccentShadow,
                 spotColor = AccentShadow,
             )
-            .clip(DashRadiusPillShape)
+            .clip(DashRadiusPill)
             .background(if (enabled) brush else Brush.linearGradient(listOf(Color(0xFFB9C6DE), Color(0xFFB9C6DE))))
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 52.dp)

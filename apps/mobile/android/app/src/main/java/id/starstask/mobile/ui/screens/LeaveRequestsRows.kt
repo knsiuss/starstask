@@ -25,7 +25,7 @@ import id.starstask.mobile.data.leaveReasonLabel
 import id.starstask.mobile.data.leaveStatusLabel
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.components.StarsTaskBadge
-import id.starstask.mobile.ui.theme.DashRadiusTileShape
+import id.starstask.mobile.ui.theme.DashRadiusTile
 import id.starstask.mobile.ui.theme.dashColors
 
 @Composable
@@ -37,9 +37,9 @@ fun LeaveRequestCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusTileShape)
+            .clip(DashRadiusTile)
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, DashRadiusTileShape)
+            .border(1.dp, palette.cardBorder, DashRadiusTile)
             .clickable(onClick = onClick)
             .padding(Spacing.Block),
     ) {

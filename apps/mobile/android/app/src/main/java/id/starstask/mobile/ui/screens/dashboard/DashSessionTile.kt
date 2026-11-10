@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.ScheduleEntry
 import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusTileShape
+import id.starstask.mobile.ui.theme.DashRadiusTile
 import id.starstask.mobile.ui.theme.dashColors
 
 private enum class SessionTileTone { BLUE, PURPLE, GREEN }
@@ -68,7 +68,7 @@ fun DashSessionTile(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(DashRadiusTileShape)
+            .clip(DashRadiusTile)
             .background(palette.card)
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp, horizontal = 14.dp),

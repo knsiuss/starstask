@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.LeaveRequest
 import id.starstask.mobile.ui.components.GradientPillButton
-import id.starstask.mobile.ui.theme.DashRadiusCardShape
+import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
 
 @Composable
@@ -45,9 +45,9 @@ fun LeaveStatsGrid(requests: List<LeaveRequest>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusCardShape)
+            .clip(DashRadiusCard)
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, DashRadiusCardShape)
+            .border(1.dp, palette.cardBorder, DashRadiusCard)
             .padding(vertical = Spacing.Block),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -139,7 +139,7 @@ fun LeaveApprovalInfoCard() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusCardShape)
+            .clip(DashRadiusCard)
             .background(palette.tileBlueBackground)
             .padding(Spacing.Block),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Lg),

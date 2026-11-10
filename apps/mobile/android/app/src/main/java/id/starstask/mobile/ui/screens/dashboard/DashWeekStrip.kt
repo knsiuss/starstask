@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.ScheduleEntry
 import id.starstask.mobile.data.jakartaDate
-import id.starstask.mobile.ui.theme.DashRadiusCardShape
+import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
 
 private val WeekDayLabels = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
@@ -45,7 +45,7 @@ fun DashWeekStrip(
     androidx.compose.foundation.layout.Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(DashRadiusCardShape)
+            .clip(DashRadiusCard)
             .background(palette.card)
             .padding(vertical = 12.dp, horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),

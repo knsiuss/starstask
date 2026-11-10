@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusCardShape
+import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
 
 @Composable
@@ -30,7 +30,7 @@ fun DashAlertCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(DashRadiusCardShape)
+            .clip(DashRadiusCard)
             .background(palette.alertBackground)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,

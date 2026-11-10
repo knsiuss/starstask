@@ -35,6 +35,7 @@ data class DashPalette(
     val tileGreenBackground: Color,
     val tileGreenForeground: Color,
     val sessionAccentBlue: Color,
+    val badge: Color,
     val sessionAccentPurple: Color,
     val sessionAccentGreen: Color,
 )
@@ -65,6 +66,7 @@ private val DashLight = DashPalette(
     tileGreenBackground = Color(0xFFE7F8EE),
     tileGreenForeground = Color(0xFF1F9E63),
     sessionAccentBlue = Color(0xFF4C8DFF),
+    badge = Color(0xFFE5484D),
     sessionAccentPurple = Color(0xFFA78BFA),
     sessionAccentGreen = Color(0xFF34C77B),
 )
@@ -95,6 +97,7 @@ private val DashDark = DashPalette(
     tileGreenBackground = Color(0xFF16301F),
     tileGreenForeground = Color(0xFF5CB98A),
     sessionAccentBlue = Color(0xFF8FB0E8),
+    badge = Color(0xFFE5484D),
     sessionAccentPurple = Color(0xFFC0B4FB),
     sessionAccentGreen = Color(0xFF5CB98A),
 )
@@ -106,3 +109,5 @@ val DashRadiusSmall = androidx.compose.foundation.shape.RoundedCornerShape(14.dp
 val DashRadiusTile = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
 val DashRadiusCard = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
 val DashRadiusPill = androidx.compose.foundation.shape.RoundedCornerShape(999.dp)
+
+// Shape-suffixed aliases used by the dashboard redesign composables.

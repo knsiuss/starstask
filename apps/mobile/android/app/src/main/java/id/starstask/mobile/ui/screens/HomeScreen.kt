@@ -68,8 +68,8 @@ import id.starstask.mobile.ui.screens.dashboard.DashSectionHeader
 import id.starstask.mobile.ui.screens.dashboard.DashSessionTile
 import id.starstask.mobile.ui.screens.dashboard.DashTopBar
 import id.starstask.mobile.ui.screens.dashboard.DashWeekStrip
-import id.starstask.mobile.ui.theme.DashRadiusCardShape
-import id.starstask.mobile.ui.theme.DashRadiusPillShape
+import id.starstask.mobile.ui.theme.DashRadiusCard
+import id.starstask.mobile.ui.theme.DashRadiusPill
 import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.theme.dashColors
 import id.starstask.mobile.ui.theme.Danger
@@ -382,7 +382,7 @@ fun HomeScreen(
                             color = palette.muted,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier
-                                .clip(DashRadiusPillShape)
+                                .clip(DashRadiusPill)
                                 .clickable {
                                     whatsNewPrefs.edit().putString("starstask-whats-new-seen", "2026-11-05").apply()
                                     whatsNewDismissed = true
@@ -408,9 +408,9 @@ private fun DashGroupedCard(
 ) {
     val palette = dashColors()
     val baseModifier = if (onClick != null) {
-        Modifier.fillMaxWidth().clip(DashRadiusCardShape).background(palette.card).clickable(onClick = onClick)
+        Modifier.fillMaxWidth().clip(DashRadiusCard).background(palette.card).clickable(onClick = onClick)
     } else {
-        Modifier.fillMaxWidth().clip(DashRadiusCardShape).background(palette.card)
+        Modifier.fillMaxWidth().clip(DashRadiusCard).background(palette.card)
     }
     androidx.compose.foundation.layout.Column(
         modifier = baseModifier.padding(16.dp),
@@ -425,7 +425,7 @@ private fun DashEmptyTile(text: String) {
     val palette = dashColors()
     androidx.compose.material3.Surface(
         color = palette.card,
-        shape = DashRadiusCardShape,
+        shape = DashRadiusCard,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(text, color = palette.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(16.dp))
