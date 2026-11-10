@@ -44,16 +44,17 @@ fun FloatingNavDock(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
+                .fillMaxWidth()
                 .shadow(4.dp, RoundedCornerShape(999.dp))
                 .clip(RoundedCornerShape(999.dp))
                 .background(Surface.copy(alpha = 0.94f))
                 .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .padding(horizontal = 4.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -71,10 +72,11 @@ fun FloatingNavDock(
                 )
                 Column(
                     modifier = Modifier
+                        .weight(1f)
                         .clip(RoundedCornerShape(999.dp))
                         .background(pillColor)
                         .clickable { onNavigate(dest.route) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
