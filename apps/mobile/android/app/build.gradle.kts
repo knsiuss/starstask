@@ -40,10 +40,14 @@ android {
             "SITE_URL",
             "\"${localProps.getProperty("starstask.site.url", "https://your-site.example.com")}\""
         )
+        // Google OAuth Web client ID — public identifier (same one Supabase
+        // Auth uses server-side), safe to keep as default so fresh clones and
+        // gitignored local.properties don't silently drop it.
+        val defaultGoogleWebClientId = "929694231695-bh91ifq84kkrgccpvcgu1ik5h51imi2b.apps.googleusercontent.com"
         buildConfigField(
             "String",
             "GOOGLE_WEB_CLIENT_ID",
-            "\"${localProps.getProperty("starstask.google.webClientId", "TODO_WEB_CLIENT_ID")}\""
+            "\"${localProps.getProperty("starstask.google.webClientId", defaultGoogleWebClientId)}\""
         )
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
