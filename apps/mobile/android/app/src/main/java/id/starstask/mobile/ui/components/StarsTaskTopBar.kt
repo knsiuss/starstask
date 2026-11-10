@@ -23,6 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.launch
+import id.starstask.mobile.data.setThemeMode
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.theme.mockColors
@@ -34,11 +39,12 @@ private val BadgeRed = Color(0xFFE5484D)
 fun StarsTaskTopBar(
     unreadCount: Int?,
     onOpenDrawer: () -> Unit,
-    onToggleTheme: () -> Unit,
     onOpenNotifications: () -> Unit,
 ) {
     val palette = mockColors()
     val isDark = LocalDarkTheme.current
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -57,11 +63,14 @@ fun StarsTaskTopBar(
                 "StarsTask",
                 color = palette.ink,
                 fontSize = 20.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
         }
-        IconButton(onClick = onToggleTheme, modifier = Modifier.size(44.dp)) {
+        IconButton(
+            onClick = { scope.launch { setThemeMode(context, if (isDark) "light" else "dark") } },
+            modifier = Modifier.size(44.dp),
+        ) {
             Icon(
                 if (isDark) Lucide.Sun else Lucide.Moon,
                 contentDescription = if (isDark) "Switch to light mode" else "Switch to dark mode",
@@ -90,7 +99,7 @@ fun StarsTaskTopBar(
                             label,
                             color = Color.White,
                             fontSize = 10.sp,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }

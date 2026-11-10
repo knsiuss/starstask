@@ -1,7 +1,7 @@
 package id.starstask.mobile.ui.screens
 
 // Header + loading/error states for the leave form. Apple-clean large title
-// with inline back, following the Assignment / Profile header language.
+// with inline back, aligned to the pastel dashboard palette.
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,11 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Spacing
+import id.starstask.mobile.ui.theme.dashColors
 
 @Composable
 fun LeaveFormHeader(
@@ -32,22 +30,24 @@ fun LeaveFormHeader(
     subtitle: String,
     onBack: () -> Unit,
 ) {
+    val palette = dashColors()
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         IconButton(onClick = onBack) {
-            Icon(Lucide.ArrowLeft, contentDescription = "Back", tint = AssignmentForeground)
+            Icon(Lucide.ArrowLeft, contentDescription = "Back", tint = palette.text)
         }
-        Text("Absence Requests", color = AssignmentForeground, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Text("Leave Requests", color = palette.text, fontSize = 15.sp, modifier = Modifier.weight(1f))
     }
     Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
-        Text(title, color = AssignmentForeground, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold)
-        Text(subtitle, color = AssignmentSecondary, fontSize = 15.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp))
+        Text(title, color = palette.text, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold)
+        Text(subtitle, color = palette.muted, fontSize = 15.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp))
     }
 }
 
 @Composable
 fun LeaveFormLoading() {
+    val palette = dashColors()
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Page), horizontalArrangement = Arrangement.Center) {
-        CircularProgressIndicator(color = AssignmentAccent)
+        CircularProgressIndicator(color = palette.accent)
     }
 }
 
@@ -58,7 +58,8 @@ fun LeaveFormError(message: String) {
 
 @Composable
 fun LeaveFormEmpty(message: String) {
-    Text(message, color = AssignmentSecondary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
+    val palette = dashColors()
+    Text(message, color = palette.muted, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
 }
 
 @Composable

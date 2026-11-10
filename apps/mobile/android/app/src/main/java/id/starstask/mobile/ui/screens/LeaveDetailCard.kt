@@ -64,13 +64,12 @@ import id.starstask.mobile.data.validateStagedEvidence
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
-import id.starstask.mobile.ui.components.WebCompactCard
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Border
+import id.starstask.mobile.ui.theme.dashColors
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import id.starstask.mobile.ui.theme.DashRadiusTileShape
 import id.starstask.mobile.ui.theme.Danger
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
-import id.starstask.mobile.ui.theme.Surface
 import kotlinx.coroutines.launch
 
 /**
@@ -95,8 +94,16 @@ fun LeaveDetailScreen(
 
 @Composable
 fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
-    WebCompactCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+    val palette = dashColors()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(DashRadiusTileShape)
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, DashRadiusTileShape)
+            .padding(Spacing.Block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md),
+    ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -104,7 +111,7 @@ fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     if (request.reference.isNotBlank()) {
-                        Text(request.reference, style = MaterialTheme.typography.labelSmall, color = MutedForeground)
+                        Text(request.reference, style = MaterialTheme.typography.labelSmall, color = palette.muted)
                     }
                     Text(
                         if (!isOwner && request.studentName.isNotBlank()) {
@@ -113,13 +120,13 @@ fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
                             "Leave Request"
                         },
                         style = MaterialTheme.typography.titleMedium,
-                        color = Foreground,
+                        color = palette.text,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         request.className,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MutedForeground,
+                        color = palette.muted,
                     )
                 }
                 LeaveStatusBadge(request.status)
@@ -146,15 +153,15 @@ fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
             if (!request.explanation.isNullOrBlank()) {
                 DetailRow("Explanation", request.explanation)
             }
-        }
     }
 }
 
 @Composable
 fun DetailRow(label: String, value: String) {
+    val palette = dashColors()
     Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MutedForeground)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = Foreground)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = palette.muted)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = palette.text)
     }
 }
 
@@ -167,8 +174,16 @@ fun LeaveEvidenceSection(
     onOpen: (LeaveEvidence) -> Unit,
     onRemove: (LeaveEvidence) -> Unit,
 ) {
-    WebCompactCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+    val palette = dashColors()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(DashRadiusTileShape)
+            .background(palette.card)
+            .border(1.dp, palette.cardBorder, DashRadiusTileShape)
+            .padding(Spacing.Block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md),
+    ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -177,7 +192,7 @@ fun LeaveEvidenceSection(
                 Text(
                     "Supporting documents",
                     style = MaterialTheme.typography.titleSmall,
-                    color = Foreground,
+                    color = palette.text,
                     fontWeight = FontWeight.SemiBold,
                 )
                 if (editable) {
@@ -194,7 +209,7 @@ fun LeaveEvidenceSection(
                 Text(
                     "No documents attached yet. PDF, JPG, or PNG, up to 10 MB each.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MutedForeground,
+                    color = palette.muted,
                 )
             }
             evidence.forEach { item ->
@@ -207,17 +222,17 @@ fun LeaveEvidenceSection(
                         Text(
                             item.originalFilename,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Foreground,
+                            color = palette.text,
                             maxLines = 1,
                         )
                         Text(
                             formatEvidenceSize(item.fileSize),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MutedForeground,
+                            color = palette.muted,
                         )
                     }
                     IconButton(onClick = { onOpen(item) }) {
-                        Icon(Lucide.ExternalLink, contentDescription = "Open", tint = Accent)
+                        Icon(Lucide.ExternalLink, contentDescription = "Open", tint = palette.accent)
                     }
                     if (editable) {
                         IconButton(onClick = { onRemove(item) }, enabled = !busy) {

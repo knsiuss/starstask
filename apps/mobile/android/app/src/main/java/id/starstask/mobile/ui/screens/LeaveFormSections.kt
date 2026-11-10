@@ -1,9 +1,8 @@
 package id.starstask.mobile.ui.screens
 
-// Apple-clean grouped sections for the leave request form. Follows the
-// Assignment / Profile language: light page background, white grouped
-// surfaces with hairline borders and 20dp radii, disclosure rows. No
-// WebCard chrome, no per-section icon badges, no grey hero cards.
+// Grouped sections for the leave request form, aligned to the pastel
+// dashboard palette. White surfaces with hairline borders and 20dp radii;
+// no WebCard chrome, no per-section icon badges, no grey hero cards.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,19 +28,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.StagedEvidenceFile
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.AssignmentBorder
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Danger
+import id.starstask.mobile.ui.theme.dashColors
 
 val leaveRadius = RoundedCornerShape(20.dp)
-val leaveDividerColor = AssignmentBorder
 
 @Composable
 fun LeaveSectionTitle(text: String) {
+    val palette = dashColors()
     Text(
         text.uppercase(),
-        color = AssignmentSecondary,
+        color = palette.muted,
         fontSize = 13.sp,
         fontWeight = FontWeight.Medium,
         modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
@@ -50,11 +47,12 @@ fun LeaveSectionTitle(text: String) {
 
 @Composable
 fun LeaveGroupedSurface(content: @Composable ColumnScope.() -> Unit) {
+    val palette = dashColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(0.5.dp, leaveDividerColor, leaveRadius)
-            .background(androidx.compose.ui.graphics.Color.White, leaveRadius)
+            .border(0.5.dp, palette.cardBorder, leaveRadius)
+            .background(palette.card, leaveRadius)
             .padding(horizontal = 16.dp, vertical = 4.dp),
         content = content,
     )
@@ -67,6 +65,7 @@ fun LeaveDisclosureRow(
     placeholder: String,
     onClick: () -> Unit,
 ) {
+    val palette = dashColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -77,13 +76,13 @@ fun LeaveDisclosureRow(
     ) {
         Text(
             label,
-            color = AssignmentForeground,
+            color = palette.text,
             fontSize = 17.sp,
             modifier = Modifier.weight(1f),
         )
         Text(
             value ?: placeholder,
-            color = if (value == null) AssignmentSecondary else AssignmentForeground,
+            color = if (value == null) palette.muted else palette.text,
             fontSize = 17.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -92,7 +91,7 @@ fun LeaveDisclosureRow(
         Icon(
             Lucide.ChevronRight,
             contentDescription = null,
-            tint = AssignmentSecondary,
+            tint = palette.muted,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -100,14 +99,15 @@ fun LeaveDisclosureRow(
 
 @Composable
 fun LeaveSectionDivider() {
-    HorizontalDivider(color = leaveDividerColor)
+    HorizontalDivider(color = dashColors().cardBorder)
 }
 
 @Composable
 fun LeaveFootnote(text: String) {
+    val palette = dashColors()
     Text(
         text,
-        color = AssignmentSecondary,
+        color = palette.muted,
         fontSize = 13.sp,
         lineHeight = 18.sp,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -119,6 +119,7 @@ fun LeaveEvidenceRow(
     file: StagedEvidenceFile,
     onRemove: (StagedEvidenceFile) -> Unit,
 ) {
+    val palette = dashColors()
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -126,13 +127,13 @@ fun LeaveEvidenceRow(
         Icon(
             Lucide.FileText,
             contentDescription = null,
-            tint = AssignmentSecondary,
+            tint = palette.muted,
             modifier = Modifier.size(22.dp),
         )
         Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
             Text(
                 file.name,
-                color = AssignmentForeground,
+                color = palette.text,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
@@ -140,7 +141,7 @@ fun LeaveEvidenceRow(
             )
             Text(
                 formatLeaveFileSize(file.size),
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 13.sp,
             )
         }

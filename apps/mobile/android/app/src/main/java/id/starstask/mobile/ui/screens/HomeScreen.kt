@@ -58,7 +58,6 @@ import id.starstask.mobile.data.loadLeaveRequests
 import id.starstask.mobile.data.loadNotifications
 import id.starstask.mobile.data.loadSchedule
 import id.starstask.mobile.data.loadWorkspaceContext
-import id.starstask.mobile.data.setThemeMode
 import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.icons.Lucide
@@ -66,11 +65,9 @@ import id.starstask.mobile.ui.screens.dashboard.DashAlertCard
 import id.starstask.mobile.ui.screens.dashboard.DashHero
 import id.starstask.mobile.ui.screens.dashboard.DashSectionHeader
 import id.starstask.mobile.ui.screens.dashboard.DashSessionTile
-import id.starstask.mobile.ui.screens.dashboard.DashTopBar
 import id.starstask.mobile.ui.screens.dashboard.DashWeekStrip
 import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.DashRadiusPill
-import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.theme.dashColors
 import id.starstask.mobile.ui.theme.Danger
 import kotlinx.coroutines.launch
@@ -85,8 +82,6 @@ fun HomeScreen(
     onOpenSchedule: () -> Unit = {},
     onOpenClasses: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
-    onOpenNotifications: () -> Unit = {},
-    onOpenDrawer: () -> Unit = {},
     onOpenLeave: () -> Unit = {},
 ) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
@@ -96,7 +91,6 @@ fun HomeScreen(
     var notifications by remember { mutableStateOf<List<NotificationRow>>(emptyList()) }
     var invitations by remember { mutableStateOf<List<Invitation>>(emptyList()) }
     var academicCard by remember { mutableStateOf<AcademicCard?>(null) }
-    var unreadCount by remember { mutableStateOf<Int?>(null) }
     var invitationBusyId by remember { mutableStateOf<String?>(null) }
     var invitationFeedback by remember { mutableStateOf<String?>(null) }
     val appContext = LocalContext.current
@@ -106,7 +100,6 @@ fun HomeScreen(
     var whatsNewDismissed by remember {
         mutableStateOf(whatsNewPrefs.getString("starstask-whats-new-seen", null) == "2026-11-05")
     }
-    val darkMode = LocalDarkTheme.current
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
@@ -117,7 +110,6 @@ fun HomeScreen(
             notifications = loadNotifications()
             invitations = loadInvitations(userId, userEmail)
             academicCard = loadAcademicCard(userId)
-            unreadCount = loadWorkspaceContext()?.unreadNotifications
         } catch (e: Exception) {
             error = "Could not load your dashboard. Check your connection and try again."
         }
@@ -139,17 +131,6 @@ fun HomeScreen(
         modifier = Modifier.fillMaxSize().background(palette.pageBackground).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            DashTopBar(
-                isDark = darkMode,
-                unreadCount = unreadCount,
-                onOpenDrawer = onOpenDrawer,
-                onToggleTheme = {
-                    scope.launch { setThemeMode(appContext, if (darkMode) "light" else "dark") }
-                },
-                onOpenNotifications = onOpenNotifications,
-            )
-        }
         item {
             DashHero(
                 displayName = current?.displayName,

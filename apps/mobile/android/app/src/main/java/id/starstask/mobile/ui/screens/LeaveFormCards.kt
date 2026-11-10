@@ -48,9 +48,7 @@ import id.starstask.mobile.data.formatLeaveDate
 import id.starstask.mobile.data.leaveReasonLabel
 import id.starstask.mobile.data.validateLeaveDateRange
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
+import id.starstask.mobile.ui.theme.dashColors
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Success
 
@@ -66,6 +64,7 @@ fun LeaveClassSection(
     onSubjectChange: (Set<String>) -> Unit,
     canChangeClass: Boolean,
 ) {
+    val palette = dashColors()
     var showClassSheet by remember { mutableStateOf(false) }
     var showCourseSheet by remember { mutableStateOf(false) }
     LeaveSectionTitle("Class")
@@ -82,10 +81,10 @@ fun LeaveClassSection(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Class", color = AssignmentForeground, fontSize = 17.sp, modifier = Modifier.weight(1f))
+                Text("Class", color = palette.text, fontSize = 17.sp, modifier = Modifier.weight(1f))
                 Text(
                     selectedClass?.name ?: "—",
-                    color = AssignmentForeground,
+                    color = palette.text,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -137,21 +136,22 @@ fun LeaveClassSheet(
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val palette = dashColors()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = androidx.compose.ui.graphics.Color.White,
+        containerColor = palette.card,
     ) {
         Column(modifier = Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Text("Select class", color = AssignmentForeground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 12.dp))
+            Text("Select class", color = palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 12.dp))
             classes.forEach { clazz ->
                 val active = clazz.id == selectedId
                 Row(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { onPick(clazz.id) }.padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(clazz.name, color = AssignmentForeground, fontSize = 17.sp, modifier = Modifier.weight(1f))
-                    if (active) Icon(Lucide.Check, contentDescription = "Selected", tint = AssignmentAccent, modifier = Modifier.size(20.dp))
+                    Text(clazz.name, color = palette.text, fontSize = 17.sp, modifier = Modifier.weight(1f))
+                    if (active) Icon(Lucide.Check, contentDescription = "Selected", tint = palette.accent, modifier = Modifier.size(20.dp))
                 }
                 LeaveSectionDivider()
             }
@@ -168,15 +168,16 @@ fun LeaveCourseSheet(
     onChange: (Set<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val palette = dashColors()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = androidx.compose.ui.graphics.Color.White,
+        containerColor = palette.card,
     ) {
         LazyColumn(modifier = Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
             item {
-                Text("Courses this leave covers", color = AssignmentForeground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                Text(className, color = AssignmentSecondary, fontSize = 14.sp, modifier = Modifier.padding(bottom = 12.dp, top = 2.dp))
+                Text("Courses this leave covers", color = palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(className, color = palette.muted, fontSize = 14.sp, modifier = Modifier.padding(bottom = 12.dp, top = 2.dp))
             }
             items(courses) { (id, name) ->
                 Row(
@@ -188,7 +189,7 @@ fun LeaveCourseSheet(
                     Checkbox(checked = selectedIds.contains(id), onCheckedChange = {
                         onChange(if (selectedIds.contains(id)) selectedIds - id else selectedIds + id)
                     })
-                    Text(name, color = AssignmentForeground, fontSize = 16.sp, modifier = Modifier.padding(start = 8.dp))
+                    Text(name, color = palette.text, fontSize = 16.sp, modifier = Modifier.padding(start = 8.dp))
                 }
             }
         }
@@ -265,21 +266,22 @@ fun LeaveReasonSheet(
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val palette = dashColors()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = androidx.compose.ui.graphics.Color.White,
+        containerColor = palette.card,
     ) {
         Column(modifier = Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Text("Choose a reason", color = AssignmentForeground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 12.dp))
+            Text("Choose a reason", color = palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 12.dp))
             leaveReasonCategories.forEach { value ->
                 val active = value == selected
                 Row(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { onPick(value) }.padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(leaveReasonLabel(value), color = AssignmentForeground, fontSize = 17.sp, modifier = Modifier.weight(1f))
-                    if (active) Icon(Lucide.Check, contentDescription = "Selected", tint = AssignmentAccent, modifier = Modifier.size(20.dp))
+                    Text(leaveReasonLabel(value), color = palette.text, fontSize = 17.sp, modifier = Modifier.weight(1f))
+                    if (active) Icon(Lucide.Check, contentDescription = "Selected", tint = palette.accent, modifier = Modifier.size(20.dp))
                 }
                 LeaveSectionDivider()
             }
@@ -292,27 +294,28 @@ fun LeaveExplanationSection(
     explanation: String,
     onExplanationChange: (String) -> Unit,
 ) {
+    val palette = dashColors()
     LeaveSectionTitle("Explanation")
     LeaveGroupedSurface {
         TextField(
             value = explanation,
             onValueChange = { onExplanationChange(it.take(LEAVE_EXPLANATION_MAX)) },
-            placeholder = { Text("Briefly explain your reason…", color = AssignmentSecondary, fontSize = 17.sp) },
+            placeholder = { Text("Briefly explain your reason…", color = palette.muted, fontSize = 17.sp) },
             minLines = 4,
             singleLine = false,
             shape = RoundedCornerShape(16.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = androidx.compose.ui.graphics.Color.White,
-                unfocusedContainerColor = androidx.compose.ui.graphics.Color.White,
+                focusedContainerColor = palette.card,
+                unfocusedContainerColor = palette.card,
                 focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                 unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                cursorColor = AssignmentAccent,
+                cursorColor = palette.accent,
             ),
-            textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge.copy(color = AssignmentForeground, fontSize = 17.sp, lineHeight = 22.sp),
+            textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge.copy(color = palette.text, fontSize = 17.sp, lineHeight = 22.sp),
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         )
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.End) {
-            Text("${explanation.length} / $LEAVE_EXPLANATION_MAX", color = AssignmentSecondary, fontSize = 13.sp)
+            Text("${explanation.length} / $LEAVE_EXPLANATION_MAX", color = palette.muted, fontSize = 13.sp)
         }
     }
 }
@@ -323,16 +326,17 @@ fun LeaveEvidenceSection(
     onAttach: () -> Unit,
     onRemove: (StagedEvidenceFile) -> Unit,
 ) {
+    val palette = dashColors()
     LeaveSectionTitle("Supporting document")
     LeaveGroupedSurface {
         Row(
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onAttach).padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Lucide.Paperclip, contentDescription = null, tint = AssignmentAccent, modifier = Modifier.size(20.dp))
-            Text("Attach file", color = AssignmentAccent, fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 12.dp))
+            Icon(Lucide.Paperclip, contentDescription = null, tint = palette.accent, modifier = Modifier.size(20.dp))
+            Text("Attach file", color = palette.accent, fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 12.dp))
             if (staged.isNotEmpty()) {
-                Text("${staged.size} / $LEAVE_EVIDENCE_MAX_FILES", color = AssignmentSecondary, fontSize = 13.sp)
+                Text("${staged.size} / $LEAVE_EVIDENCE_MAX_FILES", color = palette.muted, fontSize = 13.sp)
             }
         }
         staged.forEach { file ->
@@ -352,6 +356,7 @@ fun LeaveBeforeSubmitSection(
     classHasCourses: Boolean,
     evidenceCount: Int,
 ) {
+    val palette = dashColors()
     var expanded by remember { mutableStateOf(false) }
     val checks = listOf(
         "Dates exactly as printed on the document." to (startDate != null && endDate != null),
@@ -365,12 +370,12 @@ fun LeaveBeforeSubmitSection(
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { expanded = !expanded }.padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Checklist", color = AssignmentForeground, fontSize = 17.sp, modifier = Modifier.weight(1f))
-            Text("${checks.count { it.second }} / ${checks.size}", color = AssignmentSecondary, fontSize = 15.sp)
+            Text("Checklist", color = palette.text, fontSize = 17.sp, modifier = Modifier.weight(1f))
+            Text("${checks.count { it.second }} / ${checks.size}", color = palette.muted, fontSize = 15.sp)
             Icon(
                 if (expanded) Lucide.ChevronDown else Lucide.ChevronRight,
                 contentDescription = null,
-                tint = AssignmentSecondary,
+                tint = palette.muted,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -381,10 +386,10 @@ fun LeaveBeforeSubmitSection(
                     Icon(
                         if (done) Lucide.Check else Lucide.CircleCheck,
                         contentDescription = null,
-                        tint = if (done) id.starstask.mobile.ui.theme.Success else AssignmentSecondary,
+                        tint = if (done) id.starstask.mobile.ui.theme.Success else palette.muted,
                         modifier = Modifier.size(18.dp),
                     )
-                    Text(text, color = AssignmentForeground, fontSize = 14.sp, modifier = Modifier.padding(start = 10.dp))
+                    Text(text, color = palette.text, fontSize = 14.sp, modifier = Modifier.padding(start = 10.dp))
                 }
             }
         }
@@ -398,6 +403,7 @@ fun LeaveDatePicker(
     onDismiss: () -> Unit,
     onPick: (String) -> Unit,
 ) {
+    val palette = dashColors()
     val initialMillis = initial?.let {
         runCatching { java.time.LocalDate.parse(it).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli() }.getOrNull()
     }
@@ -415,12 +421,12 @@ fun LeaveDatePicker(
                     }
                 },
             ) {
-                Text("OK", color = AssignmentAccent, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("OK", color = palette.accent, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
             androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text("Cancel", color = AssignmentForeground, fontSize = 17.sp)
+                Text("Cancel", color = palette.text, fontSize = 17.sp)
             }
         },
     ) {

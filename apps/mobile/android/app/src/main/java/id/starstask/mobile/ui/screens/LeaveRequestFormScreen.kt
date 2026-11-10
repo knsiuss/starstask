@@ -44,7 +44,7 @@ import id.starstask.mobile.data.uploadLeaveEvidence
 import id.starstask.mobile.data.validateLeaveForSubmit
 import id.starstask.mobile.data.validateStagedEvidence
 import id.starstask.mobile.ui.components.WebAlert
-import id.starstask.mobile.ui.theme.AssignmentBackground
+import id.starstask.mobile.ui.theme.dashColors
 import kotlinx.coroutines.launch
 
 @Composable
@@ -54,6 +54,7 @@ fun LeaveRequestFormScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
+    val palette = dashColors()
     var classes by remember { mutableStateOf<List<LeaveClassChoice>>(emptyList()) }
     var existing by remember { mutableStateOf<LeaveRequest?>(null) }
     var loading by remember { mutableStateOf(true) }
@@ -148,7 +149,7 @@ fun LeaveRequestFormScreen(
         return id
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(AssignmentBackground)) {
+    LeaveBackdrop {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -165,7 +166,7 @@ fun LeaveRequestFormScreen(
                     !editable -> LeaveFormNotEditable()
                     else -> {
                         LeaveFormHeader(
-                            title = if (requestId == null) "New absence request" else "Edit absence request",
+                            title = if (requestId == null) "New Leave Request" else "Edit Leave Request",
                             subtitle = "Request permission for your absence.",
                             onBack = onBack,
                         )
