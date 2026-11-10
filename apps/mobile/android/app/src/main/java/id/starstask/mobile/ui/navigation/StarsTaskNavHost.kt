@@ -158,7 +158,6 @@ fun StarsTaskNavHost(
                             onOpenTasks = { navigateTo(DrawerDestination.ASSIGNMENTS.route) },
                             onOpenMessages = { navigateTo(DrawerDestination.MESSAGES.route) },
                             onOpenSchedule = { navigateTo(DrawerDestination.SCHEDULE.route) },
-                            onOpenClasses = { navigateTo(DrawerDestination.CLASSES.route) },
                             onNewAssignment = { navigateTo(ASSIGNMENTS_OPEN_REQUEST_ROUTE) },
                         )
                     }

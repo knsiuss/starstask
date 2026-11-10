@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -52,11 +53,9 @@ import id.starstask.mobile.data.loadAcademicCard
 import id.starstask.mobile.data.loadDashboard
 import id.starstask.mobile.data.loadInvitations
 import id.starstask.mobile.data.loadSchedule
-import id.starstask.mobile.ui.components.BadgeVariant
-import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.screens.dashboard.DashAlertCard
 import id.starstask.mobile.ui.screens.dashboard.DashHero
+import id.starstask.mobile.ui.screens.dashboard.DashNextTaskCard
 import id.starstask.mobile.ui.screens.dashboard.DashSectionHeader
 import id.starstask.mobile.ui.screens.dashboard.DashWeekStrip
 import id.starstask.mobile.ui.theme.DashRadiusCard
@@ -73,7 +72,6 @@ fun HomeScreen(
     onOpenTasks: () -> Unit = {},
     onOpenMessages: () -> Unit = {},
     onOpenSchedule: () -> Unit = {},
-    onOpenClasses: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
 ) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
@@ -108,6 +106,12 @@ fun HomeScreen(
     val assignmentDeadlines = remember(current) {
         current?.upcomingAssignments?.mapNotNull { it.deadline } ?: emptyList()
     }
+    val nextTask = remember(current) {
+        // upcomingAssignments is already published, deadline >= now-24h, ASC:
+        // the first row is the most imminent task. When nothing is published
+        // anymore, fall back to the most recent past-deadline assignment.
+        current?.upcomingAssignments?.firstOrNull() ?: current?.latestPastAssignment
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(palette.pageBackground).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 104.dp),
@@ -116,15 +120,13 @@ fun HomeScreen(
         item {
             DashHero(
                 displayName = current?.displayName,
-                pastDeadline = current?.pastDeadline ?: 0,
+                classes = current?.classes.orEmpty(),
                 onRequestTaskPublication = onNewAssignment,
             )
         }
 
-        if ((current?.pastDeadline ?: 0) > 0) {
-            item {
-                DashAlertCard(pastDeadline = current!!.pastDeadline, onReview = onOpenTasks)
-            }
+        nextTask?.let { task ->
+            item { DashNextTaskCard(task = task, onOpen = onOpenTasks) }
         }
 
         item { DashSectionHeader("This Week", actionLabel = "View Calendar", onAction = onOpenSchedule) }
@@ -134,40 +136,18 @@ fun HomeScreen(
         if (current?.upcomingAssignments.isNullOrEmpty()) {
             item { DashEmptyTile(text = "No upcoming assignments.") }
         } else {
-            items(current!!.upcomingAssignments, key = { it.id }) { assignment ->
-                DashGroupedCard(onClick = onOpenTasks) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(assignment.title, color = palette.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text(
-                            (assignment.subjectName ?: "") + (assignment.deadline?.let { " · ${id.starstask.mobile.data.formatDateShort(it)} at ${formatTime(it)}" } ?: ""),
-                            color = palette.muted,
-                            style = MaterialTheme.typography.bodySmall,
+            item {
+                DashAssignmentGroup {
+                    current.upcomingAssignments.forEachIndexed { index, assignment ->
+                        DashAssignmentRow(
+                            title = assignment.title,
+                            meta = listOfNotNull(
+                                assignment.subjectName?.takeIf { it.isNotBlank() },
+                                assignment.deadline?.let { "${id.starstask.mobile.data.formatDateShort(it)} at ${formatTime(it)}" },
+                            ).joinToString(" · "),
+                            onClick = onOpenTasks,
+                            showDivider = index != current.upcomingAssignments.lastIndex,
                         )
-                    }
-                }
-            }
-        }
-
-        item { DashSectionHeader("My Classes", actionLabel = "See all", onAction = onOpenClasses) }
-        if (current?.classes.isNullOrEmpty()) {
-            item { DashEmptyTile(text = "No active classes yet. Join a class from an invitation or browse public classes.") }
-        } else {
-            items(current!!.classes, key = { it.id }) { clazz ->
-                DashGroupedCard {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(clazz.name, color = palette.text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            val meta = listOfNotNull(
-                                clazz.classCode?.takeIf { it.isNotBlank() },
-                                clazz.semester?.takeIf { it.isNotBlank() }?.let { it + " " + clazz.academicYear },
-                            ).joinToString(" · ")
-                            if (meta.isNotBlank()) {
-                                Text(meta, color = palette.muted, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        if (clazz.isAdmin) {
-                            StarsTaskBadge(label = "Admin", variant = BadgeVariant.ACCENT)
-                        }
                     }
                 }
             }
@@ -347,6 +327,90 @@ private fun DashAcademicIdentityCard(card: AcademicCard) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DashAssignmentGroup(content: @Composable () -> Unit) {
+    val palette = dashColors()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(DashRadiusCard)
+            .background(palette.card),
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun DashAssignmentRow(
+    title: String,
+    meta: String,
+    onClick: () -> Unit,
+    showDivider: Boolean,
+) {
+    val palette = dashColors()
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(0.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                    .background(palette.chip),
+                contentAlignment = Alignment.Center,
+            ) {
+                Lucide.FileText.let { icon ->
+                    androidx.compose.material3.Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = palette.accent,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(
+                    title,
+                    color = palette.text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (meta.isNotBlank()) {
+                    Text(
+                        meta,
+                        color = palette.muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            androidx.compose.material3.Icon(
+                Lucide.ChevronRight,
+                contentDescription = null,
+                tint = palette.muted,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        if (showDivider) {
+            androidx.compose.foundation.layout.Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 60.dp)
+                    .height(0.5.dp)
+                    .background(palette.cardBorder),
+            )
         }
     }
 }

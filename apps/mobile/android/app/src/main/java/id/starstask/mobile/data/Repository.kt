@@ -58,6 +58,7 @@ data class DashboardData(
     val classes: List<DashboardClass>,
     val todaySessions: List<DashboardSession>,
     val upcomingAssignments: List<DashboardAssignment>,
+    val latestPastAssignment: DashboardAssignment? = null,
 )
 
 suspend fun loadDashboard(userId: String): DashboardData {
@@ -84,6 +85,7 @@ suspend fun loadDashboard(userId: String): DashboardData {
             classes = emptyList(),
             todaySessions = emptyList(),
             upcomingAssignments = emptyList(),
+            latestPastAssignment = null,
         )
     }
 
@@ -194,7 +196,21 @@ suspend fun loadDashboard(userId: String): DashboardData {
         limit(5)
     }.decodeJsonArray()
 
-    val allRows: List<kotlinx.serialization.json.JsonElement> = sessions + assignments
+    // Dashboard slot falls back to the most recent past-deadline task when no
+    // upcoming one exists, so the slot is never empty. Fetched raw here; the
+    // subject name lookup happens once subjectNames is built.
+    val latestPastElement = runCatching {
+        db.from("assignments").select {
+            filter {
+                eq("status", "published")
+                lt("deadline", nowIso)
+            }
+            order("deadline", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+            limit(1)
+        }.decodeJsonArray().firstOrNull()
+    }.getOrNull()
+
+    val allRows: List<kotlinx.serialization.json.JsonElement> = sessions + assignments + listOfNotNull(latestPastElement)
     val subjectIds: Set<String> = allRows.mapNotNull {
         it.jsonObject["subject_id"]?.jsonPrimitive?.contentOrNull()
     }.toSet()
@@ -207,6 +223,16 @@ suspend fun loadDashboard(userId: String): DashboardData {
         }.decodeJsonArray().associateBy(
             { row: kotlinx.serialization.json.JsonElement -> row.jsonObject["id"]!!.jsonPrimitive.content },
             { row: kotlinx.serialization.json.JsonElement -> row.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
+        )
+    }
+
+    val latestPastAssignment = latestPastElement?.let {
+        val obj = it.jsonObject
+        DashboardAssignment(
+            id = obj["id"]!!.jsonPrimitive.content,
+            title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Assignment",
+            deadline = obj["deadline"]?.jsonPrimitive?.contentOrNull(),
+            subjectName = obj["subject_id"]?.jsonPrimitive?.contentOrNull()?.let(subjectNames::get),
         )
     }
 
@@ -266,6 +292,7 @@ suspend fun loadDashboard(userId: String): DashboardData {
                 subjectName = obj["subject_id"]?.jsonPrimitive?.contentOrNull()?.let(subjectNames::get),
             )
         },
+        latestPastAssignment = latestPastAssignment,
     )
 }
 

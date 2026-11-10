@@ -21,9 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.starstask.mobile.data.DashboardClass
 import id.starstask.mobile.ui.components.BrandMark
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.DashRadiusCard
@@ -33,7 +35,7 @@ import java.util.Locale
 @Composable
 fun DashHero(
     displayName: String?,
-    pastDeadline: Int,
+    classes: List<DashboardClass>,
     onRequestTaskPublication: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -45,11 +47,11 @@ fun DashHero(
         in 12..17 -> "Good afternoon,"
         else -> "Good evening,"
     }
-    val subtitle = if (pastDeadline > 0) {
-        "You have $pastDeadline past deadline${if (pastDeadline == 1) "" else "s"}."
-    } else {
-        "Here is an overview of your academic activities."
-    }
+    val subtitle = "Here is your academic overview."
+    val classLine = classes
+        .map { it.classCode?.takeIf { code -> code.isNotBlank() } ?: it.name }
+        .filter { it.isNotBlank() }
+        .joinToString(" · ")
 
     Column(
         modifier = modifier
@@ -75,6 +77,29 @@ fun DashHero(
                     letterSpacing = (-0.02).sp,
                     maxLines = 3,
                 )
+                if (classLine.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Text(
+                            "CLASS",
+                            color = palette.heroMuted,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.2.sp,
+                        )
+                        Text(
+                            classLine,
+                            color = palette.heroText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
             BrandMark(sizeDp = 88)
         }
