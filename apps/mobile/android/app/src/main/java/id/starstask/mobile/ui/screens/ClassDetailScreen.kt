@@ -73,6 +73,8 @@ fun ClassDetailScreen(
     members: List<String>,
     userId: String = "",
     onBack: () -> Unit = {},
+    onOpenGrades: (String) -> Unit = {},
+    onOpenManage: (ClassDetail) -> Unit = {},
 ) {
     var activeTab by remember { mutableStateOf("overview") }
     var overview by remember { mutableStateOf<ClassOverviewData?>(null) }
@@ -80,12 +82,17 @@ fun ClassDetailScreen(
     var assignments by remember { mutableStateOf<List<ExploreAssignment>>(emptyList()) }
     var loadingAssignments by remember { mutableStateOf(false) }
     var selectedCourse by remember { mutableStateOf<id.starstask.mobile.data.ClassCourse?>(null) }
+    var manageOpen by remember { mutableStateOf(false) }
     var liveMembers by remember(members, clazz.id) { mutableStateOf(members) }
     var loadingMembers by remember { mutableStateOf(false) }
 
     val detailCourse = selectedCourse
     if (detailCourse != null) {
         CourseWorkspaceScreen(clazz = clazz, course = detailCourse, onBack = { selectedCourse = null })
+        return
+    }
+    if (manageOpen) {
+        ClassManageScreen(clazz = clazz, onBack = { manageOpen = false }, onOpenGrades = { classId -> onOpenGrades(classId) })
         return
     }
 
@@ -156,6 +163,7 @@ fun ClassDetailScreen(
                     onOpenCourses = { activeTab = "courses" },
                     onOpenSchedule = { activeTab = "schedule" },
                     onOpenInfo = { activeTab = "info" },
+                    onOpenManage = { manageOpen = true },
                 )
             }
             "courses" -> item { ClassCoursesTab(clazz = clazz, onOpenCourse = { selectedCourse = it }) }
@@ -237,6 +245,7 @@ private fun ClassOverviewContentClean(
     onOpenCourses: () -> Unit,
     onOpenSchedule: () -> Unit,
     onOpenInfo: () -> Unit,
+    onOpenManage: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         OverviewStatsClean(stats = overview?.stats ?: ClassOverviewStats(total = 0, upcoming = 0, dueToday = 0, completed = 0))
@@ -247,6 +256,7 @@ private fun ClassOverviewContentClean(
             onOpenCourses = onOpenCourses,
             onOpenSchedule = onOpenSchedule,
             onOpenInfo = onOpenInfo,
+            onOpenManage = onOpenManage,
         )
         RecentAssignmentsClean(
             assignments = overview?.recent.orEmpty(),
@@ -305,6 +315,7 @@ private fun QuickActionsClean(
     onOpenCourses: () -> Unit,
     onOpenSchedule: () -> Unit,
     onOpenInfo: () -> Unit,
+    onOpenManage: () -> Unit = {},
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         SectionTitle("Actions")
@@ -324,6 +335,10 @@ private fun QuickActionsClean(
             QuickRowClean(icon = Lucide.CalendarDays, label = "Schedule", onClick = onOpenSchedule)
             androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.Info, label = "Class info", onClick = onOpenInfo)
+            if (isAdmin) {
+                androidx.compose.material3.HorizontalDivider(color = CardBorder, modifier = Modifier.padding(start = 16.dp))
+                QuickRowClean(icon = Lucide.Settings, label = "Manage class", onClick = onOpenManage)
+            }
         }
     }
 }

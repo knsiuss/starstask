@@ -63,7 +63,7 @@ import id.starstask.mobile.ui.theme.Surface
  * [ClassDetailScreen] push.
  */
 @Composable
-fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}) {
+fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (String) -> Unit = {}) {
     var rows by remember { mutableStateOf<List<ClassDetail>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     var search by remember { mutableStateOf("") }
@@ -82,7 +82,7 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}) {
 
     val current = openClass
     if (current != null) {
-        ClassDetailScreen(clazz = current, members = emptyList(), userId = userId, onBack = { openClass = null })
+        ClassDetailScreen(clazz = current, members = emptyList(), userId = userId, onBack = { openClass = null }, onOpenGrades = onOpenGrades)
         return
     }
 

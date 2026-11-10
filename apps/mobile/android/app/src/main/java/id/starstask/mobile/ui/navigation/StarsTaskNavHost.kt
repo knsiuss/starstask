@@ -133,7 +133,10 @@ fun StarsTaskNavHost(
                         AssignmentsWorkspaceScreen(userId = userId)
                     }
                     composable(DrawerDestination.CLASSES.route) {
-                        ClassesScreen(userId = userId)
+                        ClassesScreen(
+                            userId = userId,
+                            onOpenGrades = { classId -> navController.navigate("grades/$classId") },
+                        )
                     }
                     composable(DrawerDestination.ATTENDANCE.route) {
                         AttendanceScreen(userId = userId)
