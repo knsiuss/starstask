@@ -64,11 +64,10 @@ import id.starstask.mobile.data.validateStagedEvidence
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
-import id.starstask.mobile.ui.theme.DashRadiusTileShape
 import id.starstask.mobile.ui.theme.Danger
 import kotlinx.coroutines.launch
 
@@ -94,13 +93,13 @@ fun LeaveDetailScreen(
 
 @Composable
 fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusTileShape)
+            .clip(RoundedCornerShape(20.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, DashRadiusTileShape)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
@@ -120,7 +119,7 @@ fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
                         "Leave Request"
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    color = palette.text,
+                    color = palette.ink,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
@@ -158,10 +157,10 @@ fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
 
 @Composable
 fun DetailRow(label: String, value: String) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column {
         Text(label, style = MaterialTheme.typography.labelSmall, color = palette.muted)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = palette.text)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = palette.ink)
     }
 }
 
@@ -174,13 +173,13 @@ fun LeaveEvidenceSection(
     onOpen: (LeaveEvidence) -> Unit,
     onRemove: (LeaveEvidence) -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusTileShape)
+            .clip(RoundedCornerShape(20.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, DashRadiusTileShape)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
@@ -192,7 +191,7 @@ fun LeaveEvidenceSection(
             Text(
                 "Supporting documents",
                 style = MaterialTheme.typography.titleSmall,
-                color = palette.text,
+                color = palette.ink,
                 fontWeight = FontWeight.SemiBold,
             )
             if (editable) {
@@ -219,7 +218,7 @@ fun LeaveEvidenceSection(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.originalFilename, style = MaterialTheme.typography.bodyMedium, color = palette.text, maxLines = 1)
+                    Text(item.originalFilename, style = MaterialTheme.typography.bodyMedium, color = palette.ink, maxLines = 1)
                     Text(formatEvidenceSize(item.fileSize), style = MaterialTheme.typography.bodySmall, color = palette.muted)
                 }
                 IconButton(onClick = { onOpen(item) }) {

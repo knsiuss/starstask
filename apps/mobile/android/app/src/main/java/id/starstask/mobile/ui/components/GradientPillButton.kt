@@ -1,19 +1,18 @@
 package id.starstask.mobile.ui.components
 
-// Gradient pill CTA matching the pastel leave/dashboard redesign: a single
-// diagonal blue brush, pill shape, and a soft accent shadow. Legacy WebButton
-// stays flat, so this exists only for the hero CTAs.
+// Glossy iOS-light CTA matching the workspace shell: solid accent with a
+// soft halo shadow, generous radius. Legacy WebButton stays flat.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,45 +20,41 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusPill
 import id.starstask.mobile.ui.theme.LocalDarkTheme
+import id.starstask.mobile.ui.theme.mockColors
 
-private val GradientStartLight = Color(0xFF4F8CFF)
-private val GradientEndLight = Color(0xFF2F6BEF)
-private val GradientStartDark = Color(0xFF3A5588)
-private val GradientEndDark = Color(0xFF2F4470)
-private val AccentShadow = Color(0xFF2F6BEF)
+private val DisabledBackground = Color(0xFFC9D2E4)
+private val AccentHaloLight = Color(0xFF9DB4FF)
 
 @Composable
 fun GradientPillButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    icon: ImageVector? = null,
     enabled: Boolean = true,
     fillMaxWidth: Boolean = true,
 ) {
     val dark = LocalDarkTheme.current
-    val brush = Brush.linearGradient(
-        colors = if (dark) listOf(GradientStartDark, GradientEndDark) else listOf(GradientStartLight, GradientEndLight),
-    )
+    val palette = mockColors()
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+
     Row(
         modifier = modifier
             .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
             .shadow(
-                elevation = if (dark) 0.dp else 8.dp,
-                shape = DashRadiusPill,
-                ambientColor = AccentShadow,
-                spotColor = AccentShadow,
+                elevation = if (dark) 0.dp else 14.dp,
+                shape = shape,
+                ambientColor = AccentHaloLight,
+                spotColor = AccentHaloLight,
             )
-            .clip(DashRadiusPill)
-            .background(if (enabled) brush else Brush.linearGradient(listOf(Color(0xFFB9C6DE), Color(0xFFB9C6DE))))
+            .clip(shape)
+            .background(if (enabled) palette.accent else DisabledBackground)
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 52.dp)
             .padding(horizontal = 24.dp, vertical = 14.dp),

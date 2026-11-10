@@ -2414,6 +2414,49 @@ object Lucide {
         }.build()
     }
 
+    val FilePenLine: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "FilePenLine",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+                addPath(
+                    pathData = PathParser().parsePathString("M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004z").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+                addPath(
+                    pathData = PathParser().parsePathString("M14.487 7.858A1 1 0 0 1 14 7V2").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+                addPath(
+                    pathData = PathParser().parsePathString("M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+                addPath(
+                    pathData = PathParser().parsePathString("M8 18h1").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+        }.build()
+    }
+
     val FilePlus2: ImageVector by lazy {
         ImageVector.Builder(
             name = "FilePlus2",
@@ -6014,6 +6057,41 @@ object Lucide {
         }.build()
     }
 
+    val UsersRound: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "UsersRound",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+                addPath(
+                    pathData = PathParser().parsePathString("M18 21a8 8 0 0 0-16 0").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+                addPath(
+                    pathData = PathParser().parsePathString(arcPath(10f, 8f, 5f)).toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+                addPath(
+                    pathData = PathParser().parsePathString("M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3").toNodes(),
+                    stroke = strokeSpec,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4f,
+                    pathFillType = PathFillType.NonZero,
+                )
+        }.build()
+    }
+
     val Video: ImageVector by lazy {
         ImageVector.Builder(
             name = "Video",
@@ -6194,4 +6272,6 @@ object MaterialIconAliases {
     val LightMode: ImageVector get() = Lucide.Sun
     val DarkMode: ImageVector get() = Lucide.Moon
     val Menu: ImageVector get() = Lucide.Menu
+    val UsersRound: ImageVector get() = Lucide.UsersRound
+    val FilePenLine: ImageVector get() = Lucide.FilePenLine
 }

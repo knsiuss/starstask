@@ -48,7 +48,7 @@ import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.screens.dashboard.DashTopBar
 import id.starstask.mobile.ui.theme.LocalDarkTheme
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 
 sealed class LeaveDestination {
     object List : LeaveDestination()
@@ -103,7 +103,7 @@ private fun LeaveRequestsListScreen(
     onNewRequest: () -> Unit,
     onRequestClick: (LeaveRequest) -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     val darkMode = LocalDarkTheme.current
     var requests by remember { mutableStateOf<List<LeaveRequest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -162,7 +162,7 @@ private fun LeaveRequestsListScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Xxs)) {
                         Text(
                             "Leave Requests",
-                            color = palette.text,
+                            color = palette.ink,
                             fontSize = 30.sp,
                             lineHeight = 36.sp,
                             fontWeight = FontWeight.Bold,
@@ -240,7 +240,7 @@ private fun LeaveRequestsListScreen(
                                     .clickable { showFilter = true },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(Lucide.SlidersHorizontal, contentDescription = "Filter by status", tint = palette.text, modifier = Modifier.size(20.dp))
+                                Icon(Lucide.SlidersHorizontal, contentDescription = "Filter by status", tint = palette.ink, modifier = Modifier.size(20.dp))
                                 if (statusFilter != null) {
                                     Box(
                                         modifier = Modifier
@@ -259,7 +259,7 @@ private fun LeaveRequestsListScreen(
                             Text(
                                 "Your Requests",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = palette.text,
+                                color = palette.ink,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Box(

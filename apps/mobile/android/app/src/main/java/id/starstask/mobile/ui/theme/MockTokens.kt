@@ -29,6 +29,7 @@ data class MockPalette(
     val riskFg: Color,
     val fairBg: Color,
     val fairFg: Color,
+    val skeleton: Color,
 )
 
 private val MockLight = MockPalette(
@@ -52,6 +53,7 @@ private val MockLight = MockPalette(
     riskFg = Color(0xFFD64550),
     fairBg = Color(0xFFFBF3E4),
     fairFg = Color(0xFF8A5A1E),
+    skeleton = Color(0xFFE4E8EF),
 )
 
 private val MockDark = MockPalette(
@@ -75,6 +77,7 @@ private val MockDark = MockPalette(
     riskFg = Color(0xFFF1A5AE),
     fairBg = Color(0xFF332A1C),
     fairFg = Color(0xFFD9A441),
+    skeleton = Color(0xFF1F2636),
 )
 
 @androidx.compose.runtime.Composable

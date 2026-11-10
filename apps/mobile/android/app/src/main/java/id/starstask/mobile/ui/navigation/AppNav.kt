@@ -19,10 +19,16 @@ enum class DrawerDestination(
     val inBottomBar: Boolean = false,
     val bottomBarLabel: String = label,
 ) {
-    DASHBOARD("dashboard", "Dashboard", Lucide.LayoutDashboard, inBottomBar = true),
-    ASSIGNMENTS("assignments", "Assignments", Lucide.ClipboardList, inBottomBar = true),
-    CLASSES("classes", "My Classes", Lucide.GraduationCap),
-    ATTENDANCE("attendance", "Attendance", Lucide.CalendarCheck, inBottomBar = true),
+    DASHBOARD("dashboard", "Dashboard", Lucide.LayoutGrid, inBottomBar = true),
+    ASSIGNMENTS("assignments", "Assignments", Lucide.ClipboardCheck, inBottomBar = true),
+    CLASSES(
+        "classes",
+        "My Classes",
+        Lucide.GraduationCap,
+        inBottomBar = true,
+        bottomBarLabel = "My Class",
+    ),
+    ATTENDANCE("attendance", "Attendance", Lucide.UsersRound),
     SCHEDULE("schedule", "Schedule", Lucide.CalendarDays, inBottomBar = true),
 
     /**
@@ -33,7 +39,7 @@ enum class DrawerDestination(
     LEAVE(
         "leave-requests",
         "Leave Requests",
-        Lucide.ClipboardPen,
+        Lucide.FilePenLine,
         inBottomBar = true,
         bottomBarLabel = "Absence",
     ),

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.minutes
@@ -16,7 +17,14 @@ import kotlin.time.Duration.Companion.minutes
  * the metadata row. Signed URLs are minted for viewing.
  */
 
-data class AttachmentRef(val id: String, val filename: String, val storagePath: String)
+data class AttachmentRef(
+    val id: String,
+    val filename: String,
+    val storagePath: String,
+    val mimeType: String? = null,
+    val fileSize: Long? = null,
+    val createdAt: String? = null,
+)
 
 data class UploadOutcome(val ok: Boolean, val filename: String?, val message: String?)
 
@@ -36,10 +44,14 @@ suspend fun listAttachments(assignmentId: String): List<AttachmentRef> {
 
     return rows.mapNotNull {
         val obj = it.jsonObject
+        val fileSizeText = obj["file_size"]?.jsonPrimitive?.contentOrNull()
         AttachmentRef(
             id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
             filename = obj["original_filename"]?.jsonPrimitive?.content ?: "file",
             storagePath = obj["storage_path"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+            mimeType = obj["mime_type"]?.jsonPrimitive?.contentOrNull(),
+            fileSize = fileSizeText?.toLongOrNull(),
+            createdAt = obj["created_at"]?.jsonPrimitive?.contentOrNull(),
         )
     }
 }
@@ -140,4 +152,30 @@ private fun querySize(resolver: android.content.ContentResolver, uri: Uri): Long
         if (cursor.moveToFirst()) return cursor.getLong(0)
     }
     return -1
+}
+
+fun previewable(mimeType: String?): Boolean {
+    if (mimeType == null) return false
+    return mimeType.startsWith("image/") || mimeType == "application/pdf"
+}
+
+suspend fun signedAttachmentUrl(storagePath: String, expiresMinutes: Long = 15): String =
+    SupabaseProvider.client.storage.from("assignment-attachments")
+        .createSignedUrl(storagePath, expiresMinutes.minutes)
+
+suspend fun downloadAttachmentBytes(storagePath: String): ByteArray =
+    runCatching {
+        val url = SupabaseProvider.client.storage
+            .from("assignment-attachments")
+            .createSignedUrl(storagePath, 5.minutes)
+        java.net.URL(url).openStream().use { it.readBytes() }
+    }.getOrElse { throw IllegalStateException("Could not download the attachment.") }
+
+fun formatFileSize(bytes: Long?): String {
+    if (bytes == null || bytes < 0) return ""
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return "${"%.1f".format(kb).trimEnd('0').trimEnd('.')} KB"
+    val mb = kb / 1024.0
+    return "${"%.1f".format(mb).trimEnd('0').trimEnd('.')} MB"
 }

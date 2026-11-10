@@ -266,15 +266,18 @@ private suspend fun loadCatalogCourseIds(classIds: List<String>): List<String> {
     return data.mapNotNull { it.jsonObject["course_id"]?.jsonPrimitive?.contentOrNull() }.distinct()
 }
 
-private suspend fun loadCourseNames(courseIds: List<String>): Map<String, Pair<String?, String?>> {
+private suspend fun loadCourseNames(courseIds: List<String>): Map<String, Triple<String?, String?, String?>> {
     if (courseIds.isEmpty()) return emptyMap()
     val rows = SupabaseProvider.client.postgrest.from("courses").select {
         filter { isIn("id", courseIds) }
     }.decodeJsonArray()
     return rows.associate {
         val o = it.jsonObject
-        (o["id"]?.jsonPrimitive?.contentOrNull() ?: "") to
-            (o["name"]?.jsonPrimitive?.contentOrNull() to o["code"]?.jsonPrimitive?.contentOrNull())
+        (o["id"]?.jsonPrimitive?.contentOrNull() ?: "") to Triple(
+            o["name"]?.jsonPrimitive?.contentOrNull(),
+            o["code"]?.jsonPrimitive?.contentOrNull(),
+            o["department"]?.jsonPrimitive?.contentOrNull(),
+        )
     }
 }
 
@@ -381,7 +384,8 @@ suspend fun listWorkspaceSchedule(
     val classRefs = loadClassRefs(classIdsAll)
 
     val items = merged.map { raw ->
-        val (courseName, courseCode) = courseNames[raw.courseId] ?: (null to null)
+        val courseName = courseNames[raw.courseId]?.first
+        val courseCode = courseNames[raw.courseId]?.second
         val (className, classCode, classSlug) = classRefs[raw.classId] ?: Triple(null, null, null)
         WorkspaceScheduleItem(
             id = raw.id,
@@ -581,8 +585,15 @@ data class AssignmentDetail(
     val status: String,
     val deadline: String?,
     val createdAt: String,
+    val updatedAt: String? = null,
     val courseName: String,
     val courseCode: String?,
+    val courseDepartment: String? = null,
+    val lecturerName: String? = null,
+    val semester: String? = null,
+    val academicYear: String? = null,
+    val referenceUrls: List<String> = emptyList(),
+    val rejectionReason: String? = null,
     val className: String?,
     val classCode: String?,
     val classSlug: String?,
@@ -590,6 +601,7 @@ data class AssignmentDetail(
     val assignmentType: String?,
     val ownerId: String?,
     val authorDisplayName: String? = null,
+    val authorAvatarUrl: String? = null,
     val contentType: String?,
     val sourceLabel: String?,
     val tags: List<String> = emptyList(),
@@ -609,13 +621,14 @@ suspend fun getWorkspaceAssignmentDetail(assignmentId: String): AssignmentDetail
     val course = courseId?.let { loadCourseNames(listOf(it))[it] }
     val cls = classId?.let { loadClassRefs(listOf(it))[it] }
     val authorId = obj["user_id"]?.jsonPrimitive?.contentOrNull()
-    val authorName = authorId?.let {
+    val authorProfile = authorId?.let {
         db.from("profiles").select {
             filter { eq("id", it) }
             limit(1L)
         }.decodeJsonArray().firstOrNull()?.jsonObject
-            ?.get("display_name")?.jsonPrimitive?.contentOrNull()
     }
+    val authorName = authorProfile?.get("display_name")?.jsonPrimitive?.contentOrNull()
+    val authorAvatarUrl = authorProfile?.get("avatar_url")?.jsonPrimitive?.contentOrNull()
     return AssignmentDetail(
         id = obj["id"]?.jsonPrimitive?.content ?: return null,
         title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Assignment",
@@ -625,6 +638,12 @@ suspend fun getWorkspaceAssignmentDetail(assignmentId: String): AssignmentDetail
         createdAt = obj["created_at"]?.jsonPrimitive?.contentOrNull() ?: "",
         courseName = course?.first ?: "Unknown course",
         courseCode = course?.second,
+        courseDepartment = course?.third,
+        lecturerName = obj["lecturer_name"]?.jsonPrimitive?.contentOrNull(),
+        semester = obj["semester"]?.jsonPrimitive?.contentOrNull(),
+        academicYear = obj["academic_year"]?.jsonPrimitive?.contentOrNull(),
+        rejectionReason = obj["rejection_reason"]?.jsonPrimitive?.contentOrNull(),
+        updatedAt = obj["updated_at"]?.jsonPrimitive?.contentOrNull(),
         className = cls?.first,
         classCode = cls?.second,
         classSlug = cls?.third,
@@ -632,6 +651,10 @@ suspend fun getWorkspaceAssignmentDetail(assignmentId: String): AssignmentDetail
         assignmentType = obj["assignment_type"]?.jsonPrimitive?.contentOrNull(),
         ownerId = obj["user_id"]?.jsonPrimitive?.contentOrNull(),
         authorDisplayName = authorName,
+        authorAvatarUrl = authorAvatarUrl,
+        referenceUrls = (obj["reference_urls"] as? JsonArray)?.mapNotNull {
+            (it as? JsonPrimitive)?.contentOrNull()
+        }.orEmpty(),
         contentType = obj["content_type"]?.jsonPrimitive?.contentOrNull(),
         sourceLabel = obj["source_label"]?.jsonPrimitive?.contentOrNull(),
         tags = (obj["tags"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull {

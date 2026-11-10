@@ -44,7 +44,7 @@ import id.starstask.mobile.data.uploadLeaveEvidence
 import id.starstask.mobile.data.validateLeaveForSubmit
 import id.starstask.mobile.data.validateStagedEvidence
 import id.starstask.mobile.ui.components.WebAlert
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 import kotlinx.coroutines.launch
 
 @Composable
@@ -54,7 +54,7 @@ fun LeaveRequestFormScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     var classes by remember { mutableStateOf<List<LeaveClassChoice>>(emptyList()) }
     var existing by remember { mutableStateOf<LeaveRequest?>(null) }
     var loading by remember { mutableStateOf(true) }

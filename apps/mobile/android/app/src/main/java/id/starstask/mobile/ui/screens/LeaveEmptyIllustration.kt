@@ -17,17 +17,17 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 
 @Composable
 fun LeaveEmptyIllustration(modifier: Modifier = Modifier) {
-    val palette = dashColors()
+    val palette = mockColors()
     val docStart = palette.card
-    val docEnd = palette.tileBlueBackground
-    val fold = palette.heroEnd
+    val docEnd = palette.accentSoft
+    val fold = palette.accentSofter
     val line = palette.cardBorder
     val accent = palette.accent
-    val spark = palette.heroEnd
+    val spark = palette.accent
 
     Canvas(modifier = modifier.fillMaxWidth().height(170.dp)) {
         val cx = size.width / 2f

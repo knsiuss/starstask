@@ -99,6 +99,8 @@ const MATERIAL_FALLBACK = {
   LightMode: "Sun",
   DarkMode: "Moon",
   Menu: "Menu",
+  UsersRound: "UsersRound",
+  FilePenLine: "FilePenLine",
 };
 
 function collectUsedIconNames() {

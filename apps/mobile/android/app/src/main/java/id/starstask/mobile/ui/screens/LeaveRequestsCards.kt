@@ -30,24 +30,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.LeaveRequest
 import id.starstask.mobile.ui.components.GradientPillButton
-import id.starstask.mobile.ui.theme.DashRadiusCard
-import id.starstask.mobile.ui.theme.dashColors
+import androidx.compose.foundation.shape.RoundedCornerShape
+import id.starstask.mobile.ui.theme.mockColors
 
 @Composable
 fun LeaveStatsGrid(requests: List<LeaveRequest>) {
-    val palette = dashColors()
+    val palette = mockColors()
     val stats = listOf(
-        LeaveStat("Pending", requests.count { it.status == "submitted" }, Lucide.Clock, palette.tileBlueBackground, palette.tileBlueForeground),
-        LeaveStat("Approved", requests.count { it.status == "approved" }, Lucide.CircleCheck, palette.tileGreenBackground, palette.tileGreenForeground),
-        LeaveStat("Rejected", requests.count { it.status == "rejected" }, Lucide.XCircle, palette.alertBackground, palette.alertText),
+        LeaveStat("Pending", requests.count { it.status == "submitted" }, Lucide.Clock, palette.accentSoft, palette.goodFg),
+        LeaveStat("Approved", requests.count { it.status == "approved" }, Lucide.CircleCheck, palette.goodBg, palette.goodFg),
+        LeaveStat("Rejected", requests.count { it.status == "rejected" }, Lucide.XCircle, palette.riskBg, palette.riskFg),
         LeaveStat("Draft", requests.count { it.status == "draft" }, Lucide.FileText, palette.chip, palette.muted),
     )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusCard)
+            .clip(RoundedCornerShape(22.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, DashRadiusCard)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
             .padding(vertical = Spacing.Block),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -75,7 +75,7 @@ data class LeaveStat(
 
 @Composable
 private fun LeaveStatCell(stat: LeaveStat, modifier: Modifier = Modifier) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -92,7 +92,7 @@ private fun LeaveStatCell(stat: LeaveStat, modifier: Modifier = Modifier) {
         }
         Text(
             "${stat.count}",
-            color = palette.text,
+            color = palette.ink,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             lineHeight = 22.sp,
@@ -103,7 +103,7 @@ private fun LeaveStatCell(stat: LeaveStat, modifier: Modifier = Modifier) {
 
 @Composable
 fun LeaveEmptyState(onNewRequest: () -> Unit) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -112,7 +112,7 @@ fun LeaveEmptyState(onNewRequest: () -> Unit) {
         LeaveEmptyIllustration(modifier = Modifier.padding(vertical = Spacing.Md))
         Text(
             "No leave requests yet",
-            color = palette.text,
+            color = palette.ink,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
         )
@@ -135,12 +135,12 @@ fun LeaveEmptyState(onNewRequest: () -> Unit) {
 
 @Composable
 fun LeaveApprovalInfoCard() {
-    val palette = dashColors()
+    val palette = mockColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusCard)
-            .background(palette.tileBlueBackground)
+            .clip(RoundedCornerShape(22.dp))
+            .background(palette.accentSoft)
             .padding(Spacing.Block),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Lg),
         verticalAlignment = Alignment.CenterVertically,

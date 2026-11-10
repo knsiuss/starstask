@@ -29,13 +29,13 @@ import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.StagedEvidenceFile
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.Danger
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 
 val leaveRadius = RoundedCornerShape(20.dp)
 
 @Composable
 fun LeaveSectionTitle(text: String) {
-    val palette = dashColors()
+    val palette = mockColors()
     Text(
         text.uppercase(),
         color = palette.muted,
@@ -47,7 +47,7 @@ fun LeaveSectionTitle(text: String) {
 
 @Composable
 fun LeaveGroupedSurface(content: @Composable ColumnScope.() -> Unit) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -65,7 +65,7 @@ fun LeaveDisclosureRow(
     placeholder: String,
     onClick: () -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -76,13 +76,13 @@ fun LeaveDisclosureRow(
     ) {
         Text(
             label,
-            color = palette.text,
+            color = palette.ink,
             fontSize = 17.sp,
             modifier = Modifier.weight(1f),
         )
         Text(
             value ?: placeholder,
-            color = if (value == null) palette.muted else palette.text,
+            color = if (value == null) palette.muted else palette.ink,
             fontSize = 17.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -99,12 +99,12 @@ fun LeaveDisclosureRow(
 
 @Composable
 fun LeaveSectionDivider() {
-    HorizontalDivider(color = dashColors().cardBorder)
+    HorizontalDivider(color = mockColors().cardBorder)
 }
 
 @Composable
 fun LeaveFootnote(text: String) {
-    val palette = dashColors()
+    val palette = mockColors()
     Text(
         text,
         color = palette.muted,
@@ -119,7 +119,7 @@ fun LeaveEvidenceRow(
     file: StagedEvidenceFile,
     onRemove: (StagedEvidenceFile) -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -133,7 +133,7 @@ fun LeaveEvidenceRow(
         Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
             Text(
                 file.name,
-                color = palette.text,
+                color = palette.ink,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,

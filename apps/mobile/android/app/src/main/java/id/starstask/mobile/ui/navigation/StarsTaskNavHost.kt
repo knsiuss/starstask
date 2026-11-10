@@ -3,6 +3,12 @@ package id.starstask.mobile.ui.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -23,7 +29,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import id.starstask.mobile.data.getWorkspaceScope
+import id.starstask.mobile.data.loadWorkspaceContext
 import id.starstask.mobile.ui.components.StarsTaskDrawerContent
+import id.starstask.mobile.ui.components.StarsTaskTopBar
 import id.starstask.mobile.ui.screens.ActionCenterScreen
 import id.starstask.mobile.ui.screens.AdminConsoleScreen
 import id.starstask.mobile.ui.screens.AssignmentsWorkspaceScreen
@@ -66,10 +74,14 @@ fun StarsTaskNavHost(
     val scope = rememberCoroutineScope()
 
     var managesAnyClass by remember { mutableStateOf(false) }
+    var unreadNotifications by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(userId) {
         scope.launch {
             runCatching { getWorkspaceScope(userId).managesAnyClass }
                 .onSuccess { managesAnyClass = it }
+        }
+        scope.launch {
+            unreadNotifications = runCatching { loadWorkspaceContext()?.unreadNotifications }.getOrNull()
         }
     }
 
@@ -106,14 +118,30 @@ fun StarsTaskNavHost(
     ) {
         Scaffold(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            bottomBar = {
-                FloatingNavDock(
-                    currentRoute = currentRoute,
-                    onNavigate = { navigateTo(it) },
+            topBar = {
+                StarsTaskTopBar(
+                    unreadCount = unreadNotifications,
+                    onOpenDrawer = { scope.launch { drawerState.open() } },
+                    onOpenNotifications = { navigateTo(DrawerDestination.NOTIFICATIONS.route) },
                 )
             },
+            bottomBar = {
+                AnimatedVisibility(
+                    visible = baseRoute(currentRoute) != baseRoute(DrawerDestination.LEAVE.route),
+                    enter = fadeIn(animationSpec = tween(250)) + expandVertically(animationSpec = tween(250)),
+                    exit = fadeOut(animationSpec = tween(250)) + shrinkVertically(animationSpec = tween(250)),
+                ) {
+                    FloatingNavDock(
+                        currentRoute = currentRoute,
+                        onNavigate = { navigateTo(it) },
+                    )
+                }
+            },
         ) { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding)) {
+            // Only the top inset is applied: reserving bottom padding for the
+            // dock paints a windowBackground strip behind it. The dock floats
+            // above content so lists must scroll under it instead.
+            Box(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
                 NavHost(
                     navController = navController,
                     startDestination = DrawerDestination.DASHBOARD.route,

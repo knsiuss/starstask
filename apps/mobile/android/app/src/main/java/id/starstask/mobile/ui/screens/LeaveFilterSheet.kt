@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.leaveStatusLabel
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 
 private val LeaveFilterStatuses = listOf(
     null,
@@ -44,7 +44,7 @@ fun LeaveFilterSheet(
     onSelect: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -58,7 +58,7 @@ fun LeaveFilterSheet(
         ) {
             Text(
                 "Filter by status",
-                color = palette.text,
+                color = palette.ink,
                 fontSize = 20.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -79,7 +79,7 @@ fun LeaveFilterSheet(
                 ) {
                     Text(
                         if (status == null) "All" else leaveStatusLabel(status),
-                        color = palette.text,
+                        color = palette.ink,
                         fontSize = 16.sp,
                         modifier = Modifier.weight(1f),
                     )

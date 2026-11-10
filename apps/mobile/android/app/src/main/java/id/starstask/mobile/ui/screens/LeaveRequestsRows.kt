@@ -25,21 +25,21 @@ import id.starstask.mobile.data.leaveReasonLabel
 import id.starstask.mobile.data.leaveStatusLabel
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.components.StarsTaskBadge
-import id.starstask.mobile.ui.theme.DashRadiusTile
-import id.starstask.mobile.ui.theme.dashColors
+import androidx.compose.foundation.shape.RoundedCornerShape
+import id.starstask.mobile.ui.theme.mockColors
 
 @Composable
 fun LeaveRequestCard(
     request: LeaveRequest,
     onClick: () -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(DashRadiusTile)
+            .clip(RoundedCornerShape(20.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, DashRadiusTile)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .padding(Spacing.Block),
     ) {
@@ -59,7 +59,7 @@ fun LeaveRequestCard(
                 Text(
                     request.className,
                     style = MaterialTheme.typography.titleSmall,
-                    color = palette.text,
+                    color = palette.ink,
                     fontWeight = FontWeight.SemiBold,
                 )
                 if (request.subjectNames.isNotEmpty()) {

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.components.GradientPillButton
 import id.starstask.mobile.ui.theme.Spacing
-import id.starstask.mobile.ui.theme.dashColors
+import id.starstask.mobile.ui.theme.mockColors
 
 @Composable
 fun LeaveFormActions(
@@ -37,12 +37,10 @@ fun LeaveFormActions(
     onSaveDraft: () -> Unit,
     onSubmit: () -> Unit,
 ) {
-    val palette = dashColors()
+    val palette = mockColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(palette.card.copy(alpha = 0.95f))
-            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(0.dp))
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = Spacing.Section, vertical = Spacing.Md),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Xl),
@@ -52,11 +50,11 @@ fun LeaveFormActions(
             onClick = onSaveDraft,
             enabled = !busy,
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = palette.text),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = palette.ink),
             modifier = Modifier.weight(1f).heightIn(min = 50.dp),
         ) {
             if (busy) {
-                CircularProgressIndicator(color = palette.text, modifier = Modifier.size(18.dp))
+                CircularProgressIndicator(color = palette.ink, modifier = Modifier.size(18.dp))
             } else {
                 Text("Save draft", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
