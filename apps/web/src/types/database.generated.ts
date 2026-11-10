@@ -1859,6 +1859,93 @@ export type Database = {
           },
         ];
       };
+      class_export_branding: {
+        Row: {
+          class_id: string;
+          university_name: string;
+          university_short_name: string | null;
+          university_tagline: string | null;
+          faculty: string | null;
+          department: string | null;
+          study_program: string | null;
+          address: string | null;
+          city: string | null;
+          official_website: string | null;
+          official_email: string | null;
+          contact_number: string | null;
+          document_title: string;
+          footer_text: string | null;
+          product_name: string;
+          product_tagline: string;
+          product_logo_url: string;
+          product_footer: string | null;
+          branding_enabled: boolean;
+          passing_threshold: number;
+          university_logo_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          university_name?: string;
+          university_short_name?: string | null;
+          university_tagline?: string | null;
+          faculty?: string | null;
+          department?: string | null;
+          study_program?: string | null;
+          address?: string | null;
+          city?: string | null;
+          official_website?: string | null;
+          official_email?: string | null;
+          contact_number?: string | null;
+          document_title?: string;
+          footer_text?: string | null;
+          product_name?: string;
+          product_tagline?: string;
+          product_logo_url?: string;
+          product_footer?: string | null;
+          branding_enabled?: boolean;
+          passing_threshold?: number;
+          university_logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          class_id?: string;
+          university_name?: string;
+          university_short_name?: string | null;
+          university_tagline?: string | null;
+          faculty?: string | null;
+          department?: string | null;
+          study_program?: string | null;
+          address?: string | null;
+          city?: string | null;
+          official_website?: string | null;
+          official_email?: string | null;
+          contact_number?: string | null;
+          document_title?: string;
+          footer_text?: string | null;
+          product_name?: string;
+          product_tagline?: string;
+          product_logo_url?: string;
+          product_footer?: string | null;
+          branding_enabled?: boolean;
+          passing_threshold?: number;
+          university_logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_export_branding_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: true;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       classes: {
         Row: {
           academic_unit_id: string | null;

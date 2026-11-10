@@ -54,10 +54,15 @@ export default async function BrandingSettingsPage({
     managerClasses[0] ??
     null;
 
+  // listMyClasses does not carry the class institution that seeds the branding
+  // defaults, so the selected class is loaded for its institution value.
+  const selectedClass = selected ? await getClassById(selected.id) : null;
+  const institution = selectedClass?.institution ?? null;
+
   const branding = selected
-    ? await getBrandingForClass(selected.id, selected)
+    ? await getBrandingForClass(selected.id, { institution })
     : null;
-  const seed = selected ? await getSeededBranding(selected) : null;
+  const seed = selected ? await getSeededBranding({ institution }) : null;
 
   return (
     <PageShell width="narrow">

@@ -14,7 +14,7 @@ const MUTED_TEXT = "FF64748B";
 const LOGO_SIZE_PX = 44;
 const IMAGE_FETCH_TIMEOUT_MS = 5_000;
 
-type ImageExtension = "png" | "jpg" | "gif";
+type ImageExtension = "png" | "jpeg" | "gif";
 
 /**
  * Renders the campus printout header: a 3-part block (left: university logo +
@@ -163,8 +163,13 @@ async function addLogoImage(
   }
 
   try {
-    const image = await loadImage(imageUrl);
-    const imageId = sheet.workbook.addImage(image);
+    const { buffer, extension } = await loadImage(imageUrl);
+    // ExcelJS types `buffer` as an ArrayBuffer while the runtime wants raw
+    // bytes, so the same payload goes through the typed `base64` field.
+    const imageId = sheet.workbook.addImage({
+      base64: buffer.toString("base64"),
+      extension,
+    });
     sheet.addImage(imageId, { tl: { col, row }, ext: { width: LOGO_SIZE_PX, height: LOGO_SIZE_PX } });
   } catch {
     // Best-effort: a logo that cannot be fetched never fails the export.
@@ -211,8 +216,9 @@ function extensionFor(imageUrl: string): ImageExtension {
   const pathname = imageUrl.split("?")[0] ?? "";
   const extension = pathname.split(".").pop()?.toLowerCase();
 
+  // ExcelJS only accepts "jpeg", never the "jpg" alias.
   if (extension === "jpg" || extension === "jpeg") {
-    return "jpg";
+    return "jpeg";
   }
 
   if (extension === "gif") {
