@@ -61,9 +61,14 @@ fun LeaveRequestsScreen(
     userId: String,
     onOpenDrawer: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
+    onSubScreenChange: (Boolean) -> Unit = {},
 ) {
     var destination by remember { mutableStateOf<LeaveDestination>(LeaveDestination.List) }
     var refreshTick by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(destination) {
+        onSubScreenChange(destination is LeaveDestination.Form)
+    }
 
     when (val dest = destination) {
         LeaveDestination.List -> LeaveRequestsListScreen(

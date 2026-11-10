@@ -10,11 +10,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -55,11 +56,12 @@ fun FloatingNavDock(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = 10.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
+                .wrapContentWidth()
                 .shadow(
                     elevation = 18.dp,
                     shape = dockShape,
@@ -88,8 +90,8 @@ fun FloatingNavDock(
                 // same tint drives icon stroke color and label text
                 Column(
                     modifier = Modifier
-                        .width(66.dp)
-                        .heightIn(min = 54.dp)
+                        .widthIn(min = 64.dp, max = 96.dp)
+                        .heightIn(min = 56.dp)
                         .clip(pillShape)
                         .background(pillColor)
                         .clickable(onClickLabel = dest.bottomBarLabel) { onNavigate(dest.route) }

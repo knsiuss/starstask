@@ -78,6 +78,7 @@ fun StarsTaskNavHost(
 
     var managesAnyClass by remember { mutableStateOf(false) }
     var unreadNotifications by remember { mutableStateOf<Int?>(null) }
+    var leaveFormOpen by remember { mutableStateOf(false) }
     LaunchedEffect(userId) {
         scope.launch {
             runCatching { getWorkspaceScope(userId).managesAnyClass }
@@ -91,6 +92,9 @@ fun StarsTaskNavHost(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    // The leave screen owns its sub-destinations (List/Detail/Form); it tells
+    // the host about the fullscreen form so the dock can hide there.
+    LaunchedEffect(currentRoute) { leaveFormOpen = false }
 
     fun navigateTo(route: String) {
         navController.navigate(route) {
@@ -130,7 +134,7 @@ fun StarsTaskNavHost(
             },
             bottomBar = {
                 AnimatedVisibility(
-                    visible = baseRoute(currentRoute) != baseRoute(DrawerDestination.LEAVE.route),
+                    visible = baseRoute(currentRoute) != baseRoute(DrawerDestination.LEAVE.route) || !leaveFormOpen,
                     enter = fadeIn(animationSpec = tween(250)) + expandVertically(animationSpec = tween(250)),
                     exit = fadeOut(animationSpec = tween(250)) + shrinkVertically(animationSpec = tween(250)),
                 ) {
@@ -239,6 +243,7 @@ fun StarsTaskNavHost(
                         LeaveRequestsScreen(
                             userId = userId,
                             onOpenDrawer = { scope.launch { drawerState.open() } },
+                            onSubScreenChange = { leaveFormOpen = it },
                         )
                     }
                     composable(DrawerDestination.MESSAGES.route) {
@@ -248,7 +253,14 @@ fun StarsTaskNavHost(
                         NotificationsScreen()
                     }
                     composable(DrawerDestination.ACTION_CENTER.route) {
-                        ActionCenterScreen(userId = userId)
+                        ActionCenterScreen(
+                            userId = userId,
+                            onOpenAttendanceCourse = { subjectId, name, code, className ->
+                                navController.navigate(
+                                    "attendance/course/${routeArg(subjectId)}/${routeArg(name)}/${routeArg(code ?: "-")}/${routeArg(className ?: "-")}",
+                                )
+                            },
+                        )
                     }
                     composable("university-info") {
                         Text(
