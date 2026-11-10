@@ -130,7 +130,6 @@ fun StarsTaskNavHost(
                             onOpenClasses = { navigateTo(DrawerDestination.CLASSES.route) },
                             onNewAssignment = { navigateTo(ASSIGNMENTS_OPEN_REQUEST_ROUTE) },
                             onOpenNotifications = { navigateTo(DrawerDestination.NOTIFICATIONS.route) },
-                            onOpenDrawer = { scope.launch { drawerState.open() } },
                             onOpenLeave = { navigateTo(DrawerDestination.LEAVE.route) },
                         )
                     }

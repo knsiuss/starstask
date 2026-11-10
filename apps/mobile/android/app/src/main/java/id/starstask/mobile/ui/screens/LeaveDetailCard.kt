@@ -104,55 +104,55 @@ fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    if (request.reference.isNotBlank()) {
-                        Text(request.reference, style = MaterialTheme.typography.labelSmall, color = palette.muted)
-                    }
-                    Text(
-                        if (!isOwner && request.studentName.isNotBlank()) {
-                            "${request.studentName}'s leave request"
-                        } else {
-                            "Leave Request"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.text,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        request.className,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.muted,
-                    )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                if (request.reference.isNotBlank()) {
+                    Text(request.reference, style = MaterialTheme.typography.labelSmall, color = palette.muted)
                 }
-                LeaveStatusBadge(request.status)
+                Text(
+                    if (!isOwner && request.studentName.isNotBlank()) {
+                        "${request.studentName}'s leave request"
+                    } else {
+                        "Leave Request"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = palette.text,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    request.className,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.muted,
+                )
             }
-            val days = leaveDayCount(request.leaveStart, request.leaveEnd)
-            DetailRow(
-                "Leave dates",
-                formatLeaveDateRange(request.leaveStart, request.leaveEnd) +
-                    if (days > 0) " · $days ${if (days == 1) "day" else "days"}" else "",
-            )
-            DetailRow("Reason", leaveReasonLabel(request.reason))
-            DetailRow(
-                "Courses",
-                if (request.subjectNames.isNotEmpty()) {
-                    request.subjectNames.joinToString(", ")
-                } else {
-                    "Whole class — no specific course"
-                },
-            )
-            DetailRow("Document issue date", formatLeaveDate(request.documentIssueDate))
-            if (request.submittedAt != null) {
-                DetailRow("Submitted", formatLeaveDate(request.submittedAt))
-            }
-            if (!request.explanation.isNullOrBlank()) {
-                DetailRow("Explanation", request.explanation)
-            }
+            LeaveStatusBadge(request.status)
+        }
+        val days = leaveDayCount(request.leaveStart, request.leaveEnd)
+        DetailRow(
+            "Leave dates",
+            formatLeaveDateRange(request.leaveStart, request.leaveEnd) +
+                if (days > 0) " · $days ${if (days == 1) "day" else "days"}" else "",
+        )
+        DetailRow("Reason", leaveReasonLabel(request.reason))
+        DetailRow(
+            "Courses",
+            if (request.subjectNames.isNotEmpty()) {
+                request.subjectNames.joinToString(", ")
+            } else {
+                "Whole class — no specific course"
+            },
+        )
+        DetailRow("Document issue date", formatLeaveDate(request.documentIssueDate))
+        if (request.submittedAt != null) {
+            DetailRow("Submitted", formatLeaveDate(request.submittedAt))
+        }
+        if (!request.explanation.isNullOrBlank()) {
+            DetailRow("Explanation", request.explanation)
+        }
     }
 }
 
@@ -184,60 +184,50 @@ fun LeaveEvidenceSection(
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Supporting documents",
+                style = MaterialTheme.typography.titleSmall,
+                color = palette.text,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (editable) {
+                WebButton(
+                    label = "Add",
+                    onClick = onAdd,
+                    variant = WebButtonVariant.LINK,
+                    enabled = !busy,
+                    icon = Lucide.Paperclip,
+                )
+            }
+        }
+        if (evidence.isEmpty()) {
+            Text(
+                "No documents attached yet. PDF, JPG, or PNG, up to 10 MB each.",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.muted,
+            )
+        }
+        evidence.forEach { item ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
             ) {
-                Text(
-                    "Supporting documents",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = palette.text,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                if (editable) {
-                    WebButton(
-                        label = "Add",
-                        onClick = onAdd,
-                        variant = WebButtonVariant.LINK,
-                        enabled = !busy,
-                        icon = Lucide.Paperclip,
-                    )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(item.originalFilename, style = MaterialTheme.typography.bodyMedium, color = palette.text, maxLines = 1)
+                    Text(formatEvidenceSize(item.fileSize), style = MaterialTheme.typography.bodySmall, color = palette.muted)
                 }
-            }
-            if (evidence.isEmpty()) {
-                Text(
-                    "No documents attached yet. PDF, JPG, or PNG, up to 10 MB each.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.muted,
-                )
-            }
-            evidence.forEach { item ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            item.originalFilename,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = palette.text,
-                            maxLines = 1,
-                        )
-                        Text(
-                            formatEvidenceSize(item.fileSize),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.muted,
-                        )
-                    }
-                    IconButton(onClick = { onOpen(item) }) {
-                        Icon(Lucide.ExternalLink, contentDescription = "Open", tint = palette.accent)
-                    }
-                    if (editable) {
-                        IconButton(onClick = { onRemove(item) }, enabled = !busy) {
-                            Icon(Lucide.Trash2, contentDescription = "Remove", tint = Danger)
-                        }
+                IconButton(onClick = { onOpen(item) }) {
+                    Icon(Lucide.ExternalLink, contentDescription = "Open", tint = palette.accent)
+                }
+                if (editable) {
+                    IconButton(onClick = { onRemove(item) }, enabled = !busy) {
+                        Icon(Lucide.Trash2, contentDescription = "Remove", tint = Danger)
                     }
                 }
             }

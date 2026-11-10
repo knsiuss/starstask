@@ -57,7 +57,6 @@ import id.starstask.mobile.data.loadInvitations
 import id.starstask.mobile.data.loadLeaveRequests
 import id.starstask.mobile.data.loadNotifications
 import id.starstask.mobile.data.loadSchedule
-import id.starstask.mobile.data.loadWorkspaceContext
 import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.icons.Lucide
@@ -82,6 +81,7 @@ fun HomeScreen(
     onOpenSchedule: () -> Unit = {},
     onOpenClasses: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
     onOpenLeave: () -> Unit = {},
 ) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
