@@ -18,9 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
-import id.starstask.mobile.data.loadClassRoster
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +47,7 @@ import java.util.Locale
 @Composable
 fun ClassExportSheet(
     clazz: DirectoryClass,
+    members: List<DirectoryMember>,
     onDismiss: () -> Unit,
     onExportAttendancePdf: () -> Unit,
     onExportAttendanceXlsx: () -> Unit,
@@ -91,7 +90,7 @@ fun ClassExportSheet(
                 icon = Lucide.Users,
                 label = "Class members (CSV)",
                 hint = "Name, role, admin flag",
-                onClick = { shareMembersCsv(context, clazz); onDismiss() },
+                onClick = { shareMembersCsv(context, clazz, members); onDismiss() },
                 palette = palette,
             )
         }
@@ -133,10 +132,8 @@ private fun ExportRow(
     }
 }
 
-private fun shareMembersCsv(context: Context, clazz: DirectoryClass) {
-    // Minimal roster for the export: the screen already loads members, but
-    // re-reading keeps this action self-contained.
-    val csv = membersCsv(clazz.name, emptyList())
+private fun shareMembersCsv(context: Context, clazz: DirectoryClass, members: List<DirectoryMember>) {
+    val csv = membersCsv(clazz.name, members)
     val file = File(context.cacheDir, "starstask-members-" + SimpleDateFormat("yyyyMMdd", Locale.US).format(Date()) + ".csv")
     file.writeText(csv, Charsets.UTF_8)
     shareFile(context, file, "text/csv", "Class members")

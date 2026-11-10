@@ -223,4 +223,5 @@ private fun shareAttendancePdf(context: android.content.Context, entries: List<i
             entries = entries,
         ),
     )
-    shareFile(con
+    shareFile(context, file, "application/pdf", "Attendance report")
+}

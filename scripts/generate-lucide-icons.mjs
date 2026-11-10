@@ -92,7 +92,8 @@ const MATERIAL_FALLBACK = {
   Delete: "Trash2",
   Edit: "Pencil",
   Settings: "Settings",
-  Shield: "ShieldCheck",
+  Shield: "Shield",
+  PenLine: "PenLine",
   Send: "Send",
   Search: "Search",
   Info: "Info",
@@ -266,7 +267,7 @@ function attrsToKotlin(attrs) {
 function nodeToKotlin([tag, attrs]) {
   const fragments = attrsToKotlin(attrs);
   if (fragments.length === 0) return null;
-  return `                addPath(\n                    ${fragments.join(",\n                    ")},\n                    stroke = strokeSpec,\n                    strokeLineCap = StrokeCap.Round,\n                    strokeLineJoin = StrokeJoin.Round,\n                    strokeLineMiter = 4f,\n                    pathFillType = PathFillType.NonZero,\n                )`;
+  return `                addPath(\n                    ${fragments.join(",\n                    ")},\n                    stroke = strokeSpec,\n                    strokeLineWidth = 2f,\n                    strokeLineCap = StrokeCap.Round,\n                    strokeLineJoin = StrokeJoin.Round,\n                    strokeLineMiter = 4f,\n                    pathFillType = PathFillType.NonZero,\n                )`;
 }
 
 function generate() {
