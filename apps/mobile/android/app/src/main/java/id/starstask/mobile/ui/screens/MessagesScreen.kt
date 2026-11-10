@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,9 +25,8 @@ import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
 
 /**
- * Conversation list. Message bodies are end-to-end encrypted and are
- * never decrypted with a native implementation in this shell — the
- * list shows participants only, matching the "no plaintext" posture.
+ * E2EE DM list. The native DmChat data layer already decrypts
+ * on-device (DmCrypto + DmKeys); this screen surfaces that path.
  */
 @Composable
 fun MessagesScreen(userId: String) {
@@ -85,18 +83,5 @@ fun MessagesScreen(userId: String) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun SettingsScreen(onSignOut: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Settings", style = MaterialTheme.typography.headlineSmall, color = Foreground)
-        Text(
-            "Secure sign-in via Google · No password stored",
-            color = MutedForeground,
-            style = MaterialTheme.typography.bodySmall,
-        )
-        OutlinedButton(onClick = onSignOut) { Text("Sign out") }
     }
 }

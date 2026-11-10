@@ -53,7 +53,7 @@ fun AttendanceScreen(userId: String) {
     val recap = remember(history) { summarizeRecap(history) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenTitle("Attendance")
+        androidx.compose.material3.Text("Attendance", style = MaterialTheme.typography.headlineSmall, color = Foreground)
         RecapCard(recap)
         if (error != null) Text(error!!, color = Foreground)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
