@@ -23,6 +23,7 @@ import id.starstask.mobile.data.generateLeaveSummaryPdf
 import id.starstask.mobile.data.leaveReportFilename
 import id.starstask.mobile.data.listLeaveEvidence
 import id.starstask.mobile.data.loadLeaveReportRows
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebCard
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
@@ -130,7 +131,7 @@ fun LeaveForwardPanel(
                             })
                             onDone("Package ${completion.reference} recorded (${completion.requestCount} requests). Share the PDF with the lecturer.")
                         } catch (e: Exception) {
-                            onForwardError("Could not generate the package: ${e.message}")
+                            onForwardError(userFacingMessage(e, "Could not generate the package."))
                         }
                     }
                 },

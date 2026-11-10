@@ -38,11 +38,11 @@ import id.starstask.mobile.data.NotificationPrefs
 import id.starstask.mobile.data.loadCalendarStatus
 import id.starstask.mobile.data.loadDriveStatus
 import id.starstask.mobile.data.loadNotificationPrefs
+import id.starstask.mobile.data.enablePushForUser
 import id.starstask.mobile.data.notificationsGranted
-import id.starstask.mobile.data.registerCurrentToken
 import id.starstask.mobile.data.saveNotificationPrefs
-import id.starstask.mobile.data.setCachedPushEnabled
 import id.starstask.mobile.data.unregisterAllPush
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebBadge
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
@@ -174,15 +174,12 @@ fun NotificationSettingsScreen(userId: String) {
     fun enablePush(next: NotificationPrefs) {
         scope.launch {
             saving = true
-            runCatching {
-                saveNotificationPrefs(userId, next)
-                registerCurrentToken(context)
-                setCachedPushEnabled(context, true)
-            }.onSuccess {
-                prefs = next
-                notice = "Saved."
-            }
-                .onFailure { notice = "Could not save: ${it.message}" }
+            runCatching { enablePushForUser(context, userId) }
+                .onSuccess {
+                    prefs = next
+                    notice = "Saved."
+                }
+                .onFailure { notice = userFacingMessage(it, "Could not save your notification settings. Please try again.") }
             saving = false
         }
     }
@@ -198,7 +195,7 @@ fun NotificationSettingsScreen(userId: String) {
                     prefs = next
                     notice = "Saved."
                 }
-                    .onFailure { notice = "Could not save: ${it.message}" }
+                    .onFailure { notice = userFacingMessage(it, "Could not save your notification settings. Please try again.") }
                 saving = false
             }
             return

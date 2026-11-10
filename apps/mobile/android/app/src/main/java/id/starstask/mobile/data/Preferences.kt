@@ -21,6 +21,8 @@ val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 val WHATS_NEW_SEEN_KEY = stringPreferencesKey("whats_new_seen")
 private val FCM_TOKEN_KEY = stringPreferencesKey("fcm_token")
 private val PUSH_ENABLED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("push_enabled_cache")
+private val PERMISSION_ONBOARDING_SEEN_KEY =
+    androidx.datastore.preferences.core.booleanPreferencesKey("permissions_onboarding_seen")
 
 suspend fun setThemeMode(context: Context, mode: String) {
     context.prefs.edit { it[THEME_MODE_KEY] = mode }
@@ -44,6 +46,13 @@ suspend fun hideAssignment(context: Context, assignmentId: String) {
 
 fun themeModeFlow(context: Context): Flow<String?> =
     context.prefs.data.map { it[THEME_MODE_KEY] }
+
+fun permissionsOnboardingSeenFlow(context: Context): Flow<Boolean> =
+    context.prefs.data.map { it[PERMISSION_ONBOARDING_SEEN_KEY] ?: false }
+
+suspend fun setPermissionsOnboardingSeen(context: Context, seen: Boolean = true) {
+    context.prefs.edit { it[PERMISSION_ONBOARDING_SEEN_KEY] = seen }
+}
 
 suspend fun cachedFcmToken(context: Context): String? =
     context.prefs.data.map { it[FCM_TOKEN_KEY] }.first()

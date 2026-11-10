@@ -47,7 +47,7 @@ enum class DrawerDestination(
     NOTIFICATIONS("notifications", "Notifications", Lucide.Bell),
 
     /** Web route `/app/actions`; rendered only for class admins. */
-    ACTION_CENTER("action-center", "Action Center", Lucide.CircleCheck),
+    ACTION_CENTER("action-center", "Action center", Lucide.CircleCheck),
     PROFILE("profile", "Profile", Lucide.CircleUserRound),
     SETTINGS("settings", "Settings", Lucide.Settings),
     SECURITY("security", "Security & Privacy", Lucide.ShieldCheck),
@@ -62,6 +62,9 @@ val studyDestinations: List<DrawerDestination> = listOf(
     DrawerDestination.SCHEDULE,
     DrawerDestination.LEAVE,
     DrawerDestination.MESSAGES,
+)
+
+val leaderDestinations: List<DrawerDestination> = listOf(
     DrawerDestination.ACTION_CENTER,
 )
 

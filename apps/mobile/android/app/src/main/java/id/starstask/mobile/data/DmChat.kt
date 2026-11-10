@@ -247,7 +247,7 @@ suspend fun blockDmUser(blockedId: String, blockerId: String): String? {
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun setDmConversationPrefs(conversationId: String, prefs: DmPrefs): String? {
@@ -262,7 +262,7 @@ suspend fun setDmConversationPrefs(conversationId: String, prefs: DmPrefs): Stri
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun markDmUnread(conversationId: String): String? {
@@ -272,7 +272,7 @@ suspend fun markDmUnread(conversationId: String): String? {
             buildJsonObject { put("p_conversation", JsonPrimitive(conversationId)) },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun markDmRead(conversationId: String, userId: String) {

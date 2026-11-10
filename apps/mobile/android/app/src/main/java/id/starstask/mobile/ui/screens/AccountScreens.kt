@@ -35,6 +35,7 @@ import id.starstask.mobile.data.restoreDeviceKey
 import id.starstask.mobile.data.safetyFingerprint
 import id.starstask.mobile.data.contentOrNull
 import id.starstask.mobile.data.decodeJsonArray
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.BadgeTone
 import id.starstask.mobile.ui.components.WebBadge
 import id.starstask.mobile.ui.components.WebCard
@@ -135,7 +136,7 @@ fun SecurityPrivacyScreen(
                                 backupStatus = "Backup saved — the server cannot read it."
                                 backupPassphrase = ""
                             }
-                            .onFailure { backupStatus = it.message ?: "Backup failed — try again." }
+                            .onFailure { backupStatus = userFacingMessage(it, "Backup failed — try again.") }
                     }
                 },
             )

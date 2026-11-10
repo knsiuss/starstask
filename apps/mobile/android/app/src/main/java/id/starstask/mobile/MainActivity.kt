@@ -21,12 +21,15 @@ import id.starstask.mobile.data.capturePosition
 import id.starstask.mobile.data.checkInToSession
 import id.starstask.mobile.data.ensureReminderChannel
 import id.starstask.mobile.data.hasLocationPermission
+import id.starstask.mobile.data.permissionsOnboardingSeenFlow
 import id.starstask.mobile.data.queueOfflineCheckin
+import id.starstask.mobile.data.setPermissionsOnboardingSeen
 import id.starstask.mobile.data.syncPushRegistration
 import id.starstask.mobile.data.syncQueuedCheckIns
 import id.starstask.mobile.ui.navigation.StarsTaskNavHost
 import id.starstask.mobile.ui.screens.SplashScreen
 import id.starstask.mobile.ui.screens.WelcomeScreen
+import id.starstask.mobile.ui.screens.PermissionOnboardingScreen
 import id.starstask.mobile.data.setThemeMode
 import id.starstask.mobile.data.themeModeFlow
 import id.starstask.mobile.ui.theme.StarsTaskTheme
@@ -79,6 +82,9 @@ fun StarsTaskApp() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    val onboardingSeenFlowLocal = androidx.compose.runtime.remember { permissionsOnboardingSeenFlow(context) }
+    val onboardingSeen by onboardingSeenFlowLocal.collectAsState(initial = null)
+
     // Retry offline check-ins whenever the app foregrounds.
     LaunchedEffect(userId) {
         if (userId != null) {
@@ -109,6 +115,24 @@ fun StarsTaskApp() {
         WelcomeScreen(
             scope = scope,
             context = context,
+        )
+        return
+    }
+
+    // Onboarding flag still loading — hold the splash instead of flashing
+    // the dashboard for a brand-new install.
+    val onboardingSeenState = onboardingSeen
+    if (onboardingSeenState == null) {
+        SplashScreen(onExit = {})
+        return
+    }
+
+    if (!onboardingSeenState) {
+        PermissionOnboardingScreen(
+            userId = userId,
+            onDone = {
+                scope.launch { runCatching { setPermissionsOnboardingSeen(context, true) } }
+            },
         )
         return
     }

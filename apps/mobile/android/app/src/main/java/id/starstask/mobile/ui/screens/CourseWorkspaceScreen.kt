@@ -46,6 +46,7 @@ import id.starstask.mobile.data.listCourseMaterials
 import id.starstask.mobile.data.loadClassAdmins
 import id.starstask.mobile.data.loadClassMembers
 import id.starstask.mobile.data.updateClassCourse
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
@@ -440,7 +441,7 @@ private fun CourseMaterialsTabClean(
                                 onMaterialsChange(listCourseMaterials(clazz.id, course.id))
                                 msg = "Added."
                             } catch (e: Exception) {
-                                msg = "Could not add: ${e.message}"
+                                msg = userFacingMessage(e, "Could not add the material.")
                             }
                         }
                     },

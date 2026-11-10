@@ -73,7 +73,7 @@ suspend fun rsvpSession(sessionId: String, status: String): String? {
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun cancelRsvp(sessionId: String): String? {
@@ -83,7 +83,7 @@ suspend fun cancelRsvp(sessionId: String): String? {
             buildJsonObject { put("p_session_id", JsonPrimitive(sessionId)) },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun setCheckInLocation(
@@ -103,7 +103,7 @@ suspend fun setCheckInLocation(
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun clearCheckInLocation(sessionId: String): String? {
@@ -113,7 +113,7 @@ suspend fun clearCheckInLocation(sessionId: String): String? {
             buildJsonObject { put("p_session_id", JsonPrimitive(sessionId)) },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun updateSessionRecord(

@@ -32,6 +32,7 @@ import id.starstask.mobile.data.setClassJoinPolicy
 import id.starstask.mobile.data.setClassStatus
 import id.starstask.mobile.data.loadClassBranding
 import id.starstask.mobile.data.saveClassBranding
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
@@ -103,7 +104,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
                         busy = true; error = null
                         scope.launch {
                             runCatching { renameClass(clazz.id, name) }
-                                .onFailure { error = "Could not rename: ${it.message}" }
+                                .onFailure { error = userFacingMessage(it, "Could not rename. Please try again.") }
                             busy = false
                         }
                     },
@@ -115,7 +116,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
                         busy = true; error = null
                         scope.launch {
                             runCatching { setClassStatus(clazz.id, if (clazz.status == "archived") "active" else "archived") }
-                                .onFailure { error = "Could not change status: ${it.message}" }
+                                .onFailure { error = userFacingMessage(it, "Could not change status. Please try again.") }
                             busy = false
                         }
                     },
@@ -129,7 +130,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
                         busy = true; error = null
                         scope.launch {
                             runCatching { setClassJoinPolicy(clazz.id, "open") }
-                                .onFailure { error = "Could not set policy: ${it.message}" }
+                                .onFailure { error = userFacingMessage(it, "Could not set policy. Please try again.") }
                             busy = false
                         }
                     },
@@ -141,7 +142,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
                         busy = true; error = null
                         scope.launch {
                             runCatching { setClassJoinPolicy(clazz.id, "approval") }
-                                .onFailure { error = "Could not set policy: ${it.message}" }
+                                .onFailure { error = userFacingMessage(it, "Could not set policy. Please try again.") }
                             busy = false
                         }
                     },
@@ -153,7 +154,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
                         busy = true; error = null
                         scope.launch {
                             runCatching { deleteClass(clazz.id) }
-                                .onFailure { error = "Delete failed (only admin, no active members): ${it.message}" }
+                                .onFailure { error = userFacingMessage(it, "Delete failed. Only an admin can delete a class with no active members.") }
                             busy = false
                         }
                     },

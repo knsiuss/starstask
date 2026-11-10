@@ -3,10 +3,15 @@ package id.starstask.mobile.ui.screens
 import id.starstask.mobile.data.ActionCenter as ActionCenterData
 import id.starstask.mobile.data.ActionAttendanceCourse
 import id.starstask.mobile.data.ActionCenterRow
+import id.starstask.mobile.data.Assignment
+import id.starstask.mobile.data.ClassDetail
+import id.starstask.mobile.data.ExportFormat
+import id.starstask.mobile.data.WorkspaceClassOption
 import id.starstask.mobile.data.WorkspaceRequest
 import id.starstask.mobile.data.WorkspaceScope
 import id.starstask.mobile.data.buildActionSummary
 import id.starstask.mobile.data.countRevisionLeaveRequests
+import id.starstask.mobile.data.downloadAttendanceExport
 import id.starstask.mobile.data.formatLeaveDate
 import id.starstask.mobile.data.getClassActionCenter
 import id.starstask.mobile.data.getWorkspaceScope
@@ -14,6 +19,7 @@ import id.starstask.mobile.data.listClassMembersCount
 import id.starstask.mobile.data.listClassSubjectsForAttendance
 import id.starstask.mobile.data.listManagedLeaveRequests
 import id.starstask.mobile.data.listManagedRequests
+import id.starstask.mobile.data.shareFile
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.components.WebAlert
@@ -68,11 +74,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+
+enum class RecentRequestKind { ASSIGNMENT, ABSENCE }
 
 data class RecentRequestItem(
     val id: String,
+    val rawId: String,
+    val kind: RecentRequestKind,
     val studentName: String,
     val studentId: String,
     val type: String,
@@ -81,10 +93,28 @@ data class RecentRequestItem(
     val date: String?,
     val statusLabel: String,
     val statusVariant: BadgeVariant,
+    val request: WorkspaceRequest? = null,
 )
 
+/** Build the ClassDetail the manage/reports screens expect from a workspace option. */
+private suspend fun classDetailFor(option: WorkspaceClassOption): ClassDetail =
+    ClassDetail(
+        id = option.id,
+        name = option.name,
+        slug = option.slug,
+        semester = option.semester ?: "",
+        academicYear = option.academicYear ?: "",
+        memberCount = listClassMembersCount(option.id),
+        classCode = option.classCode ?: "",
+        isAdmin = option.isAdmin,
+        status = "active",
+    )
+
 @Composable
-fun ActionCenterScreen(userId: String) {
+fun ActionCenterScreen(
+    userId: String,
+    onOpenAttendanceCourse: (subjectId: String, name: String, code: String?, className: String?) -> Unit = { _, _, _, _ -> },
+) {
     var scope by remember { mutableStateOf<WorkspaceScope?>(null) }
     var managedRequests by remember { mutableStateOf(emptyList<WorkspaceRequest>()) }
     var center by remember { mutableStateOf<ActionCenterData?>(null) }
@@ -92,8 +122,12 @@ fun ActionCenterScreen(userId: String) {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var tab by remember { mutableStateOf("overview") }
+    var assignmentsClassFilter by remember { mutableStateOf<String?>(null) }
+    var attendanceClassFilter by remember { mutableStateOf<String?>(null) }
+    var refreshTick by remember { mutableStateOf(0) }
 
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, refreshTick) {
+        error = null
         try {
             val loaded = getWorkspaceScope(userId)
             scope = loaded
@@ -105,6 +139,80 @@ fun ActionCenterScreen(userId: String) {
             error = "Your action counts could not be loaded. Refresh the page to try again."
         }
         loading = false
+    }
+
+    // In-screen pushes (same pattern as LeaveRequestsScreen destination state).
+    var manageClassId by remember { mutableStateOf<String?>(null) }
+    var reportClassId by remember { mutableStateOf<String?>(null) }
+    var leaveRequestId by remember { mutableStateOf<String?>(null) }
+    var reviewTarget by remember { mutableStateOf<WorkspaceRequest?>(null) }
+    var assignmentDetailTarget by remember { mutableStateOf<Assignment?>(null) }
+    var detailClass by remember { mutableStateOf<ClassDetail?>(null) }
+    var detailClassLoading by remember { mutableStateOf(false) }
+
+    val manageOption = manageClassId?.let { id -> scope?.classes?.firstOrNull { it.id == id } }
+    val reportOption = reportClassId?.let { id -> scope?.classes?.firstOrNull { it.id == id } }
+    val pendingDetailOption = manageOption ?: reportOption
+    LaunchedEffect(pendingDetailOption?.id) {
+        val opt = pendingDetailOption
+        if (opt != null) {
+            detailClassLoading = true
+            detailClass = try {
+                classDetailFor(opt)
+            } catch (_: Exception) {
+                ClassDetail(opt.id, opt.name, opt.slug, opt.semester ?: "", opt.academicYear ?: "", 0, opt.classCode ?: "", isAdmin = opt.isAdmin)
+            }
+            detailClassLoading = false
+        } else {
+            detailClass = null
+            detailClassLoading = false
+        }
+    }
+
+    reviewTarget?.let { target ->
+        ReviewRequestDialog(
+            request = target,
+            onDismiss = { reviewTarget = null },
+            onReviewed = {
+                reviewTarget = null
+                refreshTick++
+            },
+        )
+    }
+    assignmentDetailTarget?.let { target ->
+        AssignmentDetailScreen(userId = userId, assignment = target, onBack = { assignmentDetailTarget = null })
+        return
+    }
+    pendingDetailOption?.let { opt ->
+        val detail = detailClass
+        if (detailClassLoading) {
+            CircularProgressIndicator()
+        } else if (detail != null) {
+            if (manageClassId != null) {
+                ClassManageScreen(clazz = detail, onBack = { manageClassId = null }, onOpenGrades = {})
+            } else {
+                ClassReportsScreen(clazz = detail, onBack = { reportClassId = null })
+            }
+            return
+        }
+    }
+    leaveRequestId?.let { id ->
+        LeaveRequestDetailScreen(
+            userId = userId,
+            requestId = id,
+            onBack = { leaveRequestId = null },
+            onEdit = {},
+            onChanged = { refreshTick++ },
+        )
+        return
+    }
+
+    fun navigate(target: String, classId: String? = null) {
+        when (target) {
+            "assignments" -> if (classId != null) assignmentsClassFilter = classId
+            "attendance" -> if (classId != null) attendanceClassFilter = classId
+        }
+        tab = target
     }
 
     val sc = scope
@@ -143,11 +251,35 @@ fun ActionCenterScreen(userId: String) {
                         scope = sc!!,
                         managedRequests = managedRequests,
                         revisionLeaveCount = revisionLeaveCount,
-                        onNavigate = { tab = it },
+                        onNavigate = { target, classId -> navigate(target, classId) },
+                        onReview = { reviewTarget = it },
+                        onViewAssignment = { req ->
+                            assignmentDetailTarget = Assignment(
+                                id = req.id,
+                                title = req.title,
+                                status = req.status,
+                                deadline = null,
+                                className = req.className,
+                            )
+                        },
+                        onOpenLeaveDetail = { leaveRequestId = it },
+                        onManageClass = { manageClassId = it },
+                        onOpenReports = { reportClassId = it },
                     )
-                    "assignments" -> ActionAssignmentsTab(scope = sc!!, requests = managedRequests, pendingCount = pendingAssignments)
-                    "absences" -> ActionAbsencesTab(scope = sc!!)
-                    "attendance" -> ActionAttendanceTab(scope = sc!!, center = center)
+                    "assignments" -> ActionAssignmentsTab(
+                        scope = sc!!,
+                        requests = managedRequests,
+                        initialClassFilter = assignmentsClassFilter,
+                        onReview = { reviewTarget = it },
+                        onOpenDetail = { assignmentDetailTarget = it },
+                    )
+                    "absences" -> ActionAbsencesTab(scope = sc!!, onOpenLeaveDetail = { leaveRequestId = it })
+                    "attendance" -> ActionAttendanceTab(
+                        scope = sc!!,
+                        center = center,
+                        initialClassId = attendanceClassFilter,
+                        onOpenAttendanceCourse = onOpenAttendanceCourse,
+                    )
                 }
             }
         }
@@ -160,7 +292,12 @@ private fun ActionOverviewTab(
     scope: WorkspaceScope,
     managedRequests: List<WorkspaceRequest>,
     revisionLeaveCount: Int,
-    onNavigate: (String) -> Unit,
+    onNavigate: (String, String?) -> Unit,
+    onReview: (WorkspaceRequest) -> Unit,
+    onViewAssignment: (WorkspaceRequest) -> Unit,
+    onOpenLeaveDetail: (String) -> Unit,
+    onManageClass: (String) -> Unit,
+    onOpenReports: (String) -> Unit,
 ) {
     val managedOptions = scope.classes.filter { it.isAdmin }
     var selectedClassId by remember(managedOptions) { mutableStateOf(managedOptions.firstOrNull()?.id) }
@@ -187,15 +324,23 @@ private fun ActionOverviewTab(
         recentAbsences = listManagedLeaveRequests(scope, page = 1, pageSize = 20)
     }
     val recent = buildRecentItems(managedRequests, recentAbsences)
+    fun onRecentClick(item: RecentRequestItem) {
+        when (item.kind) {
+            RecentRequestKind.ASSIGNMENT -> item.request?.let { req ->
+                if (req.displayStatus.name == "PENDING") onReview(req) else onViewAssignment(req)
+            }
+            RecentRequestKind.ABSENCE -> onOpenLeaveDetail(item.rawId)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
-            OverviewStatCard("Pending Requests", totalPending, Lucide.ListChecks, modifier = Modifier.weight(1f))
-            OverviewStatCard("Assignment Requests", pendingAssignments, Lucide.ClipboardCheck, modifier = Modifier.weight(1f))
+            OverviewStatCard("Pending Requests", totalPending, Lucide.ListChecks, modifier = Modifier.weight(1f), onClick = { onNavigate("assignments", null) })
+            OverviewStatCard("Assignment Requests", pendingAssignments, Lucide.ClipboardCheck, modifier = Modifier.weight(1f), onClick = { onNavigate("assignments", null) })
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
-            OverviewStatCard("Absence Requests", pendingAbsences, Lucide.ClipboardList, modifier = Modifier.weight(1f))
-            OverviewStatCard("Requires Revision", revisionTotal, Lucide.FileWarning, modifier = Modifier.weight(1f))
+            OverviewStatCard("Absence Requests", pendingAbsences, Lucide.ClipboardList, modifier = Modifier.weight(1f), onClick = { onNavigate("absences", null) })
+            OverviewStatCard("Requires Revision", revisionTotal, Lucide.FileWarning, modifier = Modifier.weight(1f), onClick = { onNavigate("assignments", null) })
         }
 
         WebCard(modifier = Modifier.fillMaxWidth()) {
@@ -208,7 +353,7 @@ private fun ActionOverviewTab(
                     Text("Latest requests that need your attention.", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
                 }
                 Row(
-                    modifier = Modifier.clickable { onNavigate("assignments") }.padding(start = Spacing.Md),
+                    modifier = Modifier.clickable { onNavigate("assignments", null) }.padding(start = Spacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.Xs),
                 ) {
@@ -220,7 +365,7 @@ private fun ActionOverviewTab(
                 Text("No recent requests. New submissions appear here as they arrive.", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Md))
             } else {
                 recent.forEach { item ->
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Md), verticalAlignment = Alignment.CenterVertically) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Md).clickable { onRecentClick(item) }, verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier.size(36.dp).background(id.starstask.mobile.ui.theme.AccentSoft, CircleShape),
                             contentAlignment = Alignment.Center,
@@ -257,8 +402,8 @@ private fun ActionOverviewTab(
                 val sidebarRow = c?.rows?.firstOrNull { it.classId == selected.id }
                 val pendingForClass = (sidebarRow?.counts?.pendingSubmissions ?: 0) + (sidebarRow?.counts?.pendingLeave ?: 0)
                 LabelValueRow(icon = Lucide.Users, label = "Total students", value = membersCount.toString())
-                LabelValueRow(icon = Lucide.Clock3, label = "Pending requests", value = pendingForClass.toString())
-                LabelValueRow(icon = Lucide.CalendarClock, label = "Attendance sessions", value = recordedSessions.toString())
+                LabelValueRow(icon = Lucide.Clock3, label = "Pending requests", value = pendingForClass.toString(), onClick = { onNavigate("assignments", selected.id) })
+                LabelValueRow(icon = Lucide.CalendarClock, label = "Attendance sessions", value = recordedSessions.toString(), onClick = { onNavigate("attendance", selected.id) })
             }
         }
 
@@ -267,9 +412,9 @@ private fun ActionOverviewTab(
                 Icon(Lucide.Zap, contentDescription = null, tint = Foreground, modifier = Modifier.size(Spacing.Section))
                 Text("Quick actions", style = MaterialTheme.typography.titleMedium, color = Foreground)
             }
-            QuickActionRow(icon = Lucide.FileCheck2, label = "Review assignment requests") { onNavigate("assignments") }
-            QuickActionRow(icon = Lucide.ClipboardList, label = "Review absence requests") { onNavigate("absences") }
-            QuickActionRow(icon = Lucide.CalendarClock, label = "Open attendance management") { onNavigate("attendance") }
+            QuickActionRow(icon = Lucide.FileCheck2, label = "Review assignment requests") { onNavigate("assignments", null) }
+            QuickActionRow(icon = Lucide.ClipboardList, label = "Review absence requests") { onNavigate("absences", null) }
+            QuickActionRow(icon = Lucide.CalendarClock, label = "Open attendance management") { onNavigate("attendance", null) }
         }
 
         if (c != null && c.totals.actions == 0) {
@@ -277,7 +422,12 @@ private fun ActionOverviewTab(
         }
 
         c?.rows?.forEach { row ->
-            ClassActionsCard(row = row)
+            ClassActionsCard(
+                row = row,
+                onManageClass = onManageClass,
+                onOpenReports = onOpenReports,
+                onNavigate = onNavigate,
+            )
         }
     }
 }
@@ -295,6 +445,8 @@ private fun buildRecentItems(
         }
         RecentRequestItem(
             id = "assignment-${req.id}",
+            rawId = req.id,
+            kind = RecentRequestKind.ASSIGNMENT,
             studentName = req.submitterName ?: "Student",
             studentId = req.id.take(8),
             type = "Assignment Request",
@@ -303,6 +455,7 @@ private fun buildRecentItems(
             date = req.createdAt,
             statusLabel = label,
             statusVariant = variant,
+            request = req,
         )
     }
     val absenceItems = absences.map { req ->
@@ -317,6 +470,8 @@ private fun buildRecentItems(
         val course = if (req.subjectIds.isEmpty()) "Whole class" else "${req.subjectIds.size} ${if (req.subjectIds.size == 1) "course" else "courses"}"
         RecentRequestItem(
             id = "absence-${req.id}",
+            rawId = req.id,
+            kind = RecentRequestKind.ABSENCE,
             studentName = req.studentName,
             studentId = req.studentId.take(8).ifEmpty { req.id.take(8) },
             type = "Absence Request",
@@ -331,24 +486,40 @@ private fun buildRecentItems(
 }
 
 @Composable
-private fun OverviewStatCard(label: String, value: Int, icon: ImageVector, modifier: Modifier = Modifier) {
-    WebCard(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-            Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-            Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+private fun OverviewStatCard(label: String, value: Int, icon: ImageVector, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val content: @Composable () -> Unit = {
+        WebCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
+                Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
+                Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+            }
+            Text(value.toString(), style = MaterialTheme.typography.headlineSmall, color = Foreground, modifier = Modifier.padding(top = Spacing.Xs))
         }
-        Text(value.toString(), style = MaterialTheme.typography.headlineSmall, color = Foreground, modifier = Modifier.padding(top = Spacing.Xs))
+    }
+    if (onClick != null) {
+        Box(modifier = modifier.clickable { onClick() }) { content() }
+    } else {
+        Box(modifier = modifier) { content() }
     }
 }
 
 @Composable
-private fun LabelValueRow(icon: ImageVector, label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Sm), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+private fun LabelValueRow(icon: ImageVector, label: String, value: String, onClick: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.Sm).let { if (onClick != null) it.clickable { onClick() } else it },
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
             Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
             Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
         }
-        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = Foreground)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = Foreground)
+            if (onClick != null) {
+                Icon(Lucide.ArrowRight, contentDescription = null, tint = MutedForeground, modifier = Modifier.padding(start = Spacing.Sm).size(Spacing.Section))
+            }
+        }
     }
 }
 
@@ -394,7 +565,12 @@ private fun ActionClassDropdown(
 }
 
 @Composable
-private fun ClassActionsCard(row: ActionCenterRow) {
+private fun ClassActionsCard(
+    row: ActionCenterRow,
+    onManageClass: (String) -> Unit,
+    onOpenReports: (String) -> Unit,
+    onNavigate: (String, String?) -> Unit,
+) {
     WebCard(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
@@ -416,16 +592,19 @@ private fun ClassActionsCard(row: ActionCenterRow) {
             }
         }
         val metrics = listOf(
-            Triple(Lucide.ClipboardCheck, "Submissions to review", row.counts.pendingSubmissions),
-            Triple(Lucide.ClipboardList, "Absence requests", row.counts.pendingLeave),
-            Triple(Lucide.CalendarClock, "Sessions today", row.counts.todaysSessions),
-            Triple(Lucide.FileWarning, "Open reader reports", row.counts.openReports),
+            Triple(Lucide.ClipboardCheck, "Submissions to review", row.counts.pendingSubmissions) to "assignments",
+            Triple(Lucide.ClipboardList, "Absence requests", row.counts.pendingLeave) to "absences",
+            Triple(Lucide.CalendarClock, "Sessions today", row.counts.todaysSessions) to "attendance",
         )
         metrics.chunked(2).forEach { pair ->
             Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
-                pair.forEach { (icon, label, value) ->
+                pair.forEach { (triple, targetTab) ->
+                    val (icon, label, value) = triple
                     Row(
-                        modifier = Modifier.weight(1f).border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp)).padding(horizontal = Spacing.Md, vertical = Spacing.Md),
+                        modifier = Modifier.weight(1f)
+                            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp))
+                            .clickable { onNavigate(targetTab, row.classId) }
+                            .padding(horizontal = Spacing.Md, vertical = Spacing.Md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
@@ -435,7 +614,18 @@ private fun ClassActionsCard(row: ActionCenterRow) {
                 }
             }
         }
-        Row(modifier = Modifier.padding(top = Spacing.Md).clickable {}, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md)
+                .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp))
+                .clickable { onOpenReports(row.classId) }
+                .padding(horizontal = Spacing.Md, vertical = Spacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Lucide.FileWarning, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
+            Text("Open reader reports", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal = Spacing.Sm), maxLines = 1)
+            Text(row.counts.openReports.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = if (row.counts.openReports > 0) Foreground else MutedForeground)
+        }
+        Row(modifier = Modifier.padding(top = Spacing.Md).clickable { onManageClass(row.classId) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
             Text("Manage this class", color = id.starstask.mobile.ui.theme.Accent, style = MaterialTheme.typography.bodySmall)
             Icon(Lucide.ArrowRight, contentDescription = null, tint = id.starstask.mobile.ui.theme.Accent, modifier = Modifier.size(Spacing.Xl))
         }
@@ -443,9 +633,15 @@ private fun ClassActionsCard(row: ActionCenterRow) {
 }
 
 @Composable
-private fun ActionAssignmentsTab(scope: WorkspaceScope, requests: List<WorkspaceRequest>, pendingCount: Int) {
+private fun ActionAssignmentsTab(
+    scope: WorkspaceScope,
+    requests: List<WorkspaceRequest>,
+    initialClassFilter: String?,
+    onReview: (WorkspaceRequest) -> Unit,
+    onOpenDetail: (Assignment) -> Unit,
+) {
     var query by remember { mutableStateOf("") }
-    var classFilter by remember { mutableStateOf<String?>(null) }
+    var classFilter by remember(initialClassFilter) { mutableStateOf<String?>(initialClassFilter) }
     var courseFilter by remember { mutableStateOf<String?>(null) }
     var statusFilter by remember { mutableStateOf("all") }
     val classes = scope.classes.filter { it.isAdmin }
@@ -515,6 +711,19 @@ private fun ActionAssignmentsTab(scope: WorkspaceScope, requests: List<Workspace
                     Text("by ${req.submitterName ?: "Student"}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
                     Text(req.title, style = MaterialTheme.typography.titleMedium, color = Foreground, modifier = Modifier.padding(top = Spacing.Sm))
                     Text("${req.classCode ?: req.className}  ·  Proposed ${formatLeaveDate(req.createdAt.take(10))} · Submitted ${formatLeaveDate(req.createdAt.take(10))}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = Spacing.Sm)
+                            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp))
+                            .clickable { onReview(req) }
+                            .padding(horizontal = Spacing.Xl, vertical = Spacing.Md),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Lucide.FileCheck2, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
+                        Text("Review request", style = MaterialTheme.typography.bodyMedium, color = Foreground)
+                    }
                 }
             }
         }
@@ -528,7 +737,7 @@ private fun ActionAssignmentsTab(scope: WorkspaceScope, requests: List<Workspace
                     id.starstask.mobile.data.RequestDisplayStatus.REVISION_REQUESTED -> "Revision" to BadgeVariant.WARNING
                     else -> "Pending" to BadgeVariant.ACCENT
                 }
-                WebCard(modifier = Modifier.fillMaxWidth()) {
+                WebCard(modifier = Modifier.fillMaxWidth().clickable { onOpenDetail(Assignment(id = req.id, title = req.title, status = req.status, deadline = req.deadline, className = req.className)) }) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
                             StarsTaskBadge(label, variant)
@@ -579,14 +788,13 @@ private fun FilterDropdown(
 }
 
 @Composable
-private fun ActionAbsencesTab(scope: WorkspaceScope) {
+private fun ActionAbsencesTab(scope: WorkspaceScope, onOpenLeaveDetail: (String) -> Unit) {
     var items by remember { mutableStateOf(emptyList<id.starstask.mobile.data.ManagedLeaveRequest>()) }
     var loading by remember { mutableStateOf(true) }
     LaunchedEffect(scope) {
         items = listManagedLeaveRequests(scope, page = 1, pageSize = 50)
         loading = false
     }
-    val pendingCount = items.count { it.status == "submitted" }
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
         if (loading) CircularProgressIndicator()
         else if (items.isEmpty()) {
@@ -608,7 +816,7 @@ private fun ActionAbsencesTab(scope: WorkspaceScope) {
                     val e = req.leaveEndDate?.take(10)
                     if (e != null && e != req.leaveStartDate?.take(10)) "$s–${formatLeaveDate(e)}" else s
                 } ?: "—"
-                WebCard(modifier = Modifier.fillMaxWidth()) {
+                WebCard(modifier = Modifier.fillMaxWidth().clickable { onOpenLeaveDetail(req.id) }) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         StarsTaskBadge(label, variant)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
@@ -635,12 +843,23 @@ private fun ActionAbsencesTab(scope: WorkspaceScope) {
 }
 
 @Composable
-private fun ActionAttendanceTab(scope: WorkspaceScope, center: ActionCenterData?) {
+private fun ActionAttendanceTab(
+    scope: WorkspaceScope,
+    center: ActionCenterData?,
+    initialClassId: String?,
+    onOpenAttendanceCourse: (subjectId: String, name: String, code: String?, className: String?) -> Unit,
+) {
     val managedOptions = scope.classes.filter { it.isAdmin }
-    var selectedClassId by remember(managedOptions) { mutableStateOf(managedOptions.firstOrNull()?.id) }
+    var selectedClassId by remember(initialClassId, managedOptions) {
+        mutableStateOf(initialClassId?.takeIf { id -> managedOptions.any { it.id == id } } ?: managedOptions.firstOrNull()?.id)
+    }
     var courses by remember(selectedClassId) { mutableStateOf(emptyList<ActionAttendanceCourse>()) }
     var totalStudents by remember(selectedClassId) { mutableStateOf(0) }
     var loading by remember(selectedClassId) { mutableStateOf(true) }
+    var exportError by remember { mutableStateOf<String?>(null) }
+    var exportingCourseId by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(selectedClassId) {
         val id = selectedClassId
         if (id != null) {
@@ -694,6 +913,7 @@ private fun ActionAttendanceTab(scope: WorkspaceScope, center: ActionCenterData?
                 }
                 Text(text, color = Foreground, style = MaterialTheme.typography.bodySmall)
             }
+            if (exportError != null) WebAlert(message = exportError!!)
             if (courses.isEmpty()) {
                 WebEmptyState(title = "No courses in this class", description = "Add a course from Manage Class before exporting attendance.")
             } else {
@@ -718,7 +938,7 @@ private fun ActionAttendanceTab(scope: WorkspaceScope, center: ActionCenterData?
                                 }
                                 Text(course.code ?: "No code", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
                             }
-                            Icon(Lucide.ArrowUpRight, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
+                            Icon(Lucide.ArrowUpRight, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section).clickable { onOpenAttendanceCourse(course.id, course.name, course.code, selected?.name) })
                         }
                         Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -737,8 +957,28 @@ private fun ActionAttendanceTab(scope: WorkspaceScope, center: ActionCenterData?
                             }
                         }
                         Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
-                            QuickActionRow(icon = Lucide.BookOpen, label = "View attendance") {}
-                            QuickActionRow(icon = Lucide.Download, label = "Export Attendance") {}
+                            if (exportingCourseId == course.id) {
+                                CircularProgressIndicator(modifier = Modifier.size(Spacing.Section))
+                                Text("Exporting…", style = MaterialTheme.typography.bodySmall, color = MutedForeground)
+                            } else {
+                                QuickActionRow(icon = Lucide.BookOpen, label = "View attendance") {
+                                    onOpenAttendanceCourse(course.id, course.name, course.code, selected?.name)
+                                }
+                                QuickActionRow(icon = Lucide.Download, label = "Export Attendance") {
+                                    exportError = null
+                                    exportingCourseId = course.id
+                                    coroutineScope.launch {
+                                        try {
+                                            val result = downloadAttendanceExport(context, selected.slug, course.id, ExportFormat.Xlsx)
+                                            shareFile(context, result.file, result.mimeType, "Attendance recap — ${course.name}")
+                                        } catch (_: Exception) {
+                                            exportError = "The export could not be completed."
+                                        } finally {
+                                            exportingCourseId = null
+                                        }
+                                    }
+                                }
+                            }
                         }
                         if (latest != null) {
                             Text("Latest Meeting ${latest.meetingNumber} on ${formatLeaveDate(latest.startsAt.take(10))}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Sm))

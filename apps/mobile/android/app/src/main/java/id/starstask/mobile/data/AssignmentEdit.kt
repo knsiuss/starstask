@@ -80,7 +80,7 @@ suspend fun moderateAssignment(
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun deleteAssignmentRecord(userId: String, assignmentId: String): Boolean {

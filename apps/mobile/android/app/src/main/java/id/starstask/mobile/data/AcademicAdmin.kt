@@ -163,9 +163,15 @@ suspend fun listScheduleRules(offeringIds: List<String>): List<ScheduleRule> {
     }
 }
 
-data class AttendanceMeeting(val id: String, val offeringId: String, val scheduledAt: String, val status: String, val location: String?)
+data class AcademicAttendanceMeeting(
+    val id: String,
+    val offeringId: String,
+    val scheduledAt: String,
+    val status: String,
+    val location: String?,
+)
 
-suspend fun listAttendanceMeetings(offeringIds: List<String>): List<AttendanceMeeting> {
+suspend fun listAcademicAttendanceMeetings(offeringIds: List<String>): List<AcademicAttendanceMeeting> {
     if (offeringIds.isEmpty()) return emptyList()
     val rows = SupabaseProvider.client.postgrest.from("attendance_meetings")
         .select(Columns.list("id", "offering_id", "scheduled_at", "status", "location")) {
@@ -176,7 +182,7 @@ suspend fun listAttendanceMeetings(offeringIds: List<String>): List<AttendanceMe
     return rows.mapNotNull { el ->
         val o = el.jsonObject
         val id = o["id"]?.jsonPrimitive?.contentOrNull() ?: return@mapNotNull null
-        AttendanceMeeting(
+        AcademicAttendanceMeeting(
             id = id,
             offeringId = o["offering_id"]?.jsonPrimitive?.contentOrNull() ?: "",
             scheduledAt = o["scheduled_at"]?.jsonPrimitive?.contentOrNull() ?: "",
@@ -223,5 +229,5 @@ suspend fun markAnnouncementRead(announcementId: String, userId: String, univers
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }

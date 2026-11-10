@@ -32,6 +32,7 @@ import id.starstask.mobile.data.leaveReviewNoteError
 import id.starstask.mobile.data.listLeaveForwardings
 import id.starstask.mobile.data.loadClassLeaveRequests
 import id.starstask.mobile.data.reviewLeaveRequest
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
@@ -69,7 +70,7 @@ fun ClassLeaveScreen(
 
     LaunchedEffect(clazz.id, reloadTick) {
         runCatching { rows = loadClassLeaveRequests(clazz.id) }
-            .onFailure { error = "Could not load leave requests: ${it.message}" }
+            .onFailure { error = userFacingMessage(it, "Could not load leave requests.") }
         runCatching { forwardings = listLeaveForwardings(clazz.id) }
     }
 
@@ -90,7 +91,7 @@ fun ClassLeaveScreen(
         scope.launch {
             runCatching { reviewLeaveRequest(requestId, decision, note.ifBlank { null }) }
                 .onSuccess { note = ""; reloadTick++ }
-                .onFailure { error = "Could not record the decision: ${it.message}" }
+                .onFailure { error = userFacingMessage(it, "Could not record the decision.") }
         }
     }
 

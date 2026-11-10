@@ -369,7 +369,6 @@ private fun friendlyProfileError(error: Exception): String {
         "invalid" in message -> "Those details could not be saved. Check the fields and try again."
         "network" in message.lowercase() || "failed to connect" in message.lowercase() ->
             "Network error. Check your connection and try again."
-        message.isNotBlank() && message.length < 120 -> message
         else -> "Could not save your profile. Try again."
     }
 }

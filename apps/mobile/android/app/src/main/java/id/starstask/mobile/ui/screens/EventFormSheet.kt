@@ -42,6 +42,7 @@ import id.starstask.mobile.data.formatDayLabel
 import id.starstask.mobile.data.jakartaLocalDateTime
 import id.starstask.mobile.data.jakartaLocalToInstantIso
 import id.starstask.mobile.data.validateCalendarEvent
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
@@ -207,7 +208,7 @@ fun EventFormSheet(
                                 }
                             }
                         }.onSuccess { busy = false; onSaved() }
-                            .onFailure { error = it.message ?: "Could not save the event."; busy = false }
+                            .onFailure { error = userFacingMessage(it, "Could not save the event."); busy = false }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

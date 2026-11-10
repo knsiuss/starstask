@@ -1,7 +1,9 @@
 package id.starstask.mobile.data
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -9,7 +11,8 @@ import id.starstask.mobile.BuildConfig
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
-
+import java.security.MessageDigest
+import java.security.SecureRandom
 /**
  * Native Google sign-in (no browser, like Facebook/X): Credential
  * Manager shows the account picker inside the app; the Google ID token
@@ -26,9 +29,14 @@ suspend fun signInWithGoogleNative(context: Context): String? {
             SupabaseProvider.client.auth.signInWith(Google)
             null
         } catch (error: Exception) {
-            "Browser sign-in failed: ${error.message}"
+            userFacingMessage(error, "Sign-in failed. Please try again.")
         }
     }
+
+    // Hashed nonce goes to Google; the raw one is what Supabase verifies against the id_token.
+    val rawNonce = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        .joinToString("") { "%02x".format(it) }
+    val hashedNonce = sha256Hex(rawNonce)
 
     val credentialManager = CredentialManager.create(activityContext)
     val request = GetCredentialRequest.Builder()
@@ -36,6 +44,7 @@ suspend fun signInWithGoogleNative(context: Context): String? {
             GetGoogleIdOption.Builder()
                 .setServerClientId(webClientId)
                 .setFilterByAuthorizedAccounts(false)
+                .setNonce(hashedNonce)
                 .build()
         )
         .build()
@@ -43,24 +52,45 @@ suspend fun signInWithGoogleNative(context: Context): String? {
     val response = try {
         credentialManager.getCredential(activityContext, request)
     } catch (error: Exception) {
-        return "Google sign-in did not start: ${error.message}"
+        return userFacingMessage(error, "Google sign-in did not start. Please try again.")
     }
 
     val credential = response.credential
-    return if (credential is GoogleIdTokenCredential) {
-        try {
-            SupabaseProvider.client.auth.signInWith(IDToken) {
-                idToken = credential.idToken
-                provider = Google
+    var failureMessage = "Unexpected credential from Google."
+    val googleCredential: GoogleIdTokenCredential? = when {
+        credential is GoogleIdTokenCredential -> credential
+        credential is CustomCredential &&
+            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL ->
+            try {
+                GoogleIdTokenCredential.createFrom(credential.data)
+            } catch (error: Exception) {
+                Log.w("GoogleSignIn", "createFrom failed for type=${credential.type}", error)
+                failureMessage = userFacingMessage(error, "Sign-in failed. Please try again.")
+                null
             }
+        else -> {
+            val type = (credential as? CustomCredential)?.type ?: "unknown"
+            Log.w("GoogleSignIn", "Rejected credential: type=$type class=${credential::class.java.name}")
             null
-        } catch (error: Exception) {
-            "Sign-in failed: ${error.message}"
         }
-    } else {
-        "Unexpected credential from Google."
+    }
+    if (googleCredential == null) return failureMessage
+
+    return try {
+        SupabaseProvider.client.auth.signInWith(IDToken) {
+            idToken = googleCredential.idToken
+            provider = Google
+            nonce = rawNonce
+        }
+        null
+    } catch (error: Exception) {
+        userFacingMessage(error, "Sign-in failed. Please try again.")
     }
 }
+
+private fun sha256Hex(value: String): String =
+    MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
+        .joinToString("") { "%02x".format(it) }
 
 private fun Context.findActivity(): android.app.Activity? {
     var current = this

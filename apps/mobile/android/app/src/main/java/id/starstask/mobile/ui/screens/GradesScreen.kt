@@ -22,10 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.ClassCourse
+import id.starstask.mobile.data.ClassRosterEntry
 import id.starstask.mobile.data.listClassCourses
+import id.starstask.mobile.data.listClassRoster
 import id.starstask.mobile.data.listCourseComponentGrades
 import id.starstask.mobile.data.setCourseComponentGrade
 import id.starstask.mobile.data.validateComponentGrade
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
@@ -56,7 +59,7 @@ fun GradesScreen(classId: String, onBack: () -> Unit) {
     LaunchedEffect(classId) {
         loading = true
         val err = runCatching { courses = listClassCourses(classId, false) }.exceptionOrNull()
-        error = err?.message
+        error = err?.let { userFacingMessage(it, "Could not load courses.") }
         loading = false
     }
 
@@ -104,12 +107,17 @@ private fun GradeEditor(
     onGrades: (Map<String, Double>) -> Unit, error: String?, notice: String?,
     onNotice: (String) -> Unit, onError: (String) -> Unit, onBack: () -> Unit,
 ) {
-    var studentId by remember { mutableStateOf("") }
-    var component by remember { mutableStateOf("UTS") }
+    var studentId by remember { mutableStateOf<String?>(null) }
+    var component by remember { mutableStateOf("tugas") }
     var scoreText by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
+    var roster by remember { mutableStateOf<List<ClassRosterEntry>>(emptyList()) }
     val scope = rememberCoroutineScope()
-    val components = listOf("Tugas", "UTS", "UAS", "Kuis", "Praktik", "Partisipasi")
+    val components = listOf("tugas" to "Tugas", "uts" to "UTS", "uas" to "UAS")
+
+    LaunchedEffect(classId) {
+        roster = runCatching { listClassRoster(classId) }.getOrDefault(emptyList())
+    }
 
     WebScreen {
         WebScreenHeader(title = course.name, subtitle = "Inline component grade")
@@ -117,12 +125,23 @@ private fun GradeEditor(
         if (notice != null) WebAlert(message = notice!!, variant = id.starstask.mobile.ui.components.WebAlertVariant.SUCCESS)
         if (error != null) WebAlert(message = error!!)
         WebSectionTitle("Set score")
-        WebInput(value = studentId, onValueChange = { studentId = it }, label = "Student ID")
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
-            components.forEach { c ->
+        WebSectionTitle("Student")
+        if (roster.isEmpty()) {
+            Text("No active students in this class yet.", color = MutedForeground)
+        } else {
+            // One AssistChip per member; selection is explicit and ids are hidden.
+            roster.forEach { member ->
                 androidx.compose.material3.AssistChip(
-                    onClick = { component = c },
-                    label = { Text(c, color = if (component == c) id.starstask.mobile.ui.theme.Foreground else MutedForeground) },
+                    onClick = { studentId = member.userId },
+                    label = { Text(member.displayName, color = if (studentId == member.userId) id.starstask.mobile.ui.theme.Foreground else MutedForeground) },
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+            components.forEach { (value, label) ->
+                androidx.compose.material3.AssistChip(
+                    onClick = { component = value },
+                    label = { Text(label, color = if (component == value) id.starstask.mobile.ui.theme.Foreground else MutedForeground) },
                 )
             }
         }
@@ -132,13 +151,14 @@ private fun GradeEditor(
             onClick = {
                 val score = scoreText.toDoubleOrNull()
                 validateComponentGrade(score)?.let { onError(it); return@WebButton }
-                if (studentId.isBlank()) { onError("Student ID is required."); return@WebButton }
+                val sid = studentId
+                if (sid.isNullOrBlank()) { onError("Pick a student."); return@WebButton }
                 saving = true
                 scope.launch {
-                    val err = setCourseComponentGrade(classId, course.id, studentId.trim(), component, score!!)
+                    val err = setCourseComponentGrade(classId, course.id, sid, component, score!!)
                     if (err == null) {
                         onNotice("Score saved.")
-                        onGrades(grades + ("${studentId.trim()}:$component" to score))
+                        onGrades(grades + ("$sid:$component" to score!!))
                         scoreText = ""
                     } else onError(err)
                     saving = false

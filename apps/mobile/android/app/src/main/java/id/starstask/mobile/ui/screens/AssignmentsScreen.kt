@@ -52,6 +52,7 @@ import id.starstask.mobile.data.hiddenAssignmentsFlow
 import id.starstask.mobile.data.listManagedRequests
 import id.starstask.mobile.data.listMyRequests
 import id.starstask.mobile.data.listWorkspaceSchedule
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebEmptyState
 import id.starstask.mobile.ui.components.WebSkeletonCard
 import id.starstask.mobile.ui.icons.Lucide
@@ -104,6 +105,9 @@ fun AssignmentsWorkspaceScreen(
     val manages = scope?.managesAnyClass == true
     val scopeCoroutine = androidx.compose.runtime.rememberCoroutineScope()
 
+    val effectiveStatus = if (tab == "past") "overdue" else status
+    val effectiveSort = if (tab == "past") "deadline" else sort
+
     suspend fun loadAll() {
         val s = getWorkspaceScope(userId)
         scopeState.value = s
@@ -111,8 +115,8 @@ fun AssignmentsWorkspaceScreen(
             scope = s,
             search = appliedSearch.ifBlank { null },
             classFilter = classId,
-            status = status,
-            sort = sort,
+            status = effectiveStatus,
+            sort = effectiveSort,
             type = typeFilter,
             page = page,
         )
@@ -124,13 +128,13 @@ fun AssignmentsWorkspaceScreen(
         managedRequests = listManagedRequests(s)
     }
 
-    LaunchedEffect(userId, appliedSearch, classId, status, sort, typeFilter, page, refreshTick) {
+    LaunchedEffect(userId, appliedSearch, classId, status, sort, typeFilter, page, refreshTick, tab) {
         loading = true
         error = null
         try {
             loadAll()
         } catch (e: Exception) {
-            error = e.message ?: "Could not load assignments."
+            error = userFacingMessage(e, "Could not load assignments.")
         }
         loading = false
     }
@@ -363,14 +367,25 @@ fun AssignmentsWorkspaceScreen(
         item {
             WorkspaceTabs(
                 tab = tab,
-                onTabChange = { tab = it },
-                scheduleCount = scheduleTotal,
-                requestsLabel = if (manages) "Publication Requests" else "My Requests",
-                requestsCount = if (manages) {
-                    managedRequests.count { it.displayStatus == id.starstask.mobile.data.RequestDisplayStatus.PENDING } + myRequests.size
-                } else {
-                    myRequests.size
+                onTabChange = { newTab ->
+                    if (newTab != tab) {
+                        tab = newTab
+                        page = 1
+                    }
                 },
+                tabs = listOf(
+                    id.starstask.mobile.ui.screens.AssignmentsTab("Task Schedule", "schedule", scheduleTotal),
+                    id.starstask.mobile.ui.screens.AssignmentsTab("Past", "past", overview?.expired ?: 0),
+                    id.starstask.mobile.ui.screens.AssignmentsTab(
+                        if (manages) "Publication Requests" else "My Requests",
+                        "requests",
+                        if (manages) {
+                            managedRequests.count { it.displayStatus == id.starstask.mobile.data.RequestDisplayStatus.PENDING } + myRequests.size
+                        } else {
+                            myRequests.size
+                        },
+                    ),
+                ),
             )
         }
 

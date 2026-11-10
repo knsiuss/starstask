@@ -1,6 +1,7 @@
 package id.starstask.mobile.data
 
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -675,7 +676,7 @@ data class AssignmentRevision(
 
 suspend fun listAssignmentRevisions(assignmentId: String): List<AssignmentRevision> {
     // Visible only to author/class reviewers/platform admins (RLS); other
-    // readers get an empty list. Best-effort — never blocks the detail page.
+    // readers get an empty list. Best-effort â€” never blocks the detail page.
     return try {
         val rows = SupabaseProvider.client.postgrest.from("assignment_revisions").select {
             filter { eq("assignment_id", assignmentId) }
@@ -790,7 +791,37 @@ suspend fun reportAssignment(assignmentId: String, reason: String, note: String?
 
 // --- Create / review (mirrors POST /api/classes/[slug]/submissions) ---
 
+private suspend fun rollbackAssignmentSubmission(assignmentId: String) {
+    val db = SupabaseProvider.client.postgrest
+    val storage = SupabaseProvider.client.storage
+    val attachmentPaths = mutableListOf<String>()
+    runCatching {
+        db.from("assignment_attachments").select {
+            filter { eq("assignment_id", assignmentId) }
+        }.decodeJsonArray().forEach { element ->
+            val path = element.jsonObject["storage_path"]?.jsonPrimitive?.contentOrNull()
+            if (!path.isNullOrBlank()) attachmentPaths += path
+        }
+    }
+    runCatching {
+        db.from("assignment_attachments").delete { filter { eq("assignment_id", assignmentId) } }
+    }
+    if (attachmentPaths.isNotEmpty()) {
+        runCatching { storage.from("assignment-attachments").delete(attachmentPaths) }
+    }
+    runCatching {
+        db.from("assignments").delete { filter { eq("id", assignmentId) } }
+    }
+}
+
+/**
+ * Mirrors `createClassSubmission` on the web: submit via RPC, upload the
+ * attachments, then publish only for a class-admin post. Any failure removes
+ * the assignment and whatever was uploaded so a half-saved request never
+ * reaches the review queue or the class feed.
+ */
 suspend fun createWorkspaceAssignment(
+    context: android.content.Context,
     userId: String,
     scope: WorkspaceScope,
     classId: String,
@@ -798,26 +829,59 @@ suspend fun createWorkspaceAssignment(
     title: String,
     description: String,
     deadlineIso: String?,
+    fileUris: List<android.net.Uri> = emptyList(),
 ): String {
     val db = SupabaseProvider.client.postgrest
-    val isAdmin = scope.classes.firstOrNull { it.id == classId }?.isAdmin == true
-    val status = if (isAdmin) "published" else "pending_review"
-    val inserted = db.from("assignments").insert(
-        buildJsonObject {
-            put("title", JsonPrimitive(title.trim()))
-            put("description", JsonPrimitive(description.trim()))
-            put("content_type", JsonPrimitive("lecturer_assignment"))
-            put("subject_id", JsonPrimitive(subjectId))
-            put("class_id", JsonPrimitive(classId))
-            put("user_id", JsonPrimitive(userId))
-            put("status", JsonPrimitive(status))
-            deadlineIso?.let { put("deadline", JsonPrimitive(it)) } ?: put("deadline", JsonNull)
-            put("tags", JsonArray(emptyList()))
-            put("reference_urls", JsonArray(emptyList()))
-        },
-    ) { select() }.decodeJsonArray()
-    return inserted.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
-        ?: throw IllegalStateException("Could not create the assignment")
+    val canPublish = scope.classes.firstOrNull { it.id == classId }?.isAdmin == true
+
+    val idResult = runCatching {
+        db.rpc(
+            "submit_class_assignment",
+            buildJsonObject {
+                put("p_class_id", JsonPrimitive(classId))
+                put("p_title", JsonPrimitive(title.trim()))
+                put("p_description", JsonPrimitive(description.trim()))
+                if (deadlineIso != null) put("p_deadline", JsonPrimitive(deadlineIso)) else put("p_deadline", JsonNull)
+                put("p_assignment_type", JsonNull)
+                put("p_tags", JsonArray(emptyList()))
+                put("p_reference_urls", JsonArray(emptyList()))
+                put("p_content_type", JsonPrimitive("lecturer_assignment"))
+                put("p_source_label", JsonNull)
+                put("p_drive_url", JsonNull)
+                put("p_subject_id", JsonPrimitive(subjectId))
+            },
+        ).decodeJsonPrimitive().content
+    }.getOrElse { failure ->
+        // A failed submit wrote nothing, so there is nothing to roll back.
+        throw IllegalStateException(
+            userFacingMessage(failure, "The assignment could not be saved. Try again."),
+        )
+    }
+
+    val assignmentId = idResult.takeIf { it.isNotBlank() }
+        ?: throw IllegalStateException("The assignment could not be created.")
+
+    try {
+        for (uri in fileUris) {
+            val outcome = uploadAttachment(context, userId, assignmentId, uri)
+            if (!outcome.ok) {
+                throw IllegalStateException(outcome.message ?: "The file could not be uploaded. Try again.")
+            }
+        }
+
+        if (canPublish) {
+            db.rpc(
+                "publish_class_assignment",
+                buildJsonObject { put("p_assignment_id", JsonPrimitive(assignmentId)) },
+            )
+        }
+    } catch (failure: Exception) {
+        rollbackAssignmentSubmission(assignmentId)
+        throw (failure as? IllegalStateException)
+            ?: IllegalStateException(userFacingMessage(failure, "The submission could not be saved. Try again."))
+    }
+
+    return assignmentId
 }
 
 suspend fun reviewWorkspaceRequest(
@@ -825,25 +889,21 @@ suspend fun reviewWorkspaceRequest(
     decision: String, // approved | rejected | revision
     reason: String?,
 ) {
-    val db = SupabaseProvider.client.postgrest
-    if (decision == "approved") {
-        db.from("assignments").update(
-            buildJsonObject {
-                put("status", JsonPrimitive("published"))
-                put("rejection_reason", JsonNull)
-            },
-        ) { filter { eq("id", assignmentId) } }
+    // Web review goes through review_class_assignment (class_functions.sql):
+    // atomic publish + assignment_reviews row + audit + notification.
+    // "revision" is stored as rejected with the REVISION_REQUEST_PREFIX note.
+    val dbDecision = if (decision == "approved") "approved" else "rejected"
+    val stored = if (decision == "revision") {
+        "$REVISION_REQUEST_PREFIX ${reason?.trim().orEmpty()}"
     } else {
-        val stored = if (decision == "revision") {
-            "$REVISION_REQUEST_PREFIX ${reason?.trim().orEmpty()}"
-        } else {
-            reason?.trim().orEmpty()
-        }
-        db.from("assignments").update(
-            buildJsonObject {
-                put("status", JsonPrimitive("rejected"))
-                put("rejection_reason", JsonPrimitive(stored))
-            },
-        ) { filter { eq("id", assignmentId) } }
+        reason?.trim().orEmpty().takeIf { it.isNotEmpty() }
     }
+    SupabaseProvider.client.postgrest.rpc(
+        "review_class_assignment",
+        buildJsonObject {
+            put("p_assignment_id", JsonPrimitive(assignmentId))
+            put("p_decision", JsonPrimitive(dbDecision))
+            put("p_reason", stored?.let { JsonPrimitive(it) } ?: JsonNull)
+        },
+    )
 }

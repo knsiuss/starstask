@@ -59,5 +59,5 @@ suspend fun saveClassBranding(classId: String, branding: ClassBranding): String?
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }

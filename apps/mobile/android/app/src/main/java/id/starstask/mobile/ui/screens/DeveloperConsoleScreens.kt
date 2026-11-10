@@ -25,6 +25,7 @@ import id.starstask.mobile.data.listDeveloperIncidents
 import id.starstask.mobile.data.loadClassMetrics
 import id.starstask.mobile.data.loadDashboardMetrics
 import id.starstask.mobile.data.loadDeveloperUsers
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebAlertVariant
 import id.starstask.mobile.ui.components.WebCard
@@ -56,7 +57,7 @@ fun DeveloperConsoleScreen(onBack: () -> Unit) {
                 classMetrics = loadClassMetrics()
                 users = loadDeveloperUsers()
                 incidents = listDeveloperIncidents()
-            }.onFailure { error = it.message }
+            }.onFailure { error = userFacingMessage(it) }
         }
     }
 

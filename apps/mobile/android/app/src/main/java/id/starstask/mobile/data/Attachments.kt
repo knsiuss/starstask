@@ -32,8 +32,35 @@ const val UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 
 val ALLOWED_EXTENSIONS = setOf(
     "pdf", "docx", "pptx", "xlsx", "png", "jpg", "jpeg", "csv", "ipynb",
-    "txt", "md", "json", "zip", "mp4", "mp3",
+    "txt", "md", "json", "zip", "mp4", "mp3", "py", "js", "ts", "tsx",
 )
+
+private val MIME_BY_EXTENSION = mapOf(
+    "pdf" to "application/pdf",
+    "docx" to "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "pptx" to "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "xlsx" to "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "png" to "image/png",
+    "jpg" to "image/jpeg",
+    "jpeg" to "image/jpeg",
+    "csv" to "text/csv",
+    "ipynb" to "application/json",
+    "txt" to "text/plain",
+    "md" to "text/markdown",
+    "json" to "application/json",
+    "zip" to "application/zip",
+    "mp4" to "video/mp4",
+    "mp3" to "audio/mpeg",
+    "py" to "text/x-python",
+    "js" to "text/javascript",
+    "ts" to "text/typescript",
+    "tsx" to "text/typescript",
+)
+
+fun mimeForExtension(extension: String): String =
+    MIME_BY_EXTENSION[extension.lowercase()] ?: "application/octet-stream"
+
+fun fileExtension(name: String): String = name.substringAfterLast('.', "").lowercase()
 
 suspend fun listAttachments(assignmentId: String): List<AttachmentRef> {
     val db = SupabaseProvider.client.postgrest
@@ -69,12 +96,12 @@ suspend fun uploadAttachment(
     if (size <= 0) return UploadOutcome(false, null, "The file is empty.")
     if (size > UPLOAD_MAX_BYTES) return UploadOutcome(false, null, "Each file must be 10 MB or smaller.")
 
-    val extension = name.substringAfterLast(".", "").lowercase()
+    val extension = fileExtension(name)
     if (extension !in ALLOWED_EXTENSIONS) {
         return UploadOutcome(false, null, "Type .$extension is not allowed for attachments.")
     }
 
-    val mime = resolver.getType(uri) ?: "application/octet-stream"
+    val mime = mimeForExtension(extension)
     val safeName = name.replace(Regex("[^\\w.\\- ]+"), "_").take(120)
     val storagePath = "$userId/$assignmentId/${System.currentTimeMillis()}-$safeName"
     val bytes = resolver.openInputStream(uri)?.readBytes()
@@ -87,7 +114,7 @@ suspend fun uploadAttachment(
         }
     }
     if (uploadResult.isFailure) {
-        return UploadOutcome(false, null, uploadResult.exceptionOrNull()?.message ?: "Upload failed.")
+        return UploadOutcome(false, null, userFacingMessage(uploadResult.exceptionOrNull(), "Upload failed."))
     }
 
     val db = SupabaseProvider.client.postgrest
@@ -104,7 +131,7 @@ suspend fun uploadAttachment(
     }
     if (recordResult.isFailure) {
         runCatching { storage.from("assignment-attachments").delete(listOf(storagePath)) }
-        return UploadOutcome(false, null, recordResult.exceptionOrNull()?.message ?: "Could not save attachment.")
+        return UploadOutcome(false, null, userFacingMessage(recordResult.exceptionOrNull(), "Could not save attachment."))
     }
 
     return UploadOutcome(true, safeName, null)
@@ -138,6 +165,15 @@ suspend fun renameAttachment(context: Context, attachmentId: String, storagePath
         ) { filter { eq("id", attachmentId) } }
         true
     }.getOrDefault(false)
+}
+
+fun attachmentAllowedExtensionsLabel(): String = ALLOWED_EXTENSIONS.joinToString(" ") { it.uppercase() }
+
+fun queryFileSize(context: android.content.Context, uri: android.net.Uri): Long? {
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) return cursor.getLong(0).takeIf { it >= 0L }
+    }
+    return null
 }
 
 private fun queryName(resolver: android.content.ContentResolver, uri: Uri): String? {

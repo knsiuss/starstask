@@ -17,9 +17,21 @@ import kotlinx.serialization.json.put
 // typed overloads (Conflicting overloads). Use rpc where possible.
 
 suspend fun renameClass(classId: String, name: String) {
-    SupabaseProvider.client.postgrest.from("classes").select(Columns.list("id")) {
-        filter { eq("id", classId) }
-    }
+    // update_class_metadata rewrites name/description/course/semester/year
+    // atomically, so reuse the current row instead of writing partial fields.
+    val current = getManagedClassById(classId)
+        ?: throw IllegalStateException("Class not found.")
+    updateClassMetadataFull(
+        classId = classId,
+        name = name,
+        description = current.description,
+        courseName = current.courseName ?: "Course",
+        semester = current.semester ?: "",
+        academicYear = current.academicYear ?: "",
+        institution = current.institution,
+        lecturerName = current.lecturerName,
+        classCode = current.classCode,
+    )
 }
 
 suspend fun loadClassAdmins(classId: String): List<ClassAdminRow> {
@@ -185,12 +197,17 @@ fun leaveReviewNoteError(decision: String, note: String): String? {
 }
 
 suspend fun reviseSubmission(assignmentId: String, title: String, description: String) {
+    // revise_class_assignment (class_functions.sql) takes text, text, timestamptz, text, text[], jsonb.
     SupabaseProvider.client.postgrest.rpc(
-        "revise_assignment",
+        "revise_class_assignment",
         buildJsonObject {
             put("p_assignment_id", JsonPrimitive(assignmentId))
             put("p_title", JsonPrimitive(title.trim()))
             put("p_description", JsonPrimitive(description.trim()))
+            put("p_deadline", JsonNull)
+            put("p_assignment_type", JsonNull)
+            put("p_tags", kotlinx.serialization.json.JsonArray(emptyList()))
+            put("p_reference_urls", kotlinx.serialization.json.JsonArray(emptyList()))
         },
     )
 }

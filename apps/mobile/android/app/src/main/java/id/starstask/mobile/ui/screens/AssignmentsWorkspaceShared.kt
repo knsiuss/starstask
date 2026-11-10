@@ -2,6 +2,7 @@ package id.starstask.mobile.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,30 +58,38 @@ val SORTS = listOf(
     "deadline" to "Nearest deadline",
 )
 
+data class AssignmentsTab(val label: String, val key: String, val count: Int)
+
 @Composable
 fun WorkspaceTabs(
     tab: String,
     onTabChange: (String) -> Unit,
-    scheduleCount: Int,
-    requestsLabel: String,
-    requestsCount: Int,
+    tabs: List<AssignmentsTab>,
 ) {
-    val tabs = listOf("Task Schedule" to ("schedule" to scheduleCount), requestsLabel to ("requests" to requestsCount))
     Column {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            tabs.forEach { (label, pair) ->
-                val (key, count) = pair
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(end = Spacing.Md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Lg),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            tabs.forEach { spec ->
+                val key = spec.key
                 val active = key == tab
                 Column(
                     modifier = Modifier
-                        .weight(1f)
                         .clickable { onTabChange(key) }
-                        .padding(horizontal = Spacing.Lg, vertical = Spacing.Lg),
+                        .padding(horizontal = Spacing.Xl, vertical = Spacing.Lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Sm),
+                    ) {
                         Text(
-                            label,
+                            spec.label,
                             color = if (active) Accent else MutedForeground,
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             maxLines = 1,
@@ -90,10 +100,10 @@ fun WorkspaceTabs(
                                     if (active) AccentSoft else Muted,
                                     RoundedCornerShape(999.dp),
                                 )
-                                .padding(horizontal = Spacing.Md, vertical = Spacing.Xxs),
+                                .padding(horizontal = Spacing.Md, vertical = Spacing.Xs),
                         ) {
                             Text(
-                                count.toString(),
+                                spec.count.toString(),
                                 color = if (active) Accent else MutedForeground,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             )
@@ -102,11 +112,11 @@ fun WorkspaceTabs(
                     Box(
                         modifier = Modifier
                             .padding(top = 8.dp)
-                            .fillMaxWidth()
                             .background(
                                 if (active) Accent else androidx.compose.ui.graphics.Color.Transparent,
                                 RoundedCornerShape(1.dp),
                             )
+                            .padding(vertical = 1.dp)
                             .height(2.dp),
                     )
                 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.ClassDetail
 import id.starstask.mobile.data.csvForReports
 import id.starstask.mobile.data.listAssignmentPage
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.components.WebAlert
@@ -42,13 +43,13 @@ fun ClassReportsScreen(clazz: ClassDetail, onBack: () -> Unit) {
         loading = true
         runCatching {
             csvText = csvForReports(listAssignmentPage(classId = clazz.id, sort = "newest", page = 1, pageSize = 50).items)
-        }.onFailure { error = "Could not load reports: ${it.message}" }
+        }.onFailure { error = userFacingMessage(it, "Could not load reports.") }
         loading = false
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.Section), verticalArrangement = Arrangement.spacedBy(Spacing.Xl)) {
         WebButton(label = "← Back", onClick = onBack, variant = WebButtonVariant.GHOST)
-        WebScreenHeader(title = "Reader reports — ${clazz.name}", subtitle = "CSV export, same columns as web")
+        WebScreenHeader(title = "Assignment list — ${clazz.name}", subtitle = "CSV export, same columns as web")
         if (loading) Text("Loading…", color = MutedForeground)
         if (error != null) WebAlert(message = error!!)
         if (csvText.isNotBlank()) {

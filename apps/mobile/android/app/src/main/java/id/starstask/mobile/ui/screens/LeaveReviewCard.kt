@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.LeaveRequest
 import id.starstask.mobile.data.leaveReviewNoteError
 import id.starstask.mobile.data.reviewLeaveRequest
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.components.WebCard
@@ -50,7 +51,7 @@ fun LeaveReviewCard(
                     scope.launch {
                         runCatching { reviewLeaveRequest(request.id, "approved", reviewNote.ifBlank { null }) }
                             .onSuccess { onReviewNoteClear(); onChanged(); onReload() }
-                            .onFailure { e -> onMessage(e.message ?: "Could not record decision") }
+                            .onFailure { e -> onMessage(userFacingMessage(e, "Could not record decision.")) }
                         onReviewBusyChange(false)
                     }
                 },
@@ -64,7 +65,7 @@ fun LeaveReviewCard(
                     scope.launch {
                         runCatching { reviewLeaveRequest(request.id, "rejected", reviewNote.ifBlank { null }) }
                             .onSuccess { onReviewNoteClear(); onChanged(); onReload() }
-                            .onFailure { e -> onMessage(e.message ?: "Could not record decision") }
+                            .onFailure { e -> onMessage(userFacingMessage(e, "Could not record decision.")) }
                         onReviewBusyChange(false)
                     }
                 },
@@ -79,7 +80,7 @@ fun LeaveReviewCard(
                     scope.launch {
                         runCatching { reviewLeaveRequest(request.id, "revision_requested", reviewNote.ifBlank { null }) }
                             .onSuccess { onReviewNoteClear(); onChanged(); onReload() }
-                            .onFailure { e -> onMessage(e.message ?: "Could not record decision") }
+                            .onFailure { e -> onMessage(userFacingMessage(e, "Could not record decision.")) }
                         onReviewBusyChange(false)
                     }
                 },

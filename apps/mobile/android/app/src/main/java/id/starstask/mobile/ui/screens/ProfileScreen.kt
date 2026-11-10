@@ -50,6 +50,7 @@ import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.data.loadMyProfile
 import id.starstask.mobile.data.loadProfileClasses
 import id.starstask.mobile.data.uploadProfileAvatar
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.AssignmentBackground
@@ -211,6 +212,7 @@ fun ProfileScreen(
                                 onOpenAdminConsole = onOpenAdminConsole,
                                 onOpenDeveloperConsole = onOpenDeveloperConsole,
                                 onSignOut = onSignOut,
+                                platformAdmin = platformAdmin,
                             )
                         }
                         item(key = "footer") {
@@ -588,6 +590,7 @@ fun ProfileQuickActionsClean(
     onOpenAdminConsole: () -> Unit,
     onOpenDeveloperConsole: () -> Unit,
     onSignOut: () -> Unit,
+    platformAdmin: Boolean,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         GroupLabel("Quick actions")
@@ -599,10 +602,12 @@ fun ProfileQuickActionsClean(
                 .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
         ) {
             QuickRowClean(icon = Lucide.GraduationCap, label = "My classes", onClick = onOpenClasses)
-            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
-            QuickRowClean(icon = Lucide.Settings, label = "Console", onClick = onOpenAdminConsole)
-            HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
-            QuickRowClean(icon = Lucide.Terminal, label = "Developer", onClick = onOpenDeveloperConsole)
+            if (platformAdmin) {
+                HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
+                QuickRowClean(icon = Lucide.Settings, label = "Console", onClick = onOpenAdminConsole)
+                HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
+                QuickRowClean(icon = Lucide.Terminal, label = "Developer", onClick = onOpenDeveloperConsole)
+            }
             HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
             QuickRowClean(icon = Lucide.LogOut, label = "Sign out", destructive = true, onClick = onSignOut)
         }

@@ -86,21 +86,4 @@ suspend fun loadOnboardingProfile(userId: String): OnboardingProfile? {
     )
 }
 
-suspend fun submitLeaveRequest(
-    classId: String,
-    leaveStart: String,
-    leaveEnd: String,
-    reason: String,
-) {
-    val db = SupabaseProvider.client.postgrest
-    db.from("leave_requests").insert(
-        kotlinx.serialization.json.buildJsonObject {
-            put("class_id", kotlinx.serialization.json.JsonPrimitive(classId))
-            put("leave_start_date", kotlinx.serialization.json.JsonPrimitive(leaveStart))
-            put("leave_end_date", kotlinx.serialization.json.JsonPrimitive(leaveEnd))
-            put("reason_category", kotlinx.serialization.json.JsonPrimitive(reason))
-            put("status", kotlinx.serialization.json.JsonPrimitive("submitted"))
-        },
-    )
-}
 

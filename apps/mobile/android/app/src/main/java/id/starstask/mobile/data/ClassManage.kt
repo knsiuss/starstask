@@ -76,15 +76,45 @@ suspend fun getManagedClassBySlug(slug: String): ManagedClass? {
     return rows.firstOrNull()?.let { parseManagedClass(it.jsonObject) }
 }
 
-suspend fun updateClassMetadata(classId: String, name: String) {
+suspend fun getManagedClassById(classId: String): ManagedClass? {
+    val rows = SupabaseProvider.client.postgrest.from("classes")
+        .select(CLASS_MANAGE_COLUMNS) {
+            filter { eq("id", classId) }
+            limit(1)
+        }.decodeJsonArray()
+    return rows.firstOrNull()?.let { parseManagedClass(it.jsonObject) }
+}
+
+suspend fun updateClassMetadataFull(
+    classId: String,
+    name: String,
+    description: String?,
+    courseName: String?,
+    semester: String?,
+    academicYear: String?,
+    institution: String?,
+    lecturerName: String?,
+    classCode: String?,
+) {
+    // RPC signature: update_class_metadata(uuid, text, text, text, text, text,
+    // text, text, text) — description/course_name/semester/year are text NOT NULL.
+    fun req(v: String?): String = v?.trim().orEmpty()
     SupabaseProvider.client.postgrest.rpc(
         "update_class_metadata",
         buildJsonObject {
             put("p_class_id", JsonPrimitive(classId))
             put("p_name", JsonPrimitive(name.trim()))
+            put("p_description", JsonPrimitive(req(description)))
+            put("p_course_name", JsonPrimitive(req(courseName)))
+            put("p_semester", JsonPrimitive(req(semester)))
+            put("p_academic_year", JsonPrimitive(req(academicYear)))
+            put("p_institution", institution?.trim()?.takeIf { it.isNotEmpty() }?.let(::JsonPrimitive) ?: kotlinx.serialization.json.JsonNull)
+            put("p_lecturer_name", lecturerName?.trim()?.takeIf { it.isNotEmpty() }?.let(::JsonPrimitive) ?: kotlinx.serialization.json.JsonNull)
+            put("p_class_code", classCode?.trim()?.takeIf { it.isNotEmpty() }?.let(::JsonPrimitive) ?: kotlinx.serialization.json.JsonNull)
         },
     )
 }
+
 
 // Class management writes (RPCs; server validates policy/status):
 // set_class_join_policy, set_class_status, delete_class,

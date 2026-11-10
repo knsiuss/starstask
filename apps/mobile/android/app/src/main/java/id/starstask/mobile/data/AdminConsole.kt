@@ -131,7 +131,7 @@ suspend fun decideClassApplication(applicationId: String, decision: String, note
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 data class VerificationRow(val id: String, val classId: String?, val status: String, val createdAt: String?)
@@ -163,7 +163,7 @@ suspend fun decideVerification(requestId: String, decision: String, note: String
             },
         )
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }
 
 suspend fun revokeCourseInvite(tokenId: String): String? {
@@ -174,5 +174,5 @@ suspend fun revokeCourseInvite(tokenId: String): String? {
                 filter { eq("id", tokenId) }
             }
     }.exceptionOrNull()
-    return err?.message
+    return err?.let { userFacingMessage(it) }
 }

@@ -46,6 +46,7 @@ import id.starstask.mobile.R
 import id.starstask.mobile.ui.navigation.DrawerDestination
 import id.starstask.mobile.ui.navigation.baseRoute
 import id.starstask.mobile.ui.navigation.accountDestinations
+import id.starstask.mobile.ui.navigation.leaderDestinations
 import id.starstask.mobile.ui.navigation.studyDestinations
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.AccentSoft
@@ -106,10 +107,22 @@ fun StarsTaskDrawerContent(
             }
         }
         // Campus (University Info) removed.
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = Spacing.Md),
-            color = androidx.compose.ui.graphics.Color.Transparent,
-        )
+        if (isClassAdmin) {
+            DrawerSection(label = "Class leader") {
+                leaderDestinations.forEach { dest ->
+                    DrawerDestinationItem(
+                        destination = dest,
+                        selected = baseRoute(currentRoute) == baseRoute(dest.route),
+                        onClick = { onDestinationClick(dest) },
+                    )
+                }
+            }
+        } else {
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = Spacing.Md),
+                color = androidx.compose.ui.graphics.Color.Transparent,
+            )
+        }
         DrawerSection(label = "Account") {
             accountDestinations.forEach { dest ->
                 DrawerDestinationItem(

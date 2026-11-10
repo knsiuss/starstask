@@ -32,6 +32,7 @@ import id.starstask.mobile.data.listPlatformClasses
 import id.starstask.mobile.data.listPlatformUsers
 import id.starstask.mobile.data.listVerificationRequests
 import id.starstask.mobile.data.loadPlatformOverview
+import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebAlertVariant
 import id.starstask.mobile.ui.components.WebButton
@@ -72,7 +73,7 @@ fun AdminConsoleScreen(onBack: () -> Unit) {
                 users = listPlatformUsers()
                 classes = listPlatformClasses()
             }.exceptionOrNull()
-            error = err?.message
+            error = err?.let { userFacingMessage(it) }
         }
     }
 

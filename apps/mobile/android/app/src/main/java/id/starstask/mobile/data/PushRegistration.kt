@@ -69,6 +69,20 @@ suspend fun registerCurrentToken(context: Context): String? {
 }
 
 /**
+ * Single entry point for enabling push end-to-end: server preference row,
+ * device FCM token, and the local opt-in cache used for reconciliation on
+ * app start. Shared by Settings (toggle) and the first-launch onboarding.
+ * Registration refusal (token owned by another account) is non-fatal, so a
+ * flaky network will not trap the caller; Settings stays the retry point.
+ */
+suspend fun enablePushForUser(context: Context, userId: String) {
+    val prefs = runCatching { loadNotificationPrefs(userId) }.getOrDefault(NotificationPrefs())
+    saveNotificationPrefs(userId, prefs.copy(pushEnabled = true))
+    registerCurrentToken(context)
+    setCachedPushEnabled(context, true)
+}
+
+/**
  * Reconciles FCM state with the cached opt-in. Called on app start and on
  * FCM rotation. When the server rejected the token (null RPC result) we keep
  * the cache so we don't spam re-registrations every launch.

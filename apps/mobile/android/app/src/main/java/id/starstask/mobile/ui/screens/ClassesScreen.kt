@@ -43,7 +43,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.ClassDetail
 import id.starstask.mobile.data.DirectoryClass
 import id.starstask.mobile.data.WorkspaceScope
@@ -90,7 +89,7 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
 
     val current = openClass
     if (current != null) {
-        ClassDetailScreen(
+        id.starstask.mobile.ui.screens.classdir.ClassDetailScreenGlossy(
             clazz = DirectoryClassToDetail(current),
             members = emptyList(),
             userId = userId,
