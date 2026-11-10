@@ -55,11 +55,8 @@ import id.starstask.mobile.data.listWorkspaceSchedule
 import id.starstask.mobile.ui.components.WebEmptyState
 import id.starstask.mobile.ui.components.WebSkeletonCard
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentBackground
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
 import id.starstask.mobile.ui.theme.Surface
+import id.starstask.mobile.ui.theme.dashColors
 import id.starstask.mobile.ui.theme.SoftFill
 import id.starstask.mobile.ui.theme.Muted
 import id.starstask.mobile.ui.theme.Danger
@@ -75,6 +72,7 @@ fun AssignmentsWorkspaceScreen(
     onOpenRequestApproved: (WorkspaceRequest) -> Unit = {},
     autoOpenRequest: Boolean = false,
 ) {
+    val palette = dashColors()
     var activeAssignment by remember { mutableStateOf<WorkspaceScheduleItem?>(null) }
     val open: (WorkspaceScheduleItem) -> Unit = onOpenAssignment ?: { item -> activeAssignment = item }
 
@@ -211,14 +209,14 @@ fun AssignmentsWorkspaceScreen(
     val visibleItems = scheduleItems.filterNot { it.id in hiddenIds }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(AssignmentBackground),
+        modifier = Modifier.fillMaxSize().background(palette.pageBackground),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Assignments", color = AssignmentForeground, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, color = AssignmentSecondary, fontSize = 14.sp)
+                Text("Assignments", color = palette.text, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, color = palette.muted, fontSize = 14.sp)
             }
         }
 
@@ -228,7 +226,7 @@ fun AssignmentsWorkspaceScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(999.dp))
-                        .background(AssignmentAccent)
+                        .background(palette.accent)
                         .clickable { showCreate = true }
                         .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center,
@@ -293,12 +291,12 @@ fun AssignmentsWorkspaceScreen(
                                     maxLines = 1,
                                     softWrap = false,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = AssignmentSecondary,
+                                    color = palette.muted,
                                 )
                             },
                             singleLine = true,
                             leadingIcon = {
-                                Icon(Lucide.Search, contentDescription = null, tint = AssignmentSecondary, modifier = Modifier.size(20.dp))
+                                Icon(Lucide.Search, contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp))
                             },
                             trailingIcon = if (search.isNotEmpty()) {
                                 {
@@ -309,7 +307,7 @@ fun AssignmentsWorkspaceScreen(
                                             page = 1
                                         },
                                     ) {
-                                        Icon(Lucide.X, contentDescription = "Clear search", tint = AssignmentSecondary, modifier = Modifier.size(16.dp))
+                                        Icon(Lucide.X, contentDescription = "Clear search", tint = palette.muted, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             } else {
@@ -329,9 +327,9 @@ fun AssignmentsWorkspaceScreen(
                                 disabledContainerColor = SearchBg,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = AssignmentAccent,
+                                cursorColor = palette.accent,
                             ),
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = AssignmentForeground),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.text),
                             modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
                         )
                     }
@@ -347,14 +345,14 @@ fun AssignmentsWorkspaceScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Icon(Lucide.SlidersHorizontal, contentDescription = "Filter", tint = AssignmentForeground, modifier = Modifier.size(18.dp))
-                            Text("Filter", color = AssignmentForeground, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Icon(Lucide.SlidersHorizontal, contentDescription = "Filter", tint = palette.text, modifier = Modifier.size(18.dp))
+                            Text("Filter", color = palette.text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             Text(
                                 (if (filterCount > 0) filterCount else 1).toString(),
                                 color = Surface,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(AssignmentAccent).padding(horizontal = 8.dp, vertical = 2.dp),
+                                modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(palette.accent).padding(horizontal = 8.dp, vertical = 2.dp),
                             )
                         }
                     }

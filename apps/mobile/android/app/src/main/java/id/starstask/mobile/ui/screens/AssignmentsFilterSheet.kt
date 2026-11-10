@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.ASSIGNMENT_TYPES
 import id.starstask.mobile.data.WorkspaceClassOption
-import id.starstask.mobile.ui.theme.AssignmentAccent
 import id.starstask.mobile.ui.theme.Foreground
+import id.starstask.mobile.ui.theme.dashColors
 import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Surface
 
@@ -52,6 +52,7 @@ fun AssignmentsFilterSheet(
     onDismiss: () -> Unit,
     onApply: (type: String?, status: String, classId: String?, sort: String) -> Unit,
 ) {
+    val palette = dashColors()
     var type = initialType
     var status = initialStatus
     var classId = initialClassId
@@ -131,7 +132,7 @@ fun AssignmentsFilterSheet(
                         onClick = { onApply(type, status, classId, sort) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Text("Apply filters", color = AssignmentAccent, fontWeight = FontWeight.SemiBold)
+                        Text("Apply filters", color = palette.accent, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -147,6 +148,7 @@ private fun FilterGroup(
     selected: String?,
     onSelect: (String?) -> Unit,
 ) {
+    val palette = dashColors()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
         Text(label, color = MutedForeground, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
         options.forEachIndexed { index, value ->
@@ -164,13 +166,13 @@ private fun FilterGroup(
             ) {
                 Text(
                     text,
-                    color = if (active) AssignmentAccent else Foreground,
+                    color = if (active) palette.accent else Foreground,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                     modifier = Modifier.weight(1f),
                 )
                 if (active) {
-                    Icon(Lucide.Check, contentDescription = "Selected", tint = AssignmentAccent, modifier = Modifier.size(Spacing.Section))
+                    Icon(Lucide.Check, contentDescription = "Selected", tint = palette.accent, modifier = Modifier.size(Spacing.Section))
                 }
             }
         }
