@@ -109,5 +109,8 @@ val DashRadiusSmall = androidx.compose.foundation.shape.RoundedCornerShape(14.dp
 val DashRadiusTile = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
 val DashRadiusCard = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
 val DashRadiusPill = androidx.compose.foundation.shape.RoundedCornerShape(999.dp)
+val DashRadiusSmallShape = DashRadiusSmall
+val DashRadiusTileShape = DashRadiusTile
+val DashRadiusCardShape = DashRadiusCard
+val DashRadiusPillShape = DashRadiusPill
 
-// Shape-suffixed aliases used by the dashboard redesign composables.
