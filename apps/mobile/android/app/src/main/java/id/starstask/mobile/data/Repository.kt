@@ -239,7 +239,7 @@ suspend fun loadDashboard(userId: String): DashboardData {
     val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
     val todayRows = sessions.filter {
         it.jsonObject["starts_at"]?.jsonPrimitive?.content?.substring(0, 10) == today ||
-            jakartaDate(it.jsonObject["starts_at"]!!.jsonPrimitive.content) == today
+            deviceDate(it.jsonObject["starts_at"]!!.jsonPrimitive.content) == today
     }
 
     val checkIns = if (todayRows.isNotEmpty()) {

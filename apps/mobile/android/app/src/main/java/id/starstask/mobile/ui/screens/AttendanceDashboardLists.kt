@@ -30,7 +30,7 @@ import id.starstask.mobile.data.AttendanceEntry
 import id.starstask.mobile.data.AttendanceIdentity
 import id.starstask.mobile.data.CourseAttendanceRow
 import id.starstask.mobile.data.formatDateShort
-import id.starstask.mobile.data.jakartaDate
+import id.starstask.mobile.data.deviceDate
 import id.starstask.mobile.ui.components.BadgeVariant
 import id.starstask.mobile.ui.components.StarsTaskBadge
 import id.starstask.mobile.ui.components.WebEmptyState
@@ -161,8 +161,8 @@ fun HistorySection(
     onOpenSession: (AttendanceEntry) -> Unit,
 ) {
     val palette = mockColors()
-    // Cheap date grouping using the same Jakarta day key as the date filters.
-    val grouped = entries.groupBy { jakartaDate(it.startsAt) }
+    // Cheap date grouping using the same device day key as the date filters.
+    val grouped = entries.groupBy { deviceDate(it.startsAt) }
         .entries.sortedByDescending { it.key }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
         SectionHeader(

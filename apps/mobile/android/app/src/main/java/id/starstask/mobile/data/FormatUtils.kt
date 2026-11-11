@@ -2,7 +2,7 @@ package id.starstask.mobile.data
 
 /** Date/time formatting + JSON null helper shared by all data files. */
 
-fun jakartaDate(iso: String): String =
+fun deviceDate(iso: String): String =
     try {
         java.time.OffsetDateTime.parse(iso)
             .atZoneSameInstant(DEVICE_ZONE)

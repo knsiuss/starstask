@@ -270,7 +270,7 @@ private fun CourseUpcomingSection(tasks: List<id.starstask.mobile.data.ExploreAs
         it.deadline != null && id.starstask.mobile.data.parseTime(it.deadline) > nowMs
     }.sortedBy { id.starstask.mobile.data.parseTime(it.deadline ?: "") }
     val dueSoon = upcoming.filter {
-        id.starstask.mobile.data.getJakartaDayDifference(it.deadline ?: "", nowMs) <= id.starstask.mobile.data.UPCOMING_DUE_SOON_DAYS
+        id.starstask.mobile.data.getDeviceDayDifference(it.deadline ?: "", nowMs) <= id.starstask.mobile.data.UPCOMING_DUE_SOON_DAYS
     }
     val later = upcoming - dueSoon.toSet()
     Column(modifier = Modifier.fillMaxWidth()) {

@@ -41,10 +41,6 @@ data class CalendarRange(
 
 /** `YYYY-MM-DD` for an instant in the device zone. */
 fun toDeviceDateKey(iso: String): String =
-    toJakartaDateKey(iso)
-
-@Deprecated("Use toDeviceDateKey; kept for call sites not yet migrated.")
-fun toJakartaDateKey(iso: String): String =
     try {
         java.time.OffsetDateTime.parse(iso).atZoneSameInstant(DEVICE_ZONE).toLocalDate().toString()
     } catch (_: Exception) {
@@ -52,8 +48,6 @@ fun toJakartaDateKey(iso: String): String =
     }
 
 fun deviceTodayKey(): String = LocalDate.now(DEVICE_ZONE).toString()
-
-fun jakartaTodayKey(): String = deviceTodayKey()
 
 fun parseDateKey(value: String): LocalDate? =
     try {
@@ -67,7 +61,7 @@ fun addDaysToDateKey(value: String, delta: Int): String =
 
 /** Monday of the week containing `value` (ISO weekday, Mon=1..Sun=7). */
 fun startOfWeekDateKey(value: String): String {
-    val date = parseDateKey(value) ?: return jakartaTodayKey()
+    val date = parseDateKey(value) ?: return deviceTodayKey()
     return date.minusDays((date.dayOfWeek.value - 1).toLong()).toString()
 }
 
@@ -148,10 +142,6 @@ fun formatCalendarTime(iso: String): String =
     }
 
 fun deviceLocalToInstantIso(dateKey: String, time: LocalTime): String =
-    jakartaLocalToInstantIso(dateKey, time)
-
-@Deprecated("Use deviceLocalToInstantIso; kept for call sites not yet migrated.")
-fun jakartaLocalToInstantIso(dateKey: String, time: LocalTime): String =
     LocalDateTime.of(parseDateKey(dateKey) ?: LocalDate.now(DEVICE_ZONE), time)
         .atZone(DEVICE_ZONE)
         .toInstant()
@@ -159,10 +149,6 @@ fun jakartaLocalToInstantIso(dateKey: String, time: LocalTime): String =
 
 /** Wall-clock of a stored instant in the device zone, for prefilling the form. */
 fun deviceLocalDateTime(iso: String): LocalDateTime =
-    jakartaLocalDateTime(iso)
-
-@Deprecated("Use deviceLocalDateTime; kept for call sites not yet migrated.")
-fun jakartaLocalDateTime(iso: String): LocalDateTime =
     try {
         java.time.OffsetDateTime.parse(iso).atZoneSameInstant(DEVICE_ZONE).toLocalDateTime()
     } catch (_: Exception) {

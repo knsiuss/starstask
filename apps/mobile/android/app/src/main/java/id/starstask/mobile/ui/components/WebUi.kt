@@ -62,15 +62,27 @@ fun WebCard(
     padding: Dp = Spacing.Block,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        onClick = onClick ?: {},
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = WebCardRadius,
-        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.WebCardElevation),
-        border = BorderStroke(1.dp, Border),
-        modifier = modifier,
-    ) {
-        Column(modifier = Modifier.padding(padding), content = content)
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            shape = WebCardRadius,
+            elevation = CardDefaults.cardElevation(defaultElevation = Spacing.WebCardElevation),
+            border = BorderStroke(1.dp, Border),
+            modifier = modifier,
+        ) {
+            Column(modifier = Modifier.padding(padding), content = content)
+        }
+    } else {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            shape = WebCardRadius,
+            elevation = CardDefaults.cardElevation(defaultElevation = Spacing.WebCardElevation),
+            border = BorderStroke(1.dp, Border),
+            modifier = modifier,
+        ) {
+            Column(modifier = Modifier.padding(padding), content = content)
+        }
     }
 }
 

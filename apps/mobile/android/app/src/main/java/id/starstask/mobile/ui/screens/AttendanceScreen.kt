@@ -23,7 +23,7 @@ import id.starstask.mobile.data.attendanceCsv
 import id.starstask.mobile.data.attendancePdfBytes
 import id.starstask.mobile.data.attendancePeriodLabel
 import id.starstask.mobile.data.buildCourseRows
-import id.starstask.mobile.data.jakartaDate
+import id.starstask.mobile.data.deviceDate
 import id.starstask.mobile.data.loadActiveAttendance
 import id.starstask.mobile.data.loadAttendanceIdentity
 import id.starstask.mobile.data.loadStudentAttendance
@@ -149,8 +149,8 @@ fun AttendanceScreen(
                     (filterStatus == "all" || entry.status == filterStatus) &&
                     (filterSemester == null || entry.semester == filterSemester) &&
                     (filterYear == null || entry.academicYear == filterYear) &&
-                    (filterFrom == null || jakartaDate(entry.startsAt) >= filterFrom!!) &&
-                    (filterTo == null || jakartaDate(entry.startsAt) <= filterTo!!)
+                    (filterFrom == null || deviceDate(entry.startsAt) >= filterFrom!!) &&
+                    (filterTo == null || deviceDate(entry.startsAt) <= filterTo!!)
             }
             item(key = "history-toolbar") {
                 HistoryToolbar(

@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.ScheduleEntry
-import id.starstask.mobile.data.jakartaDate
+import id.starstask.mobile.data.deviceDate
 import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
 
@@ -38,7 +38,7 @@ fun DashWeekStrip(
     val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
     val hasActivity: (java.time.LocalDate) -> Boolean = { day ->
         val key = day.toString()
-        schedule.any { runCatching { jakartaDate(it.startsAt) }.getOrNull() == key } ||
+        schedule.any { runCatching { deviceDate(it.startsAt) }.getOrNull() == key } ||
             assignmentDeadlines.any { it.take(10) == key }
     }
 

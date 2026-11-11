@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.CALENDAR_EVENT_TYPE_LABELS
 import id.starstask.mobile.data.CALENDAR_OFFICIAL_WINDOW_MS
 import id.starstask.mobile.data.CALENDAR_PERSONAL_WINDOW_MS
+import id.starstask.mobile.data.DEVICE_ZONE
 import id.starstask.mobile.data.CalendarTimelineItem
 import id.starstask.mobile.data.OFFICIAL_EVENT_TYPES
 import id.starstask.mobile.data.WorkspaceClassOption
@@ -92,7 +93,7 @@ fun EventDetailSheet(
             HorizontalDivider(color = Border)
             CalendarDetailRow("Date", formatDayLabel(item.startKey))
             if (item.startKey != item.endKey) CalendarDetailRow("Until", formatDayLabel(item.endKey))
-            if (item.startsAtIso.isNotEmpty()) CalendarDetailRow("Time (WIB)", formatCalendarTime(item.startsAtIso))
+            if (item.startsAtIso.isNotEmpty()) CalendarDetailRow("Time (${DEVICE_ZONE.id})", formatCalendarTime(item.startsAtIso))
             if (item.location != null) CalendarDetailRow("Location", item.location)
             if (item.className != null) CalendarDetailRow("Class", item.className)
             if (item.subjectName != null) CalendarDetailRow("Subject", item.subjectName)

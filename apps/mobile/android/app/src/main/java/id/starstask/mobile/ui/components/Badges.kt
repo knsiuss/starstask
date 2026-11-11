@@ -67,7 +67,7 @@ fun StarsTaskBadge(
     }
 }
 
-// Deadline badge mirrors DeadlineBadge.tsx: label + formatted date in WIB.
+// Deadline badge mirrors DeadlineBadge.tsx: label + formatted date in the device zone.
 @Composable
 fun DeadlineBadge(deadline: String?, modifier: Modifier = Modifier) {
     if (deadline.isNullOrBlank()) {

@@ -66,7 +66,7 @@ fun buildActionSummary(totals: ActionCenterTotals): String {
     if (totals.actions == 0) return "Nothing is waiting on you right now."
     val classLabel = if (totals.classes == 1) "class" else "classes"
     val actionLabel = if (totals.actions == 1) "action" else "actions"
-    return "$totals.actions $actionLabel across ${totals.classes} $classLabel."
+    return "${totals.actions} $actionLabel across ${totals.classes} $classLabel."
 }
 
 data class ManagedLeaveRequest(

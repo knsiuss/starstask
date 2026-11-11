@@ -29,16 +29,16 @@ internal fun parseTime(iso: String): Long {
     }
 }
 
-private fun jakartaDayNumber(epochMs: Long): Long {
+private fun deviceDayNumber(epochMs: Long): Long {
     val zone = java.time.ZoneId.systemDefault()
     val date = java.time.Instant.ofEpochMilli(epochMs).atZone(zone).toLocalDate()
     return date.toEpochDay()
 }
 
-fun getJakartaDayDifference(deadlineIso: String, nowMs: Long): Long {
+fun getDeviceDayDifference(deadlineIso: String, nowMs: Long): Long {
     val deadlineMs = parseTime(deadlineIso)
     if (deadlineMs == 0L) return Long.MAX_VALUE
-    return jakartaDayNumber(deadlineMs) - jakartaDayNumber(nowMs)
+    return deviceDayNumber(deadlineMs) - deviceDayNumber(nowMs)
 }
 
 // --- workspace.ts translations (Task Schedule) ---

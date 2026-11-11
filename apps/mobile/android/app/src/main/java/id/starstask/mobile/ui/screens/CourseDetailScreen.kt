@@ -154,7 +154,7 @@ fun CourseDetailScreen(
                             modifier = Modifier.size(16.dp),
                         )
                         Text(
-                            "Due 07 Nov 2026, 23:59 WIB",
+                            "Due 07 Nov 2026, 23:59",
                             color = Danger,
                             style = MaterialTheme.typography.bodyMedium,
                         )
