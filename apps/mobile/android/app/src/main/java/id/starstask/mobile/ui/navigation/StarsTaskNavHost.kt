@@ -284,6 +284,7 @@ fun StarsTaskNavHost(
                     }
                     composable(DrawerDestination.NOTIFICATIONS.route) {
                         NotificationsScreen(
+                            userId = userId,
                             onOpenUrl = { url ->
                                 val target = when {
                                     url.startsWith("/assignments") -> DrawerDestination.ASSIGNMENTS.route

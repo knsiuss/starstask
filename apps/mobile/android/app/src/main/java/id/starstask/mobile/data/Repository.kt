@@ -11,6 +11,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 /**
  * Read models for the native shell, mirroring the web dashboard queries.
@@ -18,6 +19,7 @@ import kotlinx.serialization.json.put
  * server-side via RLS + RPCs.
  */
 
+@Serializable
 data class DashboardSession(
     val id: String,
     val title: String,
@@ -29,6 +31,7 @@ data class DashboardSession(
     val checkInLongitude: Double?,
 )
 
+@Serializable
 data class DashboardAssignment(
     val id: String,
     val title: String,
@@ -36,6 +39,7 @@ data class DashboardAssignment(
     val subjectName: String?,
 )
 
+@Serializable
 data class DashboardClass(
     val id: String,
     val name: String,
@@ -49,6 +53,7 @@ data class DashboardClass(
     val adminName: String? = null,
 )
 
+@Serializable
 data class DashboardData(
     val displayName: String?,
     val totalTasks: Int,

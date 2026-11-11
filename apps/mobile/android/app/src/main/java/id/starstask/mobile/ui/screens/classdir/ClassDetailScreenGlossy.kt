@@ -160,13 +160,22 @@ fun ClassDetailScreenGlossy(
         return
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     val overview = androidx.compose.runtime.produceState(
-        initialValue = null as id.starstask.mobile.data.ClassOverviewData?,
+        initialValue = id.starstask.mobile.data.readDiskCache(
+            context, userId, "classOverview.${clazz.id}",
+            id.starstask.mobile.data.ClassOverviewData.serializer(),
+        ),
         key1 = clazz.id,
         key2 = overviewReload,
     ) {
         try {
-            value = loadClassOverview(userId, clazz.id)
+            val fresh = loadClassOverview(userId, clazz.id)
+            value = fresh
+            id.starstask.mobile.data.writeDiskCache(
+                context, userId, "classOverview.${clazz.id}", fresh,
+                id.starstask.mobile.data.ClassOverviewData.serializer(),
+            )
         } catch (_: Exception) {
             // Keep zeroed default so the tab renders something.
         }

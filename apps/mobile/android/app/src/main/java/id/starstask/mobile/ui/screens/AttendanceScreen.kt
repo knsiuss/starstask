@@ -62,15 +62,36 @@ fun AttendanceScreen(
     var filterFrom by remember { mutableStateOf<String?>(null) }
     var filterTo by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(userId) {
+        val cachedView = id.starstask.mobile.data.readDiskCache(context, userId, "attendance.studentView", StudentAttendanceView.serializer())
+        if (cachedView != null && view == null) view = cachedView
+        val cachedMeetings = id.starstask.mobile.data.readDiskCache(
+            context, userId, "attendance.activeMeetings",
+            kotlinx.serialization.builtins.ListSerializer(ActiveMeeting.serializer()),
+        )
+        if (cachedMeetings != null && activeMeetings.isEmpty()) activeMeetings = cachedMeetings
+        val cachedIdentity = id.starstask.mobile.data.readDiskCache(context, userId, "attendance.identity", AttendanceIdentity.serializer())
+        if (cachedIdentity != null && identity == null) identity = cachedIdentity
+    }
+
     LaunchedEffect(userId, reloadTick) {
         loading = true
         error = null
         try {
-            view = loadStudentAttendance(userId)
-            activeMeetings = loadActiveAttendance(userId)
-            identity = loadAttendanceIdentity(userId)
+            val freshView = loadStudentAttendance(userId)
+            view = freshView
+            id.starstask.mobile.data.writeDiskCache(context, userId, "attendance.studentView", freshView, StudentAttendanceView.serializer())
+            val freshMeetings = loadActiveAttendance(userId)
+            activeMeetings = freshMeetings
+            id.starstask.mobile.data.writeDiskCache(
+                context, userId, "attendance.activeMeetings", freshMeetings,
+                kotlinx.serialization.builtins.ListSerializer(ActiveMeeting.serializer()),
+            )
+            val freshIdentity = loadAttendanceIdentity(userId)
+            identity = freshIdentity
+            if (freshIdentity != null) id.starstask.mobile.data.writeDiskCache(context, userId, "attendance.identity", freshIdentity, AttendanceIdentity.serializer())
         } catch (_: Exception) {
-            error = "Could not load your attendance. Check your connection and try again."
+            if (view == null) error = "Could not load your attendance. Check your connection and try again."
         }
         loading = false
     }

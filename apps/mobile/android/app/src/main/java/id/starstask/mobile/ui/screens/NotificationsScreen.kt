@@ -44,24 +44,48 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun NotificationsScreen(
+    userId: String,
     onOpenUrl: (String) -> Unit,
     onMarkedRead: () -> Unit,
 ) {
     val palette = mockColors()
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     var rows by remember { mutableStateOf<List<NotificationRow>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var markingAll by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    fun persistRows(next: List<NotificationRow>) {
+        id.starstask.mobile.data.writeDiskCache(
+            context, userId, "notifications.list", next,
+            kotlinx.serialization.builtins.ListSerializer(NotificationRow.serializer()),
+        )
+    }
+
+    LaunchedEffect(userId) {
+        rows = id.starstask.mobile.data.readDiskCache(
+            context, userId, "notifications.list",
+            kotlinx.serialization.builtins.ListSerializer(NotificationRow.serializer()),
+        ) ?: emptyList()
+    }
+
+    LaunchedEffect(userId) {
         loading = true
-        rows = runCatching { loadNotifications() }.getOrElse { error = "Could not load notifications."; emptyList() }
+        val freshResult = runCatching { loadNotifications() }
+        freshResult.onSuccess { fresh ->
+            rows = fresh
+            persistRows(fresh)
+            error = null
+        }.onFailure {
+            if (rows.isEmpty()) error = "Could not load notifications."
+        }
         loading = false
     }
 
     fun markOne(id: String) {
         rows = rows.map { if (it.id == id) it.copy(readAt = "now") else it }
+        persistRows(rows)
         onMarkedRead()
         scope.launch { runCatching { markNotificationRead(id) } }
     }
@@ -69,6 +93,7 @@ fun NotificationsScreen(
     fun markAll() {
         markingAll = true
         rows = rows.map { it.copy(readAt = it.readAt ?: "now") }
+        persistRows(rows)
         onMarkedRead()
         scope.launch {
             runCatching { markAllNotificationsRead() }

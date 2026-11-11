@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.Serializable
 
 /**
  * Leave requests read models, mirroring the web leave data layer
@@ -25,6 +26,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * There is no hard delete: cancelling is the withdrawal action.
  */
 
+@Serializable
 data class LeaveRequest(
     val id: String,
     val status: String,

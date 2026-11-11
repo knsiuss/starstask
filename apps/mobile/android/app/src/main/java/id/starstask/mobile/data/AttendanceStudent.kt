@@ -10,6 +10,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 // ---------------------------------------------------------------------------
 // Student attendance mirroring apps/web/src/lib/db/attendance.ts
@@ -37,6 +38,7 @@ private const val ATTENDANCE_UPCOMING_WINDOW_MS = 14 * 24 * 60 * 60 * 1_000L
 // Counts (exact port of packages/shared/src/attendance.ts)
 // ---------------------------------------------------------------------------
 
+@Serializable
 data class AttendanceCounts(
     val present: Int = 0,
     val late: Int = 0,
@@ -110,6 +112,7 @@ fun courseAttendanceStatusLabel(status: CourseAttendanceStatus): String = when (
 // Entries / options
 // ---------------------------------------------------------------------------
 
+@Serializable
 data class AttendanceEntry(
     val sessionId: String,
     val classId: String,
@@ -133,6 +136,7 @@ data class AttendanceEntry(
     val recordedByName: String?,
 )
 
+@Serializable
 data class AttendanceSubjectOption(
     val id: String,
     val name: String,
@@ -141,6 +145,7 @@ data class AttendanceSubjectOption(
     val className: String,
 )
 
+@Serializable
 data class AttendanceClassOption(
     val id: String,
     val name: String,
@@ -150,8 +155,10 @@ data class AttendanceClassOption(
     val status: String,
 )
 
+@Serializable
 data class ManagedAttendanceClass(val id: String, val slug: String, val name: String)
 
+@Serializable
 data class StudentAttendanceView(
     val summary: AttendanceCounts,
     val entries: List<AttendanceEntry>,
@@ -503,6 +510,7 @@ fun attendancePeriodLabel(view: StudentAttendanceView): String? {
 // Active attendance (meetings + legacy sessions merged)
 // ---------------------------------------------------------------------------
 
+@Serializable
 data class ActiveMeeting(
     val sessionId: String,
     val subjectName: String,
@@ -521,6 +529,7 @@ data class ActiveMeeting(
     val distanceM: Double?,
 )
 
+@Serializable
 data class AttendanceIdentity(val fullName: String?, val nim: String?)
 
 private fun parseInstantMs(iso: String?): Long? {

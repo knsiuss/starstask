@@ -95,15 +95,30 @@ fun HomeScreen(
     }
     val scope = rememberCoroutineScope()
 
+    // Show the previous render immediately from disk while the network
+    // refetches in the background — the dashboard never sits blank.
+    LaunchedEffect(userId) {
+        val cached = id.starstask.mobile.data.readDiskCache(appContext, userId, "home.dashboard", DashboardData.serializer())
+        if (cached != null && data == null) data = cached
+        val cachedSchedule = id.starstask.mobile.data.readDiskCache(appContext, userId, "home.schedule", kotlinx.serialization.builtins.ListSerializer(ScheduleEntry.serializer()))
+        if (cachedSchedule != null && schedule.isEmpty()) schedule = cachedSchedule
+        val cachedInvitations = id.starstask.mobile.data.readDiskCache(appContext, userId, "home.invitations", kotlinx.serialization.builtins.ListSerializer(Invitation.serializer()))
+        if (cachedInvitations != null && invitations.isEmpty()) invitations = cachedInvitations
+        val cachedCard = id.starstask.mobile.data.readDiskCache(appContext, userId, "home.academicCard", AcademicCard.serializer())
+        if (cachedCard != null && academicCard == null) academicCard = cachedCard
+        val cachedNext = id.starstask.mobile.data.readDiskCache(appContext, userId, "home.nextSchedule", NextScheduleItem.serializer())
+        if (cachedNext != null && nextSchedule == null) nextSchedule = cachedNext
+    }
+
     LaunchedEffect(userId) {
         // Fetches are independent; run them in parallel so the dashboard
         // doesn't wait on five sequential Supabase round-trips.
         kotlinx.coroutines.coroutineScope {
-            launch { runCatching { data = loadDashboard(userId) }.onFailure { error = "Could not load your dashboard. Check your connection and try again." } }
-            launch { runCatching { schedule = loadSchedule(userId) } }
-            launch { runCatching { invitations = loadInvitations(userId, userEmail) } }
-            launch { runCatching { academicCard = loadAcademicCard(userId) } }
-            launch { runCatching { nextSchedule = loadNextSchedule(userId) } }
+            launch { runCatching { loadDashboard(userId) }.onSuccess { data = it; id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.dashboard", it, DashboardData.serializer()) }.onFailure { if (data == null) error = "Could not load your dashboard. Check your connection and try again." } }
+            launch { runCatching { loadSchedule(userId) }.onSuccess { schedule = it; id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.schedule", it, kotlinx.serialization.builtins.ListSerializer(ScheduleEntry.serializer())) } }
+            launch { runCatching { loadInvitations(userId, userEmail) }.onSuccess { invitations = it; id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.invitations", it, kotlinx.serialization.builtins.ListSerializer(Invitation.serializer())) } }
+            launch { runCatching { loadAcademicCard(userId) }.onSuccess { academicCard = it; if (it != null) id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.academicCard", it, AcademicCard.serializer()) } }
+            launch { runCatching { loadNextSchedule(userId) }.onSuccess { nextSchedule = it; if (it != null) id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.nextSchedule", it, NextScheduleItem.serializer()) } }
         }
     }
 

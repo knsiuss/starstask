@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 // Native mirror of Web workspace (/assignments):
 // - apps/web/src/lib/db/assignment-workspace.ts
@@ -31,8 +32,10 @@ private const val CLASS_OPTION_LIMIT = 20
 
 const val REVISION_REQUEST_PREFIX = "Revision requested:"
 
+@Serializable
 data class WorkspaceSubject(val id: String, val name: String, val code: String?)
 
+@Serializable
 data class WorkspaceClassOption(
     val id: String,
     val slug: String,
@@ -44,6 +47,7 @@ data class WorkspaceClassOption(
     val academicYear: String? = null,
 )
 
+@Serializable
 data class WorkspaceScope(
     val classes: List<WorkspaceClassOption>,
     val classIds: List<String>,

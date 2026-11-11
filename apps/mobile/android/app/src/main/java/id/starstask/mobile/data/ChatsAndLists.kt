@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 data class Conversation(val id: String, val otherName: String, val unread: Boolean)
 
@@ -70,6 +71,7 @@ data class ClassDetail(
 
 data class SessionRow(val id: String, val title: String, val startsAt: String, val endsAt: String, val status: String, val className: String?)
 
+@Serializable
 data class NotificationRow(val id: String, val title: String, val body: String, val url: String?, val createdAt: String, val readAt: String?)
 
 data class Profile(val displayName: String?, val avatarUrl: String?)

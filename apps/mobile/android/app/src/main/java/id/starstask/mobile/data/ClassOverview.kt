@@ -4,11 +4,13 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.Serializable
 
 // Translation of apps/web/src/lib/db/class-overview.ts getClassOverviewData.
 // Android only: scoped class rows + catalog-course public rows, deduped by id,
 // split into assignments vs class_announcement posts, stats from the same rows.
 
+@Serializable
 data class OverviewAssignmentItem(
     val id: String,
     val title: String,
@@ -20,6 +22,7 @@ data class OverviewAssignmentItem(
     val completed: Boolean,
 )
 
+@Serializable
 data class OverviewPostItem(
     val id: String,
     val title: String,
@@ -29,6 +32,7 @@ data class OverviewPostItem(
     val authorName: String,
 )
 
+@Serializable
 data class ClassOverviewStats(
     val total: Int,
     val upcoming: Int,
@@ -36,6 +40,7 @@ data class ClassOverviewStats(
     val completed: Int,
 )
 
+@Serializable
 data class ClassOverviewData(
     val recent: List<OverviewAssignmentItem>,
     val posts: List<OverviewPostItem>,

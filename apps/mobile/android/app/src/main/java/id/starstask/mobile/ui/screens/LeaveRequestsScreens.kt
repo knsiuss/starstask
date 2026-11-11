@@ -41,13 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.LeaveRequest
 import id.starstask.mobile.data.loadLeaveRequests
-import id.starstask.mobile.data.loadWorkspaceContext
 import id.starstask.mobile.ui.components.GradientPillButton
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
-import id.starstask.mobile.ui.screens.dashboard.DashTopBar
-import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.theme.mockColors
 
 sealed class LeaveDestination {
@@ -109,7 +106,6 @@ private fun LeaveRequestsListScreen(
     onRequestClick: (LeaveRequest) -> Unit,
 ) {
     val palette = mockColors()
-    val darkMode = LocalDarkTheme.current
     var requests by remember { mutableStateOf<List<LeaveRequest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
@@ -118,19 +114,28 @@ private fun LeaveRequestsListScreen(
     var statusFilter by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var showFilter by remember { mutableStateOf(false) }
-    var unreadCount by remember { mutableStateOf<Int?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    LaunchedEffect(Unit) {
-        unreadCount = loadWorkspaceContext()?.unreadNotifications
+    LaunchedEffect(userId) {
+        val cached = id.starstask.mobile.data.readDiskCache(
+            context, userId, "leave.requests",
+            kotlinx.serialization.builtins.ListSerializer(LeaveRequest.serializer()),
+        )
+        if (cached != null && requests.isEmpty()) requests = cached
     }
 
     LaunchedEffect(userId, reloadTick, refreshTick) {
         loading = true
         error = null
         try {
-            requests = loadLeaveRequests(userId)
+            val fresh = loadLeaveRequests(userId)
+            requests = fresh
+            id.starstask.mobile.data.writeDiskCache(
+                context, userId, "leave.requests", fresh,
+                kotlinx.serialization.builtins.ListSerializer(LeaveRequest.serializer()),
+            )
         } catch (_: Exception) {
-            error = "Could not load leave requests."
+            if (requests.isEmpty()) error = "Could not load leave requests."
         }
         loading = false
         refreshing = false
@@ -153,16 +158,6 @@ private fun LeaveRequestsListScreen(
                     .padding(start = Spacing.Section, end = Spacing.Section, top = Spacing.Sm, bottom = 104.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.Xxl),
             ) {
-                item(key = "topbar") {
-                    DashTopBar(
-                        isDark = darkMode,
-                        unreadCount = unreadCount,
-                        onOpenDrawer = onOpenDrawer,
-                        onToggleTheme = {},
-                        onOpenNotifications = onOpenNotifications,
-                        showThemeToggle = false,
-                    )
-                }
                 item(key = "header") {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Xxs)) {
                         Text(

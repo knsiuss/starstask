@@ -184,9 +184,11 @@ fun StarsTaskApp(pendingPushUrl: androidx.compose.runtime.MutableState<String?>)
         onSignOut = {
             scope.launch {
                 // Drop this device's push registration so the old account stops
-                // receiving notifications here. E2EE keys and queued check-ins
-                // stay: they are device-local, restored by sign-in.
+                // receiving notifications here, and wipe all cached read models —
+                // they hold the previous account's data. E2EE keys and queued
+                // check-ins stay: they are device-local, restored by sign-in.
                 runCatching { id.starstask.mobile.data.unregisterAllPush(context) }
+                id.starstask.mobile.data.clearDiskCache(context)
                 auth.signOut()
             }
         },

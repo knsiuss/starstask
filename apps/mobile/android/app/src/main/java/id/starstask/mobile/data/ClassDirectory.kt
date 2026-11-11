@@ -11,7 +11,9 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class DirectoryClass(
     val id: String,
     val name: String,

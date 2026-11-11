@@ -74,15 +74,33 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
     var postAssignmentFor by remember { mutableStateOf<String?>(null) }
     var reloadTick by remember { mutableStateOf(0) }
     val coroutinesScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(userId) {
+        val cachedRows = id.starstask.mobile.data.readDiskCache(
+            context, userId, "classes.directory",
+            kotlinx.serialization.builtins.ListSerializer(DirectoryClass.serializer()),
+        )
+        if (cachedRows != null && rows.isEmpty()) rows = cachedRows
+        val cachedScope = id.starstask.mobile.data.readDiskCache(context, userId, "classes.scope", WorkspaceScope.serializer())
+        if (cachedScope != null && workspaceScope == null) workspaceScope = cachedScope
+    }
 
     LaunchedEffect(userId, reloadTick) {
         loading = true
         error = null
         try {
-            rows = loadClassDirectory(userId)
-            workspaceScope = getWorkspaceScope(userId)
+            val freshRows = loadClassDirectory(userId)
+            rows = freshRows
+            id.starstask.mobile.data.writeDiskCache(
+                context, userId, "classes.directory", freshRows,
+                kotlinx.serialization.builtins.ListSerializer(DirectoryClass.serializer()),
+            )
+            val freshScope = getWorkspaceScope(userId)
+            workspaceScope = freshScope
+            id.starstask.mobile.data.writeDiskCache(context, userId, "classes.scope", freshScope, WorkspaceScope.serializer())
         } catch (_: Exception) {
-            error = "Could not load classes."
+            if (rows.isEmpty()) error = "Could not load classes."
         }
         loading = false
     }

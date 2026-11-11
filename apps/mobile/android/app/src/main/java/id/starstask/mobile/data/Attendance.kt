@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 
 // ---------------------------------------------------------------------------
@@ -41,6 +42,7 @@ suspend fun syncQueuedCheckIns(context: android.content.Context, userId: String)
     return synced
 }
 
+@Serializable
 data class AttendanceHistoryEntry(
     val sessionId: String,
     val title: String,
