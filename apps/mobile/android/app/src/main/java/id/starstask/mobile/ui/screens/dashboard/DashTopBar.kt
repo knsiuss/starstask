@@ -4,7 +4,6 @@ package id.starstask.mobile.ui.screens.dashboard
 // theme toggle, and a notification bell with the live unread badge.
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,17 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.background
 import id.starstask.mobile.ui.components.BrandMark
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.DashRadiusPill
 import id.starstask.mobile.ui.theme.dashColors
 
 @Composable
@@ -56,22 +51,14 @@ fun DashTopBar(
                 )
             }
         }
-        IconButton(onClick = onOpenNotifications, modifier = Modifier.size(44.dp)) {
-            Box {
-                Icon(Lucide.Bell, contentDescription = "Notifications", tint = palette.text, modifier = Modifier.size(22.dp))
-                if (unreadCount != null && unreadCount > 0) {
-                    val label = if (unreadCount > 9) "9+" else unreadCount.toString()
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .clip(DashRadiusPill)
-                            .background(palette.badge)
-                            .padding(horizontal = 5.dp, vertical = 2.dp),
-                    ) {
-                        Text(label, color = androidx.compose.ui.graphics.Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    }
-                }
-            }
+        IconButton(onClick = onOpenNotifications, modifier = Modifier.size(48.dp)) {
+            id.starstask.mobile.ui.components.BellWithBadge(
+                unreadCount = unreadCount,
+                tint = palette.text,
+                badgeColor = palette.badge,
+                badgeBorderColor = palette.pageBackground,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }

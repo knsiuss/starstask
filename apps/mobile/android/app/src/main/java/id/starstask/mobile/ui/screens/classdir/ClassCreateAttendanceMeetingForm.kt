@@ -45,6 +45,7 @@ import id.starstask.mobile.data.capturePositionDetailed
 import id.starstask.mobile.data.createAttendanceMeeting
 import id.starstask.mobile.ui.components.GradientPillButton
 import id.starstask.mobile.ui.components.WebAlert
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.mockColors
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ fun ClassCreateAttendanceMeetingForm(
     subjects: List<ClassCourse>,
     meetings: List<id.starstask.mobile.data.AttendanceMeeting>,
     onCreated: () -> Unit,
+    onOpenMeeting: ((String) -> Unit)? = null,
 ) {
     val palette = mockColors()
     val context = LocalContext.current
@@ -76,6 +78,7 @@ fun ClassCreateAttendanceMeetingForm(
     var error by remember { mutableStateOf<String?>(null) }
     var subjectMenuOpen by remember { mutableStateOf(false) }
     var radiusMenuOpen by remember { mutableStateOf(false) }
+    var createdMeeting by remember { mutableStateOf<CreatedMeeting?>(null) }
 
     val selectedSubject = subjects.firstOrNull { it.id == subjectId }
 
@@ -299,7 +302,7 @@ fun ClassCreateAttendanceMeetingForm(
                         val zone = java.time.ZoneId.systemDefault()
                         val startsAt = java.time.LocalDateTime.parse("${meetingDate}T$startTime").atZone(zone).toInstant().toString()
                         val endsAt = java.time.LocalDateTime.parse("${meetingDate}T$endTime").atZone(zone).toInstant().toString()
-                        createAttendanceMeeting(
+                        val createdId = createAttendanceMeeting(
                             classId = classId,
                             subjectId = subjectId,
                             meetingNumber = meetingNumber.toIntOrNull() ?: 1,
@@ -313,6 +316,11 @@ fun ClassCreateAttendanceMeetingForm(
                             longitude = longitude!!,
                             title = null,
                         )
+                        val subjectLabel = selectedSubject?.let { s -> s.code?.let { "$it · ${s.name}" } ?: s.name } ?: "Class"
+                        createdMeeting = CreatedMeeting(
+                            sessionId = createdId,
+                            summary = "$subjectLabel · Meeting #$meetingNumber · $startTime–$endTime",
+                        )
                         onCreated()
                     } catch (_: Exception) {
                         error = "Could not create the meeting. Check the details and try again."
@@ -323,7 +331,27 @@ fun ClassCreateAttendanceMeetingForm(
             icon = Lucide.CirclePlus,
         )
     }
+
+    val created = createdMeeting
+    if (created != null) {
+        StartaskSuccessDialog(
+            title = "Attendance Created",
+            summary = created.summary,
+            primaryLabel = "View Attendance",
+            onPrimary = {
+                createdMeeting = null
+                onOpenMeeting?.invoke(created.sessionId)
+            },
+            secondaryLabel = "Done",
+            onDismiss = { createdMeeting = null },
+        )
+    }
 }
+
+private data class CreatedMeeting(
+    val sessionId: String,
+    val summary: String,
+)
 
 @Composable
 private fun formFieldColors(palette: id.starstask.mobile.ui.theme.MockPalette) = TextFieldDefaults.colors(

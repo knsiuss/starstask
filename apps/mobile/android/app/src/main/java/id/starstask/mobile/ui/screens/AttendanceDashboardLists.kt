@@ -99,6 +99,7 @@ fun ActiveSection(
     identity: AttendanceIdentity?,
     userId: String,
     onChanged: () -> Unit,
+    onOpenMeeting: ((String) -> Unit)? = null,
 ) {
     val palette = mockColors()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
@@ -148,6 +149,7 @@ fun ActiveSection(
                     identity = identity,
                     userId = userId,
                     onChanged = onChanged,
+                    onOpenMeeting = onOpenMeeting,
                 )
             }
         }

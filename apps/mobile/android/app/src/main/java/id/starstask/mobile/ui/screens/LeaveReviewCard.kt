@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.LeaveRequest
@@ -18,6 +20,7 @@ import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.components.WebCard
 import id.starstask.mobile.ui.components.WebCardHeader
 import id.starstask.mobile.ui.components.WebInput
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.ui.theme.MutedForeground
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -37,6 +40,8 @@ fun LeaveReviewCard(
     onReload: () -> Unit,
     scope: CoroutineScope,
 ) {
+    var successTitle by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var successSummary by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
     WebCard {
         WebCardHeader(
             title = "Review this request",
@@ -50,7 +55,7 @@ fun LeaveReviewCard(
                     onReviewBusyChange(true)
                     scope.launch {
                         runCatching { reviewLeaveRequest(request.id, "approved", reviewNote.ifBlank { null }) }
-                            .onSuccess { onReviewNoteClear(); onChanged(); onReload() }
+                            .onSuccess { successTitle = "Leave Approved"; successSummary = "Attendance excused for the covered sessions."; onReviewNoteClear(); onChanged(); onReload() }
                             .onFailure { e -> onMessage(userFacingMessage(e, "Could not record decision.")) }
                         onReviewBusyChange(false)
                     }
@@ -64,7 +69,7 @@ fun LeaveReviewCard(
                     onReviewBusyChange(true)
                     scope.launch {
                         runCatching { reviewLeaveRequest(request.id, "rejected", reviewNote.ifBlank { null }) }
-                            .onSuccess { onReviewNoteClear(); onChanged(); onReload() }
+                            .onSuccess { successTitle = "Leave Rejected"; successSummary = "The student has been notified."; onReviewNoteClear(); onChanged(); onReload() }
                             .onFailure { e -> onMessage(userFacingMessage(e, "Could not record decision.")) }
                         onReviewBusyChange(false)
                     }
@@ -79,7 +84,7 @@ fun LeaveReviewCard(
                     onReviewBusyChange(true)
                     scope.launch {
                         runCatching { reviewLeaveRequest(request.id, "revision_requested", reviewNote.ifBlank { null }) }
-                            .onSuccess { onReviewNoteClear(); onChanged(); onReload() }
+                            .onSuccess { successTitle = "Revision Requested"; successSummary = "The student has been asked to update their request."; onReviewNoteClear(); onChanged(); onReload() }
                             .onFailure { e -> onMessage(userFacingMessage(e, "Could not record decision.")) }
                         onReviewBusyChange(false)
                     }
@@ -92,6 +97,16 @@ fun LeaveReviewCard(
             "Review note is required to reject or return for revision.",
             color = MutedForeground,
             style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    val st = successTitle
+    if (st != null) {
+        StartaskSuccessDialog(
+            title = st,
+            summary = successSummary,
+            primaryLabel = "Done",
+            onPrimary = { successTitle = null },
+            onDismiss = { successTitle = null },
         )
     }
 }

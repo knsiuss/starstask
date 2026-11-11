@@ -123,6 +123,7 @@ fun AttendanceScreen(
                     identity = identity,
                     userId = userId,
                     onChanged = { reloadTick++ },
+                    onOpenMeeting = onOpenSession,
                 )
             }
             item(key = "active-card") {

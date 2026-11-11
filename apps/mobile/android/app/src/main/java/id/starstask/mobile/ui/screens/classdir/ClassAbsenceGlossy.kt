@@ -71,7 +71,7 @@ fun ClassAbsenceGlossy(
         )
 
     } else {
-        ClassAbsenceMemberView(clazz = clazz, userId = userId)
+        ClassAbsenceMemberView(clazz = clazz, userId = userId, onOpenMeeting = onOpenMeeting)
     }
 }
 
@@ -129,6 +129,7 @@ private fun ClassAttendanceAdminView(
                     subjects = courses,
                     meetings = meetings,
                     onCreated = { createdTick++ },
+                    onOpenMeeting = onOpenMeeting,
                 )
             }
         }
@@ -195,6 +196,7 @@ private fun ClassAttendanceAdminView(
 private fun ClassAbsenceMemberView(
     clazz: ClassDetail,
     userId: String,
+    onOpenMeeting: (String) -> Unit,
 ) {
     val palette = mockColors()
     var reloadTick by remember { mutableStateOf(0) }
@@ -250,6 +252,7 @@ private fun ClassAbsenceMemberView(
                     identity = identity,
                     userId = userId,
                     onChanged = { reloadTick++ },
+                    onOpenMeeting = onOpenMeeting,
                 )
             }
         }

@@ -756,7 +756,7 @@ suspend fun checkInLegacySession(
             put("p_accuracy_m", JsonPrimitive(accuracyM))
             put("p_captured_at", JsonPrimitive(capturedAtIso))
         },
-    ).decodeJsonArray().firstOrNull()?.jsonObject
+    ).decodeAs<kotlinx.serialization.json.JsonObject>()
     // Legacy RPC returns a check-in row (status/checked_in_at/distance_m), not
     // the meeting ok/message envelope — success means a row came back.
     val status = data?.get("status")?.jsonPrimitive?.content

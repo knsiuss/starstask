@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.createSession
 import id.starstask.mobile.ui.components.GradientPillButton
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.mockColors
@@ -58,6 +59,7 @@ fun ClassSetScheduleSheet(
     var endTime by remember { mutableStateOf("11:00") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var savedSummary by remember { mutableStateOf<String?>(null) }
 
     fun pickTime(initial: String, onPick: (String) -> Unit) {
         val (h, m) = initial.split(":").map { it.toIntOrNull() ?: 0 }
@@ -175,6 +177,7 @@ fun ClassSetScheduleSheet(
                             val start = java.time.LocalDateTime.parse("${dateText}T$startTime").atZone(zone).toInstant().toString()
                             val end = java.time.LocalDateTime.parse("${dateText}T$endTime").atZone(zone).toInstant().toString()
                             createSession(clazzId, title.trim(), start, end)
+                            savedSummary = "$startTime–$endTime · $dateText"
                             onSaved()
                         } catch (e: Exception) {
                             error = "Could not save the schedule."
@@ -185,5 +188,15 @@ fun ClassSetScheduleSheet(
                 icon = Lucide.CalendarDays,
             )
         }
+    }
+    val summary = savedSummary
+    if (summary != null) {
+        StartaskSuccessDialog(
+            title = "Schedule Saved",
+            summary = summary,
+            primaryLabel = "Done",
+            onPrimary = { savedSummary = null; onDismiss() },
+            onDismiss = { savedSummary = null },
+        )
     }
 }

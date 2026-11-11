@@ -209,6 +209,13 @@ suspend fun markNotificationRead(id: String) {
     )
 }
 
+suspend fun markAllNotificationsRead() {
+    SupabaseProvider.client.postgrest.rpc(
+        "mark_notification_events_read",
+        kotlinx.serialization.json.buildJsonObject {},
+    )
+}
+
 suspend fun loadProfile(userId: String): Profile? {
     val db = SupabaseProvider.client.postgrest
     val rows = db.from("profiles").select {

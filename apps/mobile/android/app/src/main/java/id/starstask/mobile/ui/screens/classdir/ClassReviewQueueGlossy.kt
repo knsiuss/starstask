@@ -42,6 +42,7 @@ import id.starstask.mobile.data.listMyRequests
 import id.starstask.mobile.data.getWorkspaceScope
 import id.starstask.mobile.ui.screens.ReviewRequestDialog
 import id.starstask.mobile.ui.components.WebAlert
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.mockColors
 import kotlinx.coroutines.launch
@@ -69,6 +70,8 @@ fun ClassReviewQueueGlossy(
     var reviewTarget by remember { mutableStateOf<id.starstask.mobile.data.WorkspaceRequest?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var moderateBusyId by remember { mutableStateOf<String?>(null) }
+    var successTitle by remember { mutableStateOf<String?>(null) }
+    var successSummary by remember { mutableStateOf("") }
 
     val scopeState by produceState<id.starstask.mobile.data.WorkspaceScope?>(
         initialValue = null,
@@ -184,8 +187,19 @@ fun ClassReviewQueueGlossy(
                                 onModerate = { action ->
                                     scope.launch {
                                         moderateBusyId = item.id
+                                        val label = when (action) {
+                                            "unpublish" -> "Content Unpublished"
+                                            "archive" -> "Content Archived"
+                                            "restore" -> "Content Restored"
+                                            else -> "Content Moderated"
+                                        }
                                         val message = moderateAssignment(item.id, action)
-                                        if (message != null) error = message
+                                        if (message != null) {
+                                            error = message
+                                        } else {
+                                            successTitle = label
+                                            successSummary = item.title
+                                        }
                                         moderateBusyId = null
                                         reloadTick++
                                     }
@@ -209,7 +223,18 @@ fun ClassReviewQueueGlossy(
             },
         )
     }
+    val st = successTitle
+    if (st != null) {
+        StartaskSuccessDialog(
+            title = st,
+            summary = successSummary,
+            primaryLabel = "Done",
+            onPrimary = { successTitle = null },
+            onDismiss = { successTitle = null },
+        )
+    }
 }
+
 
 @Composable
 private fun FilterRow(

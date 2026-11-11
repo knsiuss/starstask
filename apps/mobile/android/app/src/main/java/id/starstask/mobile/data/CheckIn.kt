@@ -55,7 +55,7 @@ suspend fun checkInToSession(
             put("p_longitude", longitude)
             put("p_accuracy_m", accuracyM)
         },
-    ).decodeJsonArray().firstOrNull()?.jsonObject
+    ).decodeAs<kotlinx.serialization.json.JsonObject>()
 
     val ok = data?.get("ok")?.jsonPrimitive?.content == "true"
     return CheckInResult(

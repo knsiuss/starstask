@@ -57,7 +57,7 @@ class StarsTaskMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(id.starstask.mobile.R.drawable.ic_notification_bell)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)

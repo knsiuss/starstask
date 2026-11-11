@@ -56,6 +56,7 @@ import id.starstask.mobile.data.createWorkspaceAssignment
 import id.starstask.mobile.data.reviewWorkspaceRequest
 import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.ui.components.WebButton
 import id.starstask.mobile.ui.components.WebButtonVariant
 import id.starstask.mobile.ui.components.WebInput
@@ -98,6 +99,7 @@ fun CreateAssignmentDialog(
     var error by remember { mutableStateOf<String?>(null) }
     var fieldErrors by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var saving by remember { mutableStateOf(false) }
+    var savedSummary by remember { mutableStateOf<String?>(null) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         val roomLeft = MAX_ASSIGNMENT_FILES - fileUris.size
@@ -185,6 +187,9 @@ fun CreateAssignmentDialog(
                     deadlineIso = deadlineIso.ifBlank { null },
                     fileUris = fileUris,
                 )
+                val subjectLabel = selectedClass?.subjects?.firstOrNull { it.id == subjectId }?.name ?: "Assignment"
+                val deadlineLabel = deadlineDate.takeIf { it.isNotBlank() }?.let { " · Due $it" } ?: ""
+                savedSummary = "$title · $subjectLabel$deadlineLabel"
                 onCreated()
             } catch (e: Exception) {
                 error = userFacingMessage(e, "The submission could not be saved. Try again.")
@@ -370,7 +375,18 @@ fun CreateAssignmentDialog(
             }
         }
     }
+    val summary = savedSummary
+    if (summary != null) {
+        StartaskSuccessDialog(
+            title = if (publishesDirectly) "Assignment Published" else "Request Sent",
+            summary = summary,
+            primaryLabel = "Done",
+            onPrimary = { savedSummary = null; onDismiss() },
+            onDismiss = { savedSummary = null },
+        )
+    }
 }
+
 
 @Composable
 private fun CreateDialogTopBar(title: String, subtitle: String, saving: Boolean, onClose: () -> Unit) {

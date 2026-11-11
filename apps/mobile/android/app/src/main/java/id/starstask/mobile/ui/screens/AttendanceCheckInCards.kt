@@ -45,6 +45,7 @@ import id.starstask.mobile.data.capturePositionDetailed
 import id.starstask.mobile.data.checkInLegacySession
 import id.starstask.mobile.data.checkInToSession
 import id.starstask.mobile.ui.components.StatusBadge
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.data.formatDateShort
 import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.hasLocationPermission
@@ -59,6 +60,7 @@ fun ActiveMeetingCard(
     identity: AttendanceIdentity?,
     userId: String,
     onChanged: () -> Unit,
+    onOpenMeeting: ((String) -> Unit)? = null,
 ) {
     val palette = mockColors()
     val context = LocalContext.current
@@ -69,6 +71,7 @@ fun ActiveMeetingCard(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
+    var checkedInMeetingId by remember { mutableStateOf<String?>(null) }
     var fieldError by remember { mutableStateOf<String?>(null) }
     var localStatus by remember(meeting.sessionId) { mutableStateOf(meeting.checkInStatus) }
     var localCheckedInAt by remember(meeting.sessionId) { mutableStateOf(meeting.checkedInAt) }
@@ -124,14 +127,18 @@ fun ActiveMeetingCard(
             if (result.ok) {
                 localStatus = result.status ?: "present"
                 localCheckedInAt = java.time.Instant.now().toString()
+                checkedInMeetingId = meeting.sessionId
                 success = "Checked in. You are marked present."
                 formOpen = false
                 onChanged()
             } else {
                 error = result.message ?: "The server did not confirm your check-in. Try again before leaving the meeting point."
             }
-        } catch (_: Exception) {
-            error = "Could not record your check-in. Please check your connection and try again."
+        } catch (e: Exception) {
+            error = id.starstask.mobile.data.userFacingMessage(
+                e,
+                "Could not record your check-in. Please check your connection and try again.",
+            )
         } finally {
             busy = false
             permissionPending = false
@@ -288,8 +295,23 @@ fun ActiveMeetingCard(
             if (error != null) {
                 WebAlert(message = error!!)
             }
-            if (success != null) {
-                Text(success!!, color = Success, style = MaterialTheme.typography.bodyMedium)
+            if (success != null && checkedInMeetingId != null) {
+                StartaskSuccessDialog(
+                    title = "Check-in Recorded",
+                    summary = "${meeting.subjectName} · Meeting #${meeting.meetingNumber ?: "-"} · ${meeting.startsAt.take(16).replace('T',' ')}",
+                    primaryLabel = "View Attendance",
+                    onPrimary = {
+                        val id = checkedInMeetingId
+                        checkedInMeetingId = null
+                        success = null
+                        if (id != null && onOpenMeeting != null) onOpenMeeting(id)
+                    },
+                    secondaryLabel = "Done",
+                    onDismiss = {
+                        checkedInMeetingId = null
+                        success = null
+                    },
+                )
             }
         }
     }

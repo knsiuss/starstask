@@ -53,6 +53,7 @@ import id.starstask.mobile.data.setClassStatus
 import id.starstask.mobile.data.updateClassMetadataFull
 import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
+import id.starstask.mobile.ui.components.StartaskSuccessDialog
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.mockColors
 import kotlinx.coroutines.launch
@@ -71,6 +72,8 @@ fun ClassManageGlossy(
     var actionBusy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    var successTitle by remember { mutableStateOf<String?>(null) }
+    var successSummary by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     val managed by produceState<ManagedClass?>(initialValue = null, key1 = clazz.id, key2 = reloadTick) {
@@ -246,9 +249,11 @@ fun ClassManageGlossy(
                                 notice = null
                                 runCatching { publishAnnouncement(clazz.id, title, body) }
                                     .onSuccess {
+                                        val captured = title
                                         title = ""
                                         body = ""
-                                        notice = "Announcement published."
+                                        successTitle = "Announcement Published"
+                                        successSummary = captured
                                         reloadTick++
                                     }
                                     .onFailure { error = userFacingMessage(it, "Could not publish the announcement.") }
@@ -302,7 +307,8 @@ fun ClassManageGlossy(
                                 if (message != null) {
                                     error = message
                                 } else {
-                                    notice = "Branding saved."
+                                    successTitle = "Branding Saved"
+                                    successSummary = brandingName
                                     reloadTick++
                                 }
                             }
@@ -437,6 +443,17 @@ fun ClassManageGlossy(
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
             },
+        )
+    }
+    val st = successTitle
+    val ss = successSummary
+    if (st != null) {
+        StartaskSuccessDialog(
+            title = st,
+            summary = ss ?: "",
+            primaryLabel = "Done",
+            onPrimary = { successTitle = null; successSummary = null },
+            onDismiss = { successTitle = null; successSummary = null },
         )
     }
 }

@@ -114,9 +114,19 @@ fun StarsTaskNavHost(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    fun refreshUnread() {
+        scope.launch {
+            unreadNotifications = runCatching { loadWorkspaceContext()?.unreadNotifications }.getOrNull()
+        }
+    }
+
     // The leave screen owns its sub-destinations (List/Detail/Form); it tells
     // the host about the fullscreen form so the dock can hide there.
-    LaunchedEffect(currentRoute) { leaveFormOpen = false }
+    LaunchedEffect(currentRoute) {
+        leaveFormOpen = false
+        refreshUnread()
+    }
 
     fun navigateTo(route: String) {
         navController.navigate(route) {
@@ -273,7 +283,22 @@ fun StarsTaskNavHost(
                         MessagesScreen(userId = userId)
                     }
                     composable(DrawerDestination.NOTIFICATIONS.route) {
-                        NotificationsScreen()
+                        NotificationsScreen(
+                            onOpenUrl = { url ->
+                                val target = when {
+                                    url.startsWith("/assignments") -> DrawerDestination.ASSIGNMENTS.route
+                                    url.startsWith("/leave-requests") -> DrawerDestination.LEAVE.route
+                                    url.startsWith("/messages") -> DrawerDestination.MESSAGES.route
+                                    url.startsWith("/schedule") -> DrawerDestination.SCHEDULE.route
+                                    url.startsWith("/actions") || url.startsWith("/app/actions") -> DrawerDestination.ACTION_CENTER.route
+                                    url.startsWith("/classes") || url.startsWith("/app/classes") -> DrawerDestination.CLASSES.route
+                                    url.startsWith("/attendance") -> DrawerDestination.ATTENDANCE.route
+                                    else -> DrawerDestination.NOTIFICATIONS.route
+                                }
+                                navController.navigate(target) { launchSingleTop = true }
+                            },
+                            onMarkedRead = { refreshUnread() },
+                        )
                     }
                     composable(DrawerDestination.ACTION_CENTER.route) {
                         ActionCenterScreen(

@@ -96,14 +96,14 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
-        try {
-            data = loadDashboard(userId)
-            schedule = loadSchedule(userId)
-            invitations = loadInvitations(userId, userEmail)
-            academicCard = loadAcademicCard(userId)
-            nextSchedule = runCatching { loadNextSchedule(userId) }.getOrNull()
-        } catch (e: Exception) {
-            error = "Could not load your dashboard. Check your connection and try again."
+        // Fetches are independent; run them in parallel so the dashboard
+        // doesn't wait on five sequential Supabase round-trips.
+        kotlinx.coroutines.coroutineScope {
+            launch { runCatching { data = loadDashboard(userId) }.onFailure { error = "Could not load your dashboard. Check your connection and try again." } }
+            launch { runCatching { schedule = loadSchedule(userId) } }
+            launch { runCatching { invitations = loadInvitations(userId, userEmail) } }
+            launch { runCatching { academicCard = loadAcademicCard(userId) } }
+            launch { runCatching { nextSchedule = loadNextSchedule(userId) } }
         }
     }
 
