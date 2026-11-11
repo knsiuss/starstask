@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import { PostHogProvider } from "@/components/analytics/posthog-provider";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <PostHogProvider>
           <ToastProvider>
             {children}
+            <InstallPrompt />
             <ServiceWorkerRegistration />
           </ToastProvider>
         </PostHogProvider>
