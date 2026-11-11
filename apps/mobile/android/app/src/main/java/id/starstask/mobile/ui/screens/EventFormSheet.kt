@@ -39,8 +39,8 @@ import id.starstask.mobile.data.OFFICIAL_EVENT_TYPES
 import id.starstask.mobile.data.WorkspaceClassOption
 import id.starstask.mobile.data.formatCalendarTime
 import id.starstask.mobile.data.formatDayLabel
-import id.starstask.mobile.data.jakartaLocalDateTime
-import id.starstask.mobile.data.jakartaLocalToInstantIso
+import id.starstask.mobile.data.deviceLocalDateTime
+import id.starstask.mobile.data.deviceLocalToInstantIso
 import id.starstask.mobile.data.validateCalendarEvent
 import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebAlert
@@ -71,9 +71,9 @@ fun EventFormSheet(
     val scopeJob = rememberCoroutineScope()
     val adminClasses = classes.filter { it.isAdmin }
     val editing = existing != null
-    val initialStart = existing?.startsAtIso?.takeIf { it.isNotEmpty() }?.let { jakartaLocalDateTime(it) }
+    val initialStart = existing?.startsAtIso?.takeIf { it.isNotEmpty() }?.let { deviceLocalDateTime(it) }
         ?: LocalDate.parse(defaultDateKey).atStartOfDay()
-    val initialEnd = existing?.endsAtIso?.let { jakartaLocalDateTime(it) }
+    val initialEnd = existing?.endsAtIso?.let { deviceLocalDateTime(it) }
         ?: initialStart.plusHours(1)
     var title by remember(existing) { mutableStateOf(existing?.title ?: "") }
     var description by remember(existing) { mutableStateOf(existing?.description ?: "") }
@@ -100,8 +100,8 @@ fun EventFormSheet(
 
     fun fieldErrors() = validateCalendarEvent(
         title = title,
-        startsAtIso = jakartaLocalToInstantIso(startDate.toString(), startTime),
-        endsAtIso = jakartaLocalToInstantIso(endDate.toString(), endTime),
+        startsAtIso = deviceLocalToInstantIso(startDate.toString(), startTime),
+        endsAtIso = deviceLocalToInstantIso(endDate.toString(), endTime),
         description = description,
         location = location,
         maxDurationMs = maxMs,
@@ -171,7 +171,7 @@ fun EventFormSheet(
                 minLines = 2,
             )
             fieldErrors().description?.let { Text(it, color = Danger, style = MaterialTheme.typography.bodySmall) }
-            Text("Times are shown and saved in Asia/Jakarta (WIB).", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            Text("Times are shown and saved in your device timezone.", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
             if (error != null) WebAlert(message = error!!)
             WebButton(
                 label = if (busy) "Saving…" else if (editing) "Save changes" else "Create event",
@@ -188,8 +188,8 @@ fun EventFormSheet(
                             val input = id.starstask.mobile.data.CalendarEventInput(
                                 title = title,
                                 description = description,
-                                startsAtIso = jakartaLocalToInstantIso(startDate.toString(), startTime),
-                                endsAtIso = jakartaLocalToInstantIso(endDate.toString(), endTime),
+                                startsAtIso = deviceLocalToInstantIso(startDate.toString(), startTime),
+                                endsAtIso = deviceLocalToInstantIso(endDate.toString(), endTime),
                                 location = location,
                                 eventType = if (scope == "official") eventType else null,
                                 subjectId = if (scope == "official") subjectId else null,

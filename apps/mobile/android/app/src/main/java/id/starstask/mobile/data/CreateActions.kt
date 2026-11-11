@@ -34,7 +34,7 @@ suspend fun createSession(
             put("p_description", JsonNull)
             put("p_starts_at", JsonPrimitive(startsAtIso))
             put("p_ends_at", JsonPrimitive(endsAtIso))
-            put("p_time_zone", JsonPrimitive("Asia/Jakarta"))
+            put("p_time_zone", JsonPrimitive(DEVICE_ZONE.id))
             put("p_session_type", JsonPrimitive("offline"))
             put("p_meeting_url", JsonNull)
             put("p_location", JsonNull)

@@ -36,6 +36,7 @@ fun ClassDetailGlossyHeader(
     onBack: () -> Unit,
     onManageClass: (() -> Unit)?,
     onPostAssignment: () -> Unit,
+    onInvites: (() -> Unit)? = null,
 ) {
     val palette = mockColors()
     val code = clazz.classCode.takeIf { it.isNotBlank() } ?: clazz.name.take(6).uppercase()
@@ -87,41 +88,48 @@ fun ClassDetailGlossyHeader(
             }
         }
 
-        if (onManageClass != null || true) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(palette.card)
-                    .heightIn(min = 52.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (onManageClass != null) {
-                    HeaderAction(
-                        icon = Lucide.Settings,
-                        label = "Manage Class",
-                        onClick = onManageClass,
-                        palette = palette,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                if (onManageClass != null) {
-                    Box(
-                        modifier = Modifier
-                            .height(26.dp)
-                            .size(1.dp)
-                            .background(palette.cardBorder),
-                    )
-                }
+        val showManage = onManageClass != null
+        val showInvites = onInvites != null && clazz.isAdmin
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(18.dp))
+                .background(palette.card)
+                .heightIn(min = 52.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (showManage) {
                 HeaderAction(
-                    icon = Lucide.Plus,
-                    label = "Post Assignment",
-                    onClick = onPostAssignment,
+                    icon = Lucide.Settings,
+                    label = "Manage Class",
+                    onClick = onManageClass!!,
                     palette = palette,
                     modifier = Modifier.weight(1f),
                 )
             }
+            if (showManage) {
+                Box(modifier = Modifier.height(26.dp).size(1.dp).background(palette.cardBorder))
+            }
+            if (showInvites) {
+                HeaderAction(
+                    icon = Lucide.Link2,
+                    label = "Invites",
+                    onClick = onInvites!!,
+                    palette = palette,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (showInvites) {
+                Box(modifier = Modifier.height(26.dp).size(1.dp).background(palette.cardBorder))
+            }
+            HeaderAction(
+                icon = Lucide.Plus,
+                label = "Post Assignment",
+                onClick = onPostAssignment,
+                palette = palette,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

@@ -49,8 +49,8 @@ import id.starstask.mobile.data.OFFICIAL_EVENT_TYPES
 import id.starstask.mobile.data.WorkspaceClassOption
 import id.starstask.mobile.data.formatCalendarTime
 import id.starstask.mobile.data.formatDayLabel
-import id.starstask.mobile.data.jakartaLocalDateTime
-import id.starstask.mobile.data.jakartaLocalToInstantIso
+import id.starstask.mobile.data.deviceLocalDateTime
+import id.starstask.mobile.data.deviceLocalToInstantIso
 import id.starstask.mobile.data.validateCalendarEvent
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton
@@ -74,6 +74,7 @@ fun EventDetailSheet(
     onAssignmentClick: () -> Unit,
     onSessionClick: () -> Unit,
     onLeaveClick: () -> Unit,
+    onSyncToCalendar: (() -> Unit)? = null,
     onOpenClass: () -> Unit,
     onEdit: () -> Unit,
 ) {
@@ -131,13 +132,24 @@ fun EventDetailSheet(
                     variant = WebButtonVariant.SECONDARY,
                     icon = Lucide.LogOut,
                 )
-                item.kind == "class_schedule" && item.owner == "official" && !item.managedInClass && item.id.startsWith("session:") -> WebButton(
-                    label = "Open session",
-                    onClick = onSessionClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    variant = WebButtonVariant.SECONDARY,
-                    icon = Lucide.LogOut,
-                )
+                item.kind == "class_schedule" && item.owner == "official" && !item.managedInClass && item.id.startsWith("session:") -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+                    WebButton(
+                        label = "Open session",
+                        onClick = onSessionClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        variant = WebButtonVariant.SECONDARY,
+                        icon = Lucide.LogOut,
+                    )
+                    onSyncToCalendar?.let { onSync ->
+                        WebButton(
+                            label = "Add to Google Calendar",
+                            onClick = onSync,
+                            modifier = Modifier.fillMaxWidth(),
+                            variant = WebButtonVariant.GHOST,
+                            icon = Lucide.LogOut,
+                        )
+                    }
+                }
             }
             WebButton(label = "Close", onClick = onDismiss, variant = WebButtonVariant.GHOST)
         }

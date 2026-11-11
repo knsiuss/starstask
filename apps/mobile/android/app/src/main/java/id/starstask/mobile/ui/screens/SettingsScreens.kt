@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.IntegrationKind
 import id.starstask.mobile.data.openIntegrationConnect
+import id.starstask.mobile.data.openIntegrationDisconnect
 import id.starstask.mobile.data.IntegrationStatus
 import id.starstask.mobile.data.NotificationPrefs
 import id.starstask.mobile.data.loadCalendarStatus
@@ -93,6 +94,17 @@ fun SettingsHubScreen(
         }
     }
 
+    fun disconnect(kind: IntegrationKind) {
+        val launched = openIntegrationDisconnect(context, kind)
+        notice = if (launched) {
+            "Browser opened — finish disconnecting on web, then come back " +
+                "here and tap Refresh."
+        } else {
+            "Web site URL is not configured — disconnect from web Settings instead."
+        }
+        refreshTick++
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(Spacing.Section).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xl),
@@ -115,8 +127,8 @@ fun SettingsHubScreen(
             } else {
                 "Not connected"
             },
-            actionLabel = if (calendar?.connected == true) null else "Connect",
-            onAction = { connect(IntegrationKind.CALENDAR) },
+            actionLabel = if (calendar?.connected == true) "Disconnect" else "Connect",
+            onAction = { if (calendar?.connected == true) disconnect(IntegrationKind.CALENDAR) else connect(IntegrationKind.CALENDAR) },
             onClick = {},
         )
         HubRow(
@@ -126,8 +138,8 @@ fun SettingsHubScreen(
             } else {
                 "Not connected"
             },
-            actionLabel = if (drive?.connected == true) null else "Connect",
-            onAction = { connect(IntegrationKind.DRIVE) },
+            actionLabel = if (drive?.connected == true) "Disconnect" else "Connect",
+            onAction = { if (drive?.connected == true) disconnect(IntegrationKind.DRIVE) else connect(IntegrationKind.DRIVE) },
             onClick = {},
         )
         if (notice != null) {
@@ -155,7 +167,6 @@ private fun HubRow(
     }
 }
 
-private val timezoneOptions = listOf("Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura", "UTC")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -272,15 +283,14 @@ fun NotificationSettingsScreen(userId: String) {
             checked = current.sessionReminder3h,
             onChange = { save(current.copy(sessionReminder3h = it)) },
         )
-        Text("Timezone (reminder lead times follow this zone):", color = Foreground)
+        val deviceZone = java.time.ZoneId.systemDefault().id
+        Text("Timezone (reminder lead times follow your device):", color = Foreground)
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
-            timezoneOptions.forEach { zone ->
-                WebButton(
-                    label = (if (zone == current.timezone) "✓ " else "") + zone,
-                    onClick = { save(current.copy(timezone = zone)) },
-                    variant = if (zone == current.timezone) WebButtonVariant.PRIMARY else WebButtonVariant.SECONDARY,
-                )
-            }
+            WebButton(
+                label = if (current.timezone == deviceZone) "✓ $deviceZone (device)" else "Use $deviceZone (device)",
+                onClick = { save(current.copy(timezone = deviceZone)) },
+                variant = if (current.timezone == deviceZone) WebButtonVariant.PRIMARY else WebButtonVariant.SECONDARY,
+            )
         }
         if (saving) Text("Saving…", color = MutedForeground)
         if (notice != null) Text(notice!!, color = Foreground)

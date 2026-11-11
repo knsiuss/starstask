@@ -30,6 +30,7 @@ import id.starstask.mobile.data.publishAnnouncement
 import id.starstask.mobile.data.renameClass
 import id.starstask.mobile.data.setClassJoinPolicy
 import id.starstask.mobile.data.setClassStatus
+import id.starstask.mobile.ui.screens.classdir.ClassInvitesGlossy
 import id.starstask.mobile.data.loadClassBranding
 import id.starstask.mobile.data.saveClassBranding
 import id.starstask.mobile.data.userFacingMessage
@@ -63,6 +64,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
     var brandingName by remember { mutableStateOf("") }
     var brandingDoc by remember { mutableStateOf("") }
     var brandingSaved by remember { mutableStateOf<String?>(null) }
+    var invitesOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(clazz.id) {
@@ -73,6 +75,11 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
             brandingName = it?.universityName ?: ""
             brandingDoc = it?.documentTitle ?: ""
         }
+    }
+
+    if (invitesOpen) {
+        ClassInvitesGlossy(classId = clazz.id, className = clazz.name, onBack = { invitesOpen = false })
+        return
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.Section), verticalArrangement = Arrangement.spacedBy(Spacing.Xl)) {
@@ -163,6 +170,11 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
             }
             if (busy) CircularProgressIndicator()
             if (error != null) WebAlert(message = error!!)
+            WebButton(
+                label = "Manage invitations",
+                onClick = { invitesOpen = true },
+                variant = WebButtonVariant.SECONDARY,
+            )
         }
 
         WebSectionTitle("Admins (${admins.size})")

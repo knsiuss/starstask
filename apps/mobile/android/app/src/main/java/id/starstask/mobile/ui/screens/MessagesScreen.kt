@@ -1,5 +1,6 @@
 package id.starstask.mobile.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ fun MessagesScreen(userId: String) {
     // decrypts on-device (DmCrypto + DmKeys); this screen surfaces it.
     val context = androidx.compose.ui.platform.LocalContext.current
     var conversations by remember { mutableStateOf<List<id.starstask.mobile.data.DmConversation>>(emptyList()) }
+    var openId by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
 
@@ -45,6 +47,16 @@ fun MessagesScreen(userId: String) {
         } finally {
             loading = false
         }
+    }
+
+    val openConversation = conversations.firstOrNull { it.id == openId }
+    if (openConversation != null) {
+        DmChatScreen(
+            userId = userId,
+            conversation = openConversation,
+            onBack = { openId = null },
+        )
+        return
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -66,7 +78,7 @@ fun MessagesScreen(userId: String) {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Surface),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().clickable { openId = conversation.id },
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(conversation.otherName, color = Foreground)

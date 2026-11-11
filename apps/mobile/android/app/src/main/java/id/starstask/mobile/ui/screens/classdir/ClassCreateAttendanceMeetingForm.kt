@@ -296,7 +296,7 @@ fun ClassCreateAttendanceMeetingForm(
                     busy = true
                     error = null
                     try {
-                        val zone = java.time.ZoneId.of("Asia/Jakarta")
+                        val zone = java.time.ZoneId.systemDefault()
                         val startsAt = java.time.LocalDateTime.parse("${meetingDate}T$startTime").atZone(zone).toInstant().toString()
                         val endsAt = java.time.LocalDateTime.parse("${meetingDate}T$endTime").atZone(zone).toInstant().toString()
                         createAttendanceMeeting(

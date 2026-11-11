@@ -49,8 +49,8 @@ import id.starstask.mobile.data.OFFICIAL_EVENT_TYPES
 import id.starstask.mobile.data.WorkspaceClassOption
 import id.starstask.mobile.data.formatCalendarTime
 import id.starstask.mobile.data.formatDayLabel
-import id.starstask.mobile.data.jakartaLocalDateTime
-import id.starstask.mobile.data.jakartaLocalToInstantIso
+import id.starstask.mobile.data.deviceLocalDateTime
+import id.starstask.mobile.data.deviceLocalToInstantIso
 import id.starstask.mobile.data.validateCalendarEvent
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.components.WebButton

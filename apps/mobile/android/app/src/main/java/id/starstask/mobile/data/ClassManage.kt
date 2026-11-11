@@ -42,9 +42,18 @@ data class ManagedClass(
 )
 
 data class ClassDependencies(
+    val classStatus: String = "active",
     val memberCount: Int = 0,
     val assignmentCount: Int = 0,
     val submissionCount: Int = 0,
+    val sessionCount: Int = 0,
+    val attendanceCount: Int = 0,
+    val scheduleCount: Int = 0,
+    val calendarEventCount: Int = 0,
+    val leaveRequestCount: Int = 0,
+    val subjectCount: Int = 0,
+    val invitationCount: Int = 0,
+    val hasHistory: Boolean = false,
     val canDelete: Boolean = false,
 )
 
@@ -167,18 +176,30 @@ suspend fun revokeClassAdmin(classId: String, userId: String) {
 }
 
 suspend fun getClassDependencies(classId: String): ClassDependencies {
-    val db = SupabaseProvider.client.postgrest
-    val members = db.from("class_members").select(Columns.raw("id")) {
-        filter { eq("class_id", classId) }
-    }.decodeJsonArray().size
-    val assignments = db.from("assignments").select(Columns.raw("id")) {
-        filter { eq("class_id", classId) }
-    }.decodeJsonArray().size
-    val submissions = db.from("submissions").select(Columns.raw("id")) {
-        filter { eq("class_id", classId) }
-    }.decodeJsonArray().size
-    val canDelete = members == 0 && assignments == 0 && submissions == 0
-    return ClassDependencies(members, assignments, submissions, canDelete)
+    // The typed RPC returns the full history the delete confirmation must
+    // show; client-side table counts cannot see grants-locked tables.
+    val rows = SupabaseProvider.client.postgrest.rpc(
+        "get_class_dependencies",
+        buildJsonObject { put("p_class_id", JsonPrimitive(classId)) },
+    ).decodeJsonArray()
+    val obj = rows.firstOrNull()?.jsonObject ?: return ClassDependencies()
+    fun count(key: String): Int = obj[key]?.jsonPrimitive?.contentOrNull()?.toLongOrNull()?.toInt() ?: 0
+    fun flag(key: String): Boolean = obj[key]?.jsonPrimitive?.contentOrNull() == "true"
+    return ClassDependencies(
+        classStatus = obj["class_status"]?.jsonPrimitive?.contentOrNull() ?: "active",
+        memberCount = count("member_count"),
+        assignmentCount = count("assignment_count"),
+        submissionCount = count("submission_count"),
+        sessionCount = count("session_count"),
+        attendanceCount = count("attendance_count"),
+        scheduleCount = count("schedule_count"),
+        calendarEventCount = count("calendar_event_count"),
+        leaveRequestCount = count("leave_request_count"),
+        subjectCount = count("subject_count"),
+        invitationCount = count("invitation_count"),
+        hasHistory = flag("has_history"),
+        canDelete = flag("can_delete"),
+    )
 }
 
 suspend fun removeClassMember(classId: String, userId: String) {

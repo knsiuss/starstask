@@ -2,9 +2,9 @@ package id.starstask.mobile.ui.screens.classdir
 
 // Glossy class detail scaffold: header (back + code + chips + actions), tab
 // strip, and one content per tab. Reuses the existing tabs for Courses and
-// Assignments; Members / Absence / Overview / Schedule / Info are new glossy
-// surfaces. External behavior stays the same as ClassDetailScreen (in-screen
-// push, no NavHost routes).
+// Assignments; Members / Attendance / Overview / Schedule / Info are new
+// glossy surfaces. External behavior stays the same as ClassDetailScreen
+// (in-screen push, no NavHost routes).
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +27,10 @@ import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.ClassDetail
 import id.starstask.mobile.data.loadClassOverview
 import id.starstask.mobile.ui.screens.ClassCoursesTab
-import id.starstask.mobile.ui.screens.ClassAssignmentsTabClean
 import id.starstask.mobile.ui.screens.CreateAssignmentDialog
+import id.starstask.mobile.ui.screens.AssignmentDetailScreen
+import id.starstask.mobile.data.Assignment
+import id.starstask.mobile.data.ClassCourse
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.theme.mockColors
 import id.starstask.mobile.ui.theme.mockPageBrush
@@ -53,12 +55,57 @@ fun ClassDetailScreenGlossy(
     var attendanceSessionsOpen by remember { mutableStateOf(false) }
     var absenceRequestsOpen by remember { mutableStateOf(false) }
     var sessionDetailId by remember { mutableStateOf<String?>(null) }
+    var reviewQueueOpen by remember { mutableStateOf(false) }
+    var invitesOpen by remember { mutableStateOf(false) }
+    var assignmentsReload by remember { mutableIntStateOf(0) }
+    var assignmentDetail by remember { mutableStateOf<Assignment?>(null) }
+    var selectedCourse by remember { mutableStateOf<ClassCourse?>(null) }
 
     if (manageOpen) {
-        id.starstask.mobile.ui.screens.ClassManageScreen(
+        ClassManageGlossy(
             clazz = clazz,
             onBack = { manageOpen = false },
             onOpenGrades = onOpenGrades,
+            onOpenInvites = { manageOpen = false; invitesOpen = true },
+        )
+        return
+    }
+    if (reviewQueueOpen) {
+        ClassReviewQueueGlossy(
+            classId = clazz.id,
+            userId = userId,
+            isAdmin = clazz.isAdmin,
+            onBack = { reviewQueueOpen = false },
+            onOpenAssignment = { id ->
+                assignmentDetail = Assignment(id = id, title = "", status = "", deadline = null, className = null)
+                reviewQueueOpen = false
+            },
+        )
+        return
+    }
+    if (invitesOpen) {
+        ClassInvitesGlossy(
+            classId = clazz.id,
+            className = clazz.name,
+            onBack = { invitesOpen = false },
+        )
+        return
+    }
+    val openAssignment = assignmentDetail
+    if (openAssignment != null) {
+        AssignmentDetailScreen(
+            userId = userId,
+            assignment = openAssignment,
+            onBack = { assignmentDetail = null },
+        )
+        return
+    }
+    val openCourse = selectedCourse
+    if (openCourse != null) {
+        id.starstask.mobile.ui.screens.CourseWorkspaceScreen(
+            clazz = clazz,
+            course = openCourse,
+            onBack = { selectedCourse = null },
         )
         return
     }
@@ -112,16 +159,6 @@ fun ClassDetailScreenGlossy(
         )
         return
     }
-    if (currentLeaveId != null) {
-        id.starstask.mobile.ui.screens.LeaveRequestDetailScreen(
-            userId = userId,
-            requestId = currentLeaveId,
-            onBack = { leaveId = null },
-            onEdit = {},
-            onChanged = { overviewReload++ },
-        )
-        return
-    }
 
     val overview = androidx.compose.runtime.produceState(
         initialValue = null as id.starstask.mobile.data.ClassOverviewData?,
@@ -149,6 +186,7 @@ fun ClassDetailScreenGlossy(
                     onBack = onBack,
                     onManageClass = if (clazz.isAdmin) ({ manageOpen = true }) else null,
                     onPostAssignment = { postAssignmentOpen = true },
+                    onInvites = if (clazz.isAdmin) ({ invitesOpen = true }) else null,
                 )
             }
             item(key = "tabs") {
@@ -160,7 +198,7 @@ fun ClassDetailScreenGlossy(
                             "Assignments" to "assignments",
                             "Members" to "members",
                             "Schedule" to "schedule",
-                            "Absence" to "absence",
+                            "Attendance" to "attendance",
                             "Info" to "info",
                         ),
                         activeKey = activeTab,
@@ -182,8 +220,14 @@ fun ClassDetailScreenGlossy(
                             onManageClass = { manageOpen = true },
                             onOpenAssignments = { activeTab = "assignments" },
                         )
-                        "courses" -> ClassCoursesTab(clazz = clazz, onOpenCourse = { _ -> })
-                        "assignments" -> id.starstask.mobile.ui.screens.ClassAssignmentsTabClean(assignments = emptyList(), loading = false)
+                        "courses" -> ClassCoursesTab(clazz = clazz, onOpenCourse = { selectedCourse = it })
+                        "assignments" -> ClassAssignmentsGlossy(
+                            classId = clazz.id,
+                            reloadTick = assignmentsReload,
+                            onOpenAssignment = { assignmentDetail = it },
+                            onReviewQueue = { reviewQueueOpen = true },
+                            isAdmin = clazz.isAdmin,
+                        )
                         "members" -> ClassMembersGlossy(
                             clazz = id.starstask.mobile.data.DirectoryClass(
                                 id = clazz.id,
@@ -202,7 +246,7 @@ fun ClassDetailScreenGlossy(
                             onMembersChanged = { overviewReload++ },
                         )
                         "schedule" -> ClassScheduleGlossy(clazz = clazz, onCreateSession = { setScheduleOpen = true })
-                        "absence" -> ClassAbsenceGlossy(
+                        "attendance" -> ClassAbsenceGlossy(
                             clazz = clazz,
                             userId = userId,
                             isAdmin = clazz.isAdmin,
@@ -241,6 +285,7 @@ fun ClassDetailScreenGlossy(
                 onCreated = {
                     postAssignmentOpen = false
                     overviewReload++
+                    assignmentsReload++
                 },
             )
         }

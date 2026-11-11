@@ -116,7 +116,7 @@ fun SubmitAssignmentScreen(userId: String, onBack: () -> Unit, onSubmitted: () -
                         val deadlineIso = deadline.trim().takeIf { it.isNotBlank() }?.let {
                             val normalized = it.replace(" ", "T")
                             java.time.LocalDateTime.parse(normalized)
-                                .atZone(java.time.ZoneId.of("Asia/Jakarta"))
+                                .atZone(java.time.ZoneId.systemDefault())
                                 .toInstant().toString()
                         }
                         submitAssignment(userId, courseId, title.trim(), description.trim(), deadlineIso)
@@ -186,7 +186,7 @@ fun NewSessionScreen(userId: String, onBack: () -> Unit, onCreated: () -> Unit) 
                         runCatching {
                             fun toIso(value: String): String =
                                 java.time.LocalDateTime.parse(value.trim().replace(" ", "T"))
-                                    .atZone(java.time.ZoneId.of("Asia/Jakarta"))
+                                    .atZone(java.time.ZoneId.systemDefault())
                                     .toInstant().toString()
                             createSession(classId, title.trim(), toIso(startsAt), toIso(endsAt))
                         }.onSuccess {

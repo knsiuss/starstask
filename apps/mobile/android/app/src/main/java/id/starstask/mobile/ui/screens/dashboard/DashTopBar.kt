@@ -44,8 +44,7 @@ fun DashTopBar(
             Icon(Lucide.Menu, contentDescription = "Menu", tint = palette.text, modifier = Modifier.size(22.dp))
         }
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BrandMark(sizeDp = 28)
-            Text("StarsTask", color = palette.text, fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1)
+            id.starstask.mobile.ui.components.BrandWordmark(heightDp = 22, onDark = isDark)
         }
         if (showThemeToggle) {
             IconButton(onClick = onToggleTheme, modifier = Modifier.size(44.dp)) {

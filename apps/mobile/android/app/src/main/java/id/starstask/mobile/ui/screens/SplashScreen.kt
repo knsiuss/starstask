@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,9 +32,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import id.starstask.mobile.R
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.AccentSoft
 import id.starstask.mobile.ui.theme.DarkAccent
@@ -190,29 +187,13 @@ fun SplashScreen(
                     .offset(x = 0.dp, y = logoY.dp)
                     .graphicsLayerScale(logoScale)
                     .alpha(logoAlpha)
-                    .shadow(12.dp, RoundedCornerShape(28.dp))
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(secondary)
-                    .padding(20.dp),
+                    .padding(horizontal = 28.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_mark),
-                    contentDescription = null,
-                    modifier = Modifier.size(96.dp),
-                )
+                id.starstask.mobile.ui.components.BrandWordmark(heightDp = 72, onDark = darkTheme)
             }
 
             Spacer(Modifier.height(Spacing.Section))
-
-            Text(
-                text = "StarsTask",
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (darkTheme) Color(0xFFE8EAED) else Color(0xFF292D34),
-                modifier = Modifier.alpha(textAlpha),
-            )
-
-            Spacer(Modifier.height(Spacing.Xs))
 
             Text(
                 text = "Tugas kuliah, satu tempat.",

@@ -1,6 +1,8 @@
 package id.starstask.mobile.data
 
-// Attendance meetings for the class Absence tab. Every read goes through the
+// userFacingMessage lives in UserFacingError.kt (same package).
+
+// Attendance meetings for the class Attendance tab. Every read goes through the
 // web's SECURITY DEFINER RPCs; the authorization boundary is can_manage_class /
 // can_organize_class_sessions inside the function, never the client.
 
@@ -345,5 +347,32 @@ suspend fun loadSessionAttendanceCounts(classId: String): List<SessionAttendance
             absent = o["absent_count"]?.jsonPrimitive?.contentOrNull()?.toLongOrNull()?.toInt() ?: 0,
             unrecorded = o["unrecorded_count"]?.jsonPrimitive?.contentOrNull()?.toLongOrNull()?.toInt() ?: 0,
         )
+    }
+}
+
+/** Audited location change for a scheduled meeting (mirrors web changeAttendanceMeetingLocation). */
+suspend fun changeAttendanceMeetingLocation(
+    sessionId: String,
+    latitude: Double,
+    longitude: Double,
+    radiusM: Int,
+    reason: String,
+): String? {
+    val trimmedReason = reason.trim()
+    if (trimmedReason.length < 3) return "Explain why the location is changing."
+    return try {
+        SupabaseProvider.client.postgrest.rpc(
+            "update_attendance_meeting_location",
+            buildJsonObject {
+                put("p_session_id", JsonPrimitive(sessionId))
+                put("p_latitude", JsonPrimitive(latitude))
+                put("p_longitude", JsonPrimitive(longitude))
+                put("p_radius_m", JsonPrimitive(radiusM))
+                put("p_reason", JsonPrimitive(trimmedReason))
+            },
+        )
+        null
+    } catch (error: Exception) {
+        userFacingMessage(error, "Could not change the meeting location.")
     }
 }

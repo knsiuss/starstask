@@ -7,7 +7,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 // ---------------------------------------------------------------------------
-// My Week (web getMyWeek): one Mon-Sun window in Asia/Jakarta containing
+// My Week (web getMyWeek): one Mon-Sun window in the device zone containing
 // sessions, assignment deadlines, and the student's own leave requests.
 // weekOffset moves the window; clamped to +/-52 like the web page.
 // ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ data class MyWeekData(
 )
 
 private fun weekStartFor(offset: Int): java.time.LocalDate {
-    val zone = java.time.ZoneId.of("Asia/Jakarta")
+    val zone = java.time.ZoneId.systemDefault()
     val today = java.time.LocalDate.now(zone)
     val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
     return monday.plusWeeks(offset.toLong())
@@ -41,7 +41,7 @@ suspend fun loadMyWeek(userId: String, weekOffset: Int): MyWeekData {
     val clamped = weekOffset.coerceIn(-MAX_WEEK_OFFSET, MAX_WEEK_OFFSET)
     val start = weekStartFor(clamped)
     val end = start.plusWeeks(1)
-    val zone = java.time.ZoneId.of("Asia/Jakarta")
+    val zone = java.time.ZoneId.systemDefault()
     val startIso = start.atStartOfDay(zone).toInstant().toString()
     val endIso = end.atStartOfDay(zone).toInstant().toString()
 

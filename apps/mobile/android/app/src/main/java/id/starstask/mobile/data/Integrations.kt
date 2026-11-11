@@ -17,15 +17,21 @@ import id.starstask.mobile.BuildConfig
  * The web base URL comes from local.properties (`starstask.site.url`),
  * same pattern as the Supabase URL — never hardcoded.
  */
-enum class IntegrationKind(val label: String, val startPath: String) {
-    CALENDAR("Google Calendar", "/api/integrations/google-calendar/start"),
-    DRIVE("Google Drive", "/api/integrations/google-drive/start"),
+enum class IntegrationKind(val label: String, val startPath: String, val disconnectPath: String) {
+    CALENDAR("Google Calendar", "/api/integrations/google-calendar/start", "/api/integrations/google-calendar/disconnect"),
+    DRIVE("Google Drive", "/api/integrations/google-drive/start", "/api/integrations/google-drive/disconnect"),
 }
 
-fun openIntegrationConnect(context: Context, kind: IntegrationKind): Boolean {
+fun openIntegrationConnect(context: Context, kind: IntegrationKind): Boolean =
+    openWebFlow(context, kind.startPath)
+
+fun openIntegrationDisconnect(context: Context, kind: IntegrationKind): Boolean =
+    openWebFlow(context, kind.disconnectPath)
+
+private fun openWebFlow(context: Context, path: String): Boolean {
     val baseUrl = BuildConfig.SITE_URL.trimEnd('/')
     if (baseUrl.contains("your-site-url")) return false
-    val url = baseUrl + kind.startPath
+    val url = baseUrl + path
     return try {
         context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

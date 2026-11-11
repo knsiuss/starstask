@@ -408,7 +408,7 @@ suspend fun loadStudentAttendance(
             location = obj["location"]?.jsonPrimitive?.contentOrNull(),
             startsAt = startsAt,
             endsAt = obj["ends_at"]?.jsonPrimitive?.contentOrNull() ?: startsAt,
-            timeZone = obj["time_zone"]?.jsonPrimitive?.contentOrNull() ?: "Asia/Jakarta",
+            timeZone = obj["time_zone"]?.jsonPrimitive?.contentOrNull() ?: DEVICE_ZONE.id,
             academicYear = membership.academicYear,
             semester = membership.semester,
             status = resolveStatus(

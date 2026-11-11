@@ -26,7 +26,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.DashboardClass
-import id.starstask.mobile.ui.components.BrandMark
+import id.starstask.mobile.ui.components.BrandWordmark
+import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
@@ -40,8 +41,9 @@ fun DashHero(
     modifier: Modifier = Modifier,
 ) {
     val palette = dashColors()
+    val isDark = LocalDarkTheme.current
     val shownName = displayName?.takeIf { it.isNotBlank() } ?: "Welcome"
-    val now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Jakarta"))
+    val now = java.time.ZonedDateTime.now(java.time.ZoneId.systemDefault())
     val greeting = when (now.hour) {
         in 0..11 -> "Good morning,"
         in 12..17 -> "Good afternoon,"
@@ -101,7 +103,7 @@ fun DashHero(
                     }
                 }
             }
-            BrandMark(sizeDp = 88)
+            BrandWordmark(heightDp = 44, onDark = isDark)
         }
 
         Text(

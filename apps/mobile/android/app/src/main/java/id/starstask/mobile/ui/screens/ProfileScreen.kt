@@ -217,7 +217,7 @@ fun ProfileScreen(
                         }
                         item(key = "footer") {
                             Text(
-                                "Joined $joinedDate · Asia/Jakarta (WIB)",
+                                "Joined $joinedDate · your device timezone",
                                 color = AssignmentSecondary,
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),

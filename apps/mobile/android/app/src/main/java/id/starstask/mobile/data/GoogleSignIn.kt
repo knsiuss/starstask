@@ -58,11 +58,16 @@ suspend fun signInWithGoogleNative(context: Context): String? {
     val credential = response.credential
     var failureMessage = "Unexpected credential from Google."
     val googleCredential: GoogleIdTokenCredential? = when {
-        credential is GoogleIdTokenCredential -> credential
+        credential is GoogleIdTokenCredential -> {
+            Log.w("GoogleSignIn", "credential branch=direct class=${credential::class.java.name}")
+            credential
+        }
         credential is CustomCredential &&
             credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL ->
             try {
-                GoogleIdTokenCredential.createFrom(credential.data)
+                GoogleIdTokenCredential.createFrom(credential.data).also {
+                    Log.w("GoogleSignIn", "credential branch=custom-createFrom type=${credential.type}")
+                }
             } catch (error: Exception) {
                 Log.w("GoogleSignIn", "createFrom failed for type=${credential.type}", error)
                 failureMessage = userFacingMessage(error, "Sign-in failed. Please try again.")

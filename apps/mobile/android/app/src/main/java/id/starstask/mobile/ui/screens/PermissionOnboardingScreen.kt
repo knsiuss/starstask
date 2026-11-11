@@ -39,11 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.starstask.mobile.R
 import id.starstask.mobile.data.enablePushForUser
 import id.starstask.mobile.data.hasLocationPermission
 import id.starstask.mobile.data.notificationsGranted
@@ -202,13 +200,10 @@ private fun IntroScreen(
         ) {
             TextButton(onClick = onSkip) { Text("Lewati", color = palette.muted) }
         }
-        Image(
-            painter = painterResource(R.drawable.logo_mark),
-            contentDescription = null,
-            modifier = Modifier
-                .size(96.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .align(Alignment.CenterHorizontally),
+        id.starstask.mobile.ui.components.BrandWordmark(
+            heightDp = 56,
+            onDark = id.starstask.mobile.ui.theme.LocalDarkTheme.current,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         )
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(

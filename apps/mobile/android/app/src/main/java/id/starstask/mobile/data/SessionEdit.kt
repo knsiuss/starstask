@@ -131,7 +131,7 @@ suspend fun updateSessionRecord(
             put("p_description", detail.description?.let { JsonPrimitive(it) } ?: JsonNull)
             put("p_starts_at", JsonPrimitive(startsAtIso))
             put("p_ends_at", JsonPrimitive(endsAtIso))
-            put("p_time_zone", detail.timeZone?.let { JsonPrimitive(it) } ?: JsonPrimitive("Asia/Jakarta"))
+            put("p_time_zone", detail.timeZone?.let { JsonPrimitive(it) } ?: JsonPrimitive(DEVICE_ZONE.id))
             put("p_session_type", detail.sessionType?.let { JsonPrimitive(it) } ?: JsonPrimitive("offline"))
             put("p_meeting_url", detail.meetingUrl?.let { JsonPrimitive(it) } ?: JsonNull)
             put("p_location", location?.takeIf { it.isNotBlank() }?.let { JsonPrimitive(it) } ?: JsonNull)

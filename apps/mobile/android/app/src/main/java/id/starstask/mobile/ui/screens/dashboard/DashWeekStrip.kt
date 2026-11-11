@@ -31,7 +31,7 @@ private val WeekDayLabels = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SU
 fun DashWeekStrip(
     schedule: List<ScheduleEntry>,
     assignmentDeadlines: List<String>,
-    today: java.time.LocalDate = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta")),
+    today: java.time.LocalDate = java.time.LocalDate.now(java.time.ZoneId.systemDefault()),
     modifier: Modifier = Modifier,
 ) {
     val palette = dashColors()

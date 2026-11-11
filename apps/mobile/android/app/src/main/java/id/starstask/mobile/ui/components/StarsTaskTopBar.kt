@@ -59,14 +59,7 @@ fun StarsTaskTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            BrandMark(sizeDp = 26)
-            Text(
-                "StarsTask",
-                color = palette.ink,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-            )
+            BrandWordmark(heightDp = 22, onDark = isDark)
         }
         IconButton(
             onClick = { scope.launch { setThemeMode(context, if (isDark) "light" else "dark") } },

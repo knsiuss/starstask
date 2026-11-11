@@ -55,6 +55,12 @@ import id.starstask.mobile.data.listAssignmentRevisions
 import id.starstask.mobile.data.listAttachments
 import id.starstask.mobile.data.openAttachment
 import id.starstask.mobile.data.renameAttachment
+import id.starstask.mobile.data.isAssignmentSaved
+import id.starstask.mobile.data.loadMyAssignmentReport
+import id.starstask.mobile.data.reportAssignment
+import id.starstask.mobile.data.saveAssignment
+import id.starstask.mobile.data.unsaveAssignment
+import id.starstask.mobile.data.ASSIGNMENT_REPORT_REASONS
 import id.starstask.mobile.data.updateAssignmentRecord
 import id.starstask.mobile.data.uploadAttachment
 import id.starstask.mobile.ui.screens.assignmentdetail.AttachmentsCard
@@ -93,6 +99,11 @@ fun AssignmentDetailScreen(
     var editing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf<Boolean?>(null) }
+    var reportOpen by remember { mutableStateOf(false) }
+    var reportReason by remember { mutableStateOf(ASSIGNMENT_REPORT_REASONS.first().first) }
+    var reportNote by remember { mutableStateOf("") }
+    var reportBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -105,6 +116,7 @@ fun AssignmentDetailScreen(
     }
 
     LaunchedEffect(assignment.id) { reload() }
+    LaunchedEffect(assignment.id, userId) { saved = isAssignmentSaved(userId, assignment.id) }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -302,6 +314,45 @@ fun AssignmentDetailScreen(
             },
         )
 
+        if (reportOpen) {
+            AlertDialog(
+                onDismissRequest = { if (!reportBusy) reportOpen = false },
+                title = { Text("Report this assignment") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Why should this be reviewed?", color = palette.muted, style = MaterialTheme.typography.bodySmall)
+                        ASSIGNMENT_REPORT_REASONS.forEach { (value, label) ->
+                            OutlinedButton(
+                                onClick = { reportReason = value },
+                                border = BorderStroke(1.dp, if (reportReason == value) palette.accent else palette.cardBorder),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(label, color = if (reportReason == value) palette.accent else palette.ink) }
+                        }
+                        WebInput(
+                            value = reportNote,
+                            onValueChange = { reportNote = it },
+                            label = "Note (optional)",
+                            singleLine = false,
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(enabled = !reportBusy, onClick = {
+                        reportBusy = true
+                        scope.launch {
+                            runCatching { reportAssignment(assignment.id, reportReason, reportNote) }
+                                .onSuccess { message = "Report sent. Thanks." ; reportOpen = false; reportNote = "" }
+                                .onFailure { message = "Could not send the report. Try again." }
+                            reportBusy = false
+                        }
+                    }) { Text(if (reportBusy) "Sending…" else "Send report") }
+                },
+                dismissButton = {
+                    TextButton(enabled = !reportBusy, onClick = { reportOpen = false }) { Text("Cancel") }
+                },
+            )
+        }
+
         if (current?.referenceUrls.orEmpty().isNotEmpty()) {
             Column(
                 modifier = Modifier
@@ -365,6 +416,28 @@ fun AssignmentDetailScreen(
                     color = palette.muted,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Lg), modifier = Modifier.fillMaxWidth()) {
+                    WebButton(
+                        label = if (saved == true) "Saved" else "Save",
+                        onClick = {
+                            scope.launch {
+                                val next = !(saved ?: false)
+                                runCatching {
+                                    if (next) saveAssignment(userId, assignment.id) else unsaveAssignment(userId, assignment.id)
+                                }
+                                    .onSuccess { saved = next; message = if (next) "Saved." else "Removed from saved." }
+                                    .onFailure { message = "Could not update saved assignments." }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        icon = Lucide.Bookmark,
+                        variant = WebButtonVariant.SECONDARY,
+                    )
+                    WebButton(
+                        label = "Report",
+                        onClick = { reportOpen = true },
+                        modifier = Modifier.weight(1f),
+                        variant = WebButtonVariant.SECONDARY,
+                    )
                     WebButton(
                         label = "Copy link",
                         onClick = {

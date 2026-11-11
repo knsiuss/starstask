@@ -40,17 +40,20 @@ class StarsTaskMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         val title = message.notification?.title ?: message.data["title"] ?: "StarsTask"
         val body = message.notification?.body ?: message.data["body"] ?: ""
-        showNotification(title, body)
+        val url = message.data["url"]
+        showNotification(title, body, url)
     }
 
-    private fun showNotification(title: String, body: String) {
+    private fun showNotification(title: String, body: String, url: String?) {
         val channelId = REMINDER_CHANNEL_ID
         ensureReminderChannel(this)
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (!url.isNullOrBlank()) putExtra(EXTRA_PUSH_URL, url)
         }
+        val notificationId = (url ?: title + body).hashCode()
         val pending = PendingIntent.getActivity(
-            this, 0, intent,
+            this, notificationId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, channelId)
@@ -61,10 +64,14 @@ class StarsTaskMessagingService : FirebaseMessagingService() {
             .setContentIntent(pending)
             .build()
         try {
-            NotificationManagerCompat.from(this).notify(1001, notification)
+            NotificationManagerCompat.from(this).notify(notificationId, notification)
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS not granted (Android 13+): push still lands in
             // notification_events and shows in the in-app list.
         }
+    }
+
+    companion object {
+        const val EXTRA_PUSH_URL = "push_url"
     }
 }

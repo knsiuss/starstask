@@ -1,6 +1,6 @@
 package id.starstask.mobile.ui.screens.classdir
 
-// In-screen glossy sub-page scaffold for the Absence tab pushes: mock page
+// In-screen glossy sub-page scaffold for the Attendance tab pushes: mock page
 // backdrop, back row, title, scrollable body.
 
 import androidx.compose.foundation.background

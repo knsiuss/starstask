@@ -38,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -197,24 +196,10 @@ private fun DrawerHeader(onClose: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.logo_mark),
-            contentDescription = null,
-            modifier = Modifier.size(32.dp),
+        id.starstask.mobile.ui.components.BrandWordmark(
+            heightDp = 26,
+            onDark = id.starstask.mobile.ui.theme.LocalDarkTheme.current,
         )
-        Column(modifier = Modifier.padding(start = 10.dp)) {
-            Text(
-                "StarsTask",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Foreground,
-            )
-            Text(
-                "Academic workspace",
-                style = MaterialTheme.typography.bodySmall,
-                color = MutedForeground,
-            )
-        }
         Spacer(modifier = Modifier.weight(1f))
         IconButton(onClick = onClose) {
             Icon(

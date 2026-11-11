@@ -19,7 +19,7 @@ internal fun parseTime(iso: String): Long {
         } catch (_: Exception) {
             try {
                 java.time.LocalDateTime.parse(iso)
-                    .atZone(java.time.ZoneId.of("Asia/Jakarta"))
+                    .atZone(java.time.ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli()
             } catch (_: Exception) {
@@ -30,7 +30,7 @@ internal fun parseTime(iso: String): Long {
 }
 
 private fun jakartaDayNumber(epochMs: Long): Long {
-    val zone = java.time.ZoneId.of("Asia/Jakarta")
+    val zone = java.time.ZoneId.systemDefault()
     val date = java.time.Instant.ofEpochMilli(epochMs).atZone(zone).toLocalDate()
     return date.toEpochDay()
 }

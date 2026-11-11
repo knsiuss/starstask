@@ -3,7 +3,8 @@ package id.starstask.mobile.ui.screens.classdir
 // Glossy Members tab: roster with initials avatar, name, role chip
 // (Class Admin / Member), admin-only export CSV + promote/demote/remove
 // behind confirm dialogs. Export writes display_name + role + joined_at
-// only — never NIM.
+// only — never NIM, and always exports every member (not the filtered
+// view). Search + role filter are client-side.
 
 import android.content.Context
 import androidx.compose.foundation.background
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -71,6 +73,21 @@ fun ClassMembersGlossy(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<PendingAction?>(null) }
+    var search by remember { mutableStateOf("") }
+    var roleFilter by remember { mutableStateOf("all") }
+
+    val query = search.trim().lowercase()
+    val adminCount = members.count { it.isAdmin }
+    val memberCount = members.size - adminCount
+    val visible = members.filter { member ->
+        val roleMatch = when (roleFilter) {
+            "admins" -> member.isAdmin
+            "members" -> !member.isAdmin
+            else -> true
+        }
+        val searchMatch = query.isEmpty() || member.name.lowercase().contains(query)
+        roleMatch && searchMatch
+    }
 
     LaunchedEffect(clazz.id) {
         loading = true
@@ -103,7 +120,41 @@ fun ClassMembersGlossy(
                     .padding(horizontal = 12.dp, vertical = 7.dp),
             ) {
                 Icon(Lucide.Download, contentDescription = null, tint = palette.accent, modifier = Modifier.size(16.dp))
-                Text("CSV", color = palette.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text("CSV (all)", color = palette.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        androidx.compose.material3.OutlinedTextField(
+            value = search,
+            onValueChange = { search = it },
+            singleLine = true,
+            label = { Text("Search members") },
+            leadingIcon = { Icon(Lucide.Search, contentDescription = null, modifier = Modifier.size(17.dp)) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                "all" to "All · ${members.size}",
+                "admins" to "Admins · $adminCount",
+                "members" to "Members · $memberCount",
+            ).forEach { (key, label) ->
+                val active = roleFilter == key
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(if (active) palette.accent else palette.chip)
+                        .clickable { roleFilter = key }
+                        .heightIn(min = 34.dp)
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                ) {
+                    Text(
+                        label,
+                        color = if (active) androidx.compose.ui.graphics.Color.White else palette.ink,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         }
 
@@ -122,9 +173,16 @@ fun ClassMembersGlossy(
                 Text(error!!, color = palette.muted, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
             } else if (members.isEmpty()) {
                 Text("No members yet.", color = palette.muted, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
+            } else if (visible.isEmpty()) {
+                Text(
+                    if (query.isEmpty()) "No members in this role." else "No member matches \"$search\".",
+                    color = palette.muted,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
             } else {
                 Column {
-                    members.forEachIndexed { index, member ->
+                    visible.forEachIndexed { index, member ->
                         if (index > 0) {
                             Box(
                                 modifier = Modifier

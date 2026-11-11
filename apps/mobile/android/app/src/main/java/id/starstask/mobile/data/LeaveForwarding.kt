@@ -179,6 +179,45 @@ fun generateLeaveSummaryPdf(
     return stream.toByteArray()
 }
 
+private fun embedPdfEvidence(
+    document: PdfDocument,
+    bytes: ByteArray,
+    writer: PageWriter,
+    row: LeaveReportRow,
+    filename: String,
+): Boolean = runCatching {
+    val pfd = android.os.ParcelFileDescriptor.createPipe()
+    // ParcelFileDescriptor has no direct in-memory read; render via temp file instead.
+    val tmp = java.io.File.createTempFile("leave-evidence-", ".pdf")
+    tmp.writeBytes(bytes)
+    val fd = android.os.ParcelFileDescriptor.open(tmp, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
+    val renderer = android.graphics.pdf.PdfRenderer(fd)
+    writer.finish()
+    for (pageIndex in 0 until renderer.pageCount) {
+        val src = renderer.openPage(pageIndex)
+        val info = PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageIndex + 1).create()
+        val page = document.startPage(info)
+        val bitmap = android.graphics.Bitmap.createBitmap(src.width * 2, src.height * 2, android.graphics.Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(android.graphics.Color.WHITE)
+        src.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        val paint = Paint().apply { textSize = 11f; isFakeBoldText = true }
+        page.canvas.drawText("${row.reference} · ${row.studentName} · $filename · page ${pageIndex + 1}", MARGIN.toFloat(), (MARGIN + 10).toFloat(), paint)
+        val maxW = (PAGE_W - 2 * MARGIN).toFloat()
+        val maxH = (PAGE_H - 3 * MARGIN).toFloat()
+        val scale = minOf(maxW / bitmap.width, maxH / bitmap.height)
+        val w = bitmap.width * scale
+        val h = bitmap.height * scale
+        page.canvas.drawBitmap(bitmap, (PAGE_W - w) / 2, (PAGE_H - h) / 2, null)
+        document.finishPage(page)
+        src.close()
+        bitmap.recycle()
+    }
+    renderer.close()
+    fd.close()
+    tmp.delete()
+    true
+}.getOrDefault(false)
+
 data class CompletePdfResult(val bytes: ByteArray, val missing: List<String>)
 
 /** Complete package: table + evidence image pages; unreadable/PDF files listed as missing. */
@@ -217,6 +256,11 @@ fun generateLeaveCompletePdf(
     var attachedCount = 0
     rows.forEach { row ->
         (evidenceByRequest[row.id] ?: emptyList()).forEach { (filename, bytes) ->
+            val isPdf = bytes != null && bytes.size >= 5 && bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() && bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte()
+            if (bytes != null && isPdf && embedPdfEvidence(document, bytes, writer, row, filename)) {
+                attachedCount++
+                return@forEach
+            }
             val bitmap = bytes?.let { runCatching { BitmapFactory.decodeByteArray(it, 0, it.size) }.getOrNull() }
             if (bitmap == null) {
                 missing += "${row.reference} · $filename"

@@ -1,5 +1,7 @@
 package id.starstask.mobile.data
 
+import id.starstask.mobile.BuildConfig
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.contentOrNull
@@ -10,7 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 // Assignments, sessions, official events, personal events, absences and the
 // weekly timetable are read from their own tables — never copied — so an
 // edit upstream is reflected here immediately. Calendar keys are
-// Asia/Jakarta dates; UTC instants are only compared, never rendered, in
+// Device-zone dates; UTC instants are only compared, never rendered, in
 // the device zone.
 
 private val LEAVE_REASON_LABELS = mapOf(
@@ -97,7 +99,7 @@ suspend fun listCalendar(
 ): CalendarLoaded {
     val range = buildCalendarRange(view, anchorKey)
     val scope = getWorkspaceScope(userId)
-    val today = jakartaTodayKey()
+    val today = deviceTodayKey()
     val db = SupabaseProvider.client.postgrest
 
     val classLookup = scope.classes.associateBy { it.id }
@@ -206,8 +208,8 @@ suspend fun listCalendar(
         CalendarAssignmentBar(
             id = id,
             title = row["title"]?.jsonPrimitive?.contentOrNull() ?: "Assignment",
-            startKey = toJakartaDateKey(createdAt),
-            endKey = toJakartaDateKey(deadline),
+            startKey = toDeviceDateKey(createdAt),
+            endKey = toDeviceDateKey(deadline),
             classId = row["class_id"]?.jsonPrimitive?.contentOrNull(),
             className = row["class_id"]?.jsonPrimitive?.contentOrNull()?.let { classLookup[it]?.name },
             courseKey = subject?.third ?: row["course_id"]?.jsonPrimitive?.contentOrNull() ?: subjectId,
@@ -258,8 +260,8 @@ suspend fun listCalendar(
                 id = "session:$id",
                 kind = "class_schedule",
                 title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Session",
-                startKey = toJakartaDateKey(startsAt),
-                endKey = endsAt?.let { toJakartaDateKey(it) } ?: toJakartaDateKey(startsAt),
+                startKey = toDeviceDateKey(startsAt),
+                endKey = endsAt?.let { toDeviceDateKey(it) } ?: toDeviceDateKey(startsAt),
                 startsAtIso = startsAt,
                 endsAtIso = endsAt,
                 location = obj["location"]?.jsonPrimitive?.contentOrNull(),
@@ -306,8 +308,8 @@ suspend fun listCalendar(
             id = "official:$id",
             kind = eventType,
             title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Event",
-            startKey = toJakartaDateKey(startsAt),
-            endKey = endsAt?.let { toJakartaDateKey(it) } ?: toJakartaDateKey(startsAt),
+            startKey = toDeviceDateKey(startsAt),
+            endKey = endsAt?.let { toDeviceDateKey(it) } ?: toDeviceDateKey(startsAt),
             startsAtIso = startsAt,
             endsAtIso = endsAt,
             description = obj["description"]?.jsonPrimitive?.contentOrNull(),
@@ -352,8 +354,8 @@ suspend fun listCalendar(
             id = "personal:$id",
             kind = "personal",
             title = obj["title"]?.jsonPrimitive?.contentOrNull() ?: "Personal event",
-            startKey = toJakartaDateKey(startsAt),
-            endKey = endsAt?.let { toJakartaDateKey(it) } ?: toJakartaDateKey(startsAt),
+            startKey = toDeviceDateKey(startsAt),
+            endKey = endsAt?.let { toDeviceDateKey(it) } ?: toDeviceDateKey(startsAt),
             startsAtIso = startsAt,
             endsAtIso = endsAt,
             description = obj["description"]?.jsonPrimitive?.contentOrNull(),
@@ -390,8 +392,8 @@ suspend fun listCalendar(
                 title = reason?.let { "Absence · $it" } ?: "Absence",
                 startKey = startDate,
                 endKey = spanEnd,
-                startsAtIso = "${startDate}T00:00:00$JAKARTA_OFFSET",
-                endsAtIso = "${spanEnd}T23:59:59$JAKARTA_OFFSET",
+                startsAtIso = dayBoundaryIso(startDate),
+                endsAtIso = dayBoundaryIso(spanEnd, inclusiveEndOfDay = true),
                 description = obj["reference"]?.jsonPrimitive?.contentOrNull(),
                 owner = "absence",
                 status = if (obj["status"]?.jsonPrimitive?.contentOrNull() == "cancelled") "cancelled" else "published",
@@ -451,4 +453,59 @@ suspend fun listCalendar(
         storageReady = storageReady,
         todayKey = today,
     )
+}
+
+/**
+ * Pushes one discussion session into the caller's Google Calendar via the web
+ * API (`POST /api/sessions/{id}/calendar-sync`, bearer auth). Server-side it
+ * validates the session is viewable by the caller, refreshes the stored
+ * access token if needed, inserts/updates the event and records the mapping.
+ * Native never sees refresh/access tokens.
+ */
+sealed class CalendarSyncResult {
+    data class Synced(val eventId: String?) : CalendarSyncResult()
+    data object Removed : CalendarSyncResult()
+    data class Failed(val message: String) : CalendarSyncResult()
+}
+
+suspend fun syncSessionToGoogleCalendar(sessionId: String): CalendarSyncResult {
+    val token = runCatching { SupabaseProvider.client.auth.currentSessionOrNull()?.accessToken }.getOrNull()
+        ?: return CalendarSyncResult.Failed("Sign in to sync.")
+    val baseUrl = BuildConfig.SITE_URL.trimEnd('/')
+    if (baseUrl.isBlank() || baseUrl.contains("localhost") || baseUrl.contains("your-site-url")) {
+        return CalendarSyncResult.Failed("Site URL not configured — set starstask.site.url in local.properties.")
+    }
+    val url = java.net.URL("$baseUrl/api/sessions/$sessionId/calendar-sync")
+    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+        connectTimeout = 15_000
+        readTimeout = 60_000
+        requestMethod = "POST"
+        setRequestProperty("Authorization", "Bearer $token")
+        setRequestProperty("Accept", "application/json")
+        doOutput = true
+        outputStream.close()
+    }
+    val status = try {
+        conn.responseCode
+    } catch (_: java.io.IOException) {
+        conn.disconnect()
+        return CalendarSyncResult.Failed("Calendar is not reachable. Try again shortly.")
+    }
+    return try {
+        if (status == java.net.HttpURLConnection.HTTP_OK) {
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            val eventId = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject["eventId"]?.jsonPrimitive?.content }.getOrNull()
+            CalendarSyncResult.Synced(eventId)
+        } else {
+            val body = runCatching { conn.errorStream?.bufferedReader()?.use { it.readText() } }.getOrNull().orEmpty()
+            val message = when {
+                "not_connected" in body || "calendar_not_connected" in body -> "Connect Google Calendar first in Settings."
+                "reconnect" in body || "revoked" in body -> "Google Calendar access was revoked — reconnect in Settings."
+                else -> "Google Calendar sync failed. Try again."
+            }
+            CalendarSyncResult.Failed(message)
+        }
+    } finally {
+        conn.disconnect()
+    }
 }

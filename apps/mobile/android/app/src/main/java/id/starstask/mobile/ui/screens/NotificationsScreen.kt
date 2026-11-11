@@ -1,5 +1,6 @@
 package id.starstask.mobile.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,11 +18,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.data.NotificationRow
 import id.starstask.mobile.data.loadNotifications
+import id.starstask.mobile.data.markNotificationRead
+import kotlinx.coroutines.launch
 import id.starstask.mobile.ui.theme.Accent
 import id.starstask.mobile.ui.theme.Foreground
 import id.starstask.mobile.ui.theme.MutedForeground
@@ -45,12 +49,28 @@ fun NotificationsScreen() {
         }
     }
 
+    val scope = rememberCoroutineScope()
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Notifications", style = MaterialTheme.typography.headlineSmall, color = Foreground)
         if (error != null) Text(error!!, color = Foreground)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(rows, key = { it.id }) { notification ->
-                Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val id = notification.id
+                            if (rows.firstOrNull { it.id == id }?.readAt == null) {
+                                rows = rows.map { if (it.id == id) it.copy(readAt = "now") else it }
+                                scope.launch {
+                                    runCatching { markNotificationRead(id) }
+                                }
+                            }
+                        },
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(notification.title, color = Foreground)
                         if (notification.body.isNotEmpty()) {

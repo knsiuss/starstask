@@ -1,6 +1,6 @@
 package id.starstask.mobile.ui.screens.classdir
 
-// Absence tab (class detail). Admin: create-session card, active meetings,
+// Attendance tab (class detail). Admin: create-session card, active meetings,
 // quick actions (Attendance detail / Manage sessions / Absence requests),
 // pending leave review inbox, all in the web workspace layout. Member: own
 // recap scoped to this class, check-in for active meetings, recent history.

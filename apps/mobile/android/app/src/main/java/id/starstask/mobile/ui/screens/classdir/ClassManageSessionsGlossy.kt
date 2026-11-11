@@ -72,7 +72,7 @@ fun ClassManageSessionsGlossy(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (error != null) WebAlert(message = error!!)
             if (meetings.isEmpty()) {
-                Text("No attendance meetings yet. Create one from the Absence tab.", color = palette.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+                Text("No attendance meetings yet. Create one from the Attendance tab.", color = palette.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
             }
             meetings.forEach { meeting ->
                 MeetingManageRow(

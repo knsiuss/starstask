@@ -31,7 +31,7 @@ val ASSIGNMENT_SORT_LABELS = mapOf(
     "deadline" to "Deadline",
 )
 
-// Calendar days (Asia/Jakarta) that count as "due soon" on the course overview.
+// Calendar days (device timezone) that count as "due soon" on the course overview.
 const val UPCOMING_DUE_SOON_DAYS = 3
 
 data class ExploreAssignment(

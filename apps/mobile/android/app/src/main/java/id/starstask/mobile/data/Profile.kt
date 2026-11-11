@@ -9,6 +9,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Native profile data layer, mirroring the web profile implementation.
@@ -370,5 +372,107 @@ private fun friendlyProfileError(error: Exception): String {
         "network" in message.lowercase() || "failed to connect" in message.lowercase() ->
             "Network error. Check your connection and try again."
         else -> "Could not save your profile. Try again."
+    }
+}
+
+// --- Onboarding (recovery path for accounts that never finished it) ---
+//
+// Mirrors web `saveOnboardingProfile` / POST /api/profile/onboarding:
+// `update_my_profile` writes the whole row (name, nickname, nim, university,
+// class text); `join_class_by_name` turns the typed class name into ordinary
+// membership when policy allows. Identity comes from the session.
+
+data class ClassJoinResult(val status: String, val className: String? = null)
+
+data class OnboardingSaveOutcome(
+    val profile: MyProfile? = null,
+    val classJoin: ClassJoinResult? = null,
+    val fieldErrors: Map<String, String> = emptyMap(),
+    val message: String? = null,
+    val succeeded: Boolean = false,
+)
+
+/** Mirrors contracts profileOnboardingSchema (contracts/src/profile.ts). */
+fun validateProfileOnboarding(
+    fullName: String,
+    nickname: String,
+    nim: String,
+    university: String,
+    className: String,
+): Map<String, String> {
+    val errors = mutableMapOf<String, String>()
+    val name = fullName.trim()
+    val nick = nickname.trim()
+    val id = nim.trim()
+    val school = university.trim()
+    val klass = className.trim()
+
+    if (name.length < 2) errors["fullName"] = "Full name must be at least 2 characters"
+    if (name.length > PROFILE_FULL_NAME_MAX) errors["fullName"] = "Full name must be $PROFILE_FULL_NAME_MAX characters or fewer"
+    if (nick.length < 2) errors["nickname"] = "Nickname must be at least 2 characters"
+    if (nick.length > PROFILE_NICKNAME_MAX) errors["nickname"] = "Nickname must be $PROFILE_NICKNAME_MAX characters or fewer"
+    if (id.length < 3) errors["nim"] = "Enter your NIM"
+    if (id.length > 32) errors["nim"] = "NIM must be 32 characters or fewer"
+    if (!Regex("^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$").matches(id)) {
+        errors["nim"] = "Use letters, digits, dot, underscore, or hyphen"
+    }
+    if (school.length < 2) errors["university"] = "Enter your university"
+    if (school.length > 120) errors["university"] = "University must be 120 characters or fewer"
+    if (klass.length > 60) errors["className"] = "Class name must be 60 characters or fewer"
+    return errors
+}
+
+suspend fun joinClassByName(rawClassName: String): ClassJoinResult {
+    val trimmed = rawClassName.trim()
+    if (trimmed.isEmpty()) return ClassJoinResult(status = "no_match")
+    val result = SupabaseProvider.client.postgrest.rpc(
+        "join_class_by_name",
+        kotlinx.serialization.json.buildJsonObject { put("p_class_name", trimmed) },
+    )
+    val obj = runCatching { result.decodeJsonObject() }.getOrNull()
+        ?: return ClassJoinResult(status = "error")
+    val status = obj["status"]?.jsonPrimitive?.contentOrNull() ?: "error"
+    val name = obj["name"]?.jsonPrimitive?.contentOrNull()
+    return ClassJoinResult(status = status, className = name)
+}
+
+suspend fun saveOnboardingProfile(
+    fullName: String,
+    nickname: String,
+    nim: String,
+    university: String,
+    className: String,
+): OnboardingSaveOutcome {
+    val errors = validateProfileOnboarding(fullName, nickname, nim, university, className)
+    if (errors.isNotEmpty()) return OnboardingSaveOutcome(fieldErrors = errors)
+
+    val db = SupabaseProvider.client.postgrest
+    return try {
+        db.rpc(
+            "update_my_profile",
+            kotlinx.serialization.json.buildJsonObject {
+                put("p_full_name", fullName.trim())
+                put("p_nickname", nickname.trim())
+                put("p_nim", nim.trim())
+                put("p_university", university.trim())
+                put("p_declared_class", className.trim().takeIf { it.isNotEmpty() }?.let { JsonPrimitive(it) } ?: JsonNull)
+            },
+        )
+        val join = if (className.trim().isNotEmpty()) {
+            runCatching { joinClassByName(className) }
+                .getOrElse { ClassJoinResult(status = "error") }
+        } else {
+            null
+        }
+        val refreshed = loadMyProfile()
+        OnboardingSaveOutcome(profile = refreshed, classJoin = join, succeeded = true)
+    } catch (e: Exception) {
+        val message = e.message?.lowercase().orEmpty()
+        val outcome = if ("23505" in message || ("nim" in message && "unique" in message)) {
+            OnboardingSaveOutcome(fieldErrors = mapOf("nim" to "That NIM is already registered."))
+        } else {
+            OnboardingSaveOutcome(message = friendlyProfileError(e))
+        }
+        outcome
     }
 }

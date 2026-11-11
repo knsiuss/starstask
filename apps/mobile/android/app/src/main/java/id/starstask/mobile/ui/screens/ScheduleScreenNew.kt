@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import id.starstask.mobile.data.CalendarAssignmentBar
 import id.starstask.mobile.data.CalendarLoaded
 import id.starstask.mobile.data.CalendarTimelineItem
@@ -42,8 +44,10 @@ import id.starstask.mobile.data.buildCalendarRange
 import id.starstask.mobile.data.formatDayLabel
 import id.starstask.mobile.data.formatMonthLabel
 import id.starstask.mobile.data.formatShortDayMonth
-import id.starstask.mobile.data.jakartaTodayKey
+import id.starstask.mobile.data.deviceTodayKey
 import id.starstask.mobile.data.listCalendar
+import id.starstask.mobile.data.syncSessionToGoogleCalendar
+import id.starstask.mobile.data.CalendarSyncResult
 import id.starstask.mobile.data.shiftCalendarAnchor
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.icons.Lucide
@@ -86,7 +90,7 @@ fun ScheduleScreen(
     onViewAllAssignments: (() -> Unit)? = null,
 ) {
     var mode by remember { mutableStateOf(ScheduleMode.WEEK) }
-    var anchorKey by remember { mutableStateOf(jakartaTodayKey()) }
+    var anchorKey by remember { mutableStateOf(deviceTodayKey()) }
     var showHistory by remember { mutableStateOf(false) }
     var typeFilter by remember { mutableStateOf("all") }
     var mineOnly by remember { mutableStateOf(false) }
@@ -129,7 +133,7 @@ fun ScheduleScreen(
 
     val data = loaded
     val range = buildCalendarRange(view, anchorKey)
-    val todayKey = data?.todayKey ?: jakartaTodayKey()
+    val todayKey = data?.todayKey ?: deviceTodayKey()
     val scope = data?.scope
     val items = data?.items.orEmpty()
     val assignments = data?.assignments.orEmpty()
@@ -250,7 +254,7 @@ fun ScheduleScreen(
                 rangeLabel = rangeLabel,
                 onPrevious = { anchorKey = shiftCalendarAnchor(view, anchorKey, -1) },
                 onNext = { anchorKey = shiftCalendarAnchor(view, anchorKey, 1) },
-                onToday = { anchorKey = jakartaTodayKey() },
+                onToday = { anchorKey = deviceTodayKey() },
                 showHistory = showHistory,
                 onToggleHistory = { showHistory = !showHistory },
             )
@@ -356,7 +360,7 @@ fun ScheduleScreen(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        "All times in Asia/Jakarta (WIB).",
+                        "All times in your device timezone.",
                         color = AssignmentSecondary,
                         fontSize = 13.sp,
                         modifier = Modifier.weight(1f),
@@ -368,6 +372,14 @@ fun ScheduleScreen(
                 Box(modifier = Modifier.size(height = 96.dp, width = 0.dp))
             }
         }
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+    var syncNotice by remember { mutableStateOf<String?>(null) }
+    var syncBusy by remember { mutableStateOf(false) }
+    if (syncNotice != null && detailItem == null) {
+        id.starstask.mobile.ui.components.WebAlert(message = syncNotice!!)
+        syncNotice = null
     }
 
     detailItem?.let { item ->
@@ -386,6 +398,22 @@ fun ScheduleScreen(
                 if (onOpenSession != null) onOpenSession(item.sourceId)
                 detailItem = null
             },
+            onSyncToCalendar = if (item.kind == "class_schedule" && item.owner == "official" && item.id.startsWith("session:")) {
+                {
+                    if (syncBusy) return@EventDetailSheet
+                    syncBusy = true
+                    syncNotice = null
+                    coroutineScope.launch {
+                        val result = syncSessionToGoogleCalendar(item.sourceId)
+                        syncNotice = when (result) {
+                            is CalendarSyncResult.Synced -> "Session added to Google Calendar."
+                            CalendarSyncResult.Removed -> "Removed from Google Calendar."
+                            is CalendarSyncResult.Failed -> result.message
+                        }
+                        syncBusy = false
+                    }
+                }
+            } else null,
             onLeaveClick = {
                 if (onOpenLeave != null) onOpenLeave(item.sourceId)
                 detailItem = null

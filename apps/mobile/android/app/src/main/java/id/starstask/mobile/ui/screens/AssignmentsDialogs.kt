@@ -136,7 +136,7 @@ fun CreateAssignmentDialog(
         if (deadlineDate.isBlank()) "" else {
             val time = deadlineTime.ifBlank { DEADLINE_DEFAULT_TIME }
             val local = java.time.LocalDateTime.parse("$deadlineDate" + "T" + time)
-            local.atZone(java.time.ZoneId.of("Asia/Jakarta")).toOffsetDateTime().toString()
+            local.atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime().toString()
         }
     }
 
@@ -145,7 +145,7 @@ fun CreateAssignmentDialog(
             val p = deadlineDate.split("-")
             Triple(p[0].toIntOrNull() ?: 2026, (p.getOrNull(1)?.toIntOrNull() ?: 1) - 1, p.getOrNull(2)?.toIntOrNull() ?: 1)
         } else {
-            val now = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta"))
+            val now = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
             Triple(now.year, now.monthValue - 1, now.dayOfMonth)
         }
         DatePickerDialog(context, { _, yy, mm, dd -> deadlineDate = "%04d-%02d-%02d".format(yy, mm + 1, dd) }, y, m, d).show()
@@ -342,7 +342,7 @@ fun CreateAssignmentDialog(
                                 )
                             }
                             Text(
-                                "If you only pick a date, the deadline is $DEADLINE_DEFAULT_TIME (Asia/Jakarta).",
+                                "If you only pick a date, the deadline is $DEADLINE_DEFAULT_TIME (device timezone).",
                                 color = MutedForeground,
                                 style = MaterialTheme.typography.labelSmall,
                             )

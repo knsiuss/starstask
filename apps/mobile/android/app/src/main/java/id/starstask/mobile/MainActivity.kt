@@ -21,7 +21,9 @@ import id.starstask.mobile.data.capturePosition
 import id.starstask.mobile.data.checkInToSession
 import id.starstask.mobile.data.ensureReminderChannel
 import id.starstask.mobile.data.hasLocationPermission
+import id.starstask.mobile.data.loadMyProfile
 import id.starstask.mobile.data.permissionsOnboardingSeenFlow
+import id.starstask.mobile.ui.screens.ProfileOnboardingScreen
 import id.starstask.mobile.data.queueOfflineCheckin
 import id.starstask.mobile.data.setPermissionsOnboardingSeen
 import id.starstask.mobile.data.syncPushRegistration
@@ -45,10 +47,13 @@ import kotlinx.coroutines.launch
  * `starstask://auth/callback` deep link (handled in onCreate/onNewIntent).
  */
 class MainActivity : ComponentActivity() {
+    val pendingPushUrl = androidx.compose.runtime.mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SupabaseProvider.client.handleDeeplinks(intent)
         ensureReminderChannel(this)
+        pendingPushUrl.value = intent.getStringExtra(StarsTaskMessagingService.EXTRA_PUSH_URL)
         enableEdgeToEdge()
         setContent {
             val systemDark = isSystemInDarkTheme()
@@ -60,7 +65,8 @@ class MainActivity : ComponentActivity() {
                 else -> systemDark
             }
             StarsTaskTheme(darkTheme = darkTheme) {
-                StarsTaskApp()
+                val activity = this@MainActivity
+                StarsTaskApp(pendingPushUrl = activity.pendingPushUrl)
             }
         }
     }
@@ -68,11 +74,13 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         SupabaseProvider.client.handleDeeplinks(intent)
+        setIntent(intent)
+        pendingPushUrl.value = intent.getStringExtra(StarsTaskMessagingService.EXTRA_PUSH_URL)
     }
 }
 
 @Composable
-fun StarsTaskApp() {
+fun StarsTaskApp(pendingPushUrl: androidx.compose.runtime.MutableState<String?>) {
     val auth = remember { SupabaseProvider.client.auth }
     val sessionStatus by auth.sessionStatus.collectAsState(initial = SessionStatus.Initializing)
     val session = (sessionStatus as? SessionStatus.Authenticated)?.session
@@ -84,6 +92,23 @@ fun StarsTaskApp() {
 
     val onboardingSeenFlowLocal = androidx.compose.runtime.remember { permissionsOnboardingSeenFlow(context) }
     val onboardingSeen by onboardingSeenFlowLocal.collectAsState(initial = null)
+    var profileReady by androidx.compose.runtime.mutableStateOf<Boolean?>(null)
+
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            profileReady = null
+            // Never let the gate hang: any load failure is treated as
+            // "not onboarded" and surfaces the recovery form instead of a
+            // permanent splash.
+            profileReady = runCatching {
+                kotlinx.coroutines.withTimeout(8_000) {
+                    loadMyProfile()?.onboardedAt?.isNotBlank() == true
+                }
+            }.getOrDefault(false)
+        } else {
+            profileReady = null
+        }
+    }
 
     // Retry offline check-ins whenever the app foregrounds.
     LaunchedEffect(userId) {
@@ -119,11 +144,18 @@ fun StarsTaskApp() {
         return
     }
 
-    // Onboarding flag still loading — hold the splash instead of flashing
-    // the dashboard for a brand-new install.
+    val pushUrl = pendingPushUrl.value
+
+    // Onboarding flags still loading — hold the splash briefly, then let
+    // whatever is available decide: timeout path marks profileReady=false.
     val onboardingSeenState = onboardingSeen
     if (onboardingSeenState == null) {
-        SplashScreen(onExit = {})
+        SplashScreen(onExit = { showSplash = true })
+        return
+    }
+
+    if (profileReady == false) {
+        ProfileOnboardingScreen(userId = userId, email = userEmail, onDone = { profileReady = true })
         return
     }
 
@@ -141,6 +173,8 @@ fun StarsTaskApp() {
         userId = userId,
         userEmail = userEmail,
         memberSince = memberSince,
+        pushUrl = pushUrl,
+        onPushUrlConsumed = { pendingPushUrl.value = null },
         onCheckIn = { sessionId ->
             scope.launch { checkIn(context, sessionId, userId) }
         },

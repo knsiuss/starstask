@@ -1,6 +1,6 @@
 package id.starstask.mobile.data
 
-// Translation of @starstask/shared format.ts + deadline.ts (Asia/Jakarta).
+// Translation of @starstask/shared format.ts + deadline.ts (device timezone).
 
 fun excerpt(text: String, maxLength: Int = 180): String {
     val normalized = text.replace(Regex("\\s+"), " ").trim()
@@ -29,7 +29,7 @@ fun getDeadlineState(
         } catch (_: Exception) {
             try {
                 java.time.LocalDateTime.parse(deadline)
-                    .atZone(java.time.ZoneId.of("Asia/Jakarta"))
+                    .atZone(java.time.ZoneId.systemDefault())
                     .toInstant()
             } catch (_: Exception) {
                 return DeadlineState.NONE
@@ -37,7 +37,7 @@ fun getDeadlineState(
         }
     }
     if (!instant.isAfter(now)) return DeadlineState.OVERDUE
-    val zone = java.time.ZoneId.of("Asia/Jakarta")
+    val zone = java.time.ZoneId.systemDefault()
     return if (instant.atZone(zone).toLocalDate() == now.atZone(zone).toLocalDate()) {
         DeadlineState.DUE_TODAY
     } else {
@@ -56,13 +56,13 @@ fun deadlineStateLabel(state: DeadlineState): String =
 fun formatDeadline(deadline: String): String =
     try {
         val zoned = java.time.OffsetDateTime.parse(deadline)
-            .atZoneSameInstant(java.time.ZoneId.of("Asia/Jakarta"))
-        "${zoned.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))} WIB"
+            .atZoneSameInstant(java.time.ZoneId.systemDefault())
+        "${zoned.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))} ${zoned.zone.id}"
     } catch (_: Exception) {
         try {
             val local = java.time.LocalDateTime.parse(deadline)
-                .atZone(java.time.ZoneId.of("Asia/Jakarta"))
-            "${local.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))} WIB"
+                .atZone(java.time.ZoneId.systemDefault())
+            "${local.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))} ${local.zone.id}"
         } catch (_: Exception) {
             deadline.take(16)
         }
@@ -72,7 +72,7 @@ fun formatCreatedDate(iso: String?): String {
     if (iso.isNullOrBlank()) return ""
     return try {
         java.time.OffsetDateTime.parse(iso)
-            .atZoneSameInstant(java.time.ZoneId.of("Asia/Jakarta"))
+            .atZoneSameInstant(java.time.ZoneId.systemDefault())
             .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy"))
     } catch (_: Exception) {
         iso.take(10)

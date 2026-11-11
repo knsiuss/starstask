@@ -171,7 +171,7 @@ fun ClassSetScheduleSheet(
                         busy = true
                         error = null
                         try {
-                            val zone = java.time.ZoneId.of("Asia/Jakarta")
+                            val zone = java.time.ZoneId.systemDefault()
                             val start = java.time.LocalDateTime.parse("${dateText}T$startTime").atZone(zone).toInstant().toString()
                             val end = java.time.LocalDateTime.parse("${dateText}T$endTime").atZone(zone).toInstant().toString()
                             createSession(clazzId, title.trim(), start, end)

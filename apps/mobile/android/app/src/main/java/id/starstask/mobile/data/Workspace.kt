@@ -16,7 +16,7 @@ import kotlinx.serialization.json.put
 // Native mirror of Web workspace (/assignments):
 // - apps/web/src/lib/db/assignment-workspace.ts
 // - apps/web/src/lib/assignments/workspace.ts
-// - @starstask/shared deadline helpers (Asia/Jakarta WIB).
+// - @starstask/shared deadline helpers (device timezone).
 // Pure helpers are pinned to Web semantics: deadlineUrgency compares
 // instants, sorting is lexicographic on ISO strings, overview counts only
 // published rows that carry a deadline.

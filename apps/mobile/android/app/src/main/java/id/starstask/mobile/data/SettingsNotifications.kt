@@ -14,7 +14,7 @@ import kotlinx.serialization.json.put
 // listPushDevices, deletePushDevice. Web push subscription (VAPID) is browser-only,
 // so native shows read-only device info + preference toggles.
 
-const val DEFAULT_NOTIFICATION_TIMEZONE = "Asia/Jakarta"
+val DEFAULT_NOTIFICATION_TIMEZONE: String get() = DEVICE_ZONE.id
 
 data class NotificationPreferences(
     val pushEnabled: Boolean = false,

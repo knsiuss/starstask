@@ -224,8 +224,8 @@ fun ActionCenterScreen(
             modifier = Modifier.padding(bottom = 2.dp),
         )
         Text("Action center", style = MaterialTheme.typography.headlineMedium, color = Foreground, modifier = Modifier.padding(bottom = 2.dp))
-        val summaryText = center?.let { buildActionSummary(it.totals) + " Today's sessions are counted in Asia/Jakarta time." }
-            ?: "Everything waiting on you across the classes you lead. Today's sessions are counted in Asia/Jakarta time."
+        val summaryText = center?.let { buildActionSummary(it.totals) + " Today's sessions are counted in your local time." }
+            ?: "Everything waiting on you across the classes you lead. Today's sessions are counted in your local time."
         Text(summaryText, color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = Spacing.Md))
 
         when {

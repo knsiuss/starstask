@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.R
@@ -166,11 +165,7 @@ fun WelcomeScreen(
                     .padding(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_mark),
-                    contentDescription = null,
-                    modifier = Modifier.size(112.dp),
-                )
+                id.starstask.mobile.ui.components.BrandWordmark(heightDp = 84, onDark = false)
             }
 
             Spacer(Modifier.height(Spacing.Section))

@@ -29,7 +29,7 @@ data class NotificationPrefs(
     val reminder3h: Boolean = true,
     val sessionReminder24h: Boolean = true,
     val sessionReminder3h: Boolean = true,
-    val timezone: String = "Asia/Jakarta",
+    val timezone: String = DEVICE_ZONE.id,
 )
 
 private const val PREFS_COLUMNS =
@@ -49,7 +49,7 @@ suspend fun loadNotificationPrefs(userId: String): NotificationPrefs {
         reminder3h = bool("reminder_3h", true),
         sessionReminder24h = bool("session_reminder_24h", true),
         sessionReminder3h = bool("session_reminder_3h", true),
-        timezone = row["timezone"]?.jsonPrimitive?.contentOrNull() ?: "Asia/Jakarta",
+        timezone = row["timezone"]?.jsonPrimitive?.contentOrNull() ?: DEVICE_ZONE.id,
     )
 }
 

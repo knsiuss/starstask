@@ -8,11 +8,22 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** Calendar date logic, ported from packages/shared/src/calendar.ts. */
-val JAKARTA_ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
-const val JAKARTA_OFFSET = "+07:00"
-const val CALENDAR_TZ = "Asia/Jakarta"
+/** All rendering/computation follows the device's zone (system default). */
+val DEVICE_ZONE: ZoneId = ZoneId.systemDefault()
+val CALENDAR_TZ: String get() = DEVICE_ZONE.id
 const val LIST_WINDOW_DAYS = 30
 const val EVENT_LIMIT = 500
+
+/** `dateKeyT00:00:00<offset>` or `dateKeyT23:59:59<offset>` in the device zone. */
+fun dayBoundaryIso(dateKey: String, inclusiveEndOfDay: Boolean = false): String {
+    val local = if (inclusiveEndOfDay) {
+        LocalDate.parse(dateKey).atTime(23, 59, 59)
+    } else {
+        LocalDate.parse(dateKey).atStartOfDay()
+    }
+    return local.atZone(DEVICE_ZONE).toOffsetDateTime()
+        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+}
 
 enum class CalendarView { MONTH, WEEK, DAY, LIST }
 
@@ -28,15 +39,21 @@ data class CalendarRange(
     val days: List<CalendarDayCell>,
 )
 
-/** `YYYY-MM-DD` for an instant in Asia/Jakarta, never the device zone. */
+/** `YYYY-MM-DD` for an instant in the device zone. */
+fun toDeviceDateKey(iso: String): String =
+    toJakartaDateKey(iso)
+
+@Deprecated("Use toDeviceDateKey; kept for call sites not yet migrated.")
 fun toJakartaDateKey(iso: String): String =
     try {
-        java.time.OffsetDateTime.parse(iso).atZoneSameInstant(JAKARTA_ZONE).toLocalDate().toString()
+        java.time.OffsetDateTime.parse(iso).atZoneSameInstant(DEVICE_ZONE).toLocalDate().toString()
     } catch (_: Exception) {
         iso.take(10)
     }
 
-fun jakartaTodayKey(): String = LocalDate.now(JAKARTA_ZONE).toString()
+fun deviceTodayKey(): String = LocalDate.now(DEVICE_ZONE).toString()
+
+fun jakartaTodayKey(): String = deviceTodayKey()
 
 fun parseDateKey(value: String): LocalDate? =
     try {
@@ -46,7 +63,7 @@ fun parseDateKey(value: String): LocalDate? =
     }
 
 fun addDaysToDateKey(value: String, delta: Int): String =
-    (parseDateKey(value) ?: LocalDate.now(JAKARTA_ZONE)).plusDays(delta.toLong()).toString()
+    (parseDateKey(value) ?: LocalDate.now(DEVICE_ZONE)).plusDays(delta.toLong()).toString()
 
 /** Monday of the week containing `value` (ISO weekday, Mon=1..Sun=7). */
 fun startOfWeekDateKey(value: String): String {
@@ -58,7 +75,7 @@ fun weekDayOfDateKey(value: String): Int = parseDateKey(value)?.dayOfWeek?.value
 
 /** Shifts the anchor one page: month / week (7d) / day / list window (30d). */
 fun shiftCalendarAnchor(view: CalendarView, anchorKey: String, delta: Int): String {
-    val date = parseDateKey(anchorKey) ?: LocalDate.now(JAKARTA_ZONE)
+    val date = parseDateKey(anchorKey) ?: LocalDate.now(DEVICE_ZONE)
     return when (view) {
         CalendarView.MONTH -> date.plusMonths(delta.toLong()).toString()
         CalendarView.WEEK -> date.plusDays(7L * delta).toString()
@@ -69,7 +86,7 @@ fun shiftCalendarAnchor(view: CalendarView, anchorKey: String, delta: Int): Stri
 
 /** Visible cells + half-open query window; month grids always render 42 cells. */
 fun buildCalendarRange(view: CalendarView, anchorKey: String): CalendarRange {
-    val anchor = parseDateKey(anchorKey) ?: LocalDate.now(JAKARTA_ZONE)
+    val anchor = parseDateKey(anchorKey) ?: LocalDate.now(DEVICE_ZONE)
     val anchorText = anchor.toString()
     val (startKey, dayCount, anchorMonth) = when (view) {
         CalendarView.MONTH -> {
@@ -92,8 +109,8 @@ fun buildCalendarRange(view: CalendarView, anchorKey: String): CalendarRange {
         anchorKey = anchorText,
         startKey = startKey,
         endKey = endKey,
-        fromIso = "${startKey}T00:00:00$JAKARTA_OFFSET",
-        toIso = "${dayAfterEnd}T00:00:00$JAKARTA_OFFSET",
+        fromIso = dayBoundaryIso(startKey),
+        toIso = dayBoundaryIso(dayAfterEnd),
         days = days,
     )
 }
@@ -119,33 +136,40 @@ fun formatShortDay(dateKey: String): String = parseDateKey(dateKey)?.format(SHOR
 
 fun formatShortDayMonth(dateKey: String): String = parseDateKey(dateKey)?.format(SHORT_DAY_MONTH) ?: dateKey
 
-/** `19:00` in Asia/Jakarta. */
+/** `19:00` in the device zone. */
 fun formatCalendarTime(iso: String): String =
     try {
         java.time.OffsetDateTime.parse(iso)
-            .atZoneSameInstant(JAKARTA_ZONE)
+            .atZoneSameInstant(DEVICE_ZONE)
             .toLocalTime()
             .format(TIME_LABEL)
     } catch (_: Exception) {
         "Invalid time"
     }
 
-/** Jakarta wall-clock date/time -> ISO instant (web `fromJakartaDateTimeInput`). */
+fun deviceLocalToInstantIso(dateKey: String, time: LocalTime): String =
+    jakartaLocalToInstantIso(dateKey, time)
+
+@Deprecated("Use deviceLocalToInstantIso; kept for call sites not yet migrated.")
 fun jakartaLocalToInstantIso(dateKey: String, time: LocalTime): String =
-    LocalDateTime.of(parseDateKey(dateKey) ?: LocalDate.now(JAKARTA_ZONE), time)
-        .atZone(JAKARTA_ZONE)
+    LocalDateTime.of(parseDateKey(dateKey) ?: LocalDate.now(DEVICE_ZONE), time)
+        .atZone(DEVICE_ZONE)
         .toInstant()
         .toString()
 
-/** Jakarta wall-clock of a stored instant, for prefilling the form. */
+/** Wall-clock of a stored instant in the device zone, for prefilling the form. */
+fun deviceLocalDateTime(iso: String): LocalDateTime =
+    jakartaLocalDateTime(iso)
+
+@Deprecated("Use deviceLocalDateTime; kept for call sites not yet migrated.")
 fun jakartaLocalDateTime(iso: String): LocalDateTime =
     try {
-        java.time.OffsetDateTime.parse(iso).atZoneSameInstant(JAKARTA_ZONE).toLocalDateTime()
+        java.time.OffsetDateTime.parse(iso).atZoneSameInstant(DEVICE_ZONE).toLocalDateTime()
     } catch (_: Exception) {
-        LocalDate.now(JAKARTA_ZONE).atStartOfDay()
+        LocalDate.now(DEVICE_ZONE).atStartOfDay()
     }
 
-/** `weekday` is ISO (1=Mon..7=Sun); times are Jakarta wall clock, no DST. */
+/** `weekday` is ISO (1=Mon..7=Sun); times are device-zone wall clock. */
 open class WeeklySlotEntry(
     open val dayOfWeek: Int,
     open val startTime: String,
@@ -168,10 +192,22 @@ fun <T : WeeklySlotEntry> expandWeeklyScheduleForDays(
             val start = entry.startTime.take(5)
             val end = entry.endTime.take(5)
             if (!timePattern.matches(start) || !timePattern.matches(end)) continue
-            occurrences += WeeklyOccurrence(entry, day, "${day}T${start}:00$JAKARTA_OFFSET", "${day}T${end}:00$JAKARTA_OFFSET")
+            occurrences += WeeklyOccurrence(entry, day, dayTimeIso(day, start), dayTimeIso(day, end))
         }
     }
     return occurrences
+}
+
+/** `dayT{HH:mm}:00<device-offset>` — the ISO marker used by weekly timetable occurrences. */
+fun dayTimeIso(dateKey: String, timeHHmm: String): String {
+    val time = try {
+        LocalTime.parse(timeHHmm)
+    } catch (_: Exception) {
+        LocalTime.MIDNIGHT
+    }
+    return LocalDate.parse(dateKey).atTime(time)
+        .atZone(DEVICE_ZONE).toOffsetDateTime()
+        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 }
 
 /** Date-only span overlap, inclusive keys (shared/calendar.ts). */

@@ -111,7 +111,7 @@ suspend fun getClassActionCenter(scope: WorkspaceScope): ActionCenter? {
     val classIds = managed.map { it.id }
     val db = SupabaseProvider.client.postgrest
     val now = java.time.Instant.now()
-    val zone = java.time.ZoneId.of("Asia/Jakarta")
+    val zone = DEVICE_ZONE
     val today = now.atZone(zone).toLocalDate()
     val fromIso = today.atStartOfDay(zone).toInstant().toString()
     val toIso = today.plusDays(1).atStartOfDay(zone).toInstant().toString()

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.AttendanceMeeting
 import id.starstask.mobile.data.MeetingFailure
 import id.starstask.mobile.data.MeetingRosterEntry
+import id.starstask.mobile.data.changeAttendanceMeetingLocation
 import id.starstask.mobile.data.closeAttendanceMeeting
 import id.starstask.mobile.data.loadMeetingFailures
 import id.starstask.mobile.data.loadMeetingRoster
@@ -68,6 +69,7 @@ fun ClassMeetingDetailGlossy(
     var actionError by remember { mutableStateOf<String?>(null) }
     var finalizeConfirmOpen by remember { mutableStateOf(false) }
     var correctionFor by remember { mutableStateOf<MeetingRosterEntry?>(null) }
+    var locationEditOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val meeting by produceState(initialValue = null as AttendanceMeeting?, key1 = classId, key2 = sessionId, key3 = reloadTick) {
@@ -101,6 +103,17 @@ fun ClassMeetingDetailGlossy(
                         StatTile(label = "NR", value = current.notRecorded.toString(), palette = palette, modifier = Modifier.weight(1f))
                     }
 
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(current.location ?: "Location not set", color = palette.ink, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("Radius ${current.radiusM} m", color = palette.muted, fontSize = 11.sp)
+                        }
+                        if (isAdmin) {
+                            TextButton(onClick = { locationEditOpen = true }) {
+                                Text("Change", color = palette.accent, fontSize = 13.sp)
+                            }
+                        }
+                    }
                     if (isAdmin) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             when (current.phase) {
@@ -152,6 +165,27 @@ fun ClassMeetingDetailGlossy(
                 }
             }
         }
+    }
+
+    if (locationEditOpen) {
+        LocationChangeDialog(
+            onDismiss = { locationEditOpen = false },
+            onChange = { lat, lng, radius, reason ->
+                scope.launch {
+                    actionBusy = true
+                    actionError = null
+                    val err = changeAttendanceMeetingLocation(sessionId, lat, lng, radius, reason)
+                    if (err != null) {
+                        actionError = err
+                    } else {
+                        locationEditOpen = false
+                        reloadTick++
+                    }
+                    actionBusy = false
+                }
+            },
+            busy = actionBusy,
+        )
     }
 
     if (finalizeConfirmOpen) {
@@ -423,5 +457,103 @@ private fun CorrectionDialog(
             ) { Text(if (busy) "Saving…" else "Save correction") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+
+@Composable
+private fun LocationChangeDialog(
+    onDismiss: () -> Unit,
+    onChange: (latitude: Double, longitude: Double, radiusM: Int, reason: String) -> Unit,
+    busy: Boolean,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    val palette = mockColors()
+    var latitude by remember { mutableStateOf<Double?>(null) }
+    var longitude by remember { mutableStateOf<Double?>(null) }
+    var radiusText by remember { mutableStateOf("150") }
+    var reason by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    suspend fun capture() {
+        error = null
+        val outcome = id.starstask.mobile.data.capturePositionDetailed(context)
+        when (outcome) {
+            is id.starstask.mobile.data.CaptureOutcome.Fix -> {
+                latitude = outcome.position.latitude
+                longitude = outcome.position.longitude
+            }
+            is id.starstask.mobile.data.CaptureOutcome.Failed -> {
+                error = id.starstask.mobile.data.captureFailureMessage(outcome.reason)
+            }
+        }
+    }
+
+    val locationPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            scope.launch { capture() }
+        } else {
+            error = "Location permission is needed to change the meeting location."
+        }
+    }
+
+    val valid = latitude != null && longitude != null && radiusText.toIntOrNull()?.let { it in 50..1000 } == true && reason.trim().length >= 3
+
+    AlertDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        title = { Text("Change meeting location") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("This updates the coordinates this meeting checks in against. A reason is required for the audit log.", color = palette.muted, fontSize = 12.sp)
+                if (error != null) WebAlert(message = error!!)
+                Text(
+                    if (latitude != null && longitude != null) "Location set from your current position" else "Location not set",
+                    color = palette.ink,
+                    fontSize = 13.sp,
+                )
+                TextButton(
+                    onClick = {
+                        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            scope.launch { capture() }
+                        } else {
+                            locationPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                        }
+                    },
+                    enabled = !busy,
+                ) { Text("Use my current location") }
+                OutlinedTextField(
+                    value = radiusText,
+                    onValueChange = { radiusText = it.filter(Char::isDigit).take(4) },
+                    label = { Text("Radius (meters)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Reason (3–500 characters)") },
+                    minLines = 2,
+                    singleLine = false,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val lat = latitude ?: return@TextButton
+                    val lng = longitude ?: return@TextButton
+                    val radius = radiusText.toIntOrNull() ?: return@TextButton
+                    onChange(lat, lng, radius, reason.trim())
+                },
+                enabled = !busy && valid,
+            ) { Text(if (busy) "Saving…" else "Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") } },
     )
 }

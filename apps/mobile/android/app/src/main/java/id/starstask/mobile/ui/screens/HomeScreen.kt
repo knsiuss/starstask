@@ -52,12 +52,15 @@ import id.starstask.mobile.data.formatTime
 import id.starstask.mobile.data.loadAcademicCard
 import id.starstask.mobile.data.loadDashboard
 import id.starstask.mobile.data.loadInvitations
+import id.starstask.mobile.data.loadNextSchedule
 import id.starstask.mobile.data.loadSchedule
 import id.starstask.mobile.ui.icons.Lucide
+import id.starstask.mobile.ui.screens.QuickActions
 import id.starstask.mobile.ui.screens.dashboard.DashHero
 import id.starstask.mobile.ui.screens.dashboard.DashNextTaskCard
 import id.starstask.mobile.ui.screens.dashboard.DashSectionHeader
 import id.starstask.mobile.ui.screens.dashboard.DashWeekStrip
+import id.starstask.mobile.data.NextScheduleItem
 import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.DashRadiusPill
 import id.starstask.mobile.ui.theme.dashColors
@@ -73,12 +76,14 @@ fun HomeScreen(
     onOpenMessages: () -> Unit = {},
     onOpenSchedule: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
+    onOpenAttendance: () -> Unit = {},
 ) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var schedule by remember { mutableStateOf<List<ScheduleEntry>>(emptyList()) }
     var invitations by remember { mutableStateOf<List<Invitation>>(emptyList()) }
     var academicCard by remember { mutableStateOf<AcademicCard?>(null) }
+    var nextSchedule by remember { mutableStateOf<NextScheduleItem?>(null) }
     var invitationBusyId by remember { mutableStateOf<String?>(null) }
     var invitationFeedback by remember { mutableStateOf<String?>(null) }
     val appContext = LocalContext.current
@@ -96,6 +101,7 @@ fun HomeScreen(
             schedule = loadSchedule(userId)
             invitations = loadInvitations(userId, userEmail)
             academicCard = loadAcademicCard(userId)
+            nextSchedule = runCatching { loadNextSchedule(userId) }.getOrNull()
         } catch (e: Exception) {
             error = "Could not load your dashboard. Check your connection and try again."
         }
@@ -123,6 +129,44 @@ fun HomeScreen(
                 classes = current?.classes.orEmpty(),
                 onRequestTaskPublication = onNewAssignment,
             )
+        }
+        item {
+            QuickActions(
+                onCheckIn = { onOpenAttendance() },                onOpenTasks = onOpenTasks,
+                onOpenMessages = onOpenMessages,
+                onOpenSchedule = onOpenSchedule,
+                onNewAssignment = onNewAssignment,
+            )
+        }
+
+        nextSchedule?.let { item ->
+            val whenLabel = if (item.kind == "session" && item.endsAt != null) {
+                "${id.starstask.mobile.data.formatDateShort(item.at)}, ${formatTime(item.at)} – ${formatTime(item.endsAt)}"
+            } else {
+                "${id.starstask.mobile.data.formatDateShort(item.at)} at ${formatTime(item.at)}"
+            }
+            item {
+                DashGroupedCard(onClick = onOpenTasks) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(palette.chip),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            androidx.compose.material3.Icon(
+                                if (item.kind == "assignment") Lucide.FileText else Lucide.CalendarDays,
+                                contentDescription = null,
+                                tint = palette.accent,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Next up", color = palette.muted, style = MaterialTheme.typography.bodySmall)
+                            Text(item.title, color = palette.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${item.className} · ${item.detail} · $whenLabel", color = palette.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
         }
 
         nextTask?.let { task ->

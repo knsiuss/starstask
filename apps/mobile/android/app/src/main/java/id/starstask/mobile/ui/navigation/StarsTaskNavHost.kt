@@ -72,9 +72,31 @@ fun StarsTaskNavHost(
     memberSince: String?,
     onCheckIn: (String) -> Unit,
     onSignOut: () -> Unit,
+    pushUrl: String? = null,
+    onPushUrlConsumed: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(pushUrl) {
+        val url = pushUrl?.trim().orEmpty()
+        if (url.isEmpty()) return@LaunchedEffect
+        val target = when {
+            url.startsWith("/assignments") -> DrawerDestination.ASSIGNMENTS.route
+            url.startsWith("/leave-requests") -> DrawerDestination.LEAVE.route
+            url.startsWith("/messages") -> DrawerDestination.MESSAGES.route
+            url.startsWith("/notifications") -> DrawerDestination.NOTIFICATIONS.route
+            url.startsWith("/schedule") -> DrawerDestination.SCHEDULE.route
+            url.startsWith("/actions") || url.startsWith("/app/actions") -> DrawerDestination.ACTION_CENTER.route
+            url.startsWith("/classes") || url.startsWith("/app/classes") -> DrawerDestination.CLASSES.route
+            url.startsWith("/attendance") -> DrawerDestination.ATTENDANCE.route
+            else -> null
+        }
+        if (target != null) {
+            navController.navigate(target) { launchSingleTop = true }
+        }
+        onPushUrlConsumed()
+    }
 
     var managesAnyClass by remember { mutableStateOf(false) }
     var unreadNotifications by remember { mutableStateOf<Int?>(null) }
@@ -163,6 +185,7 @@ fun StarsTaskNavHost(
                             onOpenMessages = { navigateTo(DrawerDestination.MESSAGES.route) },
                             onOpenSchedule = { navigateTo(DrawerDestination.SCHEDULE.route) },
                             onNewAssignment = { navigateTo(ASSIGNMENTS_OPEN_REQUEST_ROUTE) },
+                            onOpenAttendance = { navigateTo(DrawerDestination.ATTENDANCE.route) },
                         )
                     }
                     composable(
