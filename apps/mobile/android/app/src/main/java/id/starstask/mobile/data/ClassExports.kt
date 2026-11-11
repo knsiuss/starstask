@@ -71,7 +71,7 @@ suspend fun downloadAttendanceExport(
                 ?: "attendance-export.${format.fileExt}"
             val bytes = connection.inputStream.use { it.readBytes() }
             val file = java.io.File(
-                context.cacheDir,
+                sharedReportsDir(context),
                 suggestedName.replace(Regex("[^A-Za-z0-9._-]"), "_"),
             )
             file.writeBytes(bytes)

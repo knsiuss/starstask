@@ -17,8 +17,11 @@ import androidx.compose.ui.platform.LocalContext
 import id.starstask.mobile.data.CheckInResult
 import id.starstask.mobile.data.PendingCheckIn
 import id.starstask.mobile.data.SupabaseProvider
-import id.starstask.mobile.data.capturePosition
+import id.starstask.mobile.data.capturePositionDetailed
+import id.starstask.mobile.data.CaptureOutcome
+import id.starstask.mobile.data.captureFailureMessage
 import id.starstask.mobile.data.checkInToSession
+import id.starstask.mobile.data.loadAttendanceIdentity
 import id.starstask.mobile.data.ensureReminderChannel
 import id.starstask.mobile.data.hasLocationPermission
 import id.starstask.mobile.data.loadMyProfile
@@ -113,7 +116,7 @@ fun StarsTaskApp(pendingPushUrl: androidx.compose.runtime.MutableState<String?>)
     // Retry offline check-ins whenever the app foregrounds.
     LaunchedEffect(userId) {
         if (userId != null) {
-            scope.launch { syncQueuedCheckIns(context) }
+            scope.launch { syncQueuedCheckIns(context, userId) }
         }
     }
 
@@ -179,7 +182,13 @@ fun StarsTaskApp(pendingPushUrl: androidx.compose.runtime.MutableState<String?>)
             scope.launch { checkIn(context, sessionId, userId) }
         },
         onSignOut = {
-            scope.launch { auth.signOut() }
+            scope.launch {
+                // Drop this device's push registration so the old account stops
+                // receiving notifications here. E2EE keys and queued check-ins
+                // stay: they are device-local, restored by sign-in.
+                runCatching { id.starstask.mobile.data.unregisterAllPush(context) }
+                auth.signOut()
+            }
         },
     )
 }
@@ -193,35 +202,43 @@ private suspend fun checkIn(
     if (!hasLocationPermission(context)) {
         return CheckInResult(false, null, "Location permission needed.")
     }
-    val position = capturePosition(context)
-        ?: return CheckInResult(false, null, "Location unavailable.")
-    val accuracyM = position.third
+    val outcome = capturePositionDetailed(context)
+    val fix = when (outcome) {
+        is CaptureOutcome.Fix -> outcome.position
+        is CaptureOutcome.Failed -> return CheckInResult(false, null, captureFailureMessage(outcome.reason))
+    }
+    // Only transport/RPC failures are retryable; a server rejection is final.
     val result = try {
         checkInToSession(
             userId = userId,
             sessionId = sessionId,
-            latitude = position.first,
-            longitude = position.second,
-            accuracyM = accuracyM,
+            latitude = fix.latitude,
+            longitude = fix.longitude,
+            accuracyM = fix.accuracyM,
+            capturedAtMs = fix.capturedAtMs,
         )
     } catch (_: Exception) {
-        null
-    }
-    if (result == null || !result.ok) {
+        val identity = runCatching { loadAttendanceIdentity(userId) }.getOrNull()
         queueOfflineCheckin(
             context,
             PendingCheckIn(
                 id = "",
                 sessionId = sessionId,
                 userId = userId,
-                latitude = position.first,
-                longitude = position.second,
-                accuracyM = accuracyM,
-                fullName = "",
-                nim = "",
-                capturedAt = "",
+                latitude = fix.latitude,
+                longitude = fix.longitude,
+                accuracyM = fix.accuracyM,
+                fullName = identity?.fullName.orEmpty(),
+                nim = identity?.nim.orEmpty(),
+                capturedAtMs = fix.capturedAtMs,
+                timeFromGnss = fix.timeFromGnss,
+                deviceClockAuto = fix.deviceClockAuto,
+                deviceTimeMs = fix.deviceTimeMs,
+                provider = fix.provider,
+                sessionKind = "meeting",
             ),
         )
+        return CheckInResult(false, null, "Check-in tersimpan offline — akan disinkronkan saat ada jaringan.")
     }
-    return result ?: CheckInResult(false, null, "Check-in failed — will sync when online.")
+    return result
 }

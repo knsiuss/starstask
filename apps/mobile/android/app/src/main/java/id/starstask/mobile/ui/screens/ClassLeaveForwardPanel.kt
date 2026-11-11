@@ -22,6 +22,7 @@ import id.starstask.mobile.data.generateLeaveCompletePdf
 import id.starstask.mobile.data.generateLeaveSummaryPdf
 import id.starstask.mobile.data.leaveReportFilename
 import id.starstask.mobile.data.listLeaveEvidence
+import id.starstask.mobile.data.sharedReportsDir
 import id.starstask.mobile.data.loadLeaveReportRows
 import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.WebCard
@@ -116,7 +117,7 @@ fun LeaveForwardPanel(
                             } else {
                                 generateLeaveSummaryPdf(clazz.name, recipient, "A class admin", reportRows)
                             }
-                            val outFile = java.io.File(context.cacheDir, filename)
+                            val outFile = java.io.File(id.starstask.mobile.data.sharedReportsDir(context), filename)
                             outFile.writeBytes(bytes)
                             val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".fileprovider", outFile)
                             val completion = completeLeaveForwarding(clazz.id, ids, recipient, email.ifBlank { null }, filename, reportFormat, idempotencyKey)

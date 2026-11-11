@@ -111,7 +111,6 @@ private fun storeDeviceKeyPair(context: Context, pair: DeviceKeyPair) {
         .putString(KEY_Y, Base64.encodeToString(fixed32(pair.publicKey.w.affineY), Base64.NO_WRAP))
         .apply()
 }
-
 fun getOrCreateDeviceKeyPair(context: Context): DeviceKeyPair {
     loadDeviceKeyPair(context)?.let { return it }
     val generator = java.security.KeyPairGenerator.getInstance("EC")

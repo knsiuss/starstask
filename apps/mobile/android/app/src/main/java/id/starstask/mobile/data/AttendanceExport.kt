@@ -37,7 +37,7 @@ fun membersCsv(className: String, members: List<DirectoryMember>): String {
 }
 
 fun attendanceCsv(entries: List<AttendanceEntry>): String {
-    fun esc(value: String): String = "\"" + value.replace("\"", "\"\"") + "\""
+    val esc: (String) -> String = { csvCell(it) }
     val header = listOf(
         "session_id", "title", "class", "subject", "session_type",
         "starts_at", "ends_at", "checked_in_at", "status", "location", "note",
@@ -83,8 +83,18 @@ fun attendancePdfBytes(
     return baos.toByteArray()
 }
 
+/** Shared files live here; the FileProvider only exposes this subdirectory. */
+fun sharedReportsDir(context: Context): File =
+    File(context.cacheDir, "shared").apply { mkdirs() }
+
 fun shareFile(context: Context, file: File, mime: String, chooserTitle: String) {
-    val uri: Uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+    var target = file.canonicalFile
+    val sharedRoot = sharedReportsDir(context).canonicalFile
+    if (!target.path.startsWith(sharedRoot.path + File.separator) && target != sharedRoot) {
+        // Files outside shared/ are not exposed by the FileProvider; copy in.
+        target = File(sharedRoot, target.name).also { file.copyTo(it, overwrite = true) }
+    }
+    val uri: Uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", target)
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = mime
         putExtra(Intent.EXTRA_STREAM, uri)

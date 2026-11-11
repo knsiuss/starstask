@@ -278,7 +278,11 @@ private fun RosterRow(
                         Text("Joined after the meeting", color = palette.muted, fontSize = 11.sp)
                     }
                     entry.method?.let {
-                        Text("· ${it.replaceFirstChar { c -> c.uppercase() }}", color = palette.muted, fontSize = 11.sp)
+                        val label = when (it) {
+                            "offline_sync" -> "Offline sync"
+                            else -> it.replaceFirstChar { c -> c.uppercase() }
+                        }
+                        Text("· $label", color = palette.muted, fontSize = 11.sp)
                     }
                 }
             }

@@ -193,6 +193,7 @@ fun recordedByLabel(entry: AttendanceEntry): String {
     if (entry.recordedByName != null) return entry.recordedByName
     return when (entry.method) {
         "geo" -> "You, by checking in at the session location"
+        "offline_sync" -> "Recorded offline on your device, synced when you were back online"
         "manual" -> "Recorded by a class admin"
         "system" -> "Recorded automatically when attendance was finalized"
         else -> "—"

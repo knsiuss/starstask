@@ -195,7 +195,12 @@ internal fun HistoryRow(entry: AttendanceEntry, onClick: () -> Unit) {
     val methodLine = listOfNotNull(
         "${entry.className} · ${entry.subjectName ?: "No linked subject"}",
         if (entry.method != null) {
-            if (entry.method == "manual") "Manual" else "In person"
+            when (entry.method) {
+                "manual" -> "Manual"
+                "offline_sync" -> "Offline sync"
+                "geo" -> "In person"
+                else -> entry.method.replaceFirstChar { c -> c.uppercase() }
+            }
         } else if (entry.sessionType == "online") {
             "Online"
         } else {

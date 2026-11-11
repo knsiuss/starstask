@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.BuildConfig
+import id.starstask.mobile.ui.screens.assignmentdetail.isHttpUrl
 import id.starstask.mobile.data.Assignment
 import id.starstask.mobile.data.AssignmentDetail
 import id.starstask.mobile.data.AssignmentRevision
@@ -374,7 +375,11 @@ fun AssignmentDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(url))) }
+                            .clickable {
+                                if (isHttpUrl(url)) {
+                                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(url)))
+                                }
+                            }
                             .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

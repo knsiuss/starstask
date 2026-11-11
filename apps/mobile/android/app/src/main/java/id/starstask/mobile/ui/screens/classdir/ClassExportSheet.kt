@@ -245,7 +245,7 @@ private fun ExportRow(
 
 private fun shareMembersCsv(context: Context, clazz: DirectoryClass, members: List<DirectoryMember>) {
     val csv = membersCsv(clazz.name, members)
-    val file = File(context.cacheDir, "starstask-members-" + SimpleDateFormat("yyyyMMdd", Locale.US).format(Date()) + ".csv")
+    val file = File(id.starstask.mobile.data.sharedReportsDir(context), "starstask-members-" + SimpleDateFormat("yyyyMMdd", Locale.US).format(Date()) + ".csv")
     file.writeText(csv, Charsets.UTF_8)
     shareFile(context, file, "text/csv", "Class members")
 }

@@ -76,6 +76,9 @@ fun ActiveMeetingCard(
     var localStatus by remember(meeting.sessionId) { mutableStateOf(meeting.checkInStatus) }
     var localCheckedInAt by remember(meeting.sessionId) { mutableStateOf(meeting.checkedInAt) }
     var permissionPending by remember { mutableStateOf(false) }
+    var pendingSync by remember(meeting.sessionId) {
+        mutableStateOf(id.starstask.mobile.data.pendingForSession(context, userId, meeting.sessionId))
+    }
     fun isOpenNow(): Boolean = when (meeting.phase) {
         "open" -> true
         "before" -> false
@@ -90,38 +93,42 @@ fun ActiveMeetingCard(
         busy = true
         error = null
         success = null
+        // Hoisted so the catch branch can read it (a fix exists even if the
+        // RPC call itself is what failed).
+        var position: id.starstask.mobile.data.CapturedPosition? = null
         try {
             val outcome = capturePositionDetailed(context)
-            val position = when (outcome) {
+            position = when (outcome) {
                 is CaptureOutcome.Fix -> outcome.position
                 is CaptureOutcome.Failed -> {
                     error = captureFailureMessage(outcome.reason)
                     return
                 }
             }
-            if (System.currentTimeMillis() - position.capturedAtMs > 60_000) {
+            if (System.currentTimeMillis() - position!!.deviceTimeMs > 60_000) {
                 error = STALE_LOCATION_MSG
                 return
             }
-            if (position.accuracyM > SESSION_CHECKIN_ACCURACY_MAX_M) {
-                error = accuracyMsg(position.accuracyM)
+            if (position!!.accuracyM > SESSION_CHECKIN_ACCURACY_MAX_M) {
+                error = accuracyMsg(position!!.accuracyM)
                 return
             }
             val result = if (meeting.isMeeting) {
                 checkInToSession(
                     userId = userId,
                     sessionId = meeting.sessionId,
-                    latitude = position.latitude,
-                    longitude = position.longitude,
-                    accuracyM = position.accuracyM,
+                    latitude = position!!.latitude,
+                    longitude = position!!.longitude,
+                    accuracyM = position!!.accuracyM,
+                    capturedAtMs = position!!.capturedAtMs,
                 )
             } else {
                 checkInLegacySession(
                     sessionId = meeting.sessionId,
-                    latitude = position.latitude,
-                    longitude = position.longitude,
-                    accuracyM = position.accuracyM,
-                    capturedAtIso = java.time.Instant.ofEpochMilli(position.capturedAtMs).toString(),
+                    latitude = position!!.latitude,
+                    longitude = position!!.longitude,
+                    accuracyM = position!!.accuracyM,
+                    capturedAtIso = java.time.Instant.ofEpochMilli(position!!.capturedAtMs).toString(),
                 )
             }
             if (result.ok) {
@@ -135,10 +142,49 @@ fun ActiveMeetingCard(
                 error = result.message ?: "The server did not confirm your check-in. Try again before leaving the meeting point."
             }
         } catch (e: Exception) {
-            error = id.starstask.mobile.data.userFacingMessage(
-                e,
-                "Could not record your check-in. Please check your connection and try again.",
+            val cp = position
+            // Offline capture only exists for attendance meetings: the legacy
+            // RPC enforces a 60s freshness window server-side, so a queued
+            // legacy reading could never be accepted.
+            if (!meeting.isMeeting) {
+                error = id.starstask.mobile.data.userFacingMessage(
+                    e,
+                    "Could not record your check-in. Please check your connection and try again.",
+                )
+                return@runCheckIn
+            }
+            if (cp == null) {
+                error = id.starstask.mobile.data.userFacingMessage(
+                    e,
+                    "Could not record your check-in. Please check your connection and try again.",
+                )
+                return@runCheckIn
+            }
+            // Transport failure: queue for sync instead of reporting a dead end.
+            id.starstask.mobile.data.queueOfflineCheckin(
+                context,
+                id.starstask.mobile.data.PendingCheckIn(
+                    id = "",
+                    sessionId = meeting.sessionId,
+                    userId = userId,
+                    latitude = cp.latitude,
+                    longitude = cp.longitude,
+                    accuracyM = cp.accuracyM,
+                    fullName = fullName.trim(),
+                    nim = nim.trim(),
+                    capturedAtMs = cp.capturedAtMs,
+                    timeFromGnss = cp.timeFromGnss,
+                    deviceClockAuto = cp.deviceClockAuto,
+                    deviceTimeMs = cp.deviceTimeMs,
+                    provider = cp.provider,
+                    sessionKind = "meeting",
+                ),
             )
+            pendingSync = true
+            success = null
+            error = "No connection right now — your check-in is saved on this phone and will sync automatically once you're back online."
+            formOpen = false
+            onChanged()
         } finally {
             busy = false
             permissionPending = false
@@ -215,6 +261,23 @@ fun ActiveMeetingCard(
                 if (busy) CircularProgressIndicator(modifier = Modifier.size(20.dp))
             }
 
+            if (pendingSync) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Lg), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(palette.chip)
+                            .padding(horizontal = Spacing.Md, vertical = 3.dp),
+                    ) {
+                        Text("Pending sync", color = palette.muted, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Text(
+                        "Saved on this phone — will sync when you're back online.",
+                        color = palette.muted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
             if (checkedIn) {
                 StatusBadge(status = localStatus!!)
                 Text(

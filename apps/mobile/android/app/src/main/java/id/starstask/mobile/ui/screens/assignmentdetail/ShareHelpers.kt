@@ -7,6 +7,16 @@ import java.net.URLEncoder
 fun shareUrl(id: String, siteUrl: String): String =
     siteUrl.trimEnd('/') + "/assignments/" + id
 
+/** Only http(s) URLs may open an external browser from in-app clickables. */
+fun isHttpUrl(url: String): Boolean {
+    return try {
+        val scheme = java.net.URI(url).scheme?.lowercase()
+        scheme == "http" || scheme == "https"
+    } catch (_: Exception) {
+        false
+    }
+}
+
 fun whatsappShareUrl(detail: AssignmentDetail, siteUrl: String): String {
     val url = shareUrl(detail.id, siteUrl)
     val text = buildString {

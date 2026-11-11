@@ -209,14 +209,14 @@ private fun activeFilterCount(
 
 private fun shareAttendanceCsv(context: android.content.Context, entries: List<id.starstask.mobile.data.AttendanceEntry>) {
     if (entries.isEmpty()) return
-    val file = java.io.File(context.cacheDir, "starstask-attendance-" + System.currentTimeMillis() + ".csv")
+    val file = java.io.File(id.starstask.mobile.data.sharedReportsDir(context), "starstask-attendance-" + System.currentTimeMillis() + ".csv")
     file.writeText(attendanceCsv(entries), Charsets.UTF_8)
     shareFile(context, file, "text/csv", "Attendance report")
 }
 
 private fun shareAttendancePdf(context: android.content.Context, entries: List<id.starstask.mobile.data.AttendanceEntry>) {
     if (entries.isEmpty()) return
-    val file = java.io.File(context.cacheDir, "starstask-attendance-" + System.currentTimeMillis() + ".pdf")
+    val file = java.io.File(id.starstask.mobile.data.sharedReportsDir(context), "starstask-attendance-" + System.currentTimeMillis() + ".pdf")
     file.writeBytes(
         attendancePdfBytes(
             title = "Attendance report",
