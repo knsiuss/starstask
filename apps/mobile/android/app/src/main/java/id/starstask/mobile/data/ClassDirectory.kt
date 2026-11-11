@@ -40,12 +40,14 @@ suspend fun loadClassDirectory(userId: String): List<DirectoryClass> {
 
     if (memberClassIds.isEmpty()) return emptyList()
 
-    val adminClassIds = memberships.mapNotNull { row ->
-        val obj = row.jsonObject
-        val id = obj["class_id"]?.jsonPrimitive?.contentOrNull() ?: return@mapNotNull null
-        val isAdmin = obj["is_admin"]?.jsonPrimitive?.contentOrNull() == "true" ||
-            obj["role"]?.jsonPrimitive?.contentOrNull() in setOf("admin", "class_admin", "owner")
-        if (isAdmin) id else null
+    // Admin membership lives in class_admins; class_members carries no role.
+    val adminClassIds = db.from("class_admins").select(Columns.raw("class_id")) {
+        filter {
+            eq("user_id", userId)
+            isIn("class_id", memberClassIds.toList())
+        }
+    }.decodeJsonArray().mapNotNull {
+        it.jsonObject["class_id"]?.jsonPrimitive?.contentOrNull()
     }.toSet()
 
     val classRows = db.from("classes").select {
@@ -129,15 +131,15 @@ suspend fun loadClassRoster(classId: String): List<DirectoryMember> {
         val obj = row.jsonObject
         val userId = obj["user_id"]?.jsonPrimitive?.contentOrNull() ?: return@mapNotNull null
         val profile = profiles[userId]?.jsonObject
-        val joinedRole = obj["role"]?.jsonPrimitive?.contentOrNull() ?: "member"
+        val isAdmin = userId in adminIds
         DirectoryMember(
             id = userId,
             name = profile?.get("display_name")?.jsonPrimitive?.contentOrNull()
                 ?: profile?.get("full_name")?.jsonPrimitive?.contentOrNull()
                 ?: "Member",
             avatarUrl = profile?.get("avatar_url")?.jsonPrimitive?.contentOrNull(),
-            role = if (userId in adminIds) "class_admin" else joinedRole,
-            isAdmin = userId in adminIds || obj["is_admin"]?.jsonPrimitive?.contentOrNull() == "true",
+            role = if (isAdmin) "class_admin" else "member",
+            isAdmin = isAdmin,
         )
     }.sortedBy { it.name.lowercase() }
 }

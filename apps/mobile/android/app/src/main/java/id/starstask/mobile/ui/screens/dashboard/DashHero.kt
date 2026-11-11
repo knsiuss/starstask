@@ -3,7 +3,8 @@ package id.starstask.mobile.ui.screens.dashboard
 // Pastel greeting hero for the redesigned dashboard. The big name is a
 // display treatment of `displayName`; data comes from DashboardData and is
 // never composed elsewhere. The pill CTA routes to the existing assignment
-// request flow via onRequestTaskPublication.
+// request flow via onRequestTaskPublication; class admins publish directly,
+// so the CTA label switches to "Create Assignment" for them.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,6 +55,7 @@ fun DashHero(
         .map { it.classCode?.takeIf { code -> code.isNotBlank() } ?: it.name }
         .filter { it.isNotBlank() }
         .joinToString(" · ")
+    val managesAnyClass = classes.any { it.isAdmin }
 
     Column(
         modifier = modifier
@@ -124,7 +126,7 @@ fun DashHero(
         ) {
             Icon(Lucide.CalendarDays, contentDescription = null, tint = palette.accent, modifier = Modifier.size(16.dp))
             Text(
-                "Request Task Publication",
+                if (managesAnyClass) "Create Assignment" else "Request Task Publication",
                 color = palette.text,
                 fontSize = 14.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,

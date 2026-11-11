@@ -179,21 +179,35 @@ suspend fun getWorkspaceScope(userId: String): WorkspaceScope {
         limit(100L)
     }.decodeJsonArray()
 
+    // Admin membership lives in class_admins; class_members carries no role.
+    val memberClassIds = memberships.mapNotNull {
+        it.jsonObject["class_id"]?.jsonPrimitive?.contentOrNull()
+    }
+    val adminClassIds = if (memberClassIds.isEmpty()) {
+        emptySet()
+    } else {
+        db.from("class_admins").select(io.github.jan.supabase.postgrest.query.Columns.raw("class_id")) {
+            filter {
+                eq("user_id", userId)
+                isIn("class_id", memberClassIds)
+            }
+        }.decodeJsonArray().mapNotNull {
+            it.jsonObject["class_id"]?.jsonPrimitive?.contentOrNull()
+        }.toSet()
+    }
+
     data class ActiveClass(val id: String, val slug: String, val name: String, val classCode: String?, val isAdmin: Boolean, val semester: String? = null, val academicYear: String? = null)
     val active = mutableListOf<ActiveClass>()
     for (m in memberships) {
         val obj = m.jsonObject
-        if (obj["status"]?.jsonPrimitive?.contentOrNull() !in listOf(null, "active")) continue
         val classId = obj["class_id"]?.jsonPrimitive?.contentOrNull() ?: continue
-        val isAdmin = obj["is_admin"]?.jsonPrimitive?.contentOrNull() == "true" ||
-            obj["role"]?.jsonPrimitive?.contentOrNull() in setOf("admin", "class_admin", "owner")
         active.add(
             ActiveClass(
                 id = classId,
                 slug = obj["slug"]?.jsonPrimitive?.contentOrNull() ?: "",
                 name = obj["class_name"]?.jsonPrimitive?.contentOrNull() ?: "",
                 classCode = obj["class_code"]?.jsonPrimitive?.contentOrNull(),
-                isAdmin = isAdmin,
+                isAdmin = classId in adminClassIds,
             ),
         )
     }
@@ -203,6 +217,9 @@ suspend fun getWorkspaceScope(userId: String): WorkspaceScope {
             filter { isIn("id", ids); eq("status", "active") }
         }.decodeJsonArray()
         val byId = classRows.associateBy { it.jsonObject["id"]?.jsonPrimitive?.contentOrNull() }
+        // Archived classes stay out of the workspace scope entirely, matching
+        // the web sidebar which lists active classes only.
+        active.retainAll { byId.containsKey(it.id) }
         for (i in active.indices) {
             val c = byId[active[i].id]?.jsonObject ?: continue
             active[i] = active[i].copy(
