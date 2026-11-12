@@ -22,6 +22,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -59,6 +62,7 @@ import id.starstask.mobile.ui.screens.classdir.JoinClassDialog
 import id.starstask.mobile.ui.theme.mockColors
 import id.starstask.mobile.ui.theme.mockPageBrush
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (String) -> Unit = {}) {
     var rows by remember { mutableStateOf<List<DirectoryClass>>(emptyList()) }
@@ -73,6 +77,7 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
     var manageClassId by remember { mutableStateOf<String?>(null) }
     var postAssignmentFor by remember { mutableStateOf<String?>(null) }
     var reloadTick by remember { mutableStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
     val coroutinesScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -87,7 +92,7 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
     }
 
     LaunchedEffect(userId, reloadTick) {
-        loading = true
+        if (!refreshing) loading = true
         error = null
         try {
             val freshRows = loadClassDirectory(userId)
@@ -103,6 +108,7 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
             if (rows.isEmpty()) error = "Could not load classes."
         }
         loading = false
+        refreshing = false
     }
 
     val current = openClass
@@ -160,6 +166,16 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
 
     val palette = mockColors()
     Box(modifier = Modifier.fillMaxSize().background(mockPageBrush())) {
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            state = pullState,
+            isRefreshing = refreshing,
+            onRefresh = {
+                refreshing = true
+                reloadTick++
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(Spacing.Section),
@@ -217,6 +233,7 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
                     )
                 }
             }
+        }
         }
         JoinFab(onClick = { joinOpen = true }, modifier = Modifier.align(Alignment.BottomCenter))
     }

@@ -288,15 +288,15 @@ private fun MemberRow(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             if (member.isAdmin) {
-                IconButton(onClick = onRevoke, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = onRevoke, modifier = Modifier.size(48.dp)) {
                     Icon(Lucide.ShieldCheck, contentDescription = "Remove admin", tint = palette.muted, modifier = Modifier.size(17.dp))
                 }
             } else {
-                IconButton(onClick = onPromote, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = onPromote, modifier = Modifier.size(48.dp)) {
                     Icon(Lucide.Shield, contentDescription = "Make admin", tint = palette.muted, modifier = Modifier.size(17.dp))
                 }
             }
-            IconButton(onClick = onRemove, modifier = Modifier.size(34.dp)) {
+            IconButton(onClick = onRemove, modifier = Modifier.size(48.dp)) {
                 Icon(Lucide.Trash2, contentDescription = "Remove member", tint = palette.riskFg, modifier = Modifier.size(17.dp))
             }
         }

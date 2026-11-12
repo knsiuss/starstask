@@ -12,7 +12,10 @@ import id.starstask.mobile.data.ensureReminderChannel
 import id.starstask.mobile.data.registerCurrentToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Native FCM receive path. Web push dispatch writes notification_events
@@ -21,19 +24,18 @@ import kotlinx.coroutines.launch
  */
 class StarsTaskMessagingService : FirebaseMessagingService() {
 
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val notificationCounter = AtomicInteger(0)
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // Token rotation: only registered while the user has opted in.
-        if (!cachedPushEnabledBlocking()) return
-        CoroutineScope(Dispatchers.IO).launch {
+        // Token rotation: only registered while the user has opted in. The
+        // framework-delivered token equals currentFcmToken() at this point, so
+        // it is unused here beyond triggering the re-register.
+        serviceScope.launch {
+            if (!runCatching { cachedPushEnabled(applicationContext) }.getOrDefault(false)) return@launch
             runCatching { registerCurrentToken(applicationContext) }
         }
-    }
-
-    private fun cachedPushEnabledBlocking(): Boolean {
-        var enabled = false
-        kotlinx.coroutines.runBlocking { enabled = cachedPushEnabled(applicationContext) }
-        return enabled
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -44,6 +46,11 @@ class StarsTaskMessagingService : FirebaseMessagingService() {
         showNotification(title, body, url)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
+
     private fun showNotification(title: String, body: String, url: String?) {
         val channelId = REMINDER_CHANNEL_ID
         ensureReminderChannel(this)
@@ -51,7 +58,8 @@ class StarsTaskMessagingService : FirebaseMessagingService() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             if (!url.isNullOrBlank()) putExtra(EXTRA_PUSH_URL, url)
         }
-        val notificationId = (url ?: title + body).hashCode()
+        // Unique per notification so distinct pushes never overwrite each other.
+        val notificationId = notificationCounter.getAndIncrement() and 0x7fffffff
         val pending = PendingIntent.getActivity(
             this, notificationId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,

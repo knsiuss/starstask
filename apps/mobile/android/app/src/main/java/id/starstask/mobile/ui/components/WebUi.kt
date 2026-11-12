@@ -167,7 +167,7 @@ private fun WebButtonLabel(label: String, icon: ImageVector?) {
     if (icon != null) {
         Icon(icon, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
     }
-    Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+    Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false)
 }
 
 @Composable

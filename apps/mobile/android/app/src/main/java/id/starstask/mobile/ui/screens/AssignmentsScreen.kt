@@ -20,9 +20,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -66,6 +69,7 @@ import kotlinx.coroutines.launch
 private val SearchBg = Muted
 private val FilterBg = SoftFill
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AssignmentsWorkspaceScreen(
     userId: String,
@@ -98,6 +102,7 @@ fun AssignmentsWorkspaceScreen(
     var showCreate by remember { mutableStateOf(autoOpenRequest) }
     var reviewTarget by remember { mutableStateOf<WorkspaceRequest?>(null) }
     var refreshTick by remember { mutableStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val hiddenIds by hiddenAssignmentsFlow(context).collectAsState(initial = emptySet())
@@ -129,7 +134,7 @@ fun AssignmentsWorkspaceScreen(
     }
 
     LaunchedEffect(userId, appliedSearch, classId, status, sort, typeFilter, page, refreshTick, tab) {
-        loading = true
+        if (!refreshing) loading = true
         error = null
         try {
             loadAll()
@@ -137,6 +142,7 @@ fun AssignmentsWorkspaceScreen(
             error = userFacingMessage(e, "Could not load assignments.")
         }
         loading = false
+        refreshing = false
     }
 
     if (showCreate && scope != null) {
@@ -212,11 +218,21 @@ fun AssignmentsWorkspaceScreen(
 
     val visibleItems = scheduleItems.filterNot { it.id in hiddenIds }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().background(palette.pageBackground),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 104.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        state = pullState,
+        isRefreshing = refreshing,
+        onRefresh = {
+            refreshing = true
+            refreshTick++
+        },
+        modifier = Modifier.fillMaxSize(),
     ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().background(palette.pageBackground),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 104.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Assignments", color = palette.text, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
@@ -237,7 +253,7 @@ fun AssignmentsWorkspaceScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Lucide.Plus, contentDescription = null, tint = Surface, modifier = Modifier.size(18.dp))
-                        Text("+  $createLabel", color = Surface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text(createLabel, color = Surface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -427,5 +443,6 @@ fun AssignmentsWorkspaceScreen(
                 }
             }
         }
+    }
     }
 }

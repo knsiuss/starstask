@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -197,7 +198,12 @@ fun ReferenceAssignmentCard(
                     )
                 }
                 if (isOverdue && onDismiss != null) {
-                    Icon(Lucide.X, contentDescription = "Remove assignment", tint = palette.muted, modifier = Modifier.size(18.dp).clickable(onClick = onDismiss))
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(Lucide.X, contentDescription = "Remove assignment", tint = palette.muted, modifier = Modifier.size(18.dp))
+                    }
                 }
             }
         }

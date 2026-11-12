@@ -92,7 +92,7 @@ suspend fun syncPushRegistration(context: Context) {
     runCatching { registerCurrentToken(context) }
 }
 
-suspend fun unregisterAllPush(context: Context) {
+suspend fun unregisterAllPush(context: Context, userId: String) {
     currentFcmTokenSafely()?.let { token ->
         runCatching { deleteNativePushToken(token) }
     }
@@ -103,6 +103,12 @@ suspend fun unregisterAllPush(context: Context) {
     // Clear the local opt-in flag too, otherwise syncPushRegistration() would
     // re-register the token on the next app start.
     setCachedPushEnabled(context, false)
+    // And the server-side preference — otherwise the web settings toggle
+    // still shows push enabled for this account on other surfaces.
+    runCatching {
+        val prefs = loadNotificationPrefs(userId)
+        if (prefs.pushEnabled) saveNotificationPrefs(userId, prefs.copy(pushEnabled = false))
+    }
 }
 
 private suspend fun currentFcmTokenSafely(): String? =

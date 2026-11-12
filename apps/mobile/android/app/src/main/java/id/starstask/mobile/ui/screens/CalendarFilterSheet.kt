@@ -56,11 +56,11 @@ private val COURSE_DOTS = listOf(
     Warning,
     Danger,
     Success,
-    Color(0xFF6B4FA1),
+    Color(0xFF3E5C8A),
     Color(0xFFB7791F),
     Color(0xFF3E7C8C),
     Color(0xFF96650B),
-    Color(0xFF7A4E9E),
+    Color(0xFF4E627A),
     Color(0xFF5A8A4A),
 )
 

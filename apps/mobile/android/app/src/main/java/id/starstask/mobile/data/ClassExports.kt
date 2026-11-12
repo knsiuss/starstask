@@ -7,6 +7,8 @@ package id.starstask.mobile.data
 import android.content.Context
 import id.starstask.mobile.BuildConfig
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,44 +46,46 @@ suspend fun downloadAttendanceExport(
     }
 
     val url = URL("$baseUrl/api/classes/$classSlug${format.pathSuffix}?subjectId=$subjectId")
-    val connection = (url.openConnection() as HttpURLConnection).apply {
-        connectTimeout = 15_000
-        readTimeout = 60_000
-        requestMethod = "GET"
-        setRequestProperty("Authorization", "Bearer $accessToken")
-        setRequestProperty("Accept", when (format) {
-            ExportFormat.Pdf -> "application/pdf"
-            ExportFormat.Xlsx -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        })
-    }
-
-    val status = try {
-        connection.responseCode
-    } catch (cause: IOException) {
-        connection.disconnect()
-        throw cause
-    }
-
-    try {
-        if (status == HttpURLConnection.HTTP_OK) {
-            val suggestedName = connection.getHeaderField("Content-Disposition")
-                ?.substringAfter("filename=")
-                ?.trim('"', ';', ' ')
-                ?.takeIf { it.isNotBlank() }
-                ?: "attendance-export.${format.fileExt}"
-            val bytes = connection.inputStream.use { it.readBytes() }
-            val file = java.io.File(
-                sharedReportsDir(context),
-                suggestedName.replace(Regex("[^A-Za-z0-9._-]"), "_"),
-            )
-            file.writeBytes(bytes)
-            return ExportResult(
-                file = file,
-                mimeType = if (format == ExportFormat.Pdf) "application/pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
+    return withContext(Dispatchers.IO) {
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 60_000
+            requestMethod = "GET"
+            setRequestProperty("Authorization", "Bearer $accessToken")
+            setRequestProperty("Accept", when (format) {
+                ExportFormat.Pdf -> "application/pdf"
+                ExportFormat.Xlsx -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            })
         }
-        throw IOException("The export could not be completed.")
-    } finally {
-        connection.disconnect()
+        try {
+            val status = try {
+                connection.responseCode
+            } catch (cause: IOException) {
+                connection.disconnect()
+                throw cause
+            }
+
+            if (status == HttpURLConnection.HTTP_OK) {
+                val suggestedName = connection.getHeaderField("Content-Disposition")
+                    ?.substringAfter("filename=")
+                    ?.trim('"', ';', ' ')
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "attendance-export.${format.fileExt}"
+                val bytes = connection.inputStream.use { it.readBytes() }
+                val file = java.io.File(
+                    sharedReportsDir(context),
+                    suggestedName.replace(Regex("[^A-Za-z0-9._-]"), "_"),
+                )
+                file.writeBytes(bytes)
+                ExportResult(
+                    file = file,
+                    mimeType = if (format == ExportFormat.Pdf) "application/pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            } else {
+                throw IOException("The export could not be completed.")
+            }
+        } finally {
+            connection.disconnect()
+        }
     }
 }

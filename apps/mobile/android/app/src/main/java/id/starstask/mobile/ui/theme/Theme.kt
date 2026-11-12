@@ -12,6 +12,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 
 /**
@@ -151,6 +152,22 @@ fun StarsTaskTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    // enableEdgeToEdge paints the system bars with the windowBackground; keep
+    // them in sync with the effective theme so dark mode doesn't expose a
+    // light status bar above a dark page.
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
+            val barColor = if (darkTheme) DarkBackground.toArgb() else Background.toArgb()
+            window.statusBarColor = barColor
+            window.navigationBarColor = barColor
+            androidx.core.view.WindowCompat.getInsetsController(window, view)
+                .isAppearanceLightStatusBars = !darkTheme
+            androidx.core.view.WindowCompat.getInsetsController(window, view)
+                .isAppearanceLightNavigationBars = !darkTheme
+        }
+    }
     androidx.compose.runtime.CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
         MaterialTheme(
             colorScheme = if (darkTheme) DarkScheme else LightScheme,

@@ -30,13 +30,10 @@ data class DashPalette(
     val selectedDayEnd: Color,
     val tileBlueBackground: Color,
     val tileBlueForeground: Color,
-    val tilePurpleBackground: Color,
-    val tilePurpleForeground: Color,
     val tileGreenBackground: Color,
     val tileGreenForeground: Color,
     val sessionAccentBlue: Color,
     val badge: Color,
-    val sessionAccentPurple: Color,
     val sessionAccentGreen: Color,
 )
 
@@ -61,13 +58,10 @@ private val DashLight = DashPalette(
     selectedDayEnd = Color(0xFF2F6BEF),
     tileBlueBackground = Color(0xFFE8EEFF),
     tileBlueForeground = Color(0xFF3A6FE0),
-    tilePurpleBackground = Color(0xFFF1ECFF),
-    tilePurpleForeground = Color(0xFF7C5DE0),
     tileGreenBackground = Color(0xFFE7F8EE),
     tileGreenForeground = Color(0xFF1F9E63),
     sessionAccentBlue = Color(0xFF4C8DFF),
     badge = Color(0xFFE5484D),
-    sessionAccentPurple = Color(0xFFA78BFA),
     sessionAccentGreen = Color(0xFF34C77B),
 )
 
@@ -92,13 +86,10 @@ private val DashDark = DashPalette(
     selectedDayEnd = Color(0xFF2F4470),
     tileBlueBackground = Color(0xFF1D2A44),
     tileBlueForeground = Color(0xFF8FB0E8),
-    tilePurpleBackground = Color(0xFF241F3D),
-    tilePurpleForeground = Color(0xFFB9A6FA),
     tileGreenBackground = Color(0xFF16301F),
     tileGreenForeground = Color(0xFF5CB98A),
     sessionAccentBlue = Color(0xFF8FB0E8),
     badge = Color(0xFFE5484D),
-    sessionAccentPurple = Color(0xFFC0B4FB),
     sessionAccentGreen = Color(0xFF5CB98A),
 )
 

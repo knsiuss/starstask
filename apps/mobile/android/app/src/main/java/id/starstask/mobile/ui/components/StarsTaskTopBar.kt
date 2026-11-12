@@ -71,7 +71,7 @@ fun StarsTaskTopBar(
                 unreadCount = unreadCount,
                 tint = palette.ink,
                 badgeColor = BadgeRed,
-                badgeBorderColor = id.starstask.mobile.ui.theme.Background,
+                badgeBorderColor = palette.card,
                 modifier = Modifier.size(24.dp),
             )
         }

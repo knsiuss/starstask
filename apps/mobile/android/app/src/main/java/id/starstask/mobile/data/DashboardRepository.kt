@@ -23,5 +23,6 @@ class DashboardRepository {
         return if (next != null) listOf(next) else emptyList()
     }
     suspend fun myWeek(userId: String, weekOffset: Int) = loadMyWeek(userId, weekOffset)
-    fun changes(): Flow<io.github.jan.supabase.realtime.PostgresAction> = dashboardChanges()
+    /** Web parity: debounced tick on dashboard source-table changes. */
+    fun changes(): Flow<Unit> = dashboardChanges()
 }

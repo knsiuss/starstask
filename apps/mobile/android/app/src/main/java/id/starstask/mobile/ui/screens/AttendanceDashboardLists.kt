@@ -256,30 +256,3 @@ fun HistoryToolbar(
         }
     }
 }
-
-@Composable
-fun PagerRow(
-    currentPage: Int,
-    totalPages: Int,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    val palette = mockColors()
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = onPrevious, enabled = currentPage > 1) {
-            Text("Previous")
-        }
-        Text(
-            "Page $currentPage of $totalPages",
-            style = MaterialTheme.typography.bodySmall,
-            color = palette.muted,
-        )
-        TextButton(onClick = onNext, enabled = currentPage < totalPages) {
-            Text("Next")
-        }
-    }
-}

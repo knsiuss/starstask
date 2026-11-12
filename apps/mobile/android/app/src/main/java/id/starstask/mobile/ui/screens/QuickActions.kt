@@ -44,7 +44,7 @@ import id.starstask.mobile.ui.theme.Surface
 fun QuickActions(
     onCheckIn: () -> Unit,
     onOpenTasks: () -> Unit,
-    onOpenMessages: () -> Unit,
+    onOpenMessages: (() -> Unit)? = null,
     onOpenSchedule: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
 ) {
@@ -56,7 +56,9 @@ fun QuickActions(
         QuickActionPill(Lucide.CalendarCheck, "Check in now", onClick = onCheckIn)
         QuickActionPill(Lucide.ClipboardList, "Submit task", onClick = onOpenTasks)
         QuickActionPill(Lucide.CalendarDays, "Today's schedule", onClick = onOpenSchedule)
-        QuickActionPill(Lucide.MessageCircle, "Open messages", onClick = onOpenMessages)
+        if (onOpenMessages != null) {
+            QuickActionPill(Lucide.MessageCircle, "Open messages", onClick = onOpenMessages)
+        }
         QuickActionPill(Lucide.Plus, "New assignment", onClick = onNewAssignment)
         // End spacer so the last pill has breathing room when scrolled.
         androidx.compose.foundation.layout.Box(modifier = Modifier.size(width = 8.dp, height = 1.dp))

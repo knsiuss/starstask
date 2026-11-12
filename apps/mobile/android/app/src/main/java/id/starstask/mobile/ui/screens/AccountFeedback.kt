@@ -35,7 +35,6 @@ import id.starstask.mobile.data.backupDeviceKey
 import id.starstask.mobile.data.ensurePublishedDeviceKey
 import id.starstask.mobile.data.restoreDeviceKey
 import id.starstask.mobile.data.safetyFingerprint
-import id.starstask.mobile.data.contentOrNull
 import id.starstask.mobile.data.decodeJsonArray
 import id.starstask.mobile.ui.components.BadgeTone
 import id.starstask.mobile.ui.components.WebBadge

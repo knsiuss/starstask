@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +39,7 @@ import id.starstask.mobile.ui.components.WebSkeletonCard
 import id.starstask.mobile.ui.theme.Spacing
 import id.starstask.mobile.ui.theme.mockPageBrush
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceScreen(
     userId: String,
@@ -53,6 +57,7 @@ fun AttendanceScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var reloadTick by remember { mutableStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
     var filtersOpen by remember { mutableStateOf(false) }
     var filterClassId by remember { mutableStateOf<String?>(null) }
     var filterSubjectId by remember { mutableStateOf<String?>(null) }
@@ -75,7 +80,7 @@ fun AttendanceScreen(
     }
 
     LaunchedEffect(userId, reloadTick) {
-        loading = true
+        if (!refreshing) loading = true
         error = null
         try {
             val freshView = loadStudentAttendance(userId)
@@ -94,8 +99,19 @@ fun AttendanceScreen(
             if (view == null) error = "Could not load your attendance. Check your connection and try again."
         }
         loading = false
+        refreshing = false
     }
 
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        state = pullState,
+        isRefreshing = refreshing,
+        onRefresh = {
+            refreshing = true
+            reloadTick++
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(mockPageBrush()),
         contentPadding = PaddingValues(
@@ -191,6 +207,7 @@ fun AttendanceScreen(
                 )
             }
         }
+    }
     }
 
     if (filtersOpen) {

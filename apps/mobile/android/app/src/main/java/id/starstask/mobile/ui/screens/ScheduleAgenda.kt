@@ -46,7 +46,7 @@ private fun scheduleDot(item: CalendarTimelineItem): Color {
         overdue -> Danger
         item.kind == "assignment" -> Color(0xFF5B8DEF)
         item.kind == "personal" || item.kind == "class_schedule" -> Color(0xFFF59E42)
-        item.kind == "exam" || item.kind == "academic_event" -> Color(0xFF9B6DD6)
+        item.kind == "exam" || item.kind == "academic_event" -> Color(0xFF3E7C8C)
         item.kind == "absence" -> Color(0xFFC98A2E)
         else -> Color(0xFF9AA0AA)
     }

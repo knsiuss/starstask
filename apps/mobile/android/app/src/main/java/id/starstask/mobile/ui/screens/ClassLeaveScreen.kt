@@ -122,7 +122,7 @@ fun ClassLeaveScreen(
         }
         if (error != null) WebAlert(message = error!!)
         WebInput(value = note, onValueChange = { note = it }, label = "Review note (required to reject or return for revision)")
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
             val submittedRows = rows.filter { it.status == "submitted" }
             if (submittedRows.isNotEmpty()) {
                 item(key = "forward-panel") {

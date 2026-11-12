@@ -8,7 +8,7 @@ fun deviceDate(iso: String): String =
             .atZoneSameInstant(DEVICE_ZONE)
             .toLocalDate().toString()
     } catch (_: Exception) {
-        iso.substring(0, 10)
+        iso.take(10)
     }
 
 fun formatTime(iso: String): String =
@@ -34,5 +34,8 @@ fun timezoneLabel(timeZone: String?): String {
     return zone.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH)
 }
 
+// Package-internal shortcut for JsonPrimitive?.content that also maps the
+// literal "null" string to null. Intentionally shadows the kotlinx extension
+// for callers across this package that expect null instead of "null".
 internal fun kotlinx.serialization.json.JsonPrimitive?.contentOrNull(): String? =
     this?.content?.takeIf { it != "null" }

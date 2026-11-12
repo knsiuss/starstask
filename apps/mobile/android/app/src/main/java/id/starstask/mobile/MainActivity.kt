@@ -187,7 +187,7 @@ fun StarsTaskApp(pendingPushUrl: androidx.compose.runtime.MutableState<String?>)
                 // receiving notifications here, and wipe all cached read models —
                 // they hold the previous account's data. E2EE keys and queued
                 // check-ins stay: they are device-local, restored by sign-in.
-                runCatching { id.starstask.mobile.data.unregisterAllPush(context) }
+                runCatching { id.starstask.mobile.data.unregisterAllPush(context, userId) }
                 id.starstask.mobile.data.clearDiskCache(context)
                 auth.signOut()
             }

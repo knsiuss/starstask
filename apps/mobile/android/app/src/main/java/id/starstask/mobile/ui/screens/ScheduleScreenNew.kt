@@ -17,6 +17,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -80,6 +83,7 @@ private fun ScheduleMode.toCalendarView(): CalendarView = when (this) {
  * • Upcoming: same grouped list, plain text rows.
  * Touch targets ≥48dp.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     userId: String,
@@ -101,6 +105,7 @@ fun ScheduleScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var reloadTick by remember { mutableStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
     var detailItem by remember { mutableStateOf<CalendarTimelineItem?>(null) }
     var formScope by remember { mutableStateOf<String?>(null) }
     var editingItem by remember { mutableStateOf<CalendarTimelineItem?>(null) }
@@ -110,7 +115,7 @@ fun ScheduleScreen(
     val view = mode.toCalendarView()
 
     LaunchedEffect(userId, view, anchorKey, showHistory, typeFilter, mineOnly, courseKeys, classFilter, reloadTick) {
-        loading = true
+        if (!refreshing) loading = true
         error = null
         try {
             val result = listCalendar(
@@ -129,6 +134,7 @@ fun ScheduleScreen(
             error = "Could not load schedule."
         }
         loading = false
+        refreshing = false
     }
 
     val data = loaded
@@ -159,6 +165,16 @@ fun ScheduleScreen(
         editingItem = null
     }
 
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        state = pullState,
+        isRefreshing = refreshing,
+        onRefresh = {
+            refreshing = true
+            reloadTick++
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -372,6 +388,7 @@ fun ScheduleScreen(
                 Box(modifier = Modifier.size(height = 96.dp, width = 0.dp))
             }
         }
+    }
     }
 
     val coroutineScope = rememberCoroutineScope()

@@ -73,7 +73,7 @@ fun HomeScreen(
     userEmail: String?,
     onCheckIn: (String) -> Unit,
     onOpenTasks: () -> Unit = {},
-    onOpenMessages: () -> Unit = {},
+    onOpenMessages: (() -> Unit)? = null,
     onOpenSchedule: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
     onOpenAttendance: () -> Unit = {},
@@ -84,6 +84,7 @@ fun HomeScreen(
     var invitations by remember { mutableStateOf<List<Invitation>>(emptyList()) }
     var academicCard by remember { mutableStateOf<AcademicCard?>(null) }
     var nextSchedule by remember { mutableStateOf<NextScheduleItem?>(null) }
+    var realtimeTick by remember { mutableStateOf(0) }
     var invitationBusyId by remember { mutableStateOf<String?>(null) }
     var invitationFeedback by remember { mutableStateOf<String?>(null) }
     val appContext = LocalContext.current
@@ -110,7 +111,7 @@ fun HomeScreen(
         if (cachedNext != null && nextSchedule == null) nextSchedule = cachedNext
     }
 
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, realtimeTick) {
         // Fetches are independent; run them in parallel so the dashboard
         // doesn't wait on five sequential Supabase round-trips.
         kotlinx.coroutines.coroutineScope {
@@ -119,6 +120,17 @@ fun HomeScreen(
             launch { runCatching { loadInvitations(userId, userEmail) }.onSuccess { invitations = it; id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.invitations", it, kotlinx.serialization.builtins.ListSerializer(Invitation.serializer())) } }
             launch { runCatching { loadAcademicCard(userId) }.onSuccess { academicCard = it; if (it != null) id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.academicCard", it, AcademicCard.serializer()) } }
             launch { runCatching { loadNextSchedule(userId) }.onSuccess { nextSchedule = it; if (it != null) id.starstask.mobile.data.writeDiskCache(appContext, userId, "home.nextSchedule", it, NextScheduleItem.serializer()) } }
+        }
+    }
+
+    // Realtime: any write to a dashboard source table (assignments /
+    // discussion_sessions / class_memberships, published by migration
+    // 20261156000000_dashboard_realtime_publication) bumps realtimeTick,
+    // which re-runs the fetch block above. Subscribe failure never breaks
+    // the manual/pull-to-refresh path — it just stays silent.
+    LaunchedEffect(userId) {
+        runCatching {
+            id.starstask.mobile.data.dashboardChanges().collect { realtimeTick++ }
         }
     }
 
@@ -148,7 +160,7 @@ fun HomeScreen(
         item {
             QuickActions(
                 onCheckIn = { onOpenAttendance() },                onOpenTasks = onOpenTasks,
-                onOpenMessages = onOpenMessages,
+                onOpenMessages = null,
                 onOpenSchedule = onOpenSchedule,
                 onNewAssignment = onNewAssignment,
             )

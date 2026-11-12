@@ -172,7 +172,8 @@ fun AssignmentDetailScreen(
             .fillMaxSize()
             .background(id.starstask.mobile.ui.theme.mockPageBrush())
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.Section, vertical = Spacing.Xl),
+            .padding(horizontal = Spacing.Section, vertical = Spacing.Xl)
+            .padding(bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xxl),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -416,11 +417,15 @@ fun AssignmentDetailScreen(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    "Share this assignment with your class.",
+                    "Share this assignment with your classmates.",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.muted,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Lg), modifier = Modifier.fillMaxWidth()) {
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     WebButton(
                         label = if (saved == true) "Saved" else "Save",
                         onClick = {

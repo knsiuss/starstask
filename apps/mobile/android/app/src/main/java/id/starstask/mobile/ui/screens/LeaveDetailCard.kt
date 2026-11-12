@@ -71,26 +71,6 @@ import androidx.compose.ui.draw.clip
 import id.starstask.mobile.ui.theme.Danger
 import kotlinx.coroutines.launch
 
-/**
- * Leave request detail, mirroring the web request page: the three dates kept
- * separate, evidence with signed-URL open, append-only history, and the
- * actions the student is allowed to take in the current status.
- */
-@Composable
-fun LeaveDetailScreen(
-    userId: String,
-    request: LeaveRequest,
-    onBack: () -> Unit,
-) {
-    LeaveRequestDetailScreen(
-        userId = userId,
-        requestId = request.id,
-        onBack = onBack,
-        onEdit = onBack,
-        onChanged = {},
-    )
-}
-
 @Composable
 fun LeaveDetailCard(request: LeaveRequest, isOwner: Boolean = true) {
     val palette = mockColors()

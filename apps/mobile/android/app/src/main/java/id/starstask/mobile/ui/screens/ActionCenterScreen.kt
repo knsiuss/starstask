@@ -28,14 +28,8 @@ import id.starstask.mobile.ui.components.WebEmptyState
 import id.starstask.mobile.ui.components.WebInput
 import id.starstask.mobile.ui.components.WebTabStrip
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.Band
-import id.starstask.mobile.ui.theme.Foreground
-import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.Spacing
-import id.starstask.mobile.ui.theme.Warning
-import id.starstask.mobile.ui.theme.WarningSoft
-import id.starstask.mobile.ui.theme.Muted
-import id.starstask.mobile.ui.theme.AccentSoft
+import id.starstask.mobile.ui.theme.mockColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -186,7 +180,7 @@ fun ActionCenterScreen(
     pendingDetailOption?.let { opt ->
         val detail = detailClass
         if (detailClassLoading) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = mockColors().accent)
         } else if (detail != null) {
             if (manageClassId != null) {
                 ClassManageScreen(clazz = detail, onBack = { manageClassId = null }, onOpenGrades = {})
@@ -219,17 +213,17 @@ fun ActionCenterScreen(
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.Section, vertical = Spacing.Section)) {
         Text(
             "CLASS LEADER",
-            color = MutedForeground,
+            color = mockColors().muted,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = androidx.compose.ui.unit.TextUnit(0.08f, androidx.compose.ui.unit.TextUnitType.Em)),
             modifier = Modifier.padding(bottom = 2.dp),
         )
-        Text("Action center", style = MaterialTheme.typography.headlineMedium, color = Foreground, modifier = Modifier.padding(bottom = 2.dp))
+        Text("Action center", style = MaterialTheme.typography.headlineMedium, color = mockColors().ink, modifier = Modifier.padding(bottom = 2.dp))
         val summaryText = center?.let { buildActionSummary(it.totals) + " Today's sessions are counted in your local time." }
             ?: "Everything waiting on you across the classes you lead. Today's sessions are counted in your local time."
-        Text(summaryText, color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = Spacing.Md))
+        Text(summaryText, color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = Spacing.Md))
 
         when {
-            loading -> CircularProgressIndicator()
+            loading -> CircularProgressIndicator(color = mockColors().accent)
             error != null -> WebAlert(message = error!!)
             sc == null || sc!!.managedClassIds.isEmpty() -> WebEmptyState(
                 title = "No classes to lead yet",
@@ -333,7 +327,7 @@ private fun ActionOverviewTab(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
             OverviewStatCard("Pending Requests", totalPending, Lucide.ListChecks, modifier = Modifier.weight(1f), onClick = { onNavigate("assignments", null) })
             OverviewStatCard("Assignment Requests", pendingAssignments, Lucide.ClipboardCheck, modifier = Modifier.weight(1f), onClick = { onNavigate("assignments", null) })
@@ -347,41 +341,41 @@ private fun ActionOverviewTab(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-                        Icon(Lucide.Clock3, contentDescription = null, tint = Foreground, modifier = Modifier.size(Spacing.Section))
-                        Text("Recent requests", style = MaterialTheme.typography.titleMedium, color = Foreground)
+                        Icon(Lucide.Clock3, contentDescription = null, tint = mockColors().ink, modifier = Modifier.size(Spacing.Section))
+                        Text("Recent requests", style = MaterialTheme.typography.titleMedium, color = mockColors().ink)
                     }
-                    Text("Latest requests that need your attention.", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Text("Latest requests that need your attention.", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                 }
                 Row(
                     modifier = Modifier.clickable { onNavigate("assignments", null) }.padding(start = Spacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.Xs),
                 ) {
-                    Text("View all requests", color = id.starstask.mobile.ui.theme.Accent, style = MaterialTheme.typography.labelMedium)
-                    Icon(Lucide.ArrowRight, contentDescription = null, tint = id.starstask.mobile.ui.theme.Accent, modifier = Modifier.size(Spacing.Xl))
+                    Text("View all requests", color = mockColors().accent, style = MaterialTheme.typography.labelMedium)
+                    Icon(Lucide.ArrowRight, contentDescription = null, tint = mockColors().accent, modifier = Modifier.size(Spacing.Xl))
                 }
             }
             if (recent.isEmpty()) {
-                Text("No recent requests. New submissions appear here as they arrive.", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Md))
+                Text("No recent requests. New submissions appear here as they arrive.", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Md))
             } else {
                 recent.forEach { item ->
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Md).clickable { onRecentClick(item) }, verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier.size(36.dp).background(id.starstask.mobile.ui.theme.AccentSoft, CircleShape),
+                            modifier = Modifier.size(36.dp).background(mockColors().accentSofter, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(item.studentName.firstOrNull()?.uppercase() ?: "?", color = id.starstask.mobile.ui.theme.Accent, style = MaterialTheme.typography.labelMedium)
+                            Text(item.studentName.firstOrNull()?.uppercase() ?: "?", color = mockColors().accent, style = MaterialTheme.typography.labelMedium)
                         }
                         Column(modifier = Modifier.weight(1f).padding(horizontal = Spacing.Md)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-                                Text(item.studentName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = Foreground, maxLines = 1)
-                                Text(item.studentId, color = MutedForeground, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                Text(item.studentName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = mockColors().ink, maxLines = 1)
+                                Text(item.studentId, color = mockColors().muted, style = MaterialTheme.typography.labelSmall, maxLines = 1)
                             }
-                            Text("${item.type} · ${item.course} · ${item.className}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-                            if (item.date != null) Text(formatLeaveDate(item.date.take(10)), color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                            Text("${item.type} · ${item.course} · ${item.className}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                            if (item.date != null) Text(formatLeaveDate(item.date.take(10)), color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                         }
                         StarsTaskBadge(item.statusLabel, item.statusVariant)
-                        Icon(Lucide.ArrowRight, contentDescription = null, tint = MutedForeground, modifier = Modifier.padding(start = Spacing.Sm).size(Spacing.Section))
+                        Icon(Lucide.ArrowRight, contentDescription = null, tint = mockColors().muted, modifier = Modifier.padding(start = Spacing.Sm).size(Spacing.Section))
                     }
                 }
             }
@@ -389,8 +383,8 @@ private fun ActionOverviewTab(
 
         WebCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-                Icon(Lucide.Users, contentDescription = null, tint = Foreground, modifier = Modifier.size(Spacing.Section))
-                Text("Your classes", style = MaterialTheme.typography.titleMedium, color = Foreground)
+                Icon(Lucide.Users, contentDescription = null, tint = mockColors().ink, modifier = Modifier.size(Spacing.Section))
+                Text("Your classes", style = MaterialTheme.typography.titleMedium, color = mockColors().ink)
             }
             if (selected != null) {
                 ActionClassDropdown(
@@ -409,8 +403,8 @@ private fun ActionOverviewTab(
 
         WebCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-                Icon(Lucide.Zap, contentDescription = null, tint = Foreground, modifier = Modifier.size(Spacing.Section))
-                Text("Quick actions", style = MaterialTheme.typography.titleMedium, color = Foreground)
+                Icon(Lucide.Zap, contentDescription = null, tint = mockColors().ink, modifier = Modifier.size(Spacing.Section))
+                Text("Quick actions", style = MaterialTheme.typography.titleMedium, color = mockColors().ink)
             }
             QuickActionRow(icon = Lucide.FileCheck2, label = "Review assignment requests") { onNavigate("assignments", null) }
             QuickActionRow(icon = Lucide.ClipboardList, label = "Review absence requests") { onNavigate("absences", null) }
@@ -490,10 +484,10 @@ private fun OverviewStatCard(label: String, value: Int, icon: ImageVector, modif
     val content: @Composable () -> Unit = {
         WebCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-                Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-                Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                Icon(icon, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+                Text(label, color = mockColors().muted, style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
-            Text(value.toString(), style = MaterialTheme.typography.headlineSmall, color = Foreground, modifier = Modifier.padding(top = Spacing.Xs))
+            Text(value.toString(), style = MaterialTheme.typography.headlineSmall, color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Xs))
         }
     }
     if (onClick != null) {
@@ -511,13 +505,13 @@ private fun LabelValueRow(icon: ImageVector, label: String, value: String, onCli
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-            Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-            Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            Icon(icon, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+            Text(label, color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = Foreground)
+            Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = mockColors().ink)
             if (onClick != null) {
-                Icon(Lucide.ArrowRight, contentDescription = null, tint = MutedForeground, modifier = Modifier.padding(start = Spacing.Sm).size(Spacing.Section))
+                Icon(Lucide.ArrowRight, contentDescription = null, tint = mockColors().muted, modifier = Modifier.padding(start = Spacing.Sm).size(Spacing.Section))
             }
         }
     }
@@ -526,12 +520,12 @@ private fun LabelValueRow(icon: ImageVector, label: String, value: String, onCli
 @Composable
 private fun QuickActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = Spacing.Sm).border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp)).clickable { onClick() }.padding(horizontal = Spacing.Xl, vertical = Spacing.Md),
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.Sm).border(1.dp, mockColors().cardBorder, RoundedCornerShape(12.dp)).clickable { onClick() }.padding(horizontal = Spacing.Xl, vertical = Spacing.Md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
-        Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = Foreground)
+        Icon(icon, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Section))
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = mockColors().ink)
     }
 }
 
@@ -574,7 +568,7 @@ private fun ClassActionsCard(
     WebCard(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(row.className, style = MaterialTheme.typography.titleMedium, color = Foreground, maxLines = 1)
+                Text(row.className, style = MaterialTheme.typography.titleMedium, color = mockColors().ink, maxLines = 1)
                 val sem = row.semester
                 val year = row.academicYear
                 val sub = when {
@@ -583,12 +577,12 @@ private fun ClassActionsCard(
                     year.isNotBlank() -> year
                     else -> ""
                 }
-                if (sub.isNotBlank()) Text(sub, color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                if (sub.isNotBlank()) Text(sub, color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
             }
             Box(
-                modifier = Modifier.background(if (row.total > 0) WarningSoft else Muted, RoundedCornerShape(999.dp)).padding(horizontal = Spacing.Md, vertical = Spacing.Xxs),
+                modifier = Modifier.background(if (row.total > 0) mockColors().fairBg else mockColors().chip, RoundedCornerShape(999.dp)).padding(horizontal = Spacing.Md, vertical = Spacing.Xxs),
             ) {
-                Text("${row.total} ${if (row.total == 1) "action" else "actions"}", color = if (row.total > 0) Warning else MutedForeground, style = MaterialTheme.typography.labelSmall)
+                Text("${row.total} ${if (row.total == 1) "action" else "actions"}", color = if (row.total > 0) mockColors().fairFg else mockColors().muted, style = MaterialTheme.typography.labelSmall)
             }
         }
         val metrics = listOf(
@@ -602,32 +596,32 @@ private fun ClassActionsCard(
                     val (icon, label, value) = triple
                     Row(
                         modifier = Modifier.weight(1f)
-                            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp))
+                            .border(1.dp, mockColors().cardBorder, RoundedCornerShape(12.dp))
                             .clickable { onNavigate(targetTab, row.classId) }
                             .padding(horizontal = Spacing.Md, vertical = Spacing.Md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(icon, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
-                        Text(label, color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal = Spacing.Sm), maxLines = 1)
-                        Text(value.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = if (value > 0) Foreground else MutedForeground)
+                        Icon(icon, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Section))
+                        Text(label, color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal = Spacing.Sm), maxLines = 1)
+                        Text(value.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = if (value > 0) mockColors().ink else mockColors().muted)
                     }
                 }
             }
         }
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md)
-                .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp))
+                .border(1.dp, mockColors().cardBorder, RoundedCornerShape(12.dp))
                 .clickable { onOpenReports(row.classId) }
                 .padding(horizontal = Spacing.Md, vertical = Spacing.Md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Lucide.FileWarning, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
-            Text("Open reader reports", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal = Spacing.Sm), maxLines = 1)
-            Text(row.counts.openReports.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = if (row.counts.openReports > 0) Foreground else MutedForeground)
+            Icon(Lucide.FileWarning, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Section))
+            Text("Open reader reports", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal = Spacing.Sm), maxLines = 1)
+            Text(row.counts.openReports.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = if (row.counts.openReports > 0) mockColors().ink else mockColors().muted)
         }
         Row(modifier = Modifier.padding(top = Spacing.Md).clickable { onManageClass(row.classId) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
-            Text("Manage this class", color = id.starstask.mobile.ui.theme.Accent, style = MaterialTheme.typography.bodySmall)
-            Icon(Lucide.ArrowRight, contentDescription = null, tint = id.starstask.mobile.ui.theme.Accent, modifier = Modifier.size(Spacing.Xl))
+            Text("Manage this class", color = mockColors().accent, style = MaterialTheme.typography.bodySmall)
+            Icon(Lucide.ArrowRight, contentDescription = null, tint = mockColors().accent, modifier = Modifier.size(Spacing.Xl))
         }
     }
 }
@@ -667,13 +661,13 @@ private fun ActionAssignmentsTab(
     val pending = filtered.filter { it.displayStatus.name == "PENDING" }
     val decided = filtered.filter { it.displayStatus.name != "PENDING" }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
         WebCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Search", style = MaterialTheme.typography.labelMedium, color = Foreground)
+            Text("Search", style = MaterialTheme.typography.labelMedium, color = mockColors().ink)
             WebInput(value = query, onValueChange = { query = it }, label = "Student or title…", modifier = Modifier.padding(top = Spacing.Xs))
             Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Class", style = MaterialTheme.typography.labelMedium, color = Foreground)
+                    Text("Class", style = MaterialTheme.typography.labelMedium, color = mockColors().ink)
                     FilterDropdown(
                         options = listOf("all" to "All classes") + classes.map { it.id to (it.classCode ?: it.name) },
                         selected = classFilter ?: "all",
@@ -681,7 +675,7 @@ private fun ActionAssignmentsTab(
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Course", style = MaterialTheme.typography.labelMedium, color = Foreground)
+                    Text("Course", style = MaterialTheme.typography.labelMedium, color = mockColors().ink)
                     FilterDropdown(
                         options = listOf("all" to "All courses") + courses.map { it.id to (it.code ?: it.name) },
                         selected = courseFilter ?: "all",
@@ -690,7 +684,7 @@ private fun ActionAssignmentsTab(
                     )
                 }
             }
-            Text("Status", style = MaterialTheme.typography.labelMedium, color = Foreground, modifier = Modifier.padding(top = Spacing.Md))
+            Text("Status", style = MaterialTheme.typography.labelMedium, color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Md))
             FilterDropdown(
                 options = listOf("all" to "All statuses", "pending" to "Pending", "approved" to "Approved", "rejected" to "Rejected", "revision_requested" to "Revision Requested"),
                 selected = statusFilter,
@@ -698,38 +692,38 @@ private fun ActionAssignmentsTab(
             )
         }
 
-        Text("Waiting for review (${pending.size})", style = MaterialTheme.typography.titleMedium, color = Foreground)
+        Text("Waiting for review (${pending.size})", style = MaterialTheme.typography.titleMedium, color = mockColors().ink)
         if (pending.isEmpty()) {
-            Text("No publication requests are waiting for review.", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            Text("No publication requests are waiting for review.", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
         } else {
             pending.forEach { req ->
                 WebCard(modifier = Modifier.fillMaxWidth()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Sm), verticalAlignment = Alignment.CenterVertically) {
                         StarsTaskBadge("Pending", BadgeVariant.WARNING)
-                        Text("${req.classCode ?: req.className} · ${req.courseName}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                        Text("${req.classCode ?: req.className} · ${req.courseName}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, maxLines = 1)
                     }
-                    Text("by ${req.submitterName ?: "Student"}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
-                    Text(req.title, style = MaterialTheme.typography.titleMedium, color = Foreground, modifier = Modifier.padding(top = Spacing.Sm))
-                    Text("${req.classCode ?: req.className}  ·  Proposed ${formatLeaveDate(req.createdAt.take(10))} · Submitted ${formatLeaveDate(req.createdAt.take(10))}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Text("by ${req.submitterName ?: "Student"}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
+                    Text(req.title, style = MaterialTheme.typography.titleMedium, color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Sm))
+                    Text("${req.classCode ?: req.className}  ·  Proposed ${formatLeaveDate(req.createdAt.take(10))} · Submitted ${formatLeaveDate(req.createdAt.take(10))}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = Spacing.Sm)
-                            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE7E7E3), RoundedCornerShape(12.dp))
+                            .border(1.dp, mockColors().cardBorder, RoundedCornerShape(12.dp))
                             .clickable { onReview(req) }
                             .padding(horizontal = Spacing.Xl, vertical = Spacing.Md),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Lucide.FileCheck2, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section))
-                        Text("Review request", style = MaterialTheme.typography.bodyMedium, color = Foreground)
+                        Icon(Lucide.FileCheck2, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Section))
+                        Text("Review request", style = MaterialTheme.typography.bodyMedium, color = mockColors().ink)
                     }
                 }
             }
         }
 
         if (decided.isNotEmpty()) {
-            Text("Recently decided", style = MaterialTheme.typography.titleMedium, color = Foreground)
+            Text("Recently decided", style = MaterialTheme.typography.titleMedium, color = mockColors().ink)
             decided.forEach { req ->
                 val (label, variant) = when (req.displayStatus) {
                     id.starstask.mobile.data.RequestDisplayStatus.APPROVED -> "Approved" to BadgeVariant.SUCCESS
@@ -741,16 +735,16 @@ private fun ActionAssignmentsTab(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
                             StarsTaskBadge(label, variant)
-                            Text("${req.classCode ?: ""} · ${req.courseName}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                            Text("${req.classCode ?: ""} · ${req.courseName}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("View", color = id.starstask.mobile.ui.theme.Accent, style = MaterialTheme.typography.bodySmall)
-                            Icon(Lucide.ArrowRight, contentDescription = null, tint = id.starstask.mobile.ui.theme.Accent, modifier = Modifier.size(Spacing.Xl))
+                            Text("View", color = mockColors().accent, style = MaterialTheme.typography.bodySmall)
+                            Icon(Lucide.ArrowRight, contentDescription = null, tint = mockColors().accent, modifier = Modifier.size(Spacing.Xl))
                         }
                     }
-                    Text("by ${req.submitterName ?: "Student"}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
-                    Text(req.title, style = MaterialTheme.typography.titleMedium, color = Foreground, modifier = Modifier.padding(top = Spacing.Sm))
-                    Text("${req.classCode ?: req.className}  ·  Proposed ${formatLeaveDate(req.createdAt.take(10))} · Submitted ${formatLeaveDate(req.createdAt.take(10))}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Text("by ${req.submitterName ?: "Student"}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
+                    Text(req.title, style = MaterialTheme.typography.titleMedium, color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Sm))
+                    Text("${req.classCode ?: req.className}  ·  Proposed ${formatLeaveDate(req.createdAt.take(10))} · Submitted ${formatLeaveDate(req.createdAt.take(10))}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -795,8 +789,8 @@ private fun ActionAbsencesTab(scope: WorkspaceScope, onOpenLeaveDetail: (String)
         items = listManagedLeaveRequests(scope, page = 1, pageSize = 50)
         loading = false
     }
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
-        if (loading) CircularProgressIndicator()
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
+        if (loading) CircularProgressIndicator(color = mockColors().accent)
         else if (items.isEmpty()) {
             WebEmptyState(title = "No absence requests", description = "New requests appear here as students submit them.")
         } else {
@@ -820,21 +814,21 @@ private fun ActionAbsencesTab(scope: WorkspaceScope, onOpenLeaveDetail: (String)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         StarsTaskBadge(label, variant)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
-                            Icon(Lucide.FileCheck2, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-                            Text("Submitted ${formatLeaveDate((req.submittedAt ?: req.createdAt).take(10))}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                            Icon(Lucide.FileCheck2, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+                            Text("Submitted ${formatLeaveDate((req.submittedAt ?: req.createdAt).take(10))}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    Text(req.reference.ifBlank { req.id.take(12).uppercase() }, color = MutedForeground, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = Spacing.Sm))
-                    Text(req.studentName, style = MaterialTheme.typography.titleMedium, color = Foreground, modifier = Modifier.padding(top = Spacing.Xxs))
-                    Text("${req.className} · $reasonLabel", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                    Text(req.reference.ifBlank { req.id.take(12).uppercase() }, color = mockColors().muted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = Spacing.Sm))
+                    Text(req.studentName, style = MaterialTheme.typography.titleMedium, color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Xxs))
+                    Text("${req.className} · $reasonLabel", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs), modifier = Modifier.padding(top = Spacing.Sm)) {
-                        Icon(Lucide.CalendarDays, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-                        Text("$dateRange · $dayCount ${if (dayCount == 1) "day" else "days"}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                        Icon(Lucide.CalendarDays, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+                        Text("$dateRange · $dayCount ${if (dayCount == 1) "day" else "days"}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                     }
-                    Text(courseLabel, color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
+                    Text(courseLabel, color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Xs))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs), modifier = Modifier.padding(top = Spacing.Xs)) {
-                        Icon(Lucide.Paperclip, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-                        Text("${req.evidenceCount} ${if (req.evidenceCount == 1) "file" else "files"}", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                        Icon(Lucide.Paperclip, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+                        Text("${req.evidenceCount} ${if (req.evidenceCount == 1) "file" else "files"}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -874,13 +868,13 @@ private fun ActionAttendanceTab(
     val allMeetings = courses.flatMap { it.meetings }
     val latestActivity = allMeetings.maxByOrNull { it.startsAt }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
         if (selected == null) {
             WebEmptyState(title = "No classes to show yet", description = "Administer an active class to see its attendance overview here.")
             return@Column
         }
         WebCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Class", style = MaterialTheme.typography.labelMedium, color = Foreground)
+            Text("Class", style = MaterialTheme.typography.labelMedium, color = mockColors().ink)
             ActionClassDropdown(
                 options = managedOptions.map { it.id to "${it.classCode ?: it.name} — Semester ${it.semester ?: ""} (${it.academicYear ?: ""})" },
                 selected = selected.id,
@@ -888,7 +882,7 @@ private fun ActionAttendanceTab(
             )
         }
         if (loading) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = mockColors().accent)
         } else {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
                 OverviewStatCard("Total courses", courses.size, Lucide.BookOpen, modifier = Modifier.weight(1f))
@@ -898,7 +892,7 @@ private fun ActionAttendanceTab(
                 OverviewStatCard("Total students", totalStudents, Lucide.Users, modifier = Modifier.weight(1f))
                 OverviewStatCard("Pending requests", pendingForClass, Lucide.Clock3, modifier = Modifier.weight(1f))
             }
-            Box(modifier = Modifier.fillMaxWidth().background(Band, RoundedCornerShape(12.dp)).padding(horizontal = Spacing.Xl, vertical = Spacing.Md)) {
+            Box(modifier = Modifier.fillMaxWidth().background(mockColors().chip, RoundedCornerShape(12.dp)).padding(horizontal = Spacing.Xl, vertical = Spacing.Md)) {
                 val text = if (latestActivity != null) {
                     val phaseLabel = when (latestActivity.phase) {
                         "scheduled" -> "Scheduled"
@@ -911,7 +905,7 @@ private fun ActionAttendanceTab(
                 } else {
                     "No attendance recorded for this class yet."
                 }
-                Text(text, color = Foreground, style = MaterialTheme.typography.bodySmall)
+                Text(text, color = mockColors().ink, style = MaterialTheme.typography.bodySmall)
             }
             if (exportError != null) WebAlert(message = exportError!!)
             if (courses.isEmpty()) {
@@ -923,7 +917,7 @@ private fun ActionAttendanceTab(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
-                                    Text(course.name, style = MaterialTheme.typography.titleMedium, color = Foreground, maxLines = 1)
+                                    Text(course.name, style = MaterialTheme.typography.titleMedium, color = mockColors().ink, maxLines = 1)
                                     if (latest != null) {
                                         val (label, variant) = when (latest.phase) {
                                             "finalized" -> "Completed" to BadgeVariant.SUCCESS
@@ -936,30 +930,30 @@ private fun ActionAttendanceTab(
                                         StarsTaskBadge(label, variant)
                                     }
                                 }
-                                Text(course.code ?: "No code", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+                                Text(course.code ?: "No code", color = mockColors().muted, style = MaterialTheme.typography.bodySmall)
                             }
-                            Icon(Lucide.ArrowUpRight, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Section).clickable { onOpenAttendanceCourse(course.id, course.name, course.code, selected?.name) })
+                            Icon(Lucide.ArrowUpRight, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Section).clickable { onOpenAttendanceCourse(course.id, course.name, course.code, selected?.name) })
                         }
                         Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
-                                    Icon(Lucide.Users, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-                                    Text("Lecturer", color = MutedForeground, style = MaterialTheme.typography.labelSmall)
+                                    Icon(Lucide.Users, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+                                    Text("Lecturer", color = mockColors().muted, style = MaterialTheme.typography.labelSmall)
                                 }
-                                Text(course.lecturerName ?: "Not set", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = Foreground, modifier = Modifier.padding(top = Spacing.Xs))
+                                Text(course.lecturerName ?: "Not set", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Xs))
                             }
                             Column(modifier = Modifier.weight(1f).padding(start = Spacing.Md)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
-                                    Icon(Lucide.CalendarDays, contentDescription = null, tint = MutedForeground, modifier = Modifier.size(Spacing.Xl))
-                                    Text("Recorded", color = MutedForeground, style = MaterialTheme.typography.labelSmall)
+                                    Icon(Lucide.CalendarDays, contentDescription = null, tint = mockColors().muted, modifier = Modifier.size(Spacing.Xl))
+                                    Text("Recorded", color = mockColors().muted, style = MaterialTheme.typography.labelSmall)
                                 }
-                                Text("${course.meetings.size} ${if (course.meetings.size == 1) "meeting" else "meetings"}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = Foreground, modifier = Modifier.padding(top = Spacing.Xs))
+                                Text("${course.meetings.size} ${if (course.meetings.size == 1) "meeting" else "meetings"}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = mockColors().ink, modifier = Modifier.padding(top = Spacing.Xs))
                             }
                         }
                         Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
                             if (exportingCourseId == course.id) {
                                 CircularProgressIndicator(modifier = Modifier.size(Spacing.Section))
-                                Text("Exporting…", style = MaterialTheme.typography.bodySmall, color = MutedForeground)
+                                Text("Exporting…", style = MaterialTheme.typography.bodySmall, color = mockColors().muted)
                             } else {
                                 QuickActionRow(icon = Lucide.BookOpen, label = "View attendance") {
                                     onOpenAttendanceCourse(course.id, course.name, course.code, selected?.name)
@@ -981,7 +975,7 @@ private fun ActionAttendanceTab(
                             }
                         }
                         if (latest != null) {
-                            Text("Latest Meeting ${latest.meetingNumber} on ${formatLeaveDate(latest.startsAt.take(10))}", color = MutedForeground, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Sm))
+                            Text("Latest Meeting ${latest.meetingNumber} on ${formatLeaveDate(latest.startsAt.take(10))}", color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = Spacing.Sm))
                         }
                     }
                 }

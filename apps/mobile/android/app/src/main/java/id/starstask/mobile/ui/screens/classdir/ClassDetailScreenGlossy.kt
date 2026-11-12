@@ -54,6 +54,7 @@ fun ClassDetailScreenGlossy(
     var attendanceDetailOpen by remember { mutableStateOf(false) }
     var attendanceSessionsOpen by remember { mutableStateOf(false) }
     var absenceRequestsOpen by remember { mutableStateOf(false) }
+    var leaveForwardOpen by remember { mutableStateOf(false) }
     var sessionDetailId by remember { mutableStateOf<String?>(null) }
     var reviewQueueOpen by remember { mutableStateOf(false) }
     var invitesOpen by remember { mutableStateOf(false) }
@@ -156,6 +157,15 @@ fun ClassDetailScreenGlossy(
             classId = clazz.id,
             onBack = { absenceRequestsOpen = false },
             onOpenRequest = { leaveId = it },
+            onOpenForward = if (clazz.isAdmin) ({ leaveForwardOpen = true }) else null,
+        )
+        return
+    }
+    if (leaveForwardOpen) {
+        id.starstask.mobile.ui.screens.ClassLeaveScreen(
+            clazz = clazz,
+            onBack = { leaveForwardOpen = false },
+            userId = userId,
         )
         return
     }
@@ -186,7 +196,7 @@ fun ClassDetailScreenGlossy(
     Box(modifier = Modifier.fillMaxSize().background(mockPageBrush())) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp, start = 0.dp, end = 0.dp),
+            contentPadding = PaddingValues(bottom = 112.dp, start = 0.dp, end = 0.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item(key = "header") {

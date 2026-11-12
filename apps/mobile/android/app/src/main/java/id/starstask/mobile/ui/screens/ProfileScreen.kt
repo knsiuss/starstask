@@ -177,7 +177,7 @@ fun ProfileScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 112.dp),
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
                         item(key = "identity") {

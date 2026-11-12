@@ -61,7 +61,6 @@ val studyDestinations: List<DrawerDestination> = listOf(
     DrawerDestination.ATTENDANCE,
     DrawerDestination.SCHEDULE,
     DrawerDestination.LEAVE,
-    DrawerDestination.MESSAGES,
 )
 
 val leaderDestinations: List<DrawerDestination> = listOf(

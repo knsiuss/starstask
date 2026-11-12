@@ -69,18 +69,20 @@ suspend fun listDmConversations(context: Context, userId: String): List<DmConver
     val names = if (otherIds.isEmpty()) emptyMap<String, String>() else {
         db.from("profiles").select {
             filter { isIn("id", otherIds) }
-        }.decodeJsonArray().associateBy(
-            { it.jsonObject["id"]!!.jsonPrimitive.content },
-            { it.jsonObject["display_name"]?.jsonPrimitive?.contentOrNull() ?: "User" },
-        )
+        }.decodeJsonArray().mapNotNull { row ->
+            row.jsonObject["id"]?.jsonPrimitive?.contentOrNull()?.let { id ->
+                id to (row.jsonObject["display_name"]?.jsonPrimitive?.contentOrNull() ?: "User")
+            }
+        }.toMap()
     }
     val keys = if (otherIds.isEmpty()) emptyMap<String, String>() else {
         db.from("dm_keys").select {
             filter { isIn("user_id", otherIds) }
-        }.decodeJsonArray().associateBy(
-            { it.jsonObject["user_id"]!!.jsonPrimitive.content },
-            { it.jsonObject["public_key"]?.jsonPrimitive?.contentOrNull() ?: "" },
-        )
+        }.decodeJsonArray().mapNotNull { row ->
+            row.jsonObject["user_id"]?.jsonPrimitive?.contentOrNull()?.let { id ->
+                id to (row.jsonObject["public_key"]?.jsonPrimitive?.contentOrNull() ?: "")
+            }
+        }.toMap()
     }
     val lastRows = db.from("dm_messages").select {
         filter {
@@ -138,12 +140,18 @@ suspend fun loadDmMessages(
         limit(100)
     }.decodeJsonArray().reversed()
 
-    val senderIds = rows.mapNotNull {
-        it.jsonObject["sender_id"]?.jsonPrimitive?.content
-    }.distinct()
-    // Peer key = the other participant's key (1:1 conversations).
     val myId = SupabaseProvider.client.auth.currentUserOrNull()?.id ?: ""
-    val peerId = senderIds.firstOrNull { it != myId } ?: senderIds.firstOrNull() ?: ""
+    // Peer key = the other participant's key (1:1 conversations). Resolve via
+    // dm_participants, not by guessing from senders — otherwise a window where
+    // only the local user sent anything yields a self key and every message
+    // silently fails to decrypt.
+    val peerId = db.from("dm_participants").select {
+        filter {
+            eq("conversation_id", conversationId)
+            neq("user_id", myId)
+        }
+        limit(1)
+    }.decodeJsonArray().firstOrNull()?.jsonObject?.get("user_id")?.jsonPrimitive?.contentOrNull() ?: ""
     val peerKey = if (peerId.isNotEmpty()) {
         db.from("dm_keys").select {
             filter { eq("user_id", peerId) }

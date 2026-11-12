@@ -189,3 +189,18 @@ fun AdminToolRow(
     Text(description, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
 }
 
+@Composable
+private fun MetaRow(label: String, value: String, note: String? = null, muted: Boolean = false) {
+    val scheme = MaterialTheme.colorScheme
+    Column(modifier = Modifier.padding(vertical = Spacing.Lg)) {
+        Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(2.dp))
+        Text(value, color = if (muted) scheme.onSurfaceVariant else scheme.onBackground)
+        if (note != null) {
+            Spacer(Modifier.height(1.dp))
+            Text(note, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(Modifier.height(10.dp))
+        HorizontalDivider(color = scheme.outline)
+    }
+}

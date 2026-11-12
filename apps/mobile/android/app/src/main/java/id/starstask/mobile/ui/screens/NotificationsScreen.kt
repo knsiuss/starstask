@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +45,7 @@ import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.mockColors
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
     userId: String,
@@ -55,6 +59,8 @@ fun NotificationsScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var markingAll by remember { mutableStateOf(false) }
+    var reloadTick by remember { mutableStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
 
     fun persistRows(next: List<NotificationRow>) {
         id.starstask.mobile.data.writeDiskCache(
@@ -70,8 +76,8 @@ fun NotificationsScreen(
         ) ?: emptyList()
     }
 
-    LaunchedEffect(userId) {
-        loading = true
+    LaunchedEffect(userId, reloadTick) {
+        if (!refreshing) loading = true
         val freshResult = runCatching { loadNotifications() }
         freshResult.onSuccess { fresh ->
             rows = fresh
@@ -81,6 +87,7 @@ fun NotificationsScreen(
             if (rows.isEmpty()) error = "Could not load notifications."
         }
         loading = false
+        refreshing = false
     }
 
     fun markOne(id: String) {
@@ -106,10 +113,20 @@ fun NotificationsScreen(
         .map { row -> row to groupKey(today, row.createdAt) }
         .groupBy({ it.second }, { it.first })
 
+    val pullState = rememberPullToRefreshState()
     Box(modifier = Modifier.fillMaxSize().background(id.starstask.mobile.ui.theme.mockPageBrush())) {
+        PullToRefreshBox(
+            state = pullState,
+            isRefreshing = refreshing,
+            onRefresh = {
+                refreshing = true
+                reloadTick++
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item(key = "header") {
@@ -211,6 +228,7 @@ fun NotificationsScreen(
                     }
                 }
             }
+        }
         }
     }
 }

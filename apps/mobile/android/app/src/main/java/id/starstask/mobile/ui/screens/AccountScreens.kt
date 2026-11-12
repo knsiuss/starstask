@@ -33,7 +33,6 @@ import id.starstask.mobile.data.backupDeviceKey
 import id.starstask.mobile.data.ensurePublishedDeviceKey
 import id.starstask.mobile.data.restoreDeviceKey
 import id.starstask.mobile.data.safetyFingerprint
-import id.starstask.mobile.data.contentOrNull
 import id.starstask.mobile.data.decodeJsonArray
 import id.starstask.mobile.data.userFacingMessage
 import id.starstask.mobile.ui.components.BadgeTone
@@ -159,7 +158,7 @@ fun SecurityPrivacyScreen(
                     scope.launch {
                         runCatching { restoreDeviceKey(context, userId, restorePassphrase) }
                             .onSuccess {
-                                restoreStatus = "Key restored on this device. Refresh Messages to continue."
+                                restoreStatus = "Key restored on this device. Direct messages are temporarily disabled."
                                 restorePassphrase = ""
                                 status = "ready"
                             }

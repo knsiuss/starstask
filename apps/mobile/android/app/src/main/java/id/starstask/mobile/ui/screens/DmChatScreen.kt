@@ -102,6 +102,7 @@ fun DmChatScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 reverseLayout = true,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 112.dp),
             ) {
                 items(messages.reversed(), key = { it.id.ifEmpty { it.hashCode().toString() } }) { message ->
                     val mine = message.senderId == userId

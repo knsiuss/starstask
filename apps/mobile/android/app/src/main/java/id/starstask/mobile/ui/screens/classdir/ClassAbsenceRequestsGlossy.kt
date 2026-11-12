@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +51,7 @@ fun ClassAbsenceRequestsGlossy(
     classId: String,
     onBack: () -> Unit,
     onOpenRequest: (String) -> Unit,
+    onOpenForward: (() -> Unit)? = null,
 ) {
     val palette = mockColors()
     var statusFilter by remember { mutableStateOf<String?>(null) }
@@ -75,6 +77,9 @@ fun ClassAbsenceRequestsGlossy(
         onBack = onBack,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (onOpenForward != null) {
+                ForwardPackageRow(onClick = onOpenForward, palette = palette)
+            }
             FilterChipRow(
                 selected = statusFilter,
                 counts = requests.groupingBy { it.status }.eachCount(),
@@ -95,6 +100,35 @@ fun ClassAbsenceRequestsGlossy(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ForwardPackageRow(
+    onClick: () -> Unit,
+    palette: id.starstask.mobile.ui.theme.MockPalette,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .clip(RoundedCornerShape(18.dp))
+            .background(palette.accentSofter)
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .heightIn(min = 52.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(Lucide.Send, contentDescription = null, tint = palette.accent, modifier = Modifier.size(19.dp))
+        Text(
+            "Forward package to lecturer",
+            color = palette.ink,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(Lucide.ChevronRight, contentDescription = null, tint = palette.muted, modifier = Modifier.size(18.dp))
     }
 }
 

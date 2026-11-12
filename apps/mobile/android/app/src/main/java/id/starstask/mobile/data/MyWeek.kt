@@ -55,10 +55,9 @@ suspend fun loadMyWeek(userId: String, weekOffset: Int): MyWeekData {
     if (memberships.isNotEmpty()) {
         val classNames = db.from("classes").select {
             filter { isIn("id", memberships) }
-        }.decodeJsonArray().associateBy(
-            { it.jsonObject["id"]!!.jsonPrimitive.content },
-            { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
-        )
+        }.decodeJsonArray().mapNotNull { row ->
+            row.jsonObject["id"]?.jsonPrimitive?.content?.let { id -> id to (row.jsonObject["name"]?.jsonPrimitive?.contentOrNull()) }
+        }.toMap()
 
         val sessions = db.from("discussion_sessions").select {
             filter {

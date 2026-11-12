@@ -105,7 +105,6 @@ fun StarsTaskDrawerContent(
                 )
             }
         }
-        // Campus (University Info) removed.
         if (isClassAdmin) {
             DrawerSection(label = "Class leader") {
                 leaderDestinations.forEach { dest ->

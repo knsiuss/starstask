@@ -109,7 +109,10 @@ private fun storeDeviceKeyPair(context: Context, pair: DeviceKeyPair) {
         .putString(KEY_D, Base64.encodeToString(fixed32(pair.privateKey.s), Base64.NO_WRAP))
         .putString(KEY_X, Base64.encodeToString(fixed32(pair.publicKey.w.affineX), Base64.NO_WRAP))
         .putString(KEY_Y, Base64.encodeToString(fixed32(pair.publicKey.w.affineY), Base64.NO_WRAP))
-        .apply()
+        // Synchronous commit — an async apply() can be lost when the process
+        // dies right after the public key was already published server-side,
+        // leaving the device with no usable private key.
+        .commit()
 }
 fun getOrCreateDeviceKeyPair(context: Context): DeviceKeyPair {
     loadDeviceKeyPair(context)?.let { return it }

@@ -4,9 +4,12 @@ import id.starstask.mobile.BuildConfig
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // Native mirror of apps/web/src/lib/db/calendar.ts (listCalendarEvents).
 // Assignments, sessions, official events, personal events, absences and the
@@ -192,7 +195,10 @@ suspend fun listCalendar(
                 limit(EVENT_LIMIT.toLong())
             }.decodeJsonArray()
             assignmentRows += publicRows.map { it.jsonObject }
-                .filter { it["class_id"].toString() == "null" && it["subject_id"].toString() == "null" }
+                .filter {
+                    (it["class_id"] == null || it["class_id"] is JsonNull) &&
+                        (it["subject_id"] == null || it["subject_id"] is JsonNull)
+                }
         }
     }
     val deduped = assignmentRows.distinctBy { it["id"]?.jsonPrimitive?.contentOrNull() }
@@ -476,36 +482,38 @@ suspend fun syncSessionToGoogleCalendar(sessionId: String): CalendarSyncResult {
         return CalendarSyncResult.Failed("Site URL not configured — set starstask.site.url in local.properties.")
     }
     val url = java.net.URL("$baseUrl/api/sessions/$sessionId/calendar-sync")
-    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
-        connectTimeout = 15_000
-        readTimeout = 60_000
-        requestMethod = "POST"
-        setRequestProperty("Authorization", "Bearer $token")
-        setRequestProperty("Accept", "application/json")
-        doOutput = true
-        outputStream.close()
-    }
-    val status = try {
-        conn.responseCode
-    } catch (_: java.io.IOException) {
-        conn.disconnect()
-        return CalendarSyncResult.Failed("Calendar is not reachable. Try again shortly.")
-    }
-    return try {
-        if (status == java.net.HttpURLConnection.HTTP_OK) {
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            val eventId = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject["eventId"]?.jsonPrimitive?.content }.getOrNull()
-            CalendarSyncResult.Synced(eventId)
-        } else {
-            val body = runCatching { conn.errorStream?.bufferedReader()?.use { it.readText() } }.getOrNull().orEmpty()
-            val message = when {
-                "not_connected" in body || "calendar_not_connected" in body -> "Connect Google Calendar first in Settings."
-                "reconnect" in body || "revoked" in body -> "Google Calendar access was revoked — reconnect in Settings."
-                else -> "Google Calendar sync failed. Try again."
-            }
-            CalendarSyncResult.Failed(message)
+    return withContext(Dispatchers.IO) {
+        val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 60_000
+            requestMethod = "POST"
+            setRequestProperty("Authorization", "Bearer $token")
+            setRequestProperty("Accept", "application/json")
+            doOutput = true
+            outputStream.close()
         }
-    } finally {
-        conn.disconnect()
+        val status = try {
+            conn.responseCode
+        } catch (_: java.io.IOException) {
+            conn.disconnect()
+            return@withContext CalendarSyncResult.Failed("Calendar is not reachable. Try again shortly.")
+        }
+        try {
+            if (status == java.net.HttpURLConnection.HTTP_OK) {
+                val body = conn.inputStream.bufferedReader().use { it.readText() }
+                val eventId = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject["eventId"]?.jsonPrimitive?.content }.getOrNull()
+                CalendarSyncResult.Synced(eventId)
+            } else {
+                val body = runCatching { conn.errorStream?.bufferedReader()?.use { it.readText() } }.getOrNull().orEmpty()
+                val message = when {
+                    "not_connected" in body || "calendar_not_connected" in body -> "Connect Google Calendar first in Settings."
+                    "reconnect" in body || "revoked" in body -> "Google Calendar access was revoked — reconnect in Settings."
+                    else -> "Google Calendar sync failed. Try again."
+                }
+                CalendarSyncResult.Failed(message)
+            }
+        } finally {
+            conn.disconnect()
+        }
     }
 }

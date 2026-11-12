@@ -92,8 +92,9 @@ suspend fun registerNativePushToken(token: String, deviceLabel: String?): String
     )
     return try {
         kotlinx.serialization.json.Json.parseToJsonElement(data.toString()).jsonPrimitive.contentOrNull()
+            ?.takeIf { it.isNotBlank() }
     } catch (_: Exception) {
-        data.toString()
+        null
     }
 }
 

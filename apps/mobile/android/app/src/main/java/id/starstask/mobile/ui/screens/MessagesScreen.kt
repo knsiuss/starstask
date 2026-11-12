@@ -73,7 +73,7 @@ fun MessagesScreen(userId: String) {
         } else if (conversations.isEmpty()) {
             Text("No conversations yet. Start one from the web or by searching a classmate.", color = MutedForeground)
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 112.dp)) {
                 items(conversations, key = { it.id }) { conversation ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Surface),

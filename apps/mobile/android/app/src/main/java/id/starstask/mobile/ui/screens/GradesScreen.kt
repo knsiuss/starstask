@@ -88,7 +88,7 @@ fun GradesScreen(classId: String, onBack: () -> Unit) {
             Text("No courses yet for this class.", color = MutedForeground)
         }
         WebSectionTitle("Courses (${courses.size})")
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.Md)) {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.Md), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 112.dp)) {
             items(courses, key = { it.id }) { item ->
                 WebCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(Spacing.Section), verticalArrangement = Arrangement.spacedBy(Spacing.Xs)) {
@@ -119,7 +119,7 @@ private fun GradeEditor(
         roster = runCatching { listClassRoster(classId) }.getOrDefault(emptyList())
     }
 
-    WebScreen {
+    WebScreen(modifier = Modifier.padding(bottom = 112.dp)) {
         WebScreenHeader(title = course.name, subtitle = "Inline component grade")
         WebButton(label = "← Courses", onClick = onBack, variant = WebButtonVariant.SECONDARY)
         if (notice != null) WebAlert(message = notice!!, variant = id.starstask.mobile.ui.components.WebAlertVariant.SUCCESS)

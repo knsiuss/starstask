@@ -93,6 +93,7 @@ fun AttendanceSessionDetailScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.Section, vertical = Spacing.Xl),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xxl),
     ) {
         item(key = "back") {

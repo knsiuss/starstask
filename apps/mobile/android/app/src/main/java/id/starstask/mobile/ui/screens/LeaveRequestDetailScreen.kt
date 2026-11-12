@@ -155,7 +155,8 @@ fun LeaveRequestDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.Section, vertical = Spacing.Xl),
+            .padding(horizontal = Spacing.Section, vertical = Spacing.Xl)
+            .padding(bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xxl),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

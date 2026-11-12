@@ -11,7 +11,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.runtime.Composable
@@ -22,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,7 +43,6 @@ import id.starstask.mobile.ui.screens.FeedbackScreen
 import id.starstask.mobile.ui.screens.GradesScreen
 import id.starstask.mobile.ui.screens.HomeScreen
 import id.starstask.mobile.ui.screens.LeaveRequestsScreen
-import id.starstask.mobile.ui.screens.MessagesScreen
 import id.starstask.mobile.ui.screens.NotificationSettingsScreen
 import id.starstask.mobile.ui.screens.NotificationsScreen
 import id.starstask.mobile.ui.screens.ProfileScreen
@@ -53,12 +50,6 @@ import id.starstask.mobile.ui.screens.ScheduleScreen
 import id.starstask.mobile.ui.screens.SecurityPrivacyScreen
 import id.starstask.mobile.ui.screens.SettingsHubScreen
 import kotlinx.coroutines.launch
-
-private const val ROUTE_ADMIN_CONSOLE = "admin-console"
-private const val ASSIGNMENTS_WITH_ARG_ROUTE = "assignments?openRequest={openRequest}"
-private const val ASSIGNMENTS_OPEN_REQUEST_ROUTE = "assignments?openRequest=true"
-private const val ROUTE_DEVELOPER_CONSOLE = "developer-console"
-private const val ROUTE_GRADES = "grades/{classId}"
 
 /**
  * Single NavHost for the workspace. Admin and Developer consoles are
@@ -79,19 +70,7 @@ fun StarsTaskNavHost(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(pushUrl) {
-        val url = pushUrl?.trim().orEmpty()
-        if (url.isEmpty()) return@LaunchedEffect
-        val target = when {
-            url.startsWith("/assignments") -> DrawerDestination.ASSIGNMENTS.route
-            url.startsWith("/leave-requests") -> DrawerDestination.LEAVE.route
-            url.startsWith("/messages") -> DrawerDestination.MESSAGES.route
-            url.startsWith("/notifications") -> DrawerDestination.NOTIFICATIONS.route
-            url.startsWith("/schedule") -> DrawerDestination.SCHEDULE.route
-            url.startsWith("/actions") || url.startsWith("/app/actions") -> DrawerDestination.ACTION_CENTER.route
-            url.startsWith("/classes") || url.startsWith("/app/classes") -> DrawerDestination.CLASSES.route
-            url.startsWith("/attendance") -> DrawerDestination.ATTENDANCE.route
-            else -> null
-        }
+        val target = routeForPushUrl(pushUrl)
         if (target != null) {
             navController.navigate(target) { launchSingleTop = true }
         }
@@ -192,7 +171,7 @@ fun StarsTaskNavHost(
                             userEmail = userEmail,
                             onCheckIn = onCheckIn,
                             onOpenTasks = { navigateTo(DrawerDestination.ASSIGNMENTS.route) },
-                            onOpenMessages = { navigateTo(DrawerDestination.MESSAGES.route) },
+                            onOpenMessages = null,
                             onOpenSchedule = { navigateTo(DrawerDestination.SCHEDULE.route) },
                             onNewAssignment = { navigateTo(ASSIGNMENTS_OPEN_REQUEST_ROUTE) },
                             onOpenAttendance = { navigateTo(DrawerDestination.ATTENDANCE.route) },
@@ -279,23 +258,11 @@ fun StarsTaskNavHost(
                             onSubScreenChange = { leaveFormOpen = it },
                         )
                     }
-                    composable(DrawerDestination.MESSAGES.route) {
-                        MessagesScreen(userId = userId)
-                    }
                     composable(DrawerDestination.NOTIFICATIONS.route) {
                         NotificationsScreen(
                             userId = userId,
                             onOpenUrl = { url ->
-                                val target = when {
-                                    url.startsWith("/assignments") -> DrawerDestination.ASSIGNMENTS.route
-                                    url.startsWith("/leave-requests") -> DrawerDestination.LEAVE.route
-                                    url.startsWith("/messages") -> DrawerDestination.MESSAGES.route
-                                    url.startsWith("/schedule") -> DrawerDestination.SCHEDULE.route
-                                    url.startsWith("/actions") || url.startsWith("/app/actions") -> DrawerDestination.ACTION_CENTER.route
-                                    url.startsWith("/classes") || url.startsWith("/app/classes") -> DrawerDestination.CLASSES.route
-                                    url.startsWith("/attendance") -> DrawerDestination.ATTENDANCE.route
-                                    else -> DrawerDestination.NOTIFICATIONS.route
-                                }
+                                val target = routeForPushUrl(url, fallback = DrawerDestination.NOTIFICATIONS.route)!!
                                 navController.navigate(target) { launchSingleTop = true }
                             },
                             onMarkedRead = { refreshUnread() },
@@ -311,12 +278,6 @@ fun StarsTaskNavHost(
                             },
                         )
                     }
-                    composable("university-info") {
-                        Text(
-                            "University info — open from Profile.",
-                            modifier = Modifier.padding(24.dp),
-                        )
-                    }
                     composable(DrawerDestination.PROFILE.route) {
                         ProfileScreen(
                             userId = userId,
@@ -326,8 +287,8 @@ fun StarsTaskNavHost(
                             onOpenClasses = { navigateTo(DrawerDestination.CLASSES.route) },
                             onSignOut = onSignOut,
                             onOpenDashboard = { navigateTo(DrawerDestination.DASHBOARD.route) },
-                            onOpenAdminConsole = { navController.navigate(ROUTE_ADMIN_CONSOLE) },
-                            onOpenDeveloperConsole = { navController.navigate(ROUTE_DEVELOPER_CONSOLE) },
+                            onOpenAdminConsole = { navController.navigate(ADMIN_CONSOLE_ROUTE) },
+                            onOpenDeveloperConsole = { navController.navigate(DEVELOPER_CONSOLE_ROUTE) },
                         )
                     }
                     composable(DrawerDestination.SETTINGS.route) {
@@ -350,14 +311,14 @@ fun StarsTaskNavHost(
                     composable(DrawerDestination.FEEDBACK.route) {
                         FeedbackScreen(userId = userId)
                     }
-                    composable(ROUTE_ADMIN_CONSOLE) {
+                    composable(ADMIN_CONSOLE_ROUTE) {
                         AdminConsoleScreen(onBack = { navController.popBackStack() })
                     }
-                    composable(ROUTE_DEVELOPER_CONSOLE) {
+                    composable(DEVELOPER_CONSOLE_ROUTE) {
                         DeveloperConsoleScreen(onBack = { navController.popBackStack() })
                     }
                     composable(
-                        route = ROUTE_GRADES,
+                        route = GRADES_ROUTE,
                         arguments = listOf(androidx.navigation.navArgument("classId") { type = androidx.navigation.NavType.StringType }),
                     ) { entry ->
                         val classId = entry.arguments?.getString("classId").orEmpty()

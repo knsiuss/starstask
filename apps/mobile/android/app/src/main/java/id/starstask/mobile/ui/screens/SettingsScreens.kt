@@ -106,7 +106,7 @@ fun SettingsHubScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(Spacing.Section).verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().padding(start = Spacing.Section, end = Spacing.Section, top = Spacing.Section, bottom = 104.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xl),
     ) {
         Text("Settings", style = MaterialTheme.typography.headlineSmall, color = Foreground)
@@ -201,7 +201,7 @@ fun NotificationSettingsScreen(userId: String) {
                 saving = true
                 runCatching {
                     saveNotificationPrefs(userId, next)
-                    unregisterAllPush(context)
+                    unregisterAllPush(context, userId)
                 }.onSuccess {
                     prefs = next
                     notice = "Saved."
@@ -243,7 +243,7 @@ fun NotificationSettingsScreen(userId: String) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(Spacing.Section).verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().padding(start = Spacing.Section, end = Spacing.Section, top = Spacing.Section, bottom = 104.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(Spacing.Xl),
     ) {
         Text("Notification settings", style = MaterialTheme.typography.headlineSmall, color = Foreground)

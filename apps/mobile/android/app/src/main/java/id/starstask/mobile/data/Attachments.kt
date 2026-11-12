@@ -10,6 +10,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Attachment storage for the native shell, mirroring the web flow:
@@ -204,7 +206,7 @@ suspend fun downloadAttachmentBytes(storagePath: String): ByteArray =
         val url = SupabaseProvider.client.storage
             .from("assignment-attachments")
             .createSignedUrl(storagePath, 5.minutes)
-        java.net.URL(url).openStream().use { it.readBytes() }
+        withContext(Dispatchers.IO) { java.net.URL(url).openStream().use { it.readBytes() } }
     }.getOrElse { throw IllegalStateException("Could not download the attachment.") }
 
 fun formatFileSize(bytes: Long?): String {
