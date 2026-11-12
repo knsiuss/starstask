@@ -15,6 +15,12 @@ const FOOTER_GROUPS = [
     ],
   },
   {
+    heading: "Get",
+    links: [
+      { href: "/download", label: "Download for Android" },
+    ],
+  },
+  {
     heading: "Learn",
     links: [
       { href: "/#how-it-works", label: "How it works" },

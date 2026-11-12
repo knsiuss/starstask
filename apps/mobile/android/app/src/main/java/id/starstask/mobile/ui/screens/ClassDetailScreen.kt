@@ -277,9 +277,9 @@ private fun OverviewStatsClean(stats: ClassOverviewStats) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -322,9 +322,9 @@ private fun QuickActionsClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             QuickRowClean(icon = Lucide.BookOpen, label = "Courses", onClick = onOpenCourses)
             androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
@@ -353,9 +353,9 @@ private fun RecentAssignmentsClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             if (assignments.isEmpty()) {
                 Text(
@@ -423,9 +423,9 @@ private fun ClassPostsClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             posts.forEachIndexed { index, post ->
                 if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
@@ -456,9 +456,9 @@ internal fun ClassAssignmentsTabClean(assignments: List<ExploreAssignment>, load
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             if (loading) {
                 Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
@@ -509,9 +509,9 @@ internal fun ClassMembersTabClean(members: List<String>, loading: Boolean = fals
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             if (loading) {
                 Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
@@ -567,9 +567,9 @@ internal fun ClassInfoTabClean(clazz: ClassDetail, memberCount: Int) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             InfoRow("Class code", clazz.classCode.ifBlank { "—" })
             androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
@@ -636,9 +636,9 @@ internal fun ClassEmptyBox(title: String, description: String, modifier: Modifie
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color.White)
-            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),

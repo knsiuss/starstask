@@ -60,11 +60,11 @@ fun DashNextTaskCard(
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                "NEXT TASK",
+                "Next task",
                 color = palette.muted,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 task.title,

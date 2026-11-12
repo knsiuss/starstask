@@ -144,15 +144,15 @@ fun CalendarCourseFilterSheet(
             Text("Class", style = MaterialTheme.typography.labelLarge, color = Foreground, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
                 Box(
-                    modifier = Modifier.clip(RoundedCornerShape(16.dp))
-                        .border(1.dp, if (classFilter == null) id.starstask.mobile.ui.theme.Accent else Border, RoundedCornerShape(16.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, if (classFilter == null) id.starstask.mobile.ui.theme.Accent else Border, RoundedCornerShape(12.dp))
                         .clickable { onSelectClass(null) }
                         .padding(horizontal = Spacing.Xl, vertical = Spacing.Sm),
                 ) { Text("All classes", style = MaterialTheme.typography.labelMedium) }
                 classes.forEach { klass ->
                     Box(
-                        modifier = Modifier.clip(RoundedCornerShape(16.dp))
-                            .border(1.dp, if (classFilter == klass.id) id.starstask.mobile.ui.theme.Accent else Border, RoundedCornerShape(16.dp))
+                        modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, if (classFilter == klass.id) id.starstask.mobile.ui.theme.Accent else Border, RoundedCornerShape(12.dp))
                             .clickable { onSelectClass(if (classFilter == klass.id) null else klass.id) }
                             .padding(horizontal = Spacing.Xl, vertical = Spacing.Sm),
                     ) { Text(klass.name, style = MaterialTheme.typography.labelMedium) }

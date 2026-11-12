@@ -113,7 +113,7 @@ fun ClassExportSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                             .clickable { subjectMenuOpen = true }
                             .heightIn(min = 56.dp)
                             .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -219,7 +219,7 @@ private fun ExportRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 56.dp)
             .padding(horizontal = 12.dp, vertical = 8.dp),

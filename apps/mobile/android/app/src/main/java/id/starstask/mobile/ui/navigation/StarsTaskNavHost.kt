@@ -156,14 +156,34 @@ fun StarsTaskNavHost(
                 }
             },
         ) { innerPadding ->
-            // Only the top inset is applied: reserving bottom padding for the
-            // dock paints a windowBackground strip behind it. The dock floats
-            // above content so lists must scroll under it instead.
-            Box(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
+            // Top inset only: the dock floats above content. The Scaffold's
+            // bottom padding would paint a Background-striped strip behind
+            // the floating glass dock and spoil the translucency.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 NavHost(
                     navController = navController,
                     startDestination = DrawerDestination.DASHBOARD.route,
                     modifier = Modifier.fillMaxSize(),
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(animationSpec = androidx.compose.animation.core.tween(280, easing = id.starstask.mobile.ui.theme.EasingOutCubic)) { fullWidth -> fullWidth / 4 } +
+                            androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220, easing = id.starstask.mobile.ui.theme.EasingStandard))
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(animationSpec = androidx.compose.animation.core.tween(200, easing = id.starstask.mobile.ui.theme.EasingStandard)) { -it / 8 } +
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(160))
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(animationSpec = androidx.compose.animation.core.tween(280, easing = id.starstask.mobile.ui.theme.EasingOutCubic)) { -it / 4 } +
+                            androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220))
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(animationSpec = androidx.compose.animation.core.tween(200, easing = id.starstask.mobile.ui.theme.EasingStandard)) { it / 4 } +
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(160))
+                    },
                 ) {
                     composable(DrawerDestination.DASHBOARD.route) {
                         HomeScreen(

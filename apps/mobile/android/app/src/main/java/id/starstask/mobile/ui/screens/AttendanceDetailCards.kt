@@ -67,7 +67,7 @@ fun OverviewCard(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(bg),
                 contentAlignment = Alignment.Center,
             ) {

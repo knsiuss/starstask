@@ -162,9 +162,9 @@ fun ScheduleDayGroup(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Surface)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             items.forEachIndexed { index, item ->
                 ScheduleEventItem(

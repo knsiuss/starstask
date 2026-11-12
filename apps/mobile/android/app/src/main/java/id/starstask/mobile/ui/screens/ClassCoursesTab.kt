@@ -136,9 +136,9 @@ fun ClassCoursesTab(
             else -> Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(Color.White)
-                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
             ) {
                 courses.forEachIndexed { index, course ->
                     if (index > 0) androidx.compose.material3.HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))

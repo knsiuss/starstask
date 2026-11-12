@@ -102,9 +102,9 @@ private fun ClassAttendanceAdminView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .padding(16.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -139,9 +139,9 @@ private fun ClassAttendanceAdminView(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
+                    .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
             ) {
                 Column {
                     active.forEachIndexed { index, meeting ->
@@ -156,9 +156,9 @@ private fun ClassAttendanceAdminView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
         ) {
             Column {
                 QuickActionRow(icon = Lucide.History, label = "Attendance detail", onClick = onOpenAttendanceDetail, palette = palette)
@@ -173,9 +173,9 @@ private fun ClassAttendanceAdminView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
         ) {
             if (pending.isEmpty()) {
                 Text("No requests waiting for review.", color = palette.muted, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
@@ -220,9 +220,9 @@ private fun ClassAbsenceMemberView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .padding(16.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -260,9 +260,9 @@ private fun ClassAbsenceMemberView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
         ) {
             if (classEntries.isEmpty()) {
                 Text("No attendance records yet.", color = palette.muted, fontSize = 13.sp, modifier = Modifier.padding(16.dp))

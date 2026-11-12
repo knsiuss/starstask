@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,7 +54,8 @@ fun DashHero(
             .fillMaxWidth()
             .clip(DashRadiusCard)
             .background(palette.card)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+            .border(1.dp, palette.cardBorder, DashRadiusCard)
+            .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(
@@ -62,12 +64,12 @@ fun DashHero(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(greeting, color = palette.muted, fontSize = 15.sp, lineHeight = 20.sp)
+                Text(greeting, color = palette.muted, fontSize = 13.sp, lineHeight = 17.sp)
                 Text(
                     shownName,
                     color = palette.text,
-                    fontSize = 26.sp,
-                    lineHeight = 32.sp,
+                    fontSize = 24.sp,
+                    lineHeight = 30.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                     letterSpacing = (-0.015).sp,
                     maxLines = 2,

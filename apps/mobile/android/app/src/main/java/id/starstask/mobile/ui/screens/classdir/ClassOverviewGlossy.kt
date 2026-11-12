@@ -55,9 +55,9 @@ fun ClassOverviewGlossy(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                 .padding(vertical = 16.dp),
         ) {
             Row(
@@ -75,9 +75,9 @@ fun ClassOverviewGlossy(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
         ) {
             Column {
                 GlossyActionRow(
@@ -123,9 +123,9 @@ fun ClassOverviewGlossy(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
         ) {
             Column {
                 Row(

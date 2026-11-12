@@ -303,7 +303,7 @@ fun LeaveExplanationSection(
             placeholder = { Text("Briefly explain your reason…", color = palette.muted, fontSize = 17.sp) },
             minLines = 4,
             singleLine = false,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = palette.card,
                 unfocusedContainerColor = palette.card,

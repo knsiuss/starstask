@@ -161,9 +161,9 @@ fun ClassMembersGlossy(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
         ) {
             if (loading) {
                 Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {

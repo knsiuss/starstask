@@ -196,9 +196,9 @@ fun AssignmentDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                 .padding(Spacing.Block),
             verticalArrangement = Arrangement.spacedBy(Spacing.Md),
         ) {
@@ -271,9 +271,9 @@ fun AssignmentDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                 .padding(Spacing.Block),
             verticalArrangement = Arrangement.spacedBy(Spacing.Sm),
         ) {
@@ -359,9 +359,9 @@ fun AssignmentDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                     .padding(Spacing.Block),
                 verticalArrangement = Arrangement.spacedBy(Spacing.Sm),
             ) {
@@ -404,9 +404,9 @@ fun AssignmentDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                     .padding(Spacing.Block),
                 verticalArrangement = Arrangement.spacedBy(Spacing.Md),
             ) {

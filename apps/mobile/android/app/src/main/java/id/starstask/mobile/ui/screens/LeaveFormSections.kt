@@ -31,7 +31,7 @@ import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.mockColors
 
-val leaveRadius = RoundedCornerShape(20.dp)
+val leaveRadius = RoundedCornerShape(12.dp)
 
 @Composable
 fun LeaveSectionTitle(text: String) {

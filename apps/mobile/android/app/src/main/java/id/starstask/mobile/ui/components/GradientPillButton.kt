@@ -1,7 +1,7 @@
 package id.starstask.mobile.ui.components
 
-// Glossy iOS-light CTA matching the workspace shell: solid accent with a
-// soft halo shadow, generous radius. Legacy WebButton stays flat.
+// Flat iOS CTA: solid accent, 14dp radius, no colored glow. Legacy WebButton keeps
+// flat web-mirrored chrome.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,17 +19,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.theme.mockColors
 
 private val DisabledBackground = Color(0xFFC9D2E4)
-private val AccentHaloLight = Color(0xFF9DB4FF)
 
 @Composable
 fun GradientPillButton(
@@ -40,19 +37,12 @@ fun GradientPillButton(
     enabled: Boolean = true,
     fillMaxWidth: Boolean = true,
 ) {
-    val dark = LocalDarkTheme.current
     val palette = mockColors()
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
 
     Row(
         modifier = modifier
             .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
-            .shadow(
-                elevation = if (dark) 0.dp else 14.dp,
-                shape = shape,
-                ambientColor = AccentHaloLight,
-                spotColor = AccentHaloLight,
-            )
             .clip(shape)
             .background(if (enabled) palette.accent else DisabledBackground)
             .clickable(enabled = enabled, onClick = onClick)

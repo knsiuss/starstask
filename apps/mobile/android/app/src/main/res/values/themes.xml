@@ -1,6 +1,6 @@
 <resources>
     <!-- Web design tokens (apps/web/src/app/globals.css @theme) -->
-    <color name="st_background">#FAFAF8</color>
+    <color name="st_background">#F2F2F7</color>
     <color name="st_surface">#FFFFFF</color>
     <color name="st_foreground">#292D34</color>
     <color name="st_accent">#45639E</color>

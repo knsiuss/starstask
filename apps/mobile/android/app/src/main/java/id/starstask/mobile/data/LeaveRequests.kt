@@ -1,6 +1,7 @@
 package id.starstask.mobile.data
 
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -223,7 +224,7 @@ private suspend fun leaveEvidenceCounts(requestIds: Collection<String>): Map<Str
     val rows = SupabaseProvider.client.postgrest.from("leave_request_evidence").select {
         filter {
             isIn("request_id", requestIds.toList())
-            eq("removed_at", JsonNull)
+            filter("removed_at", FilterOperator.IS, null)
         }
     }.decodeJsonArray()
     return rows.groupingBy { it.jsonObject["request_id"]!!.jsonPrimitive.content }.eachCount()
@@ -357,7 +358,7 @@ suspend fun listLeaveEvidence(requestId: String): List<LeaveEvidence> {
     val rows = SupabaseProvider.client.postgrest.from("leave_request_evidence").select {
         filter {
             eq("request_id", requestId)
-            eq("removed_at", JsonNull)
+            filter("removed_at", FilterOperator.IS, null)
         }
         order("sort_order", Order.ASCENDING)
     }.decodeJsonArray()

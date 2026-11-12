@@ -71,9 +71,9 @@ fun CourseAttendanceSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp)),
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
             ) {
                 rows.forEachIndexed { index, row ->
                     CourseRow(
@@ -108,9 +108,9 @@ fun ActiveSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -195,9 +195,9 @@ fun HistorySection(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(palette.card)
-                            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp)),
+                            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
                     ) {
                         group.forEachIndexed { index, entry ->
                             HistoryRow(entry = entry) {

@@ -28,7 +28,7 @@ private val Tight = (-0.025).em
 
 val SectionTitle = TextStyle(
     fontFamily = Inter,
-    fontSize = 16.sp,
+    fontSize = 14.sp,
     fontWeight = FontWeight.SemiBold,
     letterSpacing = Tight,
     lineHeight = 20.sp,
@@ -108,9 +108,18 @@ val Greeting = TextStyle(
     lineHeight = 20.sp,
 )
 
+val LargeTitle = TextStyle(
+    fontFamily = Inter,
+    fontSize = 30.sp,
+    fontWeight = FontWeight.SemiBold,
+    letterSpacing = Tight,
+    lineHeight = 36.sp,
+    platformStyle = PlatformTextStyle(includeFontPadding = false),
+)
+
 val DisplayName = TextStyle(
     fontFamily = Inter,
-    fontSize = 24.sp,
+    fontSize = 22.sp,
     fontWeight = FontWeight.SemiBold,
     letterSpacing = Tight,
     lineHeight = 30.sp,

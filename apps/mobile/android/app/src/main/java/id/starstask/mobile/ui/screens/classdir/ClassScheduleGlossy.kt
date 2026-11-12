@@ -82,9 +82,9 @@ fun ClassScheduleGlossy(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 120.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                     .padding(16.dp),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -117,9 +117,9 @@ fun ClassScheduleGlossy(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(palette.card)
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp)),
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
                 ) {
                     Column {
                         slots.forEachIndexed { index, slot ->

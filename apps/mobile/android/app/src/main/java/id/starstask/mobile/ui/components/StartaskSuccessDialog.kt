@@ -62,7 +62,7 @@ fun StartaskSuccessDialog(
     val dark = LocalDarkTheme.current
     val accent = if (dark) DarkSuccess else Success
     val soft = if (dark) Color(0xFF16301F) else SuccessSoft
-    val shape = RoundedCornerShape(28.dp)
+    val shape = RoundedCornerShape(12.dp)
 
     var enter by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { enter = true }

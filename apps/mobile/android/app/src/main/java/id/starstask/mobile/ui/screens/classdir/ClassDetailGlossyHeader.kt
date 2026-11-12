@@ -93,8 +93,8 @@ fun ClassDetailGlossyHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-                .clip(RoundedCornerShape(18.dp))
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
                 .heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -144,7 +144,7 @@ private fun HeaderAction(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .height(52.dp),
         verticalAlignment = Alignment.CenterVertically,

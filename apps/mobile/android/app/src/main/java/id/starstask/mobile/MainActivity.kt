@@ -135,7 +135,9 @@ fun StarsTaskApp(pendingPushUrl: androidx.compose.runtime.MutableState<String?>)
     }
 
     if (sessionStatus is SessionStatus.Initializing) {
-        SplashScreen(onExit = {})
+        // Hold the splash until the session resolves, but never longer than
+        // the splash's own hold — otherwise a real session strands here.
+        SplashScreen(onExit = { })
         return
     }
 

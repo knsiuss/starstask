@@ -58,9 +58,9 @@ fun AttachmentsCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
@@ -181,7 +181,7 @@ private fun AttachmentRow(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.accentSofter),
             ) {
                 androidx.compose.foundation.Image(

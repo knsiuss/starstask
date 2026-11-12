@@ -48,9 +48,9 @@ fun ReferenceStats(overview: WorkspaceOverview) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Surface)
-            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -78,9 +78,9 @@ fun ReferenceDeadlineAlert(overview: WorkspaceOverview, onOpenAssignment: (Strin
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(PinkBg)
-            .border(0.5.dp, Color(0xFFF3D4D9), RoundedCornerShape(20.dp))
+            .border(0.5.dp, Color(0xFFF3D4D9), RoundedCornerShape(12.dp))
             .clickable { onOpenAssignment(nearest.id) }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -146,9 +146,9 @@ fun ReferenceAssignmentCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Surface)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onOpen)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),

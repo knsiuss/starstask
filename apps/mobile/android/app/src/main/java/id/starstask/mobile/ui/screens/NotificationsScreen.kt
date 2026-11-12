@@ -243,9 +243,9 @@ private fun NotificationRowCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(if (unread) palette.accentSofter else palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onOpen)
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.Top,

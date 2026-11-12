@@ -96,9 +96,9 @@ private val DashDark = DashPalette(
 @androidx.compose.runtime.Composable
 fun dashColors(): DashPalette = if (LocalDarkTheme.current) DashDark else DashLight
 
-val DashRadiusSmall = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
-val DashRadiusTile = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
-val DashRadiusCard = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+val DashRadiusSmall = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+val DashRadiusTile = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+val DashRadiusCard = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
 val DashRadiusPill = androidx.compose.foundation.shape.RoundedCornerShape(999.dp)
 val DashRadiusSmallShape = DashRadiusSmall
 val DashRadiusTileShape = DashRadiusTile

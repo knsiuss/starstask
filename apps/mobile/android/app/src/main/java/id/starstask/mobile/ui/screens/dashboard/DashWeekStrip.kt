@@ -1,8 +1,7 @@
 package id.starstask.mobile.ui.screens.dashboard
 
-// "This Week" strip following the pastel reference: 7 day columns for the
-// current Mon–Sun window, today highlighted with a blue gradient tile,
-// small dots under dates with scheduled sessions or assignment deadlines.
+// "This Week" strip: 7 day columns for the current Mon–Sun window, today
+// highlighted with a solid accent tile, activity dot under busy days.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.ScheduleEntry
@@ -57,8 +55,8 @@ fun DashWeekStrip(
                 val selected = day == today
                 val dayModifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .let { if (selected) it.background(Brush.verticalGradient(listOf(palette.selectedDayStart, palette.selectedDayEnd))) else it }
+                    .clip(RoundedCornerShape(14.dp))
+                    .let { if (selected) it.background(palette.accent) else it }
                     .padding(vertical = 10.dp)
                 Column(modifier = dayModifier, horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -70,7 +68,7 @@ fun DashWeekStrip(
                     Text(
                         day.dayOfMonth.toString(),
                         color = if (selected) androidx.compose.ui.graphics.Color.White else palette.text,
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                     )
                     if (hasActivity(day)) {

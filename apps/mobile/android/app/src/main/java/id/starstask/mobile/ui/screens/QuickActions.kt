@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.ui.icons.Lucide
@@ -51,10 +52,20 @@ fun QuickActions(
     onNewAssignment: () -> Unit = {},
 ) {
     val palette = id.starstask.mobile.ui.theme.dashColors()
-    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().height(36.dp)) {
+    // Padded content box keeps the fade inside the 16dp page gutter. Both
+    // edges fade — this row scrolls, and a hard clip reads as "broken".
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState(), enabled = true)
+                .padding(horizontal = 2.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             QuickActionPill(Lucide.CalendarCheck, "Check in now", onClick = onCheckIn)
@@ -65,15 +76,14 @@ fun QuickActions(
             }
             QuickActionPill(Lucide.Plus, "New assignment", onClick = onNewAssignment)
             // End spacer so the last pill has breathing room when scrolled.
-            androidx.compose.foundation.layout.Box(modifier = Modifier.size(width = 8.dp, height = 1.dp))
+            androidx.compose.foundation.layout.Box(modifier = Modifier.size(width = 16.dp, height = 1.dp))
         }
-        // Fade the right edge so the clipped pill reads as "more to the right",
-        // not as a cut-off widget.
+        // Right-edge fade: signals "there is more to the right" without clipping.
         androidx.compose.foundation.layout.Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .height(36.dp)
-                .width(36.dp)
+                .height(40.dp)
+                .width(40.dp)
                 .background(
                     androidx.compose.ui.graphics.Brush.horizontalGradient(
                         colors = listOf(androidx.compose.ui.graphics.Color.Transparent, palette.pageBackground),
@@ -92,10 +102,19 @@ fun QuickActionPill(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+        ),
+        label = "quickPressScale",
+    )
     val pillBg = if (pressed) AccentSoft else Surface
     val pillFg = if (pressed) Accent else Foreground
     Row(
         modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .border(1.dp, Border, CircleShape)
             .background(pillBg, CircleShape)

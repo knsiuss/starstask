@@ -4,7 +4,10 @@ package id.starstask.mobile.ui.components
 // and a notification bell with the live unread badge. Hosted by the NavHost
 // scaffold so every tab gets the same chrome.
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,8 +43,17 @@ fun StarsTaskTopBar(
     val isDark = LocalDarkTheme.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding(),
+    ) {
     Row(
-        modifier = Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(palette.glassBar)
+            .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -75,5 +87,10 @@ fun StarsTaskTopBar(
                 modifier = Modifier.size(24.dp),
             )
         }
+    }
+    // Bottom hairline divider: the bar floats its content over page content.
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier.fillMaxWidth().height(1.dp).background(palette.hairline),
+    )
     }
 }

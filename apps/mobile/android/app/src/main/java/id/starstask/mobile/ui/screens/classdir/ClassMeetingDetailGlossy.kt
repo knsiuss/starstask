@@ -225,7 +225,7 @@ private fun StatTile(label: String, value: String, palette: id.starstask.mobile.
     }
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(bg)
             .padding(horizontal = 8.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -252,9 +252,9 @@ private fun DetailCard(palette: id.starstask.mobile.ui.theme.MockPalette, conten
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(14.dp),
     ) {
         content()

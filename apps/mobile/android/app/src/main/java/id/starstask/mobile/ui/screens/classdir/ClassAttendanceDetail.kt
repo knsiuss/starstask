@@ -170,9 +170,9 @@ private fun DetailCard(palette: id.starstask.mobile.ui.theme.MockPalette, conten
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(14.dp),
     ) {
         content()
@@ -200,9 +200,9 @@ internal fun MeetingRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

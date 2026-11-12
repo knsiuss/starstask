@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
@@ -34,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.theme.DurationSoftMs
 import id.starstask.mobile.ui.theme.EasingOutCubic
-import id.starstask.mobile.ui.theme.dashColors
 
 // Dock safe clearance for content lists: dock is ~92dp (content padding +
 // item height + edge inflation) with a transparent gutter; lists scroll
@@ -55,8 +55,8 @@ fun FloatingNavDock(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val palette = dashColors()
-    val dockShape = RoundedCornerShape(30.dp)
+    val palette = id.starstask.mobile.ui.theme.mockColors()
+    val dockShape = RoundedCornerShape(28.dp)
     val pillShape = RoundedCornerShape(20.dp)
     val destinations = DrawerDestination.entries.filter { it.inBottomBar }
 
@@ -78,7 +78,8 @@ fun FloatingNavDock(
                     ambientColor = Color.Black.copy(alpha = 0.09f),
                 )
                 .clip(dockShape)
-                .background(palette.card.copy(alpha = 0.80f))
+                .background(palette.glassBar)
+                .border(1.dp, palette.hairline, dockShape)
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,

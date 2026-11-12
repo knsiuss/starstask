@@ -34,9 +34,9 @@ fun InformationCard(detail: AssignmentDetail) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
@@ -120,9 +120,9 @@ fun ContributorCard(displayName: String?, avatarUrl: String?, createdAt: String)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {
@@ -185,9 +185,9 @@ fun RevisionHistoryCard(revisions: List<id.starstask.mobile.data.AssignmentRevis
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(Spacing.Block),
         verticalArrangement = Arrangement.spacedBy(Spacing.Md),
     ) {

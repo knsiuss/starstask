@@ -307,9 +307,9 @@ fun ProfileIdentityHeaderClean(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color.White)
-            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
     ) {
         // Cover band
         Box(
@@ -415,9 +415,9 @@ fun ProfileMetaSectionClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             ProfileRowClean("Full name", profile.fullName?.takeIf { it.isNotBlank() } ?: "Not set")
             HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
@@ -431,9 +431,9 @@ fun ProfileMetaSectionClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             ProfileRowClean("Student ID", profile.nim ?: "Not set")
             HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
@@ -501,9 +501,9 @@ fun ProfileClassesSectionClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             if (classes.isEmpty()) {
                 Text(
@@ -543,9 +543,9 @@ fun ProfileClassesSectionClean(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(Color.White)
-                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
             ) {
                 administered.forEachIndexed { index, clazz ->
                     if (index > 0) HorizontalDivider(color = AssignmentBorder, modifier = Modifier.padding(start = 16.dp))
@@ -596,9 +596,9 @@ fun ProfileQuickActionsClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             QuickRowClean(icon = Lucide.GraduationCap, label = "My classes", onClick = onOpenClasses)
             if (platformAdmin) {

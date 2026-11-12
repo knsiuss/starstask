@@ -57,6 +57,7 @@ import id.starstask.mobile.data.loadSchedule
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.screens.QuickActions
 import id.starstask.mobile.ui.screens.dashboard.DashHero
+import id.starstask.mobile.ui.theme.RiseInModifier
 import id.starstask.mobile.ui.screens.dashboard.DashNextTaskCard
 import id.starstask.mobile.ui.screens.dashboard.DashSectionHeader
 import id.starstask.mobile.ui.screens.dashboard.DashWeekStrip
@@ -155,32 +156,36 @@ fun HomeScreen(
         modifier = Modifier.fillMaxSize().background(palette.pageBackground).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 104.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
+        item(key = "hero") {
             if (current == null && error == null) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     androidx.compose.foundation.layout.Box(
-                        modifier = Modifier.fillMaxWidth().height(160.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                        modifier = Modifier.fillMaxWidth().height(160.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                             .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(palette.heroStart, palette.heroEnd))),
                     )
                     id.starstask.mobile.ui.components.WebSkeletonCard()
                     id.starstask.mobile.ui.components.WebSkeletonCard()
                 }
             } else {
-                DashHero(
-                    displayName = current?.displayName,
-                    classes = current?.classes.orEmpty(),
-                    onRequestTaskPublication = onNewAssignment,
-                )
+                Box(modifier = id.starstask.mobile.ui.theme.RiseInModifier(androidx.compose.ui.Modifier, delayMs = 0)) {
+                    DashHero(
+                        displayName = current?.displayName,
+                        classes = current?.classes.orEmpty(),
+                        onRequestTaskPublication = onNewAssignment,
+                    )
+                }
             }
         }
         if (current != null || error != null) {
-        item {
-            QuickActions(
-                onCheckIn = { onOpenAttendance() },                onOpenTasks = onOpenTasks,
-                onOpenMessages = null,
-                onOpenSchedule = onOpenSchedule,
-                onNewAssignment = onNewAssignment,
-            )
+        item(key = "quick", contentType = "quick") {
+            Box(modifier = id.starstask.mobile.ui.theme.RiseInModifier(androidx.compose.ui.Modifier, delayMs = 60)) {
+                QuickActions(
+                    onCheckIn = { onOpenAttendance() },                onOpenTasks = onOpenTasks,
+                    onOpenMessages = null,
+                    onOpenSchedule = onOpenSchedule,
+                    onNewAssignment = onNewAssignment,
+                )
+            }
         }
 
         nextSchedule?.let { item ->
@@ -363,16 +368,14 @@ private fun DashGroupedCard(
     content: @Composable () -> Unit,
 ) {
     val palette = dashColors()
-    val baseModifier = if (onClick != null) {
-        Modifier.fillMaxWidth().clip(DashRadiusCard).background(palette.card).clickable(onClick = onClick)
-    } else {
-        Modifier.fillMaxWidth().clip(DashRadiusCard).background(palette.card)
-    }
-    androidx.compose.foundation.layout.Column(
-        modifier = baseModifier.padding(16.dp),
-        verticalArrangement = verticalArrangement,
+    id.starstask.mobile.ui.components.SurfaceCard(
+        onClick = onClick,
+        verticalPadding = 16.dp,
+        horizontalPadding = 16.dp,
     ) {
-        content()
+        androidx.compose.foundation.layout.Column(verticalArrangement = verticalArrangement) {
+            content()
+        }
     }
 }
 

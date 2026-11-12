@@ -179,7 +179,7 @@ fun ScheduleScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AssignmentBackground),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 104.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 128.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         item(key = "header") {
@@ -297,7 +297,10 @@ fun ScheduleScreen(
 
         if (loading && data == null) {
             item(key = "loading") {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    id.starstask.mobile.ui.components.WebSkeletonCard()
+                    id.starstask.mobile.ui.components.WebSkeletonCard()
+                    id.starstask.mobile.ui.components.WebSkeletonCard()
                 }
             }
         }
@@ -361,9 +364,9 @@ fun ScheduleScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Surface)
-                        .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
+                        .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -616,9 +619,9 @@ private fun UpcomingSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp)),
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
         ) {
             Row(
                 modifier = Modifier

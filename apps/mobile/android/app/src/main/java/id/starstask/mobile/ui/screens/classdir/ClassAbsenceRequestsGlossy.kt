@@ -112,9 +112,9 @@ private fun ForwardPackageRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.accentSofter)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .heightIn(min = 52.dp)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -171,9 +171,9 @@ private fun RequestRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

@@ -45,9 +45,9 @@ fun LeaveStatsGrid(requests: List<LeaveRequest>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(vertical = Spacing.Block),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -139,7 +139,7 @@ fun LeaveApprovalInfoCard() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.accentSoft)
             .padding(Spacing.Block),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Lg),

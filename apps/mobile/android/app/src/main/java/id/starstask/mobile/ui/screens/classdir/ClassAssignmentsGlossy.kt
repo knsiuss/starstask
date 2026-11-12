@@ -116,9 +116,9 @@ fun ClassAssignmentsGlossy(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp)),
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
         ) {
             when {
                 state.loading -> Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {

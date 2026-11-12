@@ -73,9 +73,9 @@ fun CourseAttendanceTabClean(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(WarningSoft)
-                    .border(0.5.dp, Color(0xFFF3D4D9), RoundedCornerShape(20.dp))
+                    .border(0.5.dp, Color(0xFFF3D4D9), RoundedCornerShape(12.dp))
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
                 Text(
@@ -128,9 +128,9 @@ fun CourseAttendanceTabClean(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(SoftFill)
-                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
+                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
                     .padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -158,9 +158,9 @@ fun CourseAttendanceTabClean(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(20.dp))
+                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
                 .padding(horizontal = 24.dp, vertical = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),

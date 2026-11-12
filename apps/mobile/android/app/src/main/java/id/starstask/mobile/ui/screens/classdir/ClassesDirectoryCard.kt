@@ -43,9 +43,9 @@ fun ClassesDirectoryCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onOpen),
     ) {
         Row(
@@ -59,7 +59,7 @@ fun ClassesDirectoryCard(
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.accentSofter),
                 contentAlignment = Alignment.Center,
             ) {
@@ -69,9 +69,9 @@ fun ClassesDirectoryCard(
                 Text(
                     code.uppercase(),
                     color = palette.ink,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.4.sp,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.2.sp,
                     maxLines = 1,
                 )
                 val meta = buildList {

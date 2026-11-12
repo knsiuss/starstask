@@ -134,9 +134,9 @@ fun ClassManageGlossy(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.card)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp)),
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
             ) {
                 Column {
                     ManageActionRow(icon = Lucide.GraduationCap, label = "Open grades", palette = palette) { onOpenGrades(clazz.id) }
@@ -359,9 +359,9 @@ fun ClassManageGlossy(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(palette.riskBg)
-                    .border(1.dp, palette.riskFg.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
+                    .border(1.dp, palette.riskFg.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
                     .padding(16.dp),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -469,9 +469,9 @@ private fun ManageSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(palette.card)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                 .padding(16.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
