@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -178,7 +178,6 @@ fun LeaveRequestDetailScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Page),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    CircularProgressIndicator(color = Accent)
                 }
             }
         } else if (error != null) {

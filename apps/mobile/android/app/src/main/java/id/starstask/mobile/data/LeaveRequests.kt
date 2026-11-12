@@ -133,7 +133,7 @@ fun formatLeaveDate(isoDate: String?): String {
     if (isoDate.isNullOrBlank()) return "—"
     return try {
         java.time.LocalDate.parse(isoDate.take(10))
-            .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy"))
+            .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.getDefault()))
     } catch (_: Exception) {
         isoDate.take(10)
     }

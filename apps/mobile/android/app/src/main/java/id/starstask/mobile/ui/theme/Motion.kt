@@ -8,15 +8,20 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -187,35 +192,59 @@ fun RiseInModifier(
 }
 
 /**
- * Applies the web pressed scale without changing the underlying composable's
- * click semantics. Physical press state uses `pointerInput` tap detection
- * rather than Material ripple, because web uses scale instead of ripple.
+ * Pressed scale with spring animation, matching QuickActionPill physics.
+ * Self-contained: carries its own click handling + interaction source, so
+ * callers must use this modifier INSTEAD of a separate `clickable` on the
+ * same composable.
  */
 @Composable
 fun PressedScaleModifier(
     onPress: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    pressedScale: Float = PressedScale,
 ): Modifier {
-    var pressed = remember { androidx.compose.runtime.mutableStateOf(false) }
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) pressedScale else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+        ),
+        label = "pressScale",
+    )
     return modifier
         .graphicsLayer {
-            val target = if (pressed.value) PressedScale else 1f
-            // `graphicsLayer` cannot animate without a state read; the value is
-            // resolved at layout time, giving the same visual result as CSS
-            // `transition-transform duration-150` for a press interaction.
-            scaleX = target
-            scaleY = target
+            scaleX = scale
+            scaleY = scale
         }
-        .pointerInput(Unit) {
-            detectTapGestures(
-                onPress = {
-                    pressed.value = true
-                    try {
-                        onPress?.invoke()
-                    } finally {
-                        pressed.value = false
-                    }
-                },
-            )
-        }
+        .clickable(interactionSource = interactionSource, indication = null) { onPress?.invoke() }
+}
+
+/**
+ * Looping horizontal shimmer brush used by skeleton placeholders while the
+ * worker is fetching fresh data. Never flashes opacity/size; only the brush
+ * translates. Infinite transition, `DurationShimmerMs` per sweep.
+ */
+@Composable
+fun rememberShimmerBrush(width: androidx.compose.ui.unit.Dp): Brush {
+    val transition = rememberInfiniteTransition(label = "shimmerLoop")
+    val offset by transition.animateFloat(
+        initialValue = -width.value * 2f,
+        targetValue = width.value * 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(DurationShimmerMs, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "shimmerSweep",
+    )
+    return Brush.linearGradient(
+        colors = listOf(
+            androidx.compose.ui.graphics.Color(0xFFE8EDFA),
+            androidx.compose.ui.graphics.Color(0xFFF4F7FE),
+            androidx.compose.ui.graphics.Color(0xFFE8EDFA),
+        ),
+        start = Offset(offset, 0f),
+        end = Offset(offset + width.value, 0f),
+    )
 }

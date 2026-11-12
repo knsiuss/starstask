@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +53,7 @@ fun LeaveFormActions(
             modifier = Modifier.weight(1f).heightIn(min = 50.dp),
         ) {
             if (busy) {
-                CircularProgressIndicator(color = palette.ink, modifier = Modifier.size(18.dp))
+                id.starstask.mobile.ui.components.StaggerDots(color = palette.ink)
             } else {
                 Text("Save draft", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }

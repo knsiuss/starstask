@@ -38,7 +38,7 @@ import id.starstask.mobile.data.loadStudentAttendance
 import id.starstask.mobile.ui.components.StatusBadge
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.theme.mockColors
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 
@@ -78,7 +78,6 @@ fun AttendanceSessionDetailScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (loading) {
-                CircularProgressIndicator()
             } else {
                 Text(
                     if (loadFailed) "Could not load this attendance record." else "Attendance record not found.",

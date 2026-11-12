@@ -15,7 +15,11 @@ fun formatTime(iso: String): String =
     try {
         java.time.OffsetDateTime.parse(iso)
             .atZoneSameInstant(DEVICE_ZONE)
-            .toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH.mm"))
+            .toLocalTime()
+            .format(
+                java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT)
+                    .withLocale(java.util.Locale.getDefault()),
+            )
     } catch (_: Exception) {
         iso.take(16)
     }
@@ -24,14 +28,17 @@ fun formatDateShort(iso: String): String =
     try {
         java.time.OffsetDateTime.parse(iso)
             .atZoneSameInstant(DEVICE_ZONE)
-            .format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
+            .format(
+                java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+                    .withLocale(java.util.Locale.getDefault()),
+            )
     } catch (_: Exception) {
         iso.take(10)
     }
 
 fun timezoneLabel(timeZone: String?): String {
     val zone = runCatching { java.time.ZoneId.of(timeZone?.trim().orEmpty()) }.getOrNull() ?: DEVICE_ZONE
-    return zone.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH)
+    return zone.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
 }
 
 // Package-internal shortcut for JsonPrimitive?.content that also maps the

@@ -53,16 +53,19 @@ fun deadlineStateLabel(state: DeadlineState): String =
         DeadlineState.OVERDUE -> "Passed"
     }
 
+private val DEADLINE_FMT = java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", java.util.Locale.getDefault())
+private val DATE_FMT = java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.getDefault())
+
 fun formatDeadline(deadline: String): String =
     try {
         val zoned = java.time.OffsetDateTime.parse(deadline)
             .atZoneSameInstant(java.time.ZoneId.systemDefault())
-        "${zoned.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))} ${zoned.zone.id}"
+        "${zoned.format(DEADLINE_FMT)} ${zoned.zone.id}"
     } catch (_: Exception) {
         try {
             val local = java.time.LocalDateTime.parse(deadline)
                 .atZone(java.time.ZoneId.systemDefault())
-            "${local.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))} ${local.zone.id}"
+            "${local.format(DEADLINE_FMT)} ${local.zone.id}"
         } catch (_: Exception) {
             deadline.take(16)
         }
@@ -73,7 +76,7 @@ fun formatCreatedDate(iso: String?): String {
     return try {
         java.time.OffsetDateTime.parse(iso)
             .atZoneSameInstant(java.time.ZoneId.systemDefault())
-            .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy"))
+            .format(DATE_FMT)
     } catch (_: Exception) {
         iso.take(10)
     }

@@ -172,7 +172,7 @@ fun NotificationsScreen(
             if (loading && rows.isEmpty()) {
                 item(key = "loading") {
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
-                        androidx.compose.material3.CircularProgressIndicator(color = palette.accent, strokeWidth = 2.dp)
+                        id.starstask.mobile.ui.components.StaggerDots(color = palette.accent)
                     }
                 }
             } else if (rows.isEmpty()) {

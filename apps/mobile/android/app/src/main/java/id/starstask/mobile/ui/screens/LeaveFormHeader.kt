@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -47,7 +47,6 @@ fun LeaveFormHeader(
 fun LeaveFormLoading() {
     val palette = mockColors()
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Page), horizontalArrangement = Arrangement.Center) {
-        CircularProgressIndicator(color = palette.accent)
     }
 }
 

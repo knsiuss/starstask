@@ -68,56 +68,56 @@ object Spacing {
     val WebCardElevation = 1.dp
     val WebCompactCardPadding = 12.dp
 }
-val Background = Color(0xFFFAFAF8)
+val Background = Color(0xFFF2F2F7)
 val Surface = Color(0xFFFFFFFF)
-val Foreground = Color(0xFF292D34)
-val Muted = Color(0xFFF0F1F3)
+val Foreground = Color(0xFF1C1C1E)
+val Muted = Color(0xFFE9E9EB)
 val MutedFill = Muted
-val SoftFill = Color(0xFFEEF1F7)
-val MutedForeground = Color(0xFF646B76)
-val Subtle = Color(0xFFF7F7F5)
-val Border = Color(0xFFE7E7E3)
-val Accent = Color(0xFF45639E)
-val AccentSoft = Color(0xFFE8EDFA)
-val Band = Color(0xFFEEF3FC)
+val SoftFill = Color(0xFFF2F2F7)
+val MutedForeground = Color(0xFF8E8E93)
+val Subtle = Color(0xFFF2F2F7)
+val Border = Color(0x14000000)
+val Accent = Color(0xFF007AFF)
+val AccentSoft = Color(0x1A007AFF)
+val Band = Color(0xFFF2F2F7)
 /* Dark navy surface for the mission section. Text pairs below are the only
    foregrounds verified against it (14.3:1 and 7.7:1). */
-val Navy = Color(0xFF16203A)
+val Navy = Color(0xFF1C1C1E)
 
 /* Classes redesign v2 (web `ClassDirectoryCard` parity): pure-white cards
    on a light-grey page, no navy hero, soft accent-soft cover strip and
    stats row. Token set is intentionally minimal — only the muted tokens
    not already covered by the shared web-mirrored tokens above. */
-val ClassesPage = Color(0xFFF5F6F8)
-val ClassesCover = Color(0xFFE9EDF8)
+val ClassesPage = Color(0xFFF2F2F7)
+val ClassesCover = Color(0xFFE5E5EA)
 val Success = Color(0xFF15803D)
 val SuccessSoft = Color(0xFFECFDF5)
 val Warning = Color(0xFF8A5A1E)
 val WarningSoft = Color(0xFFFBF3E4)
-val Danger = Color(0xFFA94A4A)
+val Danger = Color(0xFFFF3B30)
 val DangerSoft = Color(0xFFFBEDED)
 val Input = Color(0xFFDCDEE2)
 val Hover = Color(0xFFF3F5F9)
 
 // Dark tokens (globals.css dark @theme).
-val DarkBackground = Color(0xFF0E1116)
-val DarkSurface = Color(0xFF171C24)
-val DarkForeground = Color(0xFFE8EAED)
-val DarkMutedForeground = Color(0xFF9AA3AF)
-val DarkBorder = Color(0xFF262F3D)
-val DarkAccent = Color(0xFF8FB0E8)
-val DarkMuted = Color(0xFF232A35)
+val DarkBackground = Color(0xFF000000)
+val DarkSurface = Color(0xFF1C1C1E)
+val DarkForeground = Color(0xFFF2F2F7)
+val DarkMutedForeground = Color(0xFF8E8E93)
+val DarkBorder = Color(0x1FFFFFFF)
+val DarkAccent = Color(0xFF0A84FF)
+val DarkMuted = Color(0xFF2C2C2E)
 val DarkSuccess = Color(0xFF5CB98A)
 val DarkWarning = Color(0xFFD9A441)
 val DarkDanger = Color(0xFFE07A7A)
 
 // Assignments redesign tokens (premium minimal). Existing global tokens are
 // untouched so Dashboard and other modules keep their current look.
-val AssignmentBackground = Color(0xFFF7F8FA)
-val AssignmentAccent = Color(0xFF526B9F)
-val AssignmentForeground = Color(0xFF202534)
-val AssignmentSecondary = Color(0xFF858B98)
-val AssignmentBorder = Color(0xFFE9EBF0)
+val AssignmentBackground = Color(0xFFF2F2F7)
+val AssignmentAccent = Color(0xFF007AFF)
+val AssignmentForeground = Color(0xFF1C1C1E)
+val AssignmentSecondary = Color(0xFF8E8E93)
+val AssignmentBorder = Color(0x14000000)
 
 val StarsTaskShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),

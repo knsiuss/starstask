@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -462,7 +462,6 @@ internal fun ClassAssignmentsTabClean(assignments: List<ExploreAssignment>, load
         ) {
             if (loading) {
                 Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AssignmentAccent)
                 }
             } else if (assignments.isEmpty()) {
                 Text(
@@ -516,7 +515,6 @@ internal fun ClassMembersTabClean(members: List<String>, loading: Boolean = fals
         ) {
             if (loading) {
                 Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AssignmentAccent)
                 }
             } else if (members.isEmpty()) {
                 Text(

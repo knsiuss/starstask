@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -33,6 +35,12 @@ import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.theme.DurationSoftMs
 import id.starstask.mobile.ui.theme.EasingOutCubic
 import id.starstask.mobile.ui.theme.dashColors
+
+// Dock safe clearance for content lists: dock is ~92dp (content padding +
+// item height + edge inflation) with a transparent gutter; lists scroll
+// under it, so the bottom spacing must clear the dock or the last row
+// clips. Centralised so every tab screen stays consistent.
+val DockBottomInset = 104.dp
 
 /**
  * Floating tab bar. Translucent pill surface + soft shadow + rounded
@@ -77,6 +85,16 @@ fun FloatingNavDock(
         ) {
             destinations.forEach { dest ->
                 val selected = baseRoute(currentRoute) == baseRoute(dest.route)
+                val interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                val pressedTab by interactionSource.collectIsPressedAsState()
+                val tabScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (pressedTab) 0.92f else 1f,
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+                    ),
+                    label = "dockPressScale",
+                )
                 val pillColor by animateColorAsState(
                     targetValue = if (selected) palette.accent.copy(alpha = 0.16f) else Color.Transparent,
                     animationSpec = tween(DurationSoftMs, easing = EasingOutCubic),
@@ -94,7 +112,12 @@ fun FloatingNavDock(
                         .heightIn(min = 56.dp)
                         .clip(pillShape)
                         .background(pillColor)
-                        .clickable(onClickLabel = dest.bottomBarLabel) { onNavigate(dest.route) }
+                        .graphicsLayer { scaleX = tabScale; scaleY = tabScale }
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClickLabel = dest.bottomBarLabel,
+                        ) { onNavigate(dest.route) }
                         .padding(horizontal = 2.dp, vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(3.dp),

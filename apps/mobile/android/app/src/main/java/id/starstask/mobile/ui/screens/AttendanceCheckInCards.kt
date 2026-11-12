@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -258,7 +258,6 @@ fun ActiveMeetingCard(
                         text = (meeting.location?.let { "$it · " } ?: "") + "Within ${meeting.radiusM} m",
                     )
                 }
-                if (busy) CircularProgressIndicator(modifier = Modifier.size(20.dp))
             }
 
             if (pendingSync) {

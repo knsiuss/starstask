@@ -47,7 +47,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -180,7 +180,10 @@ fun ActionCenterScreen(
     pendingDetailOption?.let { opt ->
         val detail = detailClass
         if (detailClassLoading) {
-            CircularProgressIndicator(color = mockColors().accent)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                id.starstask.mobile.ui.components.WebSkeletonCard()
+                id.starstask.mobile.ui.components.WebSkeletonCard()
+            }
         } else if (detail != null) {
             if (manageClassId != null) {
                 ClassManageScreen(clazz = detail, onBack = { manageClassId = null }, onOpenGrades = {})
@@ -223,7 +226,10 @@ fun ActionCenterScreen(
         Text(summaryText, color = mockColors().muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = Spacing.Md))
 
         when {
-            loading -> CircularProgressIndicator(color = mockColors().accent)
+            loading && center == null && sc == null -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                id.starstask.mobile.ui.components.WebSkeletonCard()
+                id.starstask.mobile.ui.components.WebSkeletonCard()
+            }
             error != null -> WebAlert(message = error!!)
             sc == null || sc!!.managedClassIds.isEmpty() -> WebEmptyState(
                 title = "No classes to lead yet",
@@ -790,8 +796,10 @@ private fun ActionAbsencesTab(scope: WorkspaceScope, onOpenLeaveDetail: (String)
         loading = false
     }
     Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.Section)) {
-        if (loading) CircularProgressIndicator(color = mockColors().accent)
-        else if (items.isEmpty()) {
+        if (loading && items.isEmpty()) {
+            id.starstask.mobile.ui.components.WebSkeletonCard()
+            id.starstask.mobile.ui.components.WebSkeletonCard()
+        } else if (items.isEmpty()) {
             WebEmptyState(title = "No absence requests", description = "New requests appear here as students submit them.")
         } else {
             items.forEach { req ->
@@ -881,8 +889,9 @@ private fun ActionAttendanceTab(
                 onSelect = { selectedClassId = it },
             )
         }
-        if (loading) {
-            CircularProgressIndicator(color = mockColors().accent)
+        if (loading && courses.isEmpty()) {
+            id.starstask.mobile.ui.components.WebSkeletonCard()
+            id.starstask.mobile.ui.components.WebSkeletonCard()
         } else {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.Lg)) {
                 OverviewStatCard("Total courses", courses.size, Lucide.BookOpen, modifier = Modifier.weight(1f))
@@ -952,7 +961,7 @@ private fun ActionAttendanceTab(
                         }
                         Row(modifier = Modifier.fillMaxWidth().padding(top = Spacing.Md), horizontalArrangement = Arrangement.spacedBy(Spacing.Md)) {
                             if (exportingCourseId == course.id) {
-                                CircularProgressIndicator(modifier = Modifier.size(Spacing.Section))
+                                id.starstask.mobile.ui.components.StaggerDots(color = mockColors().muted)
                                 Text("Exporting…", style = MaterialTheme.typography.bodySmall, color = mockColors().muted)
                             } else {
                                 QuickActionRow(icon = Lucide.BookOpen, label = "View attendance") {

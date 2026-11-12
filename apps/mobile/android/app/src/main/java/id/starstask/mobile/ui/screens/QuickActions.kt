@@ -9,6 +9,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -48,20 +50,36 @@ fun QuickActions(
     onOpenSchedule: () -> Unit = {},
     onNewAssignment: () -> Unit = {},
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-    ) {
-        QuickActionPill(Lucide.CalendarCheck, "Check in now", onClick = onCheckIn)
-        QuickActionPill(Lucide.ClipboardList, "Submit task", onClick = onOpenTasks)
-        QuickActionPill(Lucide.CalendarDays, "Today's schedule", onClick = onOpenSchedule)
-        if (onOpenMessages != null) {
-            QuickActionPill(Lucide.MessageCircle, "Open messages", onClick = onOpenMessages)
+    val palette = id.starstask.mobile.ui.theme.dashColors()
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().height(36.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            QuickActionPill(Lucide.CalendarCheck, "Check in now", onClick = onCheckIn)
+            QuickActionPill(Lucide.ClipboardList, "Submit task", onClick = onOpenTasks)
+            QuickActionPill(Lucide.CalendarDays, "Today's schedule", onClick = onOpenSchedule)
+            if (onOpenMessages != null) {
+                QuickActionPill(Lucide.MessageCircle, "Open messages", onClick = onOpenMessages)
+            }
+            QuickActionPill(Lucide.Plus, "New assignment", onClick = onNewAssignment)
+            // End spacer so the last pill has breathing room when scrolled.
+            androidx.compose.foundation.layout.Box(modifier = Modifier.size(width = 8.dp, height = 1.dp))
         }
-        QuickActionPill(Lucide.Plus, "New assignment", onClick = onNewAssignment)
-        // End spacer so the last pill has breathing room when scrolled.
-        androidx.compose.foundation.layout.Box(modifier = Modifier.size(width = 8.dp, height = 1.dp))
+        // Fade the right edge so the clipped pill reads as "more to the right",
+        // not as a cut-off widget.
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .height(36.dp)
+                .width(36.dp)
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        colors = listOf(androidx.compose.ui.graphics.Color.Transparent, palette.pageBackground),
+                    ),
+                ),
+        )
     }
 }
 

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -174,17 +176,19 @@ fun WebAlert(message: String, variant: WebAlertVariant = WebAlertVariant.ERROR, 
     }
 }
 
-// Skeleton placeholder mirroring web `bg-muted/70 animate-pulse rounded-md`
-// loading.tsx blocks. Uses AccentSoft (#E8EDFA) instead of Muted (#F0F1F3)
-// so the skeleton reads as branded blue-grey, not flat grey.
+// Skeleton placeholder. A branded shimmer brush sweeps across the block on a
+// short infinite loop while fresh data fetches; reads as "working", never as
+// a frozen placeholder.
 @Composable
 fun WebSkeleton(height: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier, radius: androidx.compose.ui.unit.Dp = 8.dp) {
-    androidx.compose.foundation.layout.Box(
+    val shimmerWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+    androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .background(id.starstask.mobile.ui.theme.AccentSoft, RoundedCornerShape(radius)),
-    )
+            .clip(RoundedCornerShape(radius))
+            .background(id.starstask.mobile.ui.theme.rememberShimmerBrush(width = shimmerWidth)),
+    ) {}
 }
 
 /** Web `loading.tsx` list idiom: a card with title, meta and body lines. */

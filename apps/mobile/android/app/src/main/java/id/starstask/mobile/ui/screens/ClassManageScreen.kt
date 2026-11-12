@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -168,7 +168,6 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
                     variant = WebButtonVariant.DANGER,
                 )
             }
-            if (busy) CircularProgressIndicator()
             if (error != null) WebAlert(message = error!!)
             WebButton(
                 label = "Manage invitations",

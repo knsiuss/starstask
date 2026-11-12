@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -384,7 +383,7 @@ private fun StatusPill(status: String, palette: id.starstask.mobile.ui.theme.Moc
 
 internal fun formatMeetingDateTime(iso: String): String = runCatching {
     val parsed = java.time.OffsetDateTime.parse(iso)
-    java.time.format.DateTimeFormatter.ofPattern("d MMM · HH:mm", java.util.Locale("id", "ID")).format(parsed)
+    java.time.format.DateTimeFormatter.ofPattern("d MMM · HH:mm", java.util.Locale.getDefault()).format(parsed)
 }.getOrElse { iso.take(16).replace('T', ' ') }
 
 @Composable

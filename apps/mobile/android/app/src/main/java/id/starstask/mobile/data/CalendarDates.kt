@@ -109,13 +109,13 @@ fun buildCalendarRange(view: CalendarView, anchorKey: String): CalendarRange {
     )
 }
 
-private val ENGLISH = Locale.ENGLISH
-private val DAY_LABEL = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", ENGLISH)
-private val GROUP_LABEL = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", ENGLISH)
-private val MONTH_LABEL = DateTimeFormatter.ofPattern("MMMM yyyy", ENGLISH)
-private val SHORT_DAY = DateTimeFormatter.ofPattern("EEE dd", ENGLISH)
-private val SHORT_DAY_MONTH = DateTimeFormatter.ofPattern("d MMM", ENGLISH)
-private val TIME_LABEL = DateTimeFormatter.ofPattern("HH:mm", ENGLISH)
+private val LOC = Locale.getDefault()
+private val DAY_LABEL = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", LOC)
+private val GROUP_LABEL = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", LOC)
+private val MONTH_LABEL = DateTimeFormatter.ofPattern("MMMM yyyy", LOC)
+private val SHORT_DAY = DateTimeFormatter.ofPattern("EEE dd", LOC)
+private val SHORT_DAY_MONTH = DateTimeFormatter.ofPattern("d MMM", LOC)
+private val TIME_LABEL = DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT).withLocale(LOC)
 
 fun formatDayLabel(dateKey: String): String = parseDateKey(dateKey)?.format(DAY_LABEL) ?: dateKey
 

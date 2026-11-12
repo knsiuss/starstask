@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
+import id.starstask.mobile.ui.components.StaggerDots
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,7 +81,6 @@ internal fun GlossyBackSurface(
 internal fun GlossyLoadingRow() {
     val palette = mockColors()
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = palette.accent, strokeWidth = 2.dp)
     }
 }
 
@@ -100,7 +99,7 @@ internal fun GlossyErrorRow(message: String, onRetry: () -> Unit) {
 
 internal fun formatMeetingDateTimeFull(iso: String): String = runCatching {
     val parsed = java.time.OffsetDateTime.parse(iso)
-    java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy · HH:mm", java.util.Locale("id", "ID"))
+    java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy · HH:mm", java.util.Locale.getDefault())
         .format(parsed)
 }.getOrElse { iso.take(16).replace('T', ' ') }
 

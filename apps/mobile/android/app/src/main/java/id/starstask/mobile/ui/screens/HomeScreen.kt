@@ -145,18 +145,35 @@ fun HomeScreen(
         // anymore, fall back to the most recent past-deadline assignment.
         current?.upcomingAssignments?.firstOrNull() ?: current?.latestPastAssignment
     }
+    // NEXT TASK card owns the first/upcoming task; the list below skips it so
+    // the same title never appears twice.
+    val upcomingAssignments = remember(current, nextTask) {
+        current?.upcomingAssignments?.dropWhile { it.id == nextTask?.id }.orEmpty()
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(palette.pageBackground).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 104.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            DashHero(
-                displayName = current?.displayName,
-                classes = current?.classes.orEmpty(),
-                onRequestTaskPublication = onNewAssignment,
-            )
+            if (current == null && error == null) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier.fillMaxWidth().height(160.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                            .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(palette.heroStart, palette.heroEnd))),
+                    )
+                    id.starstask.mobile.ui.components.WebSkeletonCard()
+                    id.starstask.mobile.ui.components.WebSkeletonCard()
+                }
+            } else {
+                DashHero(
+                    displayName = current?.displayName,
+                    classes = current?.classes.orEmpty(),
+                    onRequestTaskPublication = onNewAssignment,
+                )
+            }
         }
+        if (current != null || error != null) {
         item {
             QuickActions(
                 onCheckIn = { onOpenAttendance() },                onOpenTasks = onOpenTasks,
@@ -204,12 +221,12 @@ fun HomeScreen(
         item { DashWeekStrip(schedule = schedule, assignmentDeadlines = assignmentDeadlines) }
 
         item { DashSectionHeader("Upcoming Assignments", actionLabel = "See all", onAction = onOpenTasks) }
-        if (current?.upcomingAssignments.isNullOrEmpty()) {
+        if (upcomingAssignments.isEmpty()) {
             item { DashEmptyTile(text = "No upcoming assignments.") }
         } else {
             item {
                 DashAssignmentGroup {
-                    current.upcomingAssignments.forEachIndexed { index, assignment ->
+                    upcomingAssignments.forEachIndexed { index, assignment ->
                         DashAssignmentRow(
                             title = assignment.title,
                             meta = listOfNotNull(
@@ -217,7 +234,7 @@ fun HomeScreen(
                                 assignment.deadline?.let { "${id.starstask.mobile.data.formatDateShort(it)} at ${formatTime(it)}" },
                             ).joinToString(" · "),
                             onClick = onOpenTasks,
-                            showDivider = index != current.upcomingAssignments.lastIndex,
+                            showDivider = index != upcomingAssignments.lastIndex,
                         )
                     }
                 }
@@ -334,6 +351,7 @@ fun HomeScreen(
 
         if (error != null) {
             item { Text(error!!, color = id.starstask.mobile.ui.theme.Danger) }
+        }
         }
     }
 }

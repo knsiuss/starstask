@@ -1,10 +1,7 @@
 package id.starstask.mobile.ui.screens.dashboard
 
-// Pastel greeting hero for the redesigned dashboard. The big name is a
-// display treatment of `displayName`; data comes from DashboardData and is
-// never composed elsewhere. The pill CTA routes to the existing assignment
-// request flow via onRequestTaskPublication; class admins publish directly,
-// so the CTA label switches to "Create Assignment" for them.
+// Calm greeting block: plain white grouped-card surface, tight type, one
+// accent CTA. No gradient, no display-shouting caps — legible at a glance.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,16 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.data.DashboardClass
-import id.starstask.mobile.ui.components.BrandWordmark
-import id.starstask.mobile.ui.theme.LocalDarkTheme
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.DashRadiusCard
 import id.starstask.mobile.ui.theme.dashColors
-import java.util.Locale
 
 @Composable
 fun DashHero(
@@ -42,7 +35,6 @@ fun DashHero(
     modifier: Modifier = Modifier,
 ) {
     val palette = dashColors()
-    val isDark = LocalDarkTheme.current
     val shownName = displayName?.takeIf { it.isNotBlank() } ?: "Welcome"
     val now = java.time.ZonedDateTime.now(java.time.ZoneId.systemDefault())
     val greeting = when (now.hour) {
@@ -50,7 +42,6 @@ fun DashHero(
         in 12..17 -> "Good afternoon,"
         else -> "Good evening,"
     }
-    val subtitle = "Here is your academic overview."
     val classLine = classes
         .map { it.classCode?.takeIf { code -> code.isNotBlank() } ?: it.name }
         .filter { it.isNotBlank() }
@@ -61,9 +52,9 @@ fun DashHero(
         modifier = modifier
             .fillMaxWidth()
             .clip(DashRadiusCard)
-            .background(Brush.horizontalGradient(listOf(palette.heroStart, palette.heroEnd)))
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .background(palette.card)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -71,15 +62,15 @@ fun DashHero(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(greeting, color = palette.heroMuted, fontSize = 15.sp, lineHeight = 20.sp)
+                Text(greeting, color = palette.muted, fontSize = 15.sp, lineHeight = 20.sp)
                 Text(
-                    shownName.uppercase(Locale.US),
-                    color = palette.heroText,
-                    fontSize = 28.sp,
-                    lineHeight = 34.sp,
+                    shownName,
+                    color = palette.text,
+                    fontSize = 26.sp,
+                    lineHeight = 32.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    letterSpacing = (-0.02).sp,
-                    maxLines = 3,
+                    letterSpacing = (-0.015).sp,
+                    maxLines = 2,
                 )
                 if (classLine.isNotBlank()) {
                     Row(
@@ -88,51 +79,37 @@ fun DashHero(
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
                         Text(
-                            "CLASS",
-                            color = palette.heroMuted,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 1.2.sp,
-                        )
-                        Text(
                             classLine,
-                            color = palette.heroText,
+                            color = palette.muted,
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 17.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         )
                     }
                 }
             }
-            BrandWordmark(heightDp = 44, onDark = isDark)
         }
-
-        Text(
-            subtitle,
-            color = palette.heroMuted,
-            fontSize = 14.sp,
-            lineHeight = 19.sp,
-        )
 
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(999.dp))
-                .background(palette.card)
+                .background(palette.accent)
                 .clickable(onClick = onRequestTaskPublication)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 18.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(Lucide.CalendarDays, contentDescription = null, tint = palette.accent, modifier = Modifier.size(16.dp))
+            Icon(Lucide.CalendarDays, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(16.dp))
             Text(
                 if (managesAnyClass) "Create Assignment" else "Request Task Publication",
-                color = palette.text,
+                color = androidx.compose.ui.graphics.Color.White,
                 fontSize = 14.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                 maxLines = 1,
             )
-            Icon(Lucide.ChevronRight, contentDescription = null, tint = palette.muted, modifier = Modifier.size(14.dp))
+            Icon(Lucide.ChevronRight, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
         }
     }
 }

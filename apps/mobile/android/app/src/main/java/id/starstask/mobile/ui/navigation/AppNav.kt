@@ -33,7 +33,7 @@ enum class DrawerDestination(
 
     /**
      * Web route `/leave-requests`, labeled "Absence Requests" on web.
-     * Android bottom bar displays "Absence" per the reference screenshot;
+     * Android bottom bar displays "Leave" per the reference screenshot;
      * backend identifiers unchanged.
      */
     LEAVE(
@@ -41,7 +41,7 @@ enum class DrawerDestination(
         "Leave Requests",
         Lucide.FilePenLine,
         inBottomBar = true,
-        bottomBarLabel = "Absence",
+        bottomBarLabel = "Leave",
     ),
     MESSAGES("messages", "Messages", Lucide.MessageCircle),
     NOTIFICATIONS("notifications", "Notifications", Lucide.Bell),
