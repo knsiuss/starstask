@@ -18,6 +18,7 @@ data class WorkspaceContext(
     val platformAdmin: Boolean = false,
     val classAdminAnywhere: Boolean = false,
     val betaTester: Boolean = false,
+    val lecturerAnywhere: Boolean = false,
 )
 
 suspend fun loadWorkspaceContext(): WorkspaceContext? {
@@ -31,6 +32,7 @@ suspend fun loadWorkspaceContext(): WorkspaceContext? {
             platformAdmin = data["platform_admin"]?.jsonPrimitive?.contentOrNull() == "true",
             classAdminAnywhere = data["class_admin_anywhere"]?.jsonPrimitive?.contentOrNull() == "true",
             betaTester = data["beta_tester"]?.jsonPrimitive?.contentOrNull() == "true",
+            lecturerAnywhere = data["lecturer_anywhere"]?.jsonPrimitive?.contentOrNull() == "true",
         )
     } catch (_: Exception) {
         null

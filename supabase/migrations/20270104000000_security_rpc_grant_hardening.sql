@@ -13,7 +13,10 @@
 --   notify_platform_admins_public_assignment) cannot be invoked via RPC
 --   (no trigger context) but should not be callable at all.
 -- - rls_auto_enable (event-trigger helper running dynamic DDL) must
---   never be callable by anon/authenticated.
+--   never be callable by anon/authenticated. It is a production-only object
+--   (see docs/architecture/phase-4c/02-current-state-architecture.md §15);
+--   the revoke below is conditional so this migration applies to a fresh
+--   database that does not have it.
 -- - consume_rate_limit: anon could burn arbitrary rate-limit keys.
 --
 -- Rollback: re-grant EXECUTE ON FUNCTION ... TO anon for the function.
@@ -101,8 +104,21 @@ REVOKE EXECUTE ON FUNCTION public.register_native_push_token(text, text, text)
 REVOKE EXECUTE ON FUNCTION public.remove_leave_request_evidence(uuid)
   FROM anon, PUBLIC;
 
-REVOKE EXECUTE ON FUNCTION public.rls_auto_enable()
-  FROM anon, PUBLIC;
+-- Production-only object; absent on a fresh database. Revoke only when present.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'rls_auto_enable'
+      AND p.pronargs = 0
+  ) THEN
+    EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM anon, PUBLIC';
+  END IF;
+END;
+$$;
 
 REVOKE EXECUTE ON FUNCTION public.session_checkin_summary(uuid)
   FROM anon, PUBLIC;

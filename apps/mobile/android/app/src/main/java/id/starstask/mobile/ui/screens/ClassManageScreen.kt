@@ -31,6 +31,8 @@ import id.starstask.mobile.data.renameClass
 import id.starstask.mobile.data.setClassJoinPolicy
 import id.starstask.mobile.data.setClassStatus
 import id.starstask.mobile.ui.screens.classdir.ClassInvitesGlossy
+import id.starstask.mobile.data.listClassCourses
+import id.starstask.mobile.data.ClassCourse
 import id.starstask.mobile.data.loadClassBranding
 import id.starstask.mobile.data.saveClassBranding
 import id.starstask.mobile.data.userFacingMessage
@@ -60,6 +62,8 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
     var announcements by remember { mutableStateOf<List<id.starstask.mobile.data.AnnouncementRow>>(emptyList()) }
     var announceTitle by remember { mutableStateOf("") }
     var announceBody by remember { mutableStateOf("") }
+    var announceSubjectId by remember { mutableStateOf("") }
+    var announcedSubjects by remember { mutableStateOf<List<id.starstask.mobile.data.ClassCourse>>(emptyList()) }
     var branding by remember { mutableStateOf<ClassBranding?>(null) }
     var brandingName by remember { mutableStateOf("") }
     var brandingDoc by remember { mutableStateOf("") }
@@ -70,6 +74,7 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
     LaunchedEffect(clazz.id) {
         runCatching { admins = loadClassAdmins(clazz.id) }
         runCatching { announcements = loadAnnouncements(clazz.id) }
+        runCatching { listClassCourses(clazz.id, includeArchived = false) }.onSuccess { announcedSubjects = it }
         runCatching { loadClassBranding(clazz.id) }.onSuccess {
             branding = it
             brandingName = it?.universityName ?: ""
@@ -192,17 +197,28 @@ fun ClassManageScreen(clazz: ClassDetail, onBack: () -> Unit, onOpenGrades: (Str
 
         WebSectionTitle("Announcements (${announcements.size})")
         WebCard {
-            WebCardHeader(title = "Publish announcement", description = "Visible to all class members")
+            WebCardHeader(title = "Publish announcement", description = "Visible to all class members — pick the course it belongs to.")
+            val activeSubjectId = announceSubjectId.ifBlank { announcedSubjects.firstOrNull()?.id.orEmpty() }
+            if (announcedSubjects.isEmpty()) {
+                Text("Add a course to this class before posting an announcement.", color = MutedForeground, style = MaterialTheme.typography.bodySmall)
+            } else {
+                id.starstask.mobile.ui.components.WebTabStrip(
+                    items = announcedSubjects.map { (it.code?.let { c -> "$c · ${it.name}" } ?: it.name) to it.id },
+                    activeKey = activeSubjectId,
+                    onSelect = { announceSubjectId = it },
+                )
+            }
             WebInput(value = announceTitle, onValueChange = { announceTitle = it }, label = "Title")
             WebInput(value = announceBody, onValueChange = { announceBody = it }, label = "Body", singleLine = false)
             WebButton(
                 label = "Publish announcement",
                 onClick = {
                     scope.launch {
-                        runCatching { publishAnnouncement(clazz.id, announceTitle, announceBody) }
+                        runCatching { publishAnnouncement(clazz.id, announceTitle, announceBody, activeSubjectId) }
                         runCatching { announcements = loadAnnouncements(clazz.id) }
                     }
                 },
+                enabled = announcedSubjects.isNotEmpty() && announceTitle.isNotBlank(),
             )
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.Sm)) {

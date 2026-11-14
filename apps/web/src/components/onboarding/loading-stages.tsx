@@ -1,5 +1,7 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
+
 import { cn } from "@/lib/utils/cn";
 import { INIT_STAGES, type InitStage } from "@/lib/onboarding/init-flow";
 
@@ -28,7 +30,7 @@ export function LoadingStages({ activeStage, completed }: LoadingStagesProps) {
         className="st-progress-track bg-accent-soft relative h-2 w-full overflow-hidden rounded-full"
       >
         {completed ? (
-          <div className="bg-accent h-full w-full rounded-full" />
+          <div className="bg-accent h-full w-full origin-left rounded-full transition-[width,transform] duration-500 ease-out" />
         ) : (
           <div className="st-progress-bar bg-accent absolute inset-y-0 w-2/5 rounded-full" />
         )}
@@ -50,14 +52,17 @@ export function LoadingStages({ activeStage, completed }: LoadingStagesProps) {
               <span
                 aria-hidden="true"
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold",
+                  "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors duration-300",
                   isDone && "st-check-pop bg-accent text-accent-foreground",
                   isActive && "border-accent border-2",
                   !isDone && !isActive && "border-border border-2",
                 )}
               >
                 {isDone ? (
-                  "✓"
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                  />
                 ) : isActive ? (
                   <span
                     className={cn(

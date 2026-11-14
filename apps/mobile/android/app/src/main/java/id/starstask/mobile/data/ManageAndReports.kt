@@ -73,16 +73,35 @@ suspend fun loadAnnouncements(classId: String): List<AnnouncementRow> {
 
 data class AnnouncementRow(val id: String, val title: String, val createdAt: String?)
 
-suspend fun publishAnnouncement(classId: String, title: String, body: String) {
-    SupabaseProvider.client.postgrest.rpc(
-        "publish_class_assignment",
+/**
+ * Publishes an announcement using the same path the web class submission form
+ * uses: submit with contentType=class_announcement, then publish. Requires a
+ * course subject because the RPC now enforces subjectId (20261102110000).
+ */
+suspend fun publishAnnouncement(classId: String, title: String, body: String, subjectId: String?) {
+    if (subjectId.isNullOrBlank()) {
+        throw IllegalStateException("Pick a course for this announcement first.")
+    }
+    val db = SupabaseProvider.client.postgrest
+    val id = db.rpc(
+        "submit_class_assignment",
         buildJsonObject {
             put("p_class_id", JsonPrimitive(classId))
             put("p_title", JsonPrimitive(title.trim()))
             put("p_description", JsonPrimitive(body.trim()))
-            put("p_assignment_type", JsonPrimitive("announcement"))
             put("p_deadline", JsonNull)
+            put("p_assignment_type", JsonNull)
+            put("p_tags", JsonArray(emptyList()))
+            put("p_reference_urls", JsonArray(emptyList()))
+            put("p_content_type", JsonPrimitive("class_announcement"))
+            put("p_source_label", JsonNull)
+            put("p_drive_url", JsonNull)
+            put("p_subject_id", JsonPrimitive(subjectId))
         },
+    ).decodeJsonPrimitive().content
+    db.rpc(
+        "publish_class_assignment",
+        buildJsonObject { put("p_assignment_id", JsonPrimitive(id)) },
     )
 }
 

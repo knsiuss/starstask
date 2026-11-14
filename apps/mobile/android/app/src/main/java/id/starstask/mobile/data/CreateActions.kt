@@ -25,6 +25,10 @@ suspend fun createSession(
     title: String,
     startsAtIso: String,
     endsAtIso: String,
+    sessionType: String = "in_person",
+    location: String? = null,
+    meetingUrl: String? = null,
+    agenda: String? = null,
 ): String {
     val result = SupabaseProvider.client.postgrest.rpc(
         "create_discussion_session",
@@ -35,13 +39,13 @@ suspend fun createSession(
             put("p_starts_at", JsonPrimitive(startsAtIso))
             put("p_ends_at", JsonPrimitive(endsAtIso))
             put("p_time_zone", JsonPrimitive(DEVICE_ZONE.id))
-            put("p_session_type", JsonPrimitive("offline"))
-            put("p_meeting_url", JsonNull)
-            put("p_location", JsonNull)
-            put("p_agenda", JsonNull)
+            put("p_session_type", JsonPrimitive(sessionType))
+            put("p_meeting_url", meetingUrl?.takeIf { it.isNotBlank() }?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("p_location", location?.takeIf { it.isNotBlank() }?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("p_agenda", agenda?.takeIf { it.isNotBlank() }?.let { JsonPrimitive(it) } ?: JsonNull)
             put("p_capacity", JsonNull)
             put("p_registration_deadline", JsonNull)
-            put("p_visibility", JsonPrimitive("class"))
+            put("p_visibility", JsonPrimitive("class_members"))
             put("p_assignment_id", JsonNull)
         },
     )

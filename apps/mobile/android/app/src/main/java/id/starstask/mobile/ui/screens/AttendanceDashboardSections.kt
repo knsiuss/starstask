@@ -1,5 +1,7 @@
 package id.starstask.mobile.ui.screens
 
+import id.starstask.mobile.ui.theme.PressedScaleModifier
+
 import id.starstask.mobile.ui.theme.Spacing
 
 import id.starstask.mobile.ui.icons.Lucide
@@ -128,7 +130,7 @@ fun ActiveAttendanceCard(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(999.dp))
                             .background(palette.chip)
-                            .clickable { onOpenManageClass(managedClass) }
+                            .then(PressedScaleModifier(onPress = { onOpenManageClass(managedClass) }, pressedScale = 0.98f))
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),

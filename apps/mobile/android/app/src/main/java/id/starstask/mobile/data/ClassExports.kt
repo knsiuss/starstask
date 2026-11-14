@@ -15,10 +15,12 @@ import java.net.URL
 
 private const val EXPORT_RECAP_PATH_SUFFIX = "/attendance/exports/recap"
 private const val EXPORT_REPORT_PATH_SUFFIX = "/attendance/exports/report"
+private const val EXPORT_CHECKLIST_PATH_SUFFIX = "/attendance/exports/checklist"
 
 sealed class ExportFormat(val fileExt: String, val pathSuffix: String) {
     data object Pdf : ExportFormat("pdf", EXPORT_REPORT_PATH_SUFFIX)
     data object Xlsx : ExportFormat("xlsx", EXPORT_RECAP_PATH_SUFFIX)
+    data object Checklist : ExportFormat("xlsx", EXPORT_CHECKLIST_PATH_SUFFIX)
 }
 
 data class ExportResult(val file: java.io.File, val mimeType: String)
@@ -55,6 +57,7 @@ suspend fun downloadAttendanceExport(
             setRequestProperty("Accept", when (format) {
                 ExportFormat.Pdf -> "application/pdf"
                 ExportFormat.Xlsx -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ExportFormat.Checklist -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             })
         }
         try {

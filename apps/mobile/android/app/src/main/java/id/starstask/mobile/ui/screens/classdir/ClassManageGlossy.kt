@@ -45,6 +45,8 @@ import id.starstask.mobile.data.deleteClass
 import id.starstask.mobile.data.getClassDependencies
 import id.starstask.mobile.data.getManagedClassById
 import id.starstask.mobile.data.loadAnnouncements
+import id.starstask.mobile.data.listClassCourses
+import id.starstask.mobile.data.ClassCourse
 import id.starstask.mobile.data.loadClassBranding
 import id.starstask.mobile.data.publishAnnouncement
 import id.starstask.mobile.data.saveClassBranding
@@ -81,6 +83,9 @@ fun ClassManageGlossy(
     }
     val dependencies by produceState<ClassDependencies?>(initialValue = null, key1 = clazz.id, key2 = reloadTick) {
         value = runCatching { getClassDependencies(clazz.id) }.getOrNull()
+    }
+    val subjects by produceState(initialValue = emptyList<id.starstask.mobile.data.ClassCourse>(), key1 = clazz.id, key2 = reloadTick) {
+        value = runCatching { listClassCourses(clazz.id, includeArchived = false) }.getOrDefault(emptyList())
     }
     val announcements by produceState(initialValue = emptyList<id.starstask.mobile.data.AnnouncementRow>(), key1 = clazz.id, key2 = reloadTick) {
         value = runCatching { loadAnnouncements(clazz.id) }.getOrDefault(emptyList())
@@ -234,6 +239,36 @@ fun ClassManageGlossy(
             ManageSection(title = "Announcements (${announcements.size})", palette = palette) {
                 var title by remember { mutableStateOf("") }
                 var body by remember { mutableStateOf("") }
+                var subjectId by remember { mutableStateOf("") }
+                var subjectMenuOpen by remember { mutableStateOf(false) }
+
+                if (subjects.isEmpty()) {
+                    Text("Add a course to this class before posting an announcement.", color = palette.muted, fontSize = 13.sp)
+                } else {
+                    val activeSubjectId = subjectId.ifBlank { subjects.firstOrNull()?.id.orEmpty() }
+                    Box {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable { subjectMenuOpen = true }.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            androidx.compose.material3.Icon(Lucide.BookOpen, contentDescription = null, tint = palette.accent, modifier = Modifier.size(18.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Course", color = palette.muted, fontSize = 11.sp)
+                                Text(subjects.firstOrNull { it.id == activeSubjectId }?.let { it.code?.let { c -> "$c · ${it.name}" } ?: it.name } ?: "Pick a course", color = palette.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                            }
+                            androidx.compose.material3.Icon(Lucide.ChevronDown, contentDescription = null, tint = palette.muted, modifier = Modifier.size(18.dp))
+                        }
+                        androidx.compose.material3.DropdownMenu(expanded = subjectMenuOpen, onDismissRequest = { subjectMenuOpen = false }) {
+                            subjects.forEach { s ->
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text(s.code?.let { c -> "$c · ${s.name}" } ?: s.name) },
+                                    onClick = { subjectId = s.id; subjectMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
+                }
                 ManageField(label = "Title", value = title, onChange = { title = it }, enabled = true, palette = palette)
                 ManageField(label = "Body", value = body, onChange = { body = it }, enabled = true, palette = palette, singleLine = false, minLines = 3)
                 Text(
@@ -243,11 +278,12 @@ fun ClassManageGlossy(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
-                        .clickable(enabled = title.isNotBlank()) {
+                        .clickable(enabled = title.isNotBlank() && subjects.isNotEmpty()) {
                             scope.launch {
                                 error = null
                                 notice = null
-                                runCatching { publishAnnouncement(clazz.id, title, body) }
+                                val active = subjectId.ifBlank { subjects.firstOrNull()?.id.orEmpty() }
+                                runCatching { publishAnnouncement(clazz.id, title, body, active) }
                                     .onSuccess {
                                         val captured = title
                                         title = ""

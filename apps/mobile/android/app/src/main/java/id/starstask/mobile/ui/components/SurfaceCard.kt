@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.starstask.mobile.ui.icons.Lucide
+import id.starstask.mobile.ui.theme.PressedScaleModifier
 import id.starstask.mobile.ui.theme.mockColors
 
 private val CardShape = RoundedCornerShape(12.dp)
@@ -40,7 +41,7 @@ fun SurfaceCard(
 ) {
     val palette = mockColors()
     val base = if (onClick != null) {
-        Modifier.clickable(onClick = onClick)
+        PressedScaleModifier(onPress = onClick, pressedScale = 0.98f)
     } else {
         Modifier
     }
@@ -118,7 +119,7 @@ fun InsetGroupRow(
     content: @Composable () -> Unit,
 ) {
     val base = if (onClick != null) {
-        Modifier.clickable(onClick = onClick)
+        PressedScaleModifier(onPress = onClick, pressedScale = 0.98f)
     } else {
         Modifier
     }

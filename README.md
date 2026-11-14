@@ -71,10 +71,11 @@ A class admin's own posts are published directly after their attachments upload,
 | Visitor                     | No account                                              | Landing page, public class directory                                                            |
 | Member (student)            | Sign in with Google, then join a class                  | Read published tasks, submit tasks, RSVP, check in, file absence requests                       |
 | Class admin (_ketua kelas_) | Approved class application, or verified representative  | Review and moderate their own class, run sessions, forward absence packages, manage invitations |
+| Lecturer                    | Signed in with an institutional email domain registered on the university; activated automatically at signup/email confirmation | Administer their own classes on StarsTask (narrow scope; not an official record) |
 | Platform admin              | Seeded manually in the database; no UI or API grants it | Approve classes, verify representatives, moderate across classes                                |
 | Developer                   | Email allowlist (`DEVELOPER_EMAILS`)                    | Internal monitoring console; no student-facing access                                           |
 
-There is no lecturer account. Roles are never read from the browser: identity comes from the verified server session and is re-checked inside the database. Full permission tables are in [docs/CLASSES.md](./docs/CLASSES.md).
+StarsTask is unofficial, and the lecturer persona proves nothing about employment: it is granted by the database at signup and whenever the account's email becomes confirmed (an institutional domain registered on a university activates it automatically), scoped to classes its holder administers, and revocable by platform and university admins. Roles are never read from the browser: identity comes from the verified server session and is re-checked inside the database. Full permission tables are in [docs/CLASSES.md](./docs/CLASSES.md).
 
 ## Features
 

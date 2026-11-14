@@ -21,7 +21,7 @@ const MyWeekSection = dynamic(
       (module) => module.MyWeekSection,
     ),
   {
-    loading: () => <div className="h-48 animate-pulse rounded bg-muted" />,
+    loading: () => <div className="skeleton h-48 rounded-md" />,
   },
 );
 

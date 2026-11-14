@@ -43,7 +43,6 @@ enum class DrawerDestination(
         inBottomBar = true,
         bottomBarLabel = "Leave",
     ),
-    MESSAGES("messages", "Messages", Lucide.MessageCircle),
     NOTIFICATIONS("notifications", "Notifications", Lucide.Bell),
 
     /** Web route `/app/actions`; rendered only for class admins. */

@@ -124,7 +124,9 @@ fun ProfileOnboardingScreen(
                                     "already_member" -> "Profile saved. You are already a member of ${join.className ?: "that class"}."
                                     "blocked_by_policy" -> "Profile saved. That class requires an invitation, so you were not added."
                                     "ambiguous" -> "Profile saved. Multiple classes match that name — ask your class admin for an invite."
-                                    "no_match" -> "Profile saved. No active class matches that name."
+                                    // Mobile joinOrCreateClass turns a miss into an
+                                    // open class (creator = ketua), so this status is rare.
+                                    "no_match" -> "Profile saved. Couldn't open that class automatically — join or create it from My Classes."
                                     else -> "Profile saved."
                                 }
                             } ?: "Profile saved."

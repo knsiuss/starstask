@@ -78,10 +78,14 @@ export function AttendanceCorrectionDialog({
         ]
       : currentStatus;
 
-  React.useEffect(() => {
-    if (!open) return;
+  const openDialog = () => {
     setError(null);
     setFieldErrors({});
+    setOpen(true);
+  };
+
+  React.useEffect(() => {
+    if (!open) return;
     let cancelled = false;
 
     fetch(
@@ -165,7 +169,7 @@ export function AttendanceCorrectionDialog({
         type="button"
         size="sm"
         variant="secondary"
-        onClick={() => setOpen(true)}
+        onClick={openDialog}
       >
         Correct
       </Button>

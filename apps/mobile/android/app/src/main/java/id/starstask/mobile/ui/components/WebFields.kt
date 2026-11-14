@@ -108,7 +108,11 @@ fun WebSectionTitle(
             androidx.compose.foundation.layout.Row(
                 modifier = androidx.compose.ui.Modifier
                     .padding(start = Spacing.Section)
-                    .clickable { onAction() },
+                    .clickable(
+                        interactionSource = androidx.compose.foundation.interaction.MutableInteractionSource(),
+                        indication = null,
+                        onClick = onAction,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Xs),
             ) {

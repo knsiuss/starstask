@@ -17,7 +17,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         // Supabase public credentials from local.properties (gitignored).
         // Falls back to placeholders so a fresh clone still configures.

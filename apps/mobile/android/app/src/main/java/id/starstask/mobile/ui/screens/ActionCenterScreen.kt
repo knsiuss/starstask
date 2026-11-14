@@ -967,13 +967,41 @@ private fun ActionAttendanceTab(
                                 QuickActionRow(icon = Lucide.BookOpen, label = "View attendance") {
                                     onOpenAttendanceCourse(course.id, course.name, course.code, selected?.name)
                                 }
-                                QuickActionRow(icon = Lucide.Download, label = "Export Attendance") {
+                                QuickActionRow(icon = Lucide.FileText, label = "Recap (PDF)") {
+                                    exportError = null
+                                    exportingCourseId = course.id
+                                    coroutineScope.launch {
+                                        try {
+                                            val result = downloadAttendanceExport(context, selected.slug, course.id, ExportFormat.Pdf)
+                                            shareFile(context, result.file, result.mimeType, "Attendance recap — ${course.name}")
+                                        } catch (_: Exception) {
+                                            exportError = "The export could not be completed."
+                                        } finally {
+                                            exportingCourseId = null
+                                        }
+                                    }
+                                }
+                                QuickActionRow(icon = Lucide.FileSpreadsheet, label = "Recap (XLSX)") {
                                     exportError = null
                                     exportingCourseId = course.id
                                     coroutineScope.launch {
                                         try {
                                             val result = downloadAttendanceExport(context, selected.slug, course.id, ExportFormat.Xlsx)
                                             shareFile(context, result.file, result.mimeType, "Attendance recap — ${course.name}")
+                                        } catch (_: Exception) {
+                                            exportError = "The export could not be completed."
+                                        } finally {
+                                            exportingCourseId = null
+                                        }
+                                    }
+                                }
+                                QuickActionRow(icon = Lucide.ClipboardCheck, label = "Blank checklist") {
+                                    exportError = null
+                                    exportingCourseId = course.id
+                                    coroutineScope.launch {
+                                        try {
+                                            val result = downloadAttendanceExport(context, selected.slug, course.id, ExportFormat.Checklist)
+                                            shareFile(context, result.file, result.mimeType, "Attendance checklist — ${course.name}")
                                         } catch (_: Exception) {
                                             exportError = "The export could not be completed."
                                         } finally {

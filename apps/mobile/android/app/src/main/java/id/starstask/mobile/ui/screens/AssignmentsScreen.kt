@@ -62,6 +62,7 @@ import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.Surface
 import id.starstask.mobile.ui.theme.dashColors
 import id.starstask.mobile.ui.theme.SoftFill
+import id.starstask.mobile.ui.theme.PressedScaleModifier
 import id.starstask.mobile.ui.theme.Muted
 import id.starstask.mobile.ui.theme.Danger
 import kotlinx.coroutines.launch
@@ -247,7 +248,7 @@ fun AssignmentsWorkspaceScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(999.dp))
                         .background(palette.accent)
-                        .clickable { showCreate = true }
+                        .then(PressedScaleModifier(onPress = { showCreate = true }, pressedScale = 0.97f))
                         .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -357,7 +358,7 @@ fun AssignmentsWorkspaceScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(999.dp))
                             .background(FilterBg)
-                            .clickable(onClick = { showFilterSheet = true })
+                            .then(PressedScaleModifier(onPress = { showFilterSheet = true }, pressedScale = 0.94f))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         contentAlignment = Alignment.Center,
                     ) {

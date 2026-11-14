@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import id.starstask.mobile.ui.theme.PressedScaleModifier
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -225,7 +226,7 @@ fun ScheduleScreen(
                                 .weight(1f)
                                 .clip(RoundedCornerShape(999.dp))
                                 .background(AssignmentAccent)
-                                .clickable { offerCreate("official") }
+                                .then(PressedScaleModifier(onPress = { offerCreate("official") }, pressedScale = 0.97f))
                                 .padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -240,7 +241,7 @@ fun ScheduleScreen(
                             .weight(1f)
                             .clip(RoundedCornerShape(999.dp))
                             .background(SoftFill)
-                            .clickable { offerCreate("personal") }
+                            .then(PressedScaleModifier(onPress = { offerCreate("personal") }, pressedScale = 0.97f))
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -595,7 +596,7 @@ private fun NavCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
             .clip(RoundedCornerShape(999.dp))
             .background(Color.White)
             .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
-            .clickable { onClick() },
+            .then(PressedScaleModifier(onPress = onClick, pressedScale = 0.9f)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(imageVector = icon, contentDescription = label, tint = AssignmentForeground, modifier = Modifier.size(20.dp))

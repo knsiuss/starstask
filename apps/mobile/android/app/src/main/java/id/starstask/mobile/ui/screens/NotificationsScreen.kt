@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import id.starstask.mobile.ui.theme.PressedScaleModifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -246,7 +247,7 @@ private fun NotificationRowCard(
             .clip(RoundedCornerShape(12.dp))
             .background(if (unread) palette.accentSofter else palette.card)
             .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-            .clickable(onClick = onOpen)
+            .then(PressedScaleModifier(onPress = onOpen, pressedScale = 0.98f))
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

@@ -8,6 +8,7 @@ import id.starstask.mobile.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import id.starstask.mobile.ui.theme.PressedScaleModifier
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -235,7 +236,15 @@ fun ClassesScreen(userId: String, onJoinClass: () -> Unit = {}, onOpenGrades: (S
             }
         }
         }
-        JoinFab(onClick = { joinOpen = true }, modifier = Modifier.align(Alignment.BottomCenter))
+        // Join FAB sits above the floating dock: the dock is ~92dp and
+        // windowInsetsPadding adds the system nav bar, so 104dp clearance
+        // hides both. Align to the same inset instead of hugging the edge.
+        JoinFab(
+            onClick = { joinOpen = true },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = id.starstask.mobile.ui.navigation.DockBottomInset),
+        )
     }
 
     if (joinOpen) {
@@ -346,7 +355,7 @@ private fun JoinFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .padding(horizontal = 20.dp, vertical = 16.dp)
             .clip(RoundedCornerShape(999.dp))
             .background(palette.accent)
-            .clickable(onClick = onClick)
+            .then(PressedScaleModifier(onPress = onClick, pressedScale = 0.97f))
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {

@@ -17,10 +17,10 @@ export function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
+      <DialogPrimitive.Overlay className="dialog-overlay fixed inset-0 z-50 bg-black/40" />
       <DialogPrimitive.Content
         className={cn(
-          "border-border bg-surface fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border p-6 shadow-lg",
+          "dialog-content border-border bg-surface fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border p-6 shadow-lg",
           className,
         )}
         {...props}
@@ -28,7 +28,7 @@ export function DialogContent({
         {children}
         <DialogPrimitive.Close
           aria-label="Close dialog"
-          className="text-muted-foreground hover:bg-muted focus-visible:outline-accent absolute top-4 right-4 rounded-sm p-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent absolute top-4 right-4 rounded-sm p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <X
             aria-hidden="true"

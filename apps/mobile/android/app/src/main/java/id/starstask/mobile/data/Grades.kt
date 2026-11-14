@@ -27,8 +27,8 @@ data class ClassRosterEntry(val userId: String, val displayName: String)
 suspend fun listClassRoster(classId: String): List<ClassRosterEntry> {
     val db = SupabaseProvider.client.postgrest
     val memberIds = runCatching {
-        db.from("class_members").select(Columns.list("user_id", "status")) {
-            filter { eq("class_id", classId); eq("status", "active") }
+        db.from("class_members").select(Columns.raw("user_id")) {
+            filter { eq("class_id", classId) }
             limit(200)
         }.decodeJsonArray().mapNotNull { it.jsonObject["user_id"]?.jsonPrimitive?.contentOrNull() }.distinct()
     }.getOrDefault(emptyList())

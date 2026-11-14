@@ -436,6 +436,64 @@ suspend fun joinClassByName(rawClassName: String): ClassJoinResult {
     return ClassJoinResult(status = status, className = name)
 }
 
+/**
+ * join_class_by_name matches active classes by slug/name; on a miss this
+ * falls through to create_class_as_student, which opens the class and makes
+ * the creator ketua via the class_members trigger. The slug fallback uses the
+ * normalized key so the server accepts a typed name like "TPLM002".
+ */
+suspend fun joinOrCreateClass(className: String): ClassJoinResult {
+    val joined = joinClassByName(className)
+
+    if (joined.status != "no_match") {
+        return joined
+    }
+
+    val trimmed = className.trim()
+    val slug = slugifyClassName(trimmed)
+    val year = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+
+    val created = runCatching {
+        SupabaseProvider.client.postgrest.rpc(
+        "create_class_as_student",
+        kotlinx.serialization.json.buildJsonObject {
+            put("p_proposed_slug", slug)
+            put("p_proposed_name", trimmed)
+            put("p_course_name", trimmed)
+            put("p_semester", "Ganjil")
+            put("p_academic_year", "$year/${year + 1}")
+            put("p_description", "Kelas yang dibuat saat onboarding oleh mahasiswa untuk $trimmed.")
+            put("p_join_policy", "open")
+        },
+        )
+    }
+
+    return if (created.isSuccess) {
+        ClassJoinResult(status = "joined", className = trimmed)
+    } else {
+        ClassJoinResult(status = "error")
+    }
+}
+
+private fun slugifyClassName(value: String): String {
+    val key = value
+        .lowercase()
+        .trim()
+        .replace(Regex("[^a-z0-9]+"), "-")
+        .replace(Regex("^-+|-+$"), "")
+        .take(80)
+
+    if (key.length >= 3) {
+        return key
+    }
+
+    val digits = Regex("[a-zA-Z0-9]+").findAll(value)
+        .map { it.value.lowercase() }
+        .joinToString("")
+    val fallback = (digits + "000").take(80)
+    return if (fallback.length >= 3) fallback else "ko-kelas"
+}
+
 suspend fun saveOnboardingProfile(
     fullName: String,
     nickname: String,
@@ -459,7 +517,7 @@ suspend fun saveOnboardingProfile(
             },
         )
         val join = if (className.trim().isNotEmpty()) {
-            runCatching { joinClassByName(className) }
+            runCatching { joinOrCreateClass(className) }
                 .getOrElse { ClassJoinResult(status = "error") }
         } else {
             null

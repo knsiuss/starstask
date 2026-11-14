@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, GraduationCap, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -28,6 +28,10 @@ export type ProfileOnboardingInitialValues = {
   university: string;
   className: string;
   avatarUrl: string | null;
+  /** Sign-in email domain, displayed in the university hint. */
+  emailDomain?: string | null;
+  /** True when the sign-in's confirmed email already activated the lecturer persona. */
+  isLecturer?: boolean;
 };
 
 type ProfileOnboardingFormProps = {
@@ -72,6 +76,7 @@ export function ProfileOnboardingForm({
     classNameAtSave: string;
   } | null>(null);
 
+  const isLecturer = initialValues.isLecturer === true;
   const [step, setStep] = React.useState<"welcome" | "join">("welcome");
 
   const goToWorkspace = React.useCallback(() => {
@@ -119,10 +124,15 @@ export function ProfileOnboardingForm({
     const parsed = profileOnboardingSchema.safeParse({
       fullName: values.fullName,
       nickname: values.nickname,
-      nim: values.nim,
+      nim: values.nim.trim() === "" ? undefined : values.nim,
       university: values.university,
       className: values.className,
     });
+
+    if (!isLecturer && !values.nim.trim()) {
+      setFieldErrors({ nim: "Enter your NIM" });
+      return;
+    }
 
     if (!parsed.success) {
       const errors = toFieldErrors(parsed.error);
@@ -136,7 +146,7 @@ export function ProfileOnboardingForm({
 
     formData.set("fullName", parsed.data.fullName);
     formData.set("nickname", parsed.data.nickname);
-    formData.set("nim", parsed.data.nim);
+    formData.set("nim", parsed.data.nim ?? "");
     formData.set("university", parsed.data.university);
     formData.set("className", parsed.data.className ?? "");
 
@@ -178,6 +188,7 @@ export function ProfileOnboardingForm({
         classJoin: body?.data?.classJoin ?? null,
         classNameAtSave: parsed.data.className ?? "",
       });
+      setStep(shouldShowJoinStep(body?.data?.classJoin ?? null) ? "join" : "welcome");
     } catch {
       setFormMessage("Network error. Check your connection and try again.");
     } finally {
@@ -324,18 +335,38 @@ export function ProfileOnboardingForm({
           />
         </Field>
 
+        {isLecturer ? (
+          <Alert
+            variant="info"
+            className="flex items-start gap-2"
+          >
+            <GraduationCap
+              aria-hidden="true"
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span>
+              Your account was already activated as a lecturer because your
+              sign-in email matches a registered institutional domain. A NIM is
+              not required; your access stays limited to classes you administer
+              on StarsTask.
+            </span>
+          </Alert>
+        ) : null}
+
         <Field
           id="nim"
-          label="NIM (Student ID)"
+          label={isLecturer ? "NIM (optional for lecturers)" : "NIM (Student ID)"}
           error={fieldErrors.nim}
           hint={
-            values.nim.trim().length > 0
-              ? `Private. Anywhere it must be shown outside your account, it reads ${maskNim(
-                  values.nim,
-                )}.`
-              : "Kept private. Leading zeros are preserved."
+            isLecturer
+              ? "Optional for lecturers. Left blank, no NIM is stored."
+              : values.nim.trim().length > 0
+                ? `Private. Anywhere it must be shown outside your account, it reads ${maskNim(
+                    values.nim,
+                  )}.`
+                : "Kept private. Leading zeros are preserved."
           }
-          required
+          required={!isLecturer}
         >
           <Input
             id="nim"
@@ -345,10 +376,10 @@ export function ProfileOnboardingForm({
             maxLength={32}
             inputMode="text"
             autoComplete="off"
-            required
-            aria-required="true"
+            required={!isLecturer}
+            aria-required={!isLecturer}
             aria-invalid={Boolean(fieldErrors.nim)}
-            placeholder="e.g. 2024010767"
+            placeholder={isLecturer ? "Not required" : "e.g. 2024010767"}
           />
         </Field>
 

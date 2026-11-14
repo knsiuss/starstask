@@ -51,7 +51,9 @@ fun WebTabStrip(
                 Text(
                     label,
                     color = if (active) Foreground else MutedForeground,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
+                    ),
                     maxLines = 1,
                 )
                 androidx.compose.foundation.layout.Box(

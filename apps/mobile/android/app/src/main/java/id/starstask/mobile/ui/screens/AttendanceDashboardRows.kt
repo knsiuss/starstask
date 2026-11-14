@@ -1,5 +1,7 @@
 package id.starstask.mobile.ui.screens
 
+import id.starstask.mobile.ui.theme.PressedScaleModifier
+
 import id.starstask.mobile.ui.theme.Spacing
 
 import id.starstask.mobile.ui.icons.Lucide
@@ -101,7 +103,7 @@ internal fun CourseRow(row: CourseAttendanceRow, onClick: (() -> Unit)?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .then(if (onClick != null) PressedScaleModifier(onPress = onClick, pressedScale = 0.98f) else Modifier)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -210,7 +212,7 @@ internal fun HistoryRow(entry: AttendanceEntry, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .then(PressedScaleModifier(onPress = onClick, pressedScale = 0.98f))
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

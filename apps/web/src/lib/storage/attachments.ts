@@ -158,6 +158,14 @@ export async function validateAttachmentFile(
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   const isTextLike = allowed.signatures.length === 0;
+
+  if (isTextLike && hasHtmlScript(bytes)) {
+    return {
+      ok: false,
+      error: `${safeName} contains inline HTML or JavaScript, which is not allowed.`,
+    };
+  }
+
   if (
     !isTextLike &&
     !allowed.signatures.some((signature) => matchesSignature(bytes, signature))
@@ -217,4 +225,26 @@ export function matchesSignature(
   }
 
   return signature.every((byte, index) => bytes[index] === byte);
+}
+
+const HTML_SCRIPT_PATTERN = new RegExp(
+  "^\s*(<!doctype html|<html|<script|<iframe|<svg|<meta)|<script[\s>]|</script>|javascript:|on(load|error|click|focus)\s*=",
+  "i",
+);
+
+/**
+ * Text-like files may embed the same markup as an HTML attachment; the web
+ * serves these only via forced `Content-Disposition: attachment`, but a
+ * direct download must still never double as a phishing page. Reject before
+ * the object is ever written.
+ */
+export function hasHtmlScript(bytes: Uint8Array): boolean {
+  if (bytes.length === 0) {
+    return false;
+  }
+
+  const decoder = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true });
+  const sample = decoder.decode(bytes.subarray(0, Math.min(bytes.length, 64 * 1024)));
+
+  return HTML_SCRIPT_PATTERN.test(sample);
 }

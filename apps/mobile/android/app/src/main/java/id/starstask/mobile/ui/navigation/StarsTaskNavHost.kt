@@ -269,7 +269,14 @@ fun StarsTaskNavHost(
                         )
                     }
                     composable(DrawerDestination.SCHEDULE.route) {
-                        ScheduleScreen(userId = userId)
+                        ScheduleScreen(
+                            userId = userId,
+                            onOpenAssignment = { _ -> navigateTo(DrawerDestination.ASSIGNMENTS.route) },
+                            onOpenSession = { sid -> navController.navigate("attendance/session/${routeArg(sid)}") },
+                            onOpenLeave = { _ -> navigateTo(DrawerDestination.LEAVE.route) },
+                            onOpenClassSchedule = { _ -> navigateTo(DrawerDestination.CLASSES.route) },
+                            onViewAllAssignments = { navigateTo(DrawerDestination.ASSIGNMENTS.route) },
+                        )
                     }
                     composable(DrawerDestination.LEAVE.route) {
                         LeaveRequestsScreen(

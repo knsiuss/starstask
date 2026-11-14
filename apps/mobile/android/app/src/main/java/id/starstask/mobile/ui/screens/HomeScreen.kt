@@ -327,7 +327,7 @@ fun HomeScreen(
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text("What's new", color = palette.text, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                             Text(
-                                "Encrypted direct messages and GPS check-in are now on mobile.",
+                                "GPS check-in with offline sync is now on mobile.",
                                 color = palette.muted,
                                 style = MaterialTheme.typography.bodySmall,
                             )

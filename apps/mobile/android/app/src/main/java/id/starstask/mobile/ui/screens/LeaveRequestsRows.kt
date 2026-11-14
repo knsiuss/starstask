@@ -1,5 +1,7 @@
 package id.starstask.mobile.ui.screens
 
+import id.starstask.mobile.ui.theme.PressedScaleModifier
+
 import id.starstask.mobile.ui.theme.Spacing
 
 import androidx.compose.foundation.border
@@ -40,7 +42,7 @@ fun LeaveRequestCard(
             .clip(RoundedCornerShape(12.dp))
             .background(palette.card)
             .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .then(PressedScaleModifier(onPress = onClick, pressedScale = 0.98f))
             .padding(Spacing.Block),
     ) {
         Row(

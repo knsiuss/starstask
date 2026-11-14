@@ -2,7 +2,7 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import { ApiError } from "@/lib/api/errors";
 import { handleRouteError } from "@/lib/api/responses";
-import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { enforceRateLimit, getClientIdentifier } from "@/lib/security/rate-limit";
 import { getB2Config } from "@/lib/storage/b2";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export async function GET(
   try {
     await enforceRateLimit({
       action: "media:read",
-      identifier: "media",
+      identifier: getClientIdentifier(request),
       limit: 120,
       windowSeconds: 60,
     });
@@ -73,11 +73,10 @@ export async function GET(
       headers: {
         "Content-Type": mimeType,
         "Content-Length": String(bytes.byteLength),
-        // Images are content-addressed by UUID; they never change.
-        "Cache-Control": "public, max-age=31536000, immutable",
-        // Let the Vercel edge cache serve repeat views without invoking
-        // this function at all.
-        "CDN-Cache-Control": "public, max-age=31536000, immutable",
+        // Images may be replaced (avatar uploads get new UUIDs, but a
+        // former user must not stay cached forever). Private, short TTL;
+        // revalidation is cheap through the edge.
+        "Cache-Control": "private, max-age=60, must-revalidate",
       },
     });
   } catch (error) {

@@ -54,6 +54,7 @@ val WebHeaderRadius = RoundedCornerShape(Spacing.Section)
  * (`shadow-[0_1px_2px_rgba(9,9,11,0.04)]`) + `p-5` (20dp). This is the only card
  * chrome in the app; compact variants change padding only.
  */
+/** Material `Card(onClick = ...)` already carries a ripple — no extra scale layered on top. */
 @Composable
 fun WebCard(
     modifier: Modifier = Modifier,

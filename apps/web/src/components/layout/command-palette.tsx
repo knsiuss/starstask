@@ -101,7 +101,7 @@ export function CommandPalette() {
             type="button"
             aria-label="Close command palette"
             onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground focus-visible:outline-accent -m-1 cursor-pointer rounded-md p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <X aria-hidden="true" className="h-4 w-4" />
           </button>

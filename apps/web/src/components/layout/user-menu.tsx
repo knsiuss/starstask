@@ -54,7 +54,7 @@ export function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="hover:bg-muted focus-visible:outline-accent flex items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="hover:bg-muted focus-visible:outline-accent flex items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         // Without an avatar the fallback renders the initials as visible text,
         // so they are part of the accessible name too (WCAG 2.5.3).
         aria-label={

@@ -45,10 +45,10 @@ export default function DownloadPage() {
             </span>
             <div>
               <h2 className="text-foreground text-base font-semibold">
-                StarsTask Android (native, v1.0)
+                StarsTask Android (native, v1.0.0)
               </h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                versionName 1.0 · versionCode 1 · minSdk 26 · targetSdk 36
+                versionName 1.0.0 · versionCode 1 · minSdk 26 · targetSdk 36
               </p>
               <Button
                 asChild
@@ -81,7 +81,7 @@ export default function DownloadPage() {
             <li>Download the APK with your Android browser or file manager.</li>
             <li>
               Open the file. When Android asks, allow installation from that
-              source ("Install unknown apps") — you can turn it off afterwards.
+              source &ldquo;Install unknown apps&rdquo; &mdash; you can turn it off afterwards.
             </li>
             <li>
               If you previously installed another StarsTask debug APK, uninstall

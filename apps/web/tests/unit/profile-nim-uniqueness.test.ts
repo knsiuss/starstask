@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireSessionMock, updateMyProfileMock, joinClassByNameMock } =
+const { requireSessionMock, updateMyProfileMock, joinOrCreateClassMock } =
   vi.hoisted(() => ({
     requireSessionMock: vi.fn(),
     updateMyProfileMock: vi.fn(),
-    joinClassByNameMock: vi.fn(),
+    joinOrCreateClassMock: vi.fn(),
   }));
 
 vi.mock("@/features/classes/class-access", () => ({
@@ -13,7 +13,7 @@ vi.mock("@/features/classes/class-access", () => ({
 
 vi.mock("@/lib/db/profiles", () => ({
   updateMyProfile: updateMyProfileMock,
-  joinClassByName: joinClassByNameMock,
+  joinOrCreateClass: joinOrCreateClassMock,
   setMyAvatarUrl: vi.fn(),
 }));
 
@@ -32,6 +32,7 @@ import { DataAccessError } from "@/lib/db/assignments";
 import { saveOnboardingProfile } from "@/features/profile/profile-service";
 
 const INPUT = {
+  persona: "student" as const,
   fullName: "Test Student",
   nickname: "Tester",
   nim: "241011400306",
@@ -53,7 +54,7 @@ const PROFILE = {
 beforeEach(() => {
   requireSessionMock.mockReset();
   updateMyProfileMock.mockReset();
-  joinClassByNameMock.mockReset();
+  joinOrCreateClassMock.mockReset();
   requireSessionMock.mockResolvedValue({ user: { id: "user-1" } });
 });
 
@@ -73,12 +74,12 @@ describe("saveOnboardingProfile", () => {
       code: "nim_taken",
       fieldErrors: { nim: expect.any(String) },
     });
-    expect(joinClassByNameMock).not.toHaveBeenCalled();
+    expect(joinOrCreateClassMock).not.toHaveBeenCalled();
   });
 
   it("saves the profile and reports the class outcome", async () => {
     updateMyProfileMock.mockResolvedValue(PROFILE);
-    joinClassByNameMock.mockResolvedValue({ status: "no_match" });
+    joinOrCreateClassMock.mockResolvedValue({ status: "no_match" });
 
     const result = await saveOnboardingProfile(
       { ...INPUT, className: "05TPLM002" },
@@ -87,6 +88,6 @@ describe("saveOnboardingProfile", () => {
 
     expect(result.profile).toEqual(PROFILE);
     expect(result.classJoin).toEqual({ status: "no_match" });
-    expect(joinClassByNameMock).toHaveBeenCalledWith("05TPLM002");
+    expect(joinOrCreateClassMock).toHaveBeenCalledWith("05TPLM002");
   });
 });

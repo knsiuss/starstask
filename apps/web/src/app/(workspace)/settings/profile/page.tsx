@@ -4,12 +4,14 @@ import { redirect } from "next/navigation";
 
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { AdminProfileOverview } from "@/components/profile/admin-profile-overview";
+import { LecturerStatusPanel } from "@/components/profile/claim-lecturer-panel";
 import { ClassAdminApplyPanel } from "@/components/profile/class-admin-apply-panel";
 import { ProfileAcademic } from "@/components/profile/profile-academic";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { ProfileSection } from "@/components/profile/profile-section";
 import type { GrantableClass } from "@/components/verification/representative-grant-form";
 import { getSessionUser } from "@/lib/auth/session";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { isPlatformAdmin, listMyClasses } from "@/lib/db/classes";
 import { getMyProfile } from "@/lib/db/profiles";
 import { listMyRepresentativeClassIds } from "@/lib/db/verification";
@@ -70,10 +72,13 @@ export default async function ProfileSettingsPage() {
     );
   }
 
-  const [classes, representativeClassIds] = await Promise.all([
+  const [classes, representativeClassIds, lecturer] = await Promise.all([
     listMyClasses(session.user.id),
     listMyRepresentativeClassIds(session.user.id),
+    isLecturer(),
   ]);
+
+  const emailDomain = session.user.email?.split("@")[1]?.toLowerCase() ?? null;
 
   const representedClasses = new Set(representativeClassIds);
 
@@ -123,6 +128,19 @@ export default async function ProfileSettingsPage() {
             status: item.status,
           }))}
         />
+
+        <ProfileSection
+          id="lecturer"
+          title="Lecturer"
+          description="Activated automatically when your sign-in email matches a registered institutional domain (or confirmed later via magic link). Not verified against a national registry; a platform admin or your university's admin can revoke it."
+        >
+          <div className="px-5 py-4">
+            <LecturerStatusPanel
+              emailDomain={emailDomain}
+              isLecturer={lecturer}
+            />
+          </div>
+        </ProfileSection>
 
         <ProfileSection
           id="class-admin"
