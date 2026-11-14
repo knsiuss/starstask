@@ -43,6 +43,7 @@ let verificationStudent: TestUser;
 let classA = "";
 let classB = "";
 let universityId = "";
+let subjectIdA = "";
 const courseNames: string[] = [];
 
 async function createTestUser(label: string): Promise<TestUser> {
@@ -163,9 +164,30 @@ async function joinClass(
   }
 }
 
+async function createSubject(
+  inviter: TestUser,
+  classId: string,
+  label: string,
+): Promise<string> {
+  const { data, error } = await inviter.client.rpc("create_class_subject", {
+    p_class_id: classId,
+    p_name: `Authz Subject ${label} ${suffix}`,
+    p_code: null,
+    p_description: "Disposable subject used by the authorization matrix.",
+    p_lecturer_name: null,
+  });
+
+  if (error || typeof data !== "string") {
+    throw new Error(`Could not create subject ${label}: ${error?.message}`);
+  }
+
+  return data;
+}
+
 async function submitAssignment(
   author: TestUser,
   classId: string,
+  subjectId: string,
   title: string,
 ): Promise<string> {
   const { data, error } = await author.client.rpc("submit_class_assignment", {
@@ -174,6 +196,7 @@ async function submitAssignment(
     p_description: "A complete submission used to verify authorization.",
     p_assignment_type: "individual",
     p_tags: ["authz"],
+    p_subject_id: subjectId,
   });
 
   if (error || typeof data !== "string") {
@@ -305,6 +328,7 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
 
     classA = await createClassAs(classAdmin, "a");
     classB = await createClassAs(otherClassAdmin, "b");
+    subjectIdA = await createSubject(classAdmin, classA, "a");
     await joinClass(member, classAdmin, classA);
   });
 
@@ -346,6 +370,7 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
       publishedAssignmentId = await submitAssignment(
         member,
         classA,
+        subjectIdA,
         "Authorization review target",
       );
 
@@ -397,6 +422,7 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
       const ownSubmission = await submitAssignment(
         classAdmin,
         classA,
+        subjectIdA,
         "Self review authorization target",
       );
 
@@ -416,6 +442,7 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
       assignmentId = await submitAssignment(
         member,
         classA,
+        subjectIdA,
         "Moderation target assignment",
       );
 
@@ -932,6 +959,7 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
       const assignmentId = await submitAssignment(
         classAdmin,
         classA,
+        subjectIdA,
         `Retention ${suffix}`,
       );
       const oldTimestamp = new Date(

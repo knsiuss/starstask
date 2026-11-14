@@ -35,6 +35,7 @@ let classId = "";
 let classSlug = "";
 let courseName = "";
 let universityId = "";
+let subjectId = "";
 let applicationId = "";
 let invitationId = "";
 let submissionId = "";
@@ -258,6 +259,21 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     expect(error).toBeNull();
     expect(data).toBeTruthy();
     classId = data as string;
+
+    const { data: subject, error: subjectError } = await applicant.client.rpc(
+      "create_class_subject",
+      {
+        p_class_id: classId,
+        p_name: `RLS Subject ${suffix}`,
+        p_code: null,
+        p_description: "Disposable subject used by the review flow test.",
+        p_lecturer_name: null,
+      },
+    );
+
+    expect(subjectError).toBeNull();
+    expect(typeof subject).toBe("string");
+    subjectId = subject as string;
   });
 
   it("records the decision and reviewer in the application history", async () => {
@@ -502,6 +518,7 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
       p_description: "A complete submission used to verify the review flow.",
       p_assignment_type: "individual",
       p_tags: ["rls"],
+      p_subject_id: subjectId,
     });
 
     expect(error).toBeNull();
@@ -550,6 +567,7 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
           "A submission by the class admin that must not self-approve.",
         p_assignment_type: null,
         p_tags: [],
+        p_subject_id: subjectId,
       });
 
     expect(submitError).toBeNull();
@@ -644,6 +662,7 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
         p_description: "A submission used to verify the rejection requirement.",
         p_assignment_type: null,
         p_tags: [],
+        p_subject_id: subjectId,
       },
     );
 
