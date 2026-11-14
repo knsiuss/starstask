@@ -42,6 +42,7 @@ let invitee: TestUser;
 let verificationStudent: TestUser;
 let classA = "";
 let classB = "";
+let universityId = "";
 const courseNames: string[] = [];
 
 async function createTestUser(label: string): Promise<TestUser> {
@@ -249,6 +250,51 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
     invitee = await createTestUser("invitee");
     verificationStudent = await createTestUser("verification");
 
+    // The audit_logs university_id future-rows guard requires university_id on
+    // every post-2026-11-05 audit insert; apply_for_class (before any class
+    // exists) has no class to resolve a tenant from, so without a membership
+    // the audit insert violates the constraint. Seed a disposable tenant.
+    const { data: uni, error: uniError } = await admin
+      .from("universities")
+      .insert({
+        slug: `authz-uni-${suffix}`,
+        name: `Authz Uni ${suffix}`,
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    if (uniError || !uni) {
+      throw new Error(`Could not seed university: ${uniError?.message}`);
+    }
+
+    universityId = uni.id as string;
+
+    const { error: memError } = await admin
+      .from("university_memberships")
+      .insert(
+        [
+          platformAdmin,
+          classAdmin,
+          otherClassAdmin,
+          member,
+          outsider,
+          invitee,
+          verificationStudent,
+        ].map((user) => ({
+          user_id: user.id,
+          university_id: universityId,
+          role: "student",
+          status: "active",
+        })),
+      );
+
+    if (memError) {
+      throw new Error(
+        `Could not seed university memberships: ${memError.message}`,
+      );
+    }
+
     const { error: grantError } = await admin
       .from("platform_admins")
       .insert({ user_id: platformAdmin.id });
@@ -267,6 +313,14 @@ describe.skipIf(!hasEnv)("privileged function authorization matrix", () => {
       if (courseNames.length > 0) {
         await admin.from("classes").delete().in("course_name", courseNames);
         await admin.from("courses").delete().in("name", courseNames);
+      }
+
+      if (universityId) {
+        await admin
+          .from("university_memberships")
+          .delete()
+          .eq("university_id", universityId);
+        await admin.from("universities").delete().eq("id", universityId);
       }
 
       for (const user of [

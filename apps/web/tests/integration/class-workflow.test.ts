@@ -34,6 +34,7 @@ let platformAdmin: TestUser;
 let classId = "";
 let classSlug = "";
 let courseName = "";
+let universityId = "";
 let applicationId = "";
 let invitationId = "";
 let submissionId = "";
@@ -85,6 +86,56 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     member = await createTestUser("member");
     platformAdmin = await createTestUser("platform");
 
+    // The audit_logs university_id future-rows guard requires university_id on
+    // every post-2026-11-05 audit row. Audits from apply_for_class (pre-class
+    // lifecycle) have no class_id to resolve a tenant, so without any
+    // membership the insert violates the constraint. Seed a disposable tenant
+    // with the applicant and platform admin so audits resolve.
+    const { data: uni, error: uniError } = await admin
+      .from("universities")
+      .insert({
+        slug: `rls-class-uni-${suffix}`,
+        name: `RLS Class Uni ${suffix}`,
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    if (uniError || !uni) {
+      throw new Error(`Could not seed university: ${uniError?.message}`);
+    }
+
+    universityId = uni.id as string;
+
+    const { error: memberError } = await admin
+      .from("university_memberships")
+      .insert([
+        {
+          user_id: applicant.id,
+          university_id: universityId,
+          role: "student",
+          status: "active",
+        },
+        {
+          user_id: member.id,
+          university_id: universityId,
+          role: "student",
+          status: "active",
+        },
+        {
+          user_id: platformAdmin.id,
+          university_id: universityId,
+          role: "student",
+          status: "active",
+        },
+      ]);
+
+    if (memberError) {
+      throw new Error(
+        `Could not seed university memberships: ${memberError.message}`,
+      );
+    }
+
     const { error: grantError } = await admin
       .from("platform_admins")
       .insert({ user_id: platformAdmin.id });
@@ -99,6 +150,14 @@ describe.skipIf(!hasEnv)("class workflow authorization", () => {
     if (admin && courseName) {
       await admin.from("classes").delete().eq("course_name", courseName);
       await admin.from("courses").delete().eq("name", courseName);
+    }
+
+    if (universityId) {
+      await admin
+        .from("university_memberships")
+        .delete()
+        .eq("university_id", universityId);
+      await admin.from("universities").delete().eq("id", universityId);
     }
 
     for (const user of [applicant, member, platformAdmin]) {
