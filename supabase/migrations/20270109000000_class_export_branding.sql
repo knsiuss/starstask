@@ -20,59 +20,131 @@ CREATE TABLE public.class_export_branding (
   product_tagline text NOT NULL DEFAULT 'Academic Productivity',
   product_logo_url text NOT NULL DEFAULT '/aphelion-logo.png',
   product_footer text,
-  branding_enabled boolean NOT NULL DEFAULT true,
+  branding_enabled boolean NOT NULL DEFAULT TRUE,
   passing_threshold numeric NOT NULL DEFAULT 60,
   university_logo_url text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now()
 );
 
+
 CREATE TRIGGER class_export_branding_set_updated_at
-  BEFORE UPDATE ON public.class_export_branding
-  FOR EACH ROW
-  EXECUTE FUNCTION public.set_updated_at ();
+BEFORE UPDATE ON public.class_export_branding FOR EACH ROW
+EXECUTE FUNCTION public.set_updated_at ();
+
 
 ALTER TABLE public.class_export_branding ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.class_export_branding FROM anon, authenticated;
 
-GRANT SELECT (class_id, university_name, university_short_name,
-  university_tagline, faculty, department, study_program, address, city,
-  official_website, official_email, contact_number, document_title,
-  footer_text, product_name, product_tagline, product_logo_url,
-  product_footer, branding_enabled, passing_threshold,
-  university_logo_url, created_at, updated_at)
-  ON public.class_export_branding TO authenticated;
+REVOKE ALL ON public.class_export_branding
+FROM
+  anon,
+  authenticated;
 
-GRANT INSERT, UPDATE (class_id, university_name, university_short_name,
-  university_tagline, faculty, department, study_program, address, city,
-  official_website, official_email, contact_number, document_title,
-  footer_text, product_name, product_tagline, product_logo_url,
-  product_footer, branding_enabled, passing_threshold,
-  university_logo_url)
-  ON public.class_export_branding TO authenticated;
 
-CREATE POLICY class_export_branding_member_select
-  ON public.class_export_branding FOR SELECT TO authenticated
-  USING (
-    (SELECT public.is_class_member (class_id))
-    OR (SELECT public.is_platform_admin ())
+GRANT
+SELECT
+  (
+    class_id,
+    university_name,
+    university_short_name,
+    university_tagline,
+    faculty,
+    department,
+    study_program,
+    address,
+    city,
+    official_website,
+    official_email,
+    contact_number,
+    document_title,
+    footer_text,
+    product_name,
+    product_tagline,
+    product_logo_url,
+    product_footer,
+    branding_enabled,
+    passing_threshold,
+    university_logo_url,
+    created_at,
+    updated_at
+  ) ON public.class_export_branding TO authenticated;
+
+
+GRANT INSERT,
+UPDATE (
+  class_id,
+  university_name,
+  university_short_name,
+  university_tagline,
+  faculty,
+  department,
+  study_program,
+  address,
+  city,
+  official_website,
+  official_email,
+  contact_number,
+  document_title,
+  footer_text,
+  product_name,
+  product_tagline,
+  product_logo_url,
+  product_footer,
+  branding_enabled,
+  passing_threshold,
+  university_logo_url
+) ON public.class_export_branding TO authenticated;
+
+
+CREATE POLICY class_export_branding_member_select ON public.class_export_branding FOR
+SELECT
+  TO authenticated USING (
+    (
+      SELECT
+        public.is_class_member (class_id)
+    )
+    OR (
+      SELECT
+        public.is_platform_admin ()
+    )
   );
 
-CREATE POLICY class_export_branding_manager_insert
-  ON public.class_export_branding FOR INSERT TO authenticated
-  WITH CHECK (
-    (SELECT public.can_manage_class (class_id))
-    OR (SELECT public.is_platform_admin ())
+
+CREATE POLICY class_export_branding_manager_insert ON public.class_export_branding FOR INSERT TO authenticated
+WITH
+  CHECK (
+    (
+      SELECT
+        public.can_manage_class (class_id)
+    )
+    OR (
+      SELECT
+        public.is_platform_admin ()
+    )
   );
 
-CREATE POLICY class_export_branding_manager_update
-  ON public.class_export_branding FOR UPDATE TO authenticated
-  USING (
-    (SELECT public.can_manage_class (class_id))
-    OR (SELECT public.is_platform_admin ())
+
+CREATE POLICY class_export_branding_manager_update ON public.class_export_branding
+FOR UPDATE
+  TO authenticated USING (
+    (
+      SELECT
+        public.can_manage_class (class_id)
+    )
+    OR (
+      SELECT
+        public.is_platform_admin ()
+    )
   )
-  WITH CHECK (
-    (SELECT public.can_manage_class (class_id))
-    OR (SELECT public.is_platform_admin ())
+WITH
+  CHECK (
+    (
+      SELECT
+        public.can_manage_class (class_id)
+    )
+    OR (
+      SELECT
+        public.is_platform_admin ()
+    )
   );

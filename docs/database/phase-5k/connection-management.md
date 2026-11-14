@@ -12,13 +12,13 @@ Local `supabase/config.toml`:
 
 ## 2. Risks assessed
 
-| Risk | Fact | Action in 5K |
-| --- | --- | --- |
-| Direct connections from serverless exceed `max_connections` | Supavisor in **transaction mode** multiplexes concurrent app calls onto a fixed server pool. Named prepared statements are incompatible with transaction mode (use `SET LOCAL` / query-level parameters instead of `PREPARE`, which supabase-js already does via PostgREST). | No change |
-| Prep statements break | Same as above | No change |
-| Connection exhaustion | Monitor: see §3 | No change |
-| Transaction duration | Long transactions hold a pooled slot; use `SET statement_timeout` per call | No change |
-| Serverless warm-start connection churn | Supavisor tolerates; adding another pooler would add latency and a failure domain | No change |
+| Risk                                                        | Fact                                                                                                                                                                                                                                                                         | Action in 5K |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Direct connections from serverless exceed `max_connections` | Supavisor in **transaction mode** multiplexes concurrent app calls onto a fixed server pool. Named prepared statements are incompatible with transaction mode (use `SET LOCAL` / query-level parameters instead of `PREPARE`, which supabase-js already does via PostgREST). | No change    |
+| Prep statements break                                       | Same as above                                                                                                                                                                                                                                                                | No change    |
+| Connection exhaustion                                       | Monitor: see §3                                                                                                                                                                                                                                                              | No change    |
+| Transaction duration                                        | Long transactions hold a pooled slot; use `SET statement_timeout` per call                                                                                                                                                                                                   | No change    |
+| Serverless warm-start connection churn                      | Supavisor tolerates; adding another pooler would add latency and a failure domain                                                                                                                                                                                            | No change    |
 
 ## 3. Booking measurements for 5N
 

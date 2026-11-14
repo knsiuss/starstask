@@ -96,8 +96,9 @@ export default async function InvitePage({ params }: InvitePageProps) {
               <div className="space-y-4">
                 <Alert variant="info">
                   You are already an active member of{" "}
-                  <strong>{preview.class_name}</strong> ({preview.class_slug}). You
-                  already have full access to all its subjects and assignments.
+                  <strong>{preview.class_name}</strong> ({preview.class_slug}).
+                  You already have full access to all its subjects and
+                  assignments.
                 </Alert>
                 <Button
                   asChild
@@ -148,8 +149,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   Accepting this link adds you as a member of this class group.
-                  You will automatically gain access to all subjects and published
-                  assignments within it.
+                  You will automatically gain access to all subjects and
+                  published assignments within it.
                 </p>
 
                 {session ? (

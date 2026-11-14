@@ -83,9 +83,7 @@ export function ExportBrandingForm({
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [uploadingKind, setUploadingKind] = React.useState<string | null>(
-    null,
-  );
+  const [uploadingKind, setUploadingKind] = React.useState<string | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const uploadKindRef = React.useRef<"university" | "product">("university");
 
@@ -157,9 +155,7 @@ export function ExportBrandingForm({
     fileRef.current?.click();
   };
 
-  const handleLogoFile = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleLogoFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
 
@@ -187,7 +183,10 @@ export function ExportBrandingForm({
         throw new Error(body.error?.message ?? "Could not upload the logo.");
       }
 
-      update(kind === "product" ? "productLogoUrl" : "universityLogoUrl", body.data.url);
+      update(
+        kind === "product" ? "productLogoUrl" : "universityLogoUrl",
+        body.data.url,
+      );
       toast({ title: "Logo uploaded.", variant: "success" });
     } catch (error) {
       toast({
@@ -253,13 +252,29 @@ export function ExportBrandingForm({
         Gunakan branding resmi pada export
       </label>
 
-      <FieldSection title="Institusi" fields={INSTITUTION_FIELDS} {...{ values, errors, update }} />
+      <FieldSection
+        title="Institusi"
+        fields={INSTITUTION_FIELDS}
+        {...{ values, errors, update }}
+      />
 
-      <FieldSection title="Alamat & Kontak" fields={CONTACT_FIELDS} {...{ values, errors, update }} />
+      <FieldSection
+        title="Alamat & Kontak"
+        fields={CONTACT_FIELDS}
+        {...{ values, errors, update }}
+      />
 
-      <FieldSection title="Dokumen" fields={DOCUMENT_FIELDS} {...{ values, errors, update }} />
+      <FieldSection
+        title="Dokumen"
+        fields={DOCUMENT_FIELDS}
+        {...{ values, errors, update }}
+      />
 
-      <FieldSection title="Produk" fields={PRODUCT_FIELDS} {...{ values, errors, update }} />
+      <FieldSection
+        title="Produk"
+        fields={PRODUCT_FIELDS}
+        {...{ values, errors, update }}
+      />
 
       <div>
         <Label htmlFor="passingThreshold">Batas kelulusan</Label>

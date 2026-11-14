@@ -67,7 +67,9 @@ export async function POST(request: Request) {
     typeof reportObject["effective-directive"] === "string"
       ? (reportObject["effective-directive"] as string).slice(0, 40)
       : typeof reportObject["violated-directive"] === "string"
-        ? (reportObject["violated-directive"] as string).split(/\s/)[0]?.slice(0, 40)
+        ? (reportObject["violated-directive"] as string)
+            .split(/\s/)[0]
+            ?.slice(0, 40)
         : null;
 
   const blocked =

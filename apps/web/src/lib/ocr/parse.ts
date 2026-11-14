@@ -56,7 +56,8 @@ const LEAVE_LABEL =
   /(tanggal\s+(?:izin|cuti|sakit|tidak\s+masuk)|periode\s+(?:izin|cuti)|izin\s+(?:tanggal|dari)|cuti\s+dari|leave\s+(?:date|period)|period\s+of\s+leave)/i;
 
 /** Words that join two dates into a range. */
-const RANGE_SEPARATOR = /(s\.?\s?d\.?|sampai|hingga|s\/d|\bto\b|\buntil\b|[-–—])/i;
+const RANGE_SEPARATOR =
+  /(s\.?\s?d\.?|sampai|hingga|s\/d|\bto\b|\buntil\b|[-–—])/i;
 
 const NAME_LABEL =
   /(?:nama(?:\s+(?:siswa|mahasiswa|lengkap|pasien))?|\bname\b)\s*[:\-]\s*([^\n]{2,80})/i;
@@ -103,14 +104,14 @@ export function findDates(text: string): DateHit[] {
   const namedPattern = /\b(\d{1,2})\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})\b/g;
 
   for (const match of text.matchAll(isoPattern)) {
-    const iso = toIsoDate(
-      Number(match[1]),
-      Number(match[2]),
-      Number(match[3]),
-    );
+    const iso = toIsoDate(Number(match[1]), Number(match[2]), Number(match[3]));
 
     if (iso) {
-      hits.push({ iso, start: match.index ?? 0, end: (match.index ?? 0) + match[0].length });
+      hits.push({
+        iso,
+        start: match.index ?? 0,
+        end: (match.index ?? 0) + match[0].length,
+      });
     }
   }
 
@@ -126,7 +127,11 @@ export function findDates(text: string): DateHit[] {
     const iso = toIsoDate(Number(match[3]), month, day);
 
     if (iso) {
-      hits.push({ iso, start: match.index ?? 0, end: (match.index ?? 0) + match[0].length });
+      hits.push({
+        iso,
+        start: match.index ?? 0,
+        end: (match.index ?? 0) + match[0].length,
+      });
     }
   }
 
@@ -140,7 +145,11 @@ export function findDates(text: string): DateHit[] {
     const iso = toIsoDate(Number(match[3]), month, Number(match[1]));
 
     if (iso) {
-      hits.push({ iso, start: match.index ?? 0, end: (match.index ?? 0) + match[0].length });
+      hits.push({
+        iso,
+        start: match.index ?? 0,
+        end: (match.index ?? 0) + match[0].length,
+      });
     }
   }
 
@@ -160,7 +169,10 @@ function toLines(text: string): { text: string; offset: number }[] {
   return lines;
 }
 
-function lineIndexFor(hit: DateHit, lines: { text: string; offset: number }[]): number {
+function lineIndexFor(
+  hit: DateHit,
+  lines: { text: string; offset: number }[],
+): number {
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const line = lines[index];
 
@@ -174,7 +186,11 @@ function lineIndexFor(hit: DateHit, lines: { text: string; offset: number }[]): 
 
 /** Reads the document type from keywords a real letter would contain. */
 export function detectDocumentType(text: string): string | null {
-  if (/surat\s+keterangan\s+(?:sakit|dokter)|medical\s+certificate|doctor'?s?\s+(?:note|letter)/i.test(text)) {
+  if (
+    /surat\s+keterangan\s+(?:sakit|dokter)|medical\s+certificate|doctor'?s?\s+(?:note|letter)/i.test(
+      text,
+    )
+  ) {
     return "Medical certificate";
   }
 
@@ -194,8 +210,7 @@ export function detectDocumentType(text: string): string | null {
 }
 
 function cleanName(raw: string): string | null {
-  const candidate =
-    raw.split(/\s{2,}/)[0]?.replace(/[|;].*$/, "") ?? "";
+  const candidate = raw.split(/\s{2,}/)[0]?.replace(/[|;].*$/, "") ?? "";
 
   // A "name" containing digits is almost certainly a mis-read address or a
   // table row. This has to run before the sanitiser below, which would strip the
@@ -267,11 +282,12 @@ export function parseOcrText(text: string): LeaveOcrSuggestion {
   // A leave period written as "12 March 2026 - 14 March 2026" on one line.
   if (leaveStartDate && !leaveEndDate) {
     const rangeLine = lines.find(
-      (line) =>
-        LEAVE_LABEL.test(line.text) && RANGE_SEPARATOR.test(line.text),
+      (line) => LEAVE_LABEL.test(line.text) && RANGE_SEPARATOR.test(line.text),
     );
     const rangeDates = rangeLine
-      ? dates.filter((hit) => lineIndexFor(hit, lines) === lines.indexOf(rangeLine))
+      ? dates.filter(
+          (hit) => lineIndexFor(hit, lines) === lines.indexOf(rangeLine),
+        )
       : [];
 
     if (rangeDates.length >= 2) {
@@ -289,8 +305,12 @@ export function parseOcrText(text: string): LeaveOcrSuggestion {
   const studentName = nameMatch?.[1] ? cleanName(nameMatch[1]) : null;
   const documentType = detectDocumentType(normalized);
 
-  const found = [documentIssueDate, leaveStartDate, studentName, documentType]
-    .filter(Boolean).length;
+  const found = [
+    documentIssueDate,
+    leaveStartDate,
+    studentName,
+    documentType,
+  ].filter(Boolean).length;
 
   if (found === 0) {
     return {};

@@ -10,4 +10,4 @@
 - **Upload path:** CSV parse server-side → staging rows → admin verify → publish RPC; every transition audit-logged.
 - **UNRESOLVED (see `36`):** CSV column contract, score scale, retake-with-existing-grades policy, lecturer-grading overlap, grade visibility scope (class-only vs cross-class).
 
-> The brief CONFIRMS the CSV-upload *mechanism* but repo evidence cannot supply the CSV *format*. Phase 5A must elicit a sample file before any migration is written.
+> The brief CONFIRMS the CSV-upload _mechanism_ but repo evidence cannot supply the CSV _format_. Phase 5A must elicit a sample file before any migration is written.

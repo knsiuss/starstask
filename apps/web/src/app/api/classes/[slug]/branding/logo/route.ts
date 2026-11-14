@@ -57,11 +57,7 @@ async function storeLogo(
     const objectKey = `${CLASS_MEDIA_BUCKET}/${storagePath}`;
 
     try {
-      await uploadToStorageWithKey(
-        objectKey,
-        value.bytes,
-        value.mimeType,
-      );
+      await uploadToStorageWithKey(objectKey, value.bytes, value.mimeType);
     } catch {
       throw new ApiError(
         500,

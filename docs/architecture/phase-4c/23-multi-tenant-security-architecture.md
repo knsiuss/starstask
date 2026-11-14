@@ -4,13 +4,13 @@
 
 ## 23.1 Tenant classification per table
 
-| Classification | Meaning | Examples (existing → target) |
-|----------------|---------|------------------------------|
-| GLOBAL | No tenant; platform-wide | `platform_admins`, `rate_limits`, `courses` (catalogue, pending UNRESOLVED), `app_error_events` |
-| TENANT_OWNED | Row authored in exactly one university; carries direct `university_id` | `classes`, `academic_units`, `course_offerings`, `announcements`, `course_invite_tokens` |
-| TENANT_DERIVED | Tenant inherited through parent (composite FK enforces it) | `enrollments` (via offering), `attendance_records` (via meeting→offering), `course_materials` |
-| CROSS_TENANT_REFERENCE | Points at a GLOBAL row | `assignments.course_id → courses`, `course_offerings.course_id` |
-| PLATFORM_CONTROLLED | Written only by platform machinery | `audit_logs` (internal RPC), `notification_events` (internal), `auth_activity_events` |
+| Classification         | Meaning                                                                | Examples (existing → target)                                                                    |
+| ---------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| GLOBAL                 | No tenant; platform-wide                                               | `platform_admins`, `rate_limits`, `courses` (catalogue, pending UNRESOLVED), `app_error_events` |
+| TENANT_OWNED           | Row authored in exactly one university; carries direct `university_id` | `classes`, `academic_units`, `course_offerings`, `announcements`, `course_invite_tokens`        |
+| TENANT_DERIVED         | Tenant inherited through parent (composite FK enforces it)             | `enrollments` (via offering), `attendance_records` (via meeting→offering), `course_materials`   |
+| CROSS_TENANT_REFERENCE | Points at a GLOBAL row                                                 | `assignments.course_id → courses`, `course_offerings.course_id`                                 |
+| PLATFORM_CONTROLLED    | Written only by platform machinery                                     | `audit_logs` (internal RPC), `notification_events` (internal), `auth_activity_events`           |
 
 ## 23.2 Direct vs inherited keys
 
@@ -20,31 +20,31 @@
 ```sql
 -- Conceptual example (target design, NOT to be run as-is)
 CREATE TABLE course_offerings (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  university_id uuid NOT NULL REFERENCES universities(id),
-  class_id uuid NOT NULL REFERENCES classes(id),
-  course_id uuid NOT NULL REFERENCES courses(id),
-  academic_period_id uuid NOT NULL REFERENCES academic_periods(id),
-  UNIQUE (id, university_id)  -- enables composite FKs from children
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  university_id uuid NOT NULL REFERENCES universities (id),
+  class_id uuid NOT NULL REFERENCES classes (id),
+  course_id uuid NOT NULL REFERENCES courses (id),
+  academic_period_id uuid NOT NULL REFERENCES academic_periods (id),
+  UNIQUE (id, university_id) -- enables composite FKs from children
 );
+
 CREATE TABLE enrollments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
   offering_id uuid NOT NULL,
   university_id uuid NOT NULL,
   student_identity_id uuid NOT NULL,
-  FOREIGN KEY (offering_id, university_id)
-    REFERENCES course_offerings(id, university_id) ON DELETE CASCADE
+  FOREIGN KEY (offering_id, university_id) REFERENCES course_offerings (id, university_id) ON DELETE CASCADE
 );
 ```
 
 ## 23.3 Tenant-scoped uniqueness matrix (RECOMMENDED)
 
-| Scope | Examples |
-|-------|----------|
-| Global unique (KEEP) | `platform_admins.user_id`, `courses.normalized_name` (until catalogue scope decided) |
+| Scope                 | Examples                                                                                                                                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Global unique (KEEP)  | `platform_admins.user_id`, `courses.normalized_name` (until catalogue scope decided)                                                                                                                                                |
 | Per-university unique | `student_identities (university_id, student_id_number)`, `classes (university_id, home_code)`, `academic_units (university_id, parent_id, short_code)`, `course_offerings (university_id, class_id, course_id, academic_period_id)` |
-| Per-class unique | `class_admin_assignments (class_id, student_identity_id)` active |
-| Per-offering unique | `enrollments (offering_id, student_identity_id)` active |
+| Per-class unique      | `class_admin_assignments (class_id, student_identity_id)` active                                                                                                                                                                    |
+| Per-offering unique   | `enrollments (offering_id, student_identity_id)` active                                                                                                                                                                             |
 
 ## 23.4 Tenant lifecycle
 

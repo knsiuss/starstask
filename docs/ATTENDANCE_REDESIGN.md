@@ -18,25 +18,25 @@ Top to bottom, on a `mockPageBrush()` page background:
 
 ## 2. Token table (`ui/theme/MockTokens.kt`)
 
-| Token | Light | Dark |
-| --- | --- | --- |
-| `pageTop` → `pageBottom` | #E9EFFC → #F7F8FB | #0E1524 → #12161F |
-| `card` | #FFFFFF | #161D2B |
-| `cardBorder` | #E7EAF4 | #232C3F |
-| `hairline` | #EDEFF5 | #232C3F |
-| `chip` | #EDF0F7 | #1F2636 |
-| `ink` | #111B33 | #E8ECF6 |
-| `muted` | #6B7280 | #9AA5B8 |
-| `accent` | #2F5BFF | #7EA0FF |
-| `accentSoft` | #E4EBFF | #1F2A44 |
-| `accentSofter` | #EEF2FF | #1A2234 |
-| `dockBar` (alpha dock fill) | #FFFFFF | #E6161D2B |
-| `dockBorder` | #EDEFF5 | #232C3F |
-| `halo` | #DCE7FF | #182347 |
-| `goodBg` / `goodFg` | #E1E9FF / #2F5BFF | #1E2B4A / #9DBCFF |
-| `riskBg` / `riskFg` | #FBE3E6 / #D64550 | #33202A / #F1A5AE |
-| `fairBg` / `fairFg` | #FBF3E4 / #8A5A1E | #332A1C / #D9A441 |
-| `skeleton` | #E4E8EF | #1F2636 |
+| Token                       | Light             | Dark              |
+| --------------------------- | ----------------- | ----------------- |
+| `pageTop` → `pageBottom`    | #E9EFFC → #F7F8FB | #0E1524 → #12161F |
+| `card`                      | #FFFFFF           | #161D2B           |
+| `cardBorder`                | #E7EAF4           | #232C3F           |
+| `hairline`                  | #EDEFF5           | #232C3F           |
+| `chip`                      | #EDF0F7           | #1F2636           |
+| `ink`                       | #111B33           | #E8ECF6           |
+| `muted`                     | #6B7280           | #9AA5B8           |
+| `accent`                    | #2F5BFF           | #7EA0FF           |
+| `accentSoft`                | #E4EBFF           | #1F2A44           |
+| `accentSofter`              | #EEF2FF           | #1A2234           |
+| `dockBar` (alpha dock fill) | #FFFFFF           | #E6161D2B         |
+| `dockBorder`                | #EDEFF5           | #232C3F           |
+| `halo`                      | #DCE7FF           | #182347           |
+| `goodBg` / `goodFg`         | #E1E9FF / #2F5BFF | #1E2B4A / #9DBCFF |
+| `riskBg` / `riskFg`         | #FBE3E6 / #D64550 | #33202A / #F1A5AE |
+| `fairBg` / `fairFg`         | #FBF3E4 / #8A5A1E | #332A1C / #D9A441 |
+| `skeleton`                  | #E4E8EF           | #1F2636           |
 
 Usage: `val palette = mockColors()` — it reads `LocalDarkTheme`, never a raw system setting, so the user’s toggle wins. Background: `Modifier.background(mockPageBrush())` (vertical gradient pageTop → pageBottom).
 

@@ -1,7 +1,7 @@
 # Phase 5B — Decision Register
 
 > ADR-002 has never received a Platform Admin sign-off inside this
-> repository, and 5B does not fabricate one. Because a separate *activation*
+> repository, and 5B does not fabricate one. Because a separate _activation_
 > pipeline was still needed (registry ≥ → active gating is the still
 > unresolved risk), we resolved implementation as assuming ADR-002 approved
 > only for the integer in 5A (building the registry table itself). Status:
@@ -22,7 +22,7 @@
 - **DECISION:** ADR-002 is marked **APPROVED–IMPLEMENTATION-JUSTIFIED**
   (implementation evidence, not Platform Admin sign-off).
 - **Recorded distinction:**
-  - Registry *is* single-table (table-level).
+  - Registry _is_ single-table (table-level).
   - "Registry separate from activation/authorization" is preserved:
     registry rows ≠ authorized tenants; a row's `status` alone decides read
     visibility; users cannot activate universities; platform membership
@@ -37,14 +37,14 @@
 ### D-02 — Composite FK vs trigger for cross-university parent prevention
 
 - **Chosen:** composite FK `academic_units(parent_id, university_id) →
-  academic_units(id, university_id)` + `UNIQUE(id, university_id)` on
+academic_units(id, university_id)` + `UNIQUE(id, university_id)` on
   parents.
 - **Fallback rejected:** trigger-only enforcement duplicates FK semantics
   and is race-prone; a simple self-FK alone cannot express "same
   university". Composite FK is index-backed, declaration-level, and race-free.
 - **Evidence:** 5B tests: cross-university parent insert → FK violation
   (`academic_units_parent_same_university`). MATCH SIMPLE means `parent_id
-  IS NULL` skips the check (top-level units work).
+IS NULL` skips the check (top-level units work).
 
 ### D-03 — Cycle prevention: trigger vs recursive-CTE/DFS function
 

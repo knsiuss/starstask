@@ -9,10 +9,9 @@
 -- the historical record (assignments, attendance meetings, recaps point at
 -- that course), and re-issuing it to a new course would blur which archive a
 -- reader is looking at.
+CREATE UNIQUE INDEX IF NOT EXISTS class_subjects_class_code_uniq ON public.class_subjects (class_id, lower(btrim(code)))
+WHERE
+  code IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS class_subjects_class_code_uniq
-  ON public.class_subjects (class_id, lower(btrim(code)))
-  WHERE code IS NOT NULL;
 
-COMMENT ON INDEX class_subjects_class_code_uniq IS
-  'A course code identifies at most one course inside a class group (case- and whitespace-insensitive). Courses without a code are exempt.';
+COMMENT ON INDEX class_subjects_class_code_uniq IS 'A course code identifies at most one course inside a class group (case- and whitespace-insensitive). Courses without a code are exempt.';

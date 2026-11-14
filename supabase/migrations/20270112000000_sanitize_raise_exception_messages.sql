@@ -2,7 +2,6 @@
 -- UUIDs never reach the client when the message is surfaced. Encodings stay
 -- identical to the originals so server-side branches and client mappings
 -- (e.g. 23514 / 22023) keep behaving the same.
-
 CREATE OR REPLACE FUNCTION public.ensure_subject_in_class () returns trigger language plpgsql
 SET
   search_path = public,

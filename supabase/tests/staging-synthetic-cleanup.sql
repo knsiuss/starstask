@@ -4,6 +4,8 @@
 --   cat supabase/tests/staging-synthetic-cleanup.sql | \
 --     docker exec -i supabase_db_starstask psql -U postgres -d postgres -v ON_ERROR_STOP=1
 BEGIN;
+
+
 DO $$
 DECLARE ua uuid; ub uuid;
 BEGIN
@@ -25,4 +27,6 @@ BEGIN
   RAISE NOTICE 'STAGING SYNTHETIC CLEANUP PASS: remaining syn classes=%',
     (SELECT count(*) FROM public.classes WHERE slug LIKE 'syn-%');
 END $$;
+
+
 COMMIT;

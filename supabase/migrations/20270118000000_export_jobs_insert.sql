@@ -12,20 +12,20 @@
 -- own user_id, with column-level scope (kind/params only; id/status/
 -- timestamps keep their defaults). UPDATE and DELETE stay denied to clients.
 -- =====================================================================
-
 GRANT INSERT (user_id, kind, params) ON public.export_jobs TO authenticated;
+
 
 DROP POLICY IF EXISTS export_jobs_insert_own ON public.export_jobs;
 
-CREATE POLICY export_jobs_insert_own ON public.export_jobs FOR
-INSERT
-  TO authenticated
-  WITH CHECK (
+
+CREATE POLICY export_jobs_insert_own ON public.export_jobs FOR INSERT TO authenticated
+WITH
+  CHECK (
     user_id = (
       SELECT
         auth.uid ()
     )
   );
 
-COMMENT ON TABLE public.export_jobs IS
-  'Async export queue. Writers: the owning client (INSERT own rows only: user_id, kind, params) and the service-role worker (status/result updates). Clients can never read other users'' jobs (SELECT owner-scoped) and never UPDATE/DELETE.';
+
+COMMENT ON TABLE public.export_jobs IS 'Async export queue. Writers: the owning client (INSERT own rows only: user_id, kind, params) and the service-role worker (status/result updates). Clients can never read other users'' jobs (SELECT owner-scoped) and never UPDATE/DELETE.';

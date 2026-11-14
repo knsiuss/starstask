@@ -1,6 +1,7 @@
 # Phase 5L — Implementation Report
 
 ## Migration
+
 `supabase/migrations/20261119000000_phase5l_security_hardening.sql` (additive, no table/column changes):
 
 1. `REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM anon;` +
@@ -17,6 +18,7 @@
    `authenticated` (non-sensitive columns only; no write grants).
 
 ## Tests (disposable local DB, 2026-11-05)
+
 - `supabase/tests/phase5l-grants-validation.sql`:
   anon-on-write-RPC violations 0; public helpers intact;
   0 SECDEF functions with `pg_temp`; audit trigger + new policy present.
@@ -27,6 +29,7 @@
   `attendance.ts` / `attendance-meetings.ts`.
 
 ## Security vulnerabilities fixed
+
 - HIGH: anon EXECUTE on state-changing RPCs (default Supavisor/Postgres
   default-privilege grants) → revoked.
 - HIGH: `course_invite_tokens` readable by any university member →
@@ -36,6 +39,7 @@
 - MEDIUM: `pg_temp` in SECDEF `search_path` → `search_path=''` hardened.
 
 ## What did NOT change
+
 - No tenant-table RLS policy change (existing model verified correct).
 - No storage bucket visibility change (public `avatars`/`class-media`
   reads are intentional class-identity assets).
@@ -45,6 +49,7 @@
 - No app code change (no file in `apps/web/src` modified by this phase).
 
 ## Remaining risks / blockers
+
 - Live Storage upload/overwrite/delete cross-tenant test not run
   (needs seeded objects + storage API; policy-level verified only).
 - Second-university app-level tenant test beyond RPC stub (Phase 5K
@@ -57,6 +62,7 @@
   (class identity images). Owner decision recorded as INFORMATIONAL.
 
 ## Staging / production status
+
 - **NOT deployed to production. NOT applied to production.**
 - Local disposable DB only. Local `supabase_migrations` ledger
   untouched (highest applied here still `20261109000000`; new

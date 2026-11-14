@@ -25,8 +25,8 @@ export default function TermsPage() {
           manage classes, record attendance, and handle leave requests. It is
           not an official university system. Class admins are usually students.
           A narrow lecturer persona exists — activated automatically for a
-          sign-in whose confirmed email domain is registered as institutional
-          on a university — and it grants access only to classes its holder
+          sign-in whose confirmed email domain is registered as institutional on
+          a university — and it grants access only to classes its holder
           administers; it is not proof of employment and not an official
           university record. Published content may be incomplete or wrong.
           Always confirm deadlines and instructions with your course.

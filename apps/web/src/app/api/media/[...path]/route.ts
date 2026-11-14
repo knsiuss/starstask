@@ -2,7 +2,10 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import { ApiError } from "@/lib/api/errors";
 import { handleRouteError } from "@/lib/api/responses";
-import { enforceRateLimit, getClientIdentifier } from "@/lib/security/rate-limit";
+import {
+  enforceRateLimit,
+  getClientIdentifier,
+} from "@/lib/security/rate-limit";
 import { getB2Config } from "@/lib/storage/b2";
 
 export const dynamic = "force-dynamic";

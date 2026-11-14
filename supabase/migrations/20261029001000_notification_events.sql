@@ -7,21 +7,21 @@
 -- Payloads are sanitized JSON built inside SECURITY DEFINER functions: a title,
 -- a body, and an internal URL. Invitation tokens, emails, and moderation notes
 -- never enter this table.
-create table if not exists public.notification_events (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null,
-  dedupe_key text not null,
-  payload jsonb not null default '{}'::jsonb,
-  status text not null default 'pending',
-  attempt_count integer not null default 0,
-  next_attempt_at timestamptz not null default now(),
+CREATE TABLE IF NOT EXISTS public.notification_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  kind text NOT NULL,
+  dedupe_key text NOT NULL,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'pending',
+  attempt_count integer NOT NULL DEFAULT 0,
+  next_attempt_at timestamptz NOT NULL DEFAULT now(),
   last_error_category text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   sent_at timestamptz,
-  constraint notification_events_kind_allowed check (
-    kind in (
+  CONSTRAINT notification_events_kind_allowed CHECK (
+    kind IN (
       'class_application_approved',
       'class_application_rejected',
       'class_admin_assigned',
@@ -32,39 +32,39 @@ create table if not exists public.notification_events (
       'moderation_required'
     )
   ),
-  constraint notification_events_status_allowed check (
-    status in ('pending', 'processing', 'sent', 'failed', 'skipped')
+  CONSTRAINT notification_events_status_allowed CHECK (
+    status IN ('pending', 'processing', 'sent', 'failed', 'skipped')
   ),
-  constraint notification_events_attempts_range check (attempt_count between 0 and 10),
-  constraint notification_events_dedupe_key unique (dedupe_key),
-  constraint notification_events_dedupe_key_length check (char_length(dedupe_key) between 8 and 200),
-  constraint notification_events_payload_object check (jsonb_typeof(payload) = 'object'),
-  constraint notification_events_payload_size check (pg_column_size(payload) <= 4096),
-  constraint notification_events_error_length check (
-    last_error_category is null
-    or char_length(last_error_category) between 1 and 40
+  CONSTRAINT notification_events_attempts_range CHECK (attempt_count BETWEEN 0 AND 10),
+  CONSTRAINT notification_events_dedupe_key UNIQUE (dedupe_key),
+  CONSTRAINT notification_events_dedupe_key_length CHECK (char_length(dedupe_key) BETWEEN 8 AND 200),
+  CONSTRAINT notification_events_payload_object CHECK (jsonb_typeof(payload) = 'object'),
+  CONSTRAINT notification_events_payload_size CHECK (pg_column_size(payload) <= 4096),
+  CONSTRAINT notification_events_error_length CHECK (
+    last_error_category IS NULL
+    OR char_length(last_error_category) BETWEEN 1 AND 40
   )
 );
 
 
-comment on table public.notification_events IS 'Point-in-time push events. No tokens, emails, or moderation notes are stored in payload.';
+COMMENT ON TABLE public.notification_events IS 'Point-in-time push events. No tokens, emails, or moderation notes are stored in payload.';
 
 
-create index if not exists notification_events_due_idx ON public.notification_events (status, next_attempt_at);
+CREATE INDEX if NOT EXISTS notification_events_due_idx ON public.notification_events (status, next_attempt_at);
 
 
-create index if not exists notification_events_user_recent_idx ON public.notification_events (user_id, created_at DESC);
+CREATE INDEX if NOT EXISTS notification_events_user_recent_idx ON public.notification_events (user_id, created_at DESC);
 
 
-create trigger notification_events_set_updated_at BEFORE
-update ON public.notification_events FOR EACH ROW
-execute function public.set_updated_at ();
+CREATE TRIGGER notification_events_set_updated_at
+BEFORE UPDATE ON public.notification_events FOR EACH ROW
+EXECUTE FUNCTION public.set_updated_at ();
 
 
 -- ---------------------------------------------------------------------------
 -- Scheduler functions (service_role only)
 -- ---------------------------------------------------------------------------
-create or replace function public.claim_notification_events (p_now timestamptz, p_limit integer DEFAULT 50) returns TABLE (
+CREATE OR REPLACE FUNCTION public.claim_notification_events (p_now timestamptz, p_limit integer DEFAULT 50) returns TABLE (
   id uuid,
   user_id uuid,
   kind text,
@@ -153,10 +153,10 @@ end;
 $$;
 
 
-comment on function public.claim_notification_events (timestamptz, integer) IS 'Atomically claims due event rows with FOR UPDATE SKIP LOCKED. service_role only.';
+COMMENT ON function public.claim_notification_events (timestamptz, integer) IS 'Atomically claims due event rows with FOR UPDATE SKIP LOCKED. service_role only.';
 
 
-create or replace function public.complete_notification_event (
+CREATE OR REPLACE FUNCTION public.complete_notification_event (
   p_id uuid,
   p_status text,
   p_error_category text DEFAULT NULL,
@@ -187,26 +187,26 @@ end;
 $$;
 
 
-comment on function public.complete_notification_event (uuid, text, text, timestamptz) IS 'Finishes a claimed event. service_role only.';
+COMMENT ON function public.complete_notification_event (uuid, text, text, timestamptz) IS 'Finishes a claimed event. service_role only.';
 
 
-revoke all on function public.claim_notification_events (timestamptz, integer)
-from
+REVOKE ALL ON function public.claim_notification_events (timestamptz, integer)
+FROM
   public,
   anon,
   authenticated;
 
 
-grant
-execute on function public.claim_notification_events (timestamptz, integer) to service_role;
+GRANT
+EXECUTE ON function public.claim_notification_events (timestamptz, integer) TO service_role;
 
 
-revoke all on function public.complete_notification_event (uuid, text, text, timestamptz)
-from
+REVOKE ALL ON function public.complete_notification_event (uuid, text, text, timestamptz)
+FROM
   public,
   anon,
   authenticated;
 
 
-grant
-execute on function public.complete_notification_event (uuid, text, text, timestamptz) to service_role;
+GRANT
+EXECUTE ON function public.complete_notification_event (uuid, text, text, timestamptz) TO service_role;

@@ -64,10 +64,7 @@ export async function POST(request: Request, context: RouteContext) {
         parsed.data.body,
       );
     } catch (error) {
-      if (
-        error instanceof DataAccessError &&
-        error.code === "not_found"
-      ) {
+      if (error instanceof DataAccessError && error.code === "not_found") {
         throw new ApiError(404, "not_found", "That incident was not found.");
       }
 

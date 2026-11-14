@@ -188,7 +188,9 @@ export function ProfileOnboardingForm({
         classJoin: body?.data?.classJoin ?? null,
         classNameAtSave: parsed.data.className ?? "",
       });
-      setStep(shouldShowJoinStep(body?.data?.classJoin ?? null) ? "join" : "welcome");
+      setStep(
+        shouldShowJoinStep(body?.data?.classJoin ?? null) ? "join" : "welcome",
+      );
     } catch {
       setFormMessage("Network error. Check your connection and try again.");
     } finally {
@@ -355,7 +357,9 @@ export function ProfileOnboardingForm({
 
         <Field
           id="nim"
-          label={isLecturer ? "NIM (optional for lecturers)" : "NIM (Student ID)"}
+          label={
+            isLecturer ? "NIM (optional for lecturers)" : "NIM (Student ID)"
+          }
           error={fieldErrors.nim}
           hint={
             isLecturer

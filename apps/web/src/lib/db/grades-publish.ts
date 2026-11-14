@@ -43,10 +43,22 @@ export function parseGradeCsv(text: string): GradeCsvRow[] {
     throw new DataAccessError("CSV max 1000 rows", "22023");
   }
   return lines.slice(1).map((line, i) => {
-    const [studentId, courseCode, scoreRaw, gradeLetter, semesterCode, academicYearCode] =
-      line.split(",").map((c) => c.trim());
+    const [
+      studentId,
+      courseCode,
+      scoreRaw,
+      gradeLetter,
+      semesterCode,
+      academicYearCode,
+    ] = line.split(",").map((c) => c.trim());
     const score = Number(scoreRaw);
-    if (!studentId || !courseCode || Number.isNaN(score) || score < 0 || score > 100) {
+    if (
+      !studentId ||
+      !courseCode ||
+      Number.isNaN(score) ||
+      score < 0 ||
+      score > 100
+    ) {
       throw new DataAccessError(`Invalid row ${i + 2}`, "22023");
     }
     return {

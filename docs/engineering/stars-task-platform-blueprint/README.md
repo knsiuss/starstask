@@ -28,7 +28,7 @@ Full findings with IDs, evidence, and complexity in `02-performance/FULL_PLATFOR
 
 ## 4. Multi-university architecture (recommended)
 
-Shared database + shared schema with strict tenant ownership (`university_id` on tenant-scoped tables) plus tenant-aware RLS (`is_university_member()` / resolution function in policies) — **not** schema-per-tenant (operational complexity) and not database-per-tenant (cost). Auth identities stay global (Supabase Auth); *active university context* is resolved per request and stored in server session state. Full design in `03-multi-tenancy/MULTI_TENANT_ARCHITECTURE.md` and `TENANT_DATA_MODEL.md`.
+Shared database + shared schema with strict tenant ownership (`university_id` on tenant-scoped tables) plus tenant-aware RLS (`is_university_member()` / resolution function in policies) — **not** schema-per-tenant (operational complexity) and not database-per-tenant (cost). Auth identities stay global (Supabase Auth); _active university context_ is resolved per request and stored in server session state. Full design in `03-multi-tenancy/MULTI_TENANT_ARCHITECTURE.md` and `TENANT_DATA_MODEL.md`.
 
 ## 5. Storage architecture
 

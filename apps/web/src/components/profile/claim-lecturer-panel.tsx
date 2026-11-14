@@ -82,8 +82,7 @@ export function LecturerStatusPanel({
         <Alert variant="info">{claimMessage}</Alert>
       ) : (
         <p className="text-muted-foreground text-sm">
-          Lecturer access activates automatically when your sign-in email
-          domain{" "}
+          Lecturer access activates automatically when your sign-in email domain{" "}
           <span className="font-medium text-foreground">
             {emailDomain ? `@${emailDomain}` : "on this account"}
           </span>{" "}

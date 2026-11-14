@@ -15,79 +15,84 @@
 -- Meeting identity and attendance state
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.discussion_sessions
-  ADD COLUMN IF NOT EXISTS subject_id uuid REFERENCES public.class_subjects (id) ON DELETE SET NULL,
-  ADD COLUMN IF NOT EXISTS meeting_number integer,
-  ADD COLUMN IF NOT EXISTS meeting_date date,
-  ADD COLUMN IF NOT EXISTS attendance_opens_at timestamptz,
-  ADD COLUMN IF NOT EXISTS attendance_closes_at timestamptz,
-  ADD COLUMN IF NOT EXISTS attendance_opened_at timestamptz,
-  ADD COLUMN IF NOT EXISTS attendance_closed_at timestamptz,
-  ADD COLUMN IF NOT EXISTS attendance_finalized_at timestamptz,
-  ADD COLUMN IF NOT EXISTS late_after_minutes integer NOT NULL DEFAULT 10;
-
-
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_meeting_number_range;
+ADD COLUMN IF NOT EXISTS subject_id uuid REFERENCES public.class_subjects (id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS meeting_number integer,
+ADD COLUMN IF NOT EXISTS meeting_date date,
+ADD COLUMN IF NOT EXISTS attendance_opens_at timestamptz,
+ADD COLUMN IF NOT EXISTS attendance_closes_at timestamptz,
+ADD COLUMN IF NOT EXISTS attendance_opened_at timestamptz,
+ADD COLUMN IF NOT EXISTS attendance_closed_at timestamptz,
+ADD COLUMN IF NOT EXISTS attendance_finalized_at timestamptz,
+ADD COLUMN IF NOT EXISTS late_after_minutes integer NOT NULL DEFAULT 10;
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_meeting_number_range CHECK (
-    meeting_number IS NULL
-    OR meeting_number BETWEEN 1 AND 999
-  );
+DROP CONSTRAINT IF EXISTS discussion_sessions_meeting_number_range;
+
+
+ALTER TABLE public.discussion_sessions
+ADD CONSTRAINT discussion_sessions_meeting_number_range CHECK (
+  meeting_number IS NULL
+  OR meeting_number BETWEEN 1 AND 999
+);
 
 
 -- A meeting must name both its subject and its number, or neither. Sessions
 -- created before this migration stay valid and keep their old behaviour.
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_meeting_identity;
+ALTER TABLE public.discussion_sessions
+DROP CONSTRAINT IF EXISTS discussion_sessions_meeting_identity;
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_meeting_identity CHECK (
-    (
-      meeting_number IS NULL
-      AND subject_id IS NULL
-    )
-    OR (
-      meeting_number IS NOT NULL
-      AND subject_id IS NOT NULL
-    )
-  );
-
-
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_attendance_window;
+ADD CONSTRAINT discussion_sessions_meeting_identity CHECK (
+  (
+    meeting_number IS NULL
+    AND subject_id IS NULL
+  )
+  OR (
+    meeting_number IS NOT NULL
+    AND subject_id IS NOT NULL
+  )
+);
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_attendance_window CHECK (
-    attendance_opens_at IS NULL
-    OR attendance_closes_at IS NULL
-    OR attendance_closes_at > attendance_opens_at
-  );
-
-
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_late_after_range;
+DROP CONSTRAINT IF EXISTS discussion_sessions_attendance_window;
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_late_after_range CHECK (late_after_minutes BETWEEN 0 AND 240);
+ADD CONSTRAINT discussion_sessions_attendance_window CHECK (
+  attendance_opens_at IS NULL
+  OR attendance_closes_at IS NULL
+  OR attendance_closes_at > attendance_opens_at
+);
+
+
+ALTER TABLE public.discussion_sessions
+DROP CONSTRAINT IF EXISTS discussion_sessions_late_after_range;
+
+
+ALTER TABLE public.discussion_sessions
+ADD CONSTRAINT discussion_sessions_late_after_range CHECK (late_after_minutes BETWEEN 0 AND 240);
 
 
 -- Closed implies opened, and finalized implies closed. A state that skips a
 -- step would make the check-in function's branch order ambiguous.
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_attendance_state;
+ALTER TABLE public.discussion_sessions
+DROP CONSTRAINT IF EXISTS discussion_sessions_attendance_state;
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_attendance_state CHECK (
-    (
-      attendance_closed_at IS NULL
-      OR attendance_opened_at IS NOT NULL
-    )
-    AND (
-      attendance_finalized_at IS NULL
-      OR attendance_closed_at IS NOT NULL
-    )
-  );
+ADD CONSTRAINT discussion_sessions_attendance_state CHECK (
+  (
+    attendance_closed_at IS NULL
+    OR attendance_opened_at IS NOT NULL
+  )
+  AND (
+    attendance_finalized_at IS NULL
+    OR attendance_closed_at IS NOT NULL
+  )
+);
 
 
 CREATE UNIQUE INDEX IF NOT EXISTS discussion_sessions_class_subject_meeting_uniq ON public.discussion_sessions (class_id, subject_id, meeting_number)
@@ -103,15 +108,21 @@ WHERE
 
 COMMENT ON COLUMN public.discussion_sessions.subject_id IS 'Subject a meeting belongs to. NULL for an ordinary discussion session.';
 
+
 COMMENT ON COLUMN public.discussion_sessions.meeting_number IS 'Pertemuan number. Unique per class and subject.';
+
 
 COMMENT ON COLUMN public.discussion_sessions.meeting_date IS 'Calendar date of the meeting, used by reports and exports.';
 
+
 COMMENT ON COLUMN public.discussion_sessions.attendance_opened_at IS 'Set by a class admin when attendance opens. NULL means closed.';
+
 
 COMMENT ON COLUMN public.discussion_sessions.attendance_closed_at IS 'Set when attendance closes or is finalized.';
 
+
 COMMENT ON COLUMN public.discussion_sessions.attendance_finalized_at IS 'Set when missing eligible members are written as absent. Immutable until reopened.';
+
 
 COMMENT ON COLUMN public.discussion_sessions.late_after_minutes IS 'Minutes after the meeting start that still count as present.';
 
@@ -157,8 +168,8 @@ $$;
 DROP TRIGGER IF EXISTS discussion_sessions_fill_attendance_meeting ON public.discussion_sessions;
 
 
-CREATE TRIGGER discussion_sessions_fill_attendance_meeting BEFORE INSERT
-OR UPDATE OF meeting_number,
+CREATE TRIGGER discussion_sessions_fill_attendance_meeting
+BEFORE INSERT OR UPDATE OF meeting_number,
 subject_id,
 starts_at,
 ends_at,
@@ -172,7 +183,7 @@ EXECUTE FUNCTION public.discussion_sessions_fill_attendance_meeting ();
 -- Only the outcome and the derived distance/accuracy are kept. The name and NIM
 -- the student typed are never stored: they are answers to a check, not records.
 CREATE TABLE IF NOT EXISTS public.attendance_verification_attempts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id uuid NOT NULL REFERENCES public.discussion_sessions (id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   outcome text NOT NULL,
@@ -193,8 +204,14 @@ CREATE TABLE IF NOT EXISTS public.attendance_verification_attempts (
       'not_available'
     )
   ),
-  CONSTRAINT attendance_verification_attempts_distance CHECK (distance_m IS NULL OR distance_m >= 0),
-  CONSTRAINT attendance_verification_attempts_accuracy CHECK (accuracy_m IS NULL OR accuracy_m >= 0)
+  CONSTRAINT attendance_verification_attempts_distance CHECK (
+    distance_m IS NULL
+    OR distance_m >= 0
+  ),
+  CONSTRAINT attendance_verification_attempts_accuracy CHECK (
+    accuracy_m IS NULL
+    OR accuracy_m >= 0
+  )
 );
 
 
@@ -217,40 +234,43 @@ FROM
 -- Check-in row: identity proof and system-generated absences
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.discussion_session_checkins
-  ADD COLUMN IF NOT EXISTS identity_verified boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS identity_verified_at timestamptz;
-
-
-ALTER TABLE public.discussion_session_checkins DROP CONSTRAINT IF EXISTS discussion_session_checkins_method_allowed;
+ADD COLUMN IF NOT EXISTS identity_verified boolean NOT NULL DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS identity_verified_at timestamptz;
 
 
 ALTER TABLE public.discussion_session_checkins
-  ADD CONSTRAINT discussion_session_checkins_method_allowed CHECK (method IN ('geo', 'manual', 'system'));
-
-
-ALTER TABLE public.discussion_session_checkins DROP CONSTRAINT IF EXISTS discussion_session_checkins_geo_fields;
+DROP CONSTRAINT IF EXISTS discussion_session_checkins_method_allowed;
 
 
 ALTER TABLE public.discussion_session_checkins
-  ADD CONSTRAINT discussion_session_checkins_geo_fields CHECK (
-    method IN ('manual', 'system')
-    OR (
-      (
-        latitude IS NOT NULL
-        AND longitude IS NOT NULL
-        AND accuracy_m IS NOT NULL
-        AND distance_m IS NOT NULL
-      )
-      OR (
-        coordinates_purged_at IS NOT NULL
-        AND latitude IS NULL
-        AND longitude IS NULL
-      )
+ADD CONSTRAINT discussion_session_checkins_method_allowed CHECK (method IN ('geo', 'manual', 'system'));
+
+
+ALTER TABLE public.discussion_session_checkins
+DROP CONSTRAINT IF EXISTS discussion_session_checkins_geo_fields;
+
+
+ALTER TABLE public.discussion_session_checkins
+ADD CONSTRAINT discussion_session_checkins_geo_fields CHECK (
+  method IN ('manual', 'system')
+  OR (
+    (
+      latitude IS NOT NULL
+      AND longitude IS NOT NULL
+      AND accuracy_m IS NOT NULL
+      AND distance_m IS NOT NULL
     )
-  );
+    OR (
+      coordinates_purged_at IS NOT NULL
+      AND latitude IS NULL
+      AND longitude IS NULL
+    )
+  )
+);
 
 
 COMMENT ON COLUMN public.discussion_session_checkins.identity_verified IS 'True when the caller typed a name and NIM matching the profile.';
+
 
 COMMENT ON COLUMN public.discussion_session_checkins.method IS 'geo = location check-in, manual = admin record, system = auto-generated absence on finalize.';
 
@@ -573,10 +593,7 @@ COMMENT ON function public.open_attendance_meeting (uuid) IS 'Opens check-in for
 -- ---------------------------------------------------------------------------
 -- close_attendance_meeting
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.close_attendance_meeting (
-  p_session_id uuid,
-  p_finalize boolean DEFAULT true
-) returns integer language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.close_attendance_meeting (p_session_id uuid, p_finalize boolean DEFAULT TRUE) returns integer language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -1162,7 +1179,14 @@ end;
 $$;
 
 
-COMMENT ON function public.check_in_attendance_meeting (uuid, text, text, double precision, double precision, double precision) IS 'Identity-verified GPS check-in for one meeting. The profile name and NIM must match; distance, window, and membership are decided here.';
+COMMENT ON function public.check_in_attendance_meeting (
+  uuid,
+  text,
+  text,
+  double precision,
+  double precision,
+  double precision
+) IS 'Identity-verified GPS check-in for one meeting. The profile name and NIM must match; distance, window, and membership are decided here.';
 
 
 -- ---------------------------------------------------------------------------
@@ -1352,10 +1376,7 @@ COMMENT ON function public.class_attendance_roster (uuid) IS 'Master class roste
 -- ---------------------------------------------------------------------------
 -- class_attendance_recap
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.class_attendance_recap (
-  p_class_id uuid,
-  p_subject_id uuid
-) returns TABLE (
+CREATE OR REPLACE FUNCTION public.class_attendance_recap (p_class_id uuid, p_subject_id uuid) returns TABLE (
   session_id uuid,
   meeting_number integer,
   meeting_date date,
@@ -2216,10 +2237,7 @@ SELECT
 
 GRANT
 SELECT
-  (
-    identity_verified,
-    identity_verified_at
-  ) ON public.discussion_session_checkins TO authenticated;
+  (identity_verified, identity_verified_at) ON public.discussion_session_checkins TO authenticated;
 
 
 REVOKE ALL ON function public.create_attendance_meeting (
@@ -2272,7 +2290,14 @@ FROM
   authenticated;
 
 
-REVOKE ALL ON function public.check_in_attendance_meeting (uuid, text, text, double precision, double precision, double precision)
+REVOKE ALL ON function public.check_in_attendance_meeting (
+  uuid,
+  text,
+  text,
+  double precision,
+  double precision,
+  double precision
+)
 FROM
   public,
   anon,
@@ -2357,7 +2382,14 @@ EXECUTE ON function public.update_attendance_meeting_location (uuid, double prec
 
 
 GRANT
-EXECUTE ON function public.check_in_attendance_meeting (uuid, text, text, double precision, double precision, double precision) TO authenticated;
+EXECUTE ON function public.check_in_attendance_meeting (
+  uuid,
+  text,
+  text,
+  double precision,
+  double precision,
+  double precision
+) TO authenticated;
 
 
 GRANT

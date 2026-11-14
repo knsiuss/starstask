@@ -15,17 +15,14 @@
 -- Rollback: DROP FUNCTION claim_lecturer_persona(text, uuid);
 --           ALTER TABLE universities DROP institutional_domains;
 -- =====================================================================
-
 ALTER TABLE public.universities
-  ADD COLUMN IF NOT EXISTS institutional_domains text[]
-    NOT NULL DEFAULT ARRAY[]::text[];
+ADD COLUMN IF NOT EXISTS institutional_domains TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+
 
 -- CHECK constraints cannot reference unnest(); enforce syntax in a trigger.
-CREATE OR REPLACE FUNCTION public.universities_validate_institutional_domains ()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION public.universities_validate_institutional_domains () RETURNS trigger LANGUAGE plpgsql
+SET
+  search_path = '' AS $$
 DECLARE
   v_invalid integer;
 BEGIN
@@ -45,34 +42,33 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS universities_validate_institutional_domains
-  ON public.universities;
+
+DROP TRIGGER IF EXISTS universities_validate_institutional_domains ON public.universities;
+
 
 CREATE TRIGGER universities_validate_institutional_domains
-  BEFORE INSERT OR UPDATE OF institutional_domains ON public.universities
-  FOR EACH ROW
-  EXECUTE FUNCTION public.universities_validate_institutional_domains ();
+BEFORE INSERT OR UPDATE OF institutional_domains ON public.universities FOR EACH ROW
+EXECUTE FUNCTION public.universities_validate_institutional_domains ();
 
-COMMENT ON COLUMN public.universities.institutional_domains IS
-  'Lowercase email domains that may auto-claim a lecturer membership at this university (exact match or subdomain when listed as *.example.ac.id). Managed by platform operators; not a proof of employment.';
+
+COMMENT ON COLUMN public.universities.institutional_domains IS 'Lowercase email domains that may auto-claim a lecturer membership at this university (exact match or subdomain when listed as *.example.ac.id). Managed by platform operators; not a proof of employment.';
+
 
 -- UNPAM is the only seed confirmed so far.
 UPDATE public.universities
-SET institutional_domains = ARRAY['unpam.ac.id', '*.unpam.ac.id']
-WHERE slug = 'universitas-pamulang'
-  AND institutional_domains = ARRAY[]::text[];
+SET
+  institutional_domains = ARRAY['unpam.ac.id', '*.unpam.ac.id']
+WHERE
+  slug = 'universitas-pamulang'
+  AND institutional_domains = ARRAY[]::TEXT[];
+
 
 -- ---------------------------------------------------------------------------
 -- claim_lecturer_persona
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.claim_lecturer_persona (
-  p_nidn text,
-  p_university_id uuid DEFAULT NULL
-) RETURNS uuid
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION public.claim_lecturer_persona (p_nidn text, p_university_id uuid DEFAULT NULL) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_user uuid := auth.uid();
   v_email text;
@@ -208,8 +204,15 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_lecturer_persona (text, uuid) FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.claim_lecturer_persona (text, uuid) TO authenticated;
 
-COMMENT ON FUNCTION public.claim_lecturer_persona (text, uuid) IS
-  'Self-claim the lecturer persona for the university whose institutional_domains contain the caller''s confirmed auth email domain. NIDN is checked for format only. Never downgrades an existing university_admin; suspended memberships stay suspended. Unofficial claim — revocable by platform admin or that university''s university_admin.';
+REVOKE ALL ON FUNCTION public.claim_lecturer_persona (text, uuid)
+FROM
+  public,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.claim_lecturer_persona (text, uuid) TO authenticated;
+
+
+COMMENT ON FUNCTION public.claim_lecturer_persona (text, uuid) IS 'Self-claim the lecturer persona for the university whose institutional_domains contain the caller''s confirmed auth email domain. NIDN is checked for format only. Never downgrades an existing university_admin; suspended memberships stay suspended. Unofficial claim — revocable by platform admin or that university''s university_admin.';

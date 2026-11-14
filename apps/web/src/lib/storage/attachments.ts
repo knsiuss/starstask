@@ -244,7 +244,9 @@ export function hasHtmlScript(bytes: Uint8Array): boolean {
   }
 
   const decoder = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true });
-  const sample = decoder.decode(bytes.subarray(0, Math.min(bytes.length, 64 * 1024)));
+  const sample = decoder.decode(
+    bytes.subarray(0, Math.min(bytes.length, 64 * 1024)),
+  );
 
   return HTML_SCRIPT_PATTERN.test(sample);
 }

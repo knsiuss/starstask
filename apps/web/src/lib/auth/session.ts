@@ -92,7 +92,6 @@ export function readBearerToken(request: Request): string | null {
   return readBearerTokenFromHeaderValue(request.headers.get("authorization"));
 }
 
-
 /**
  * Resolves the signed-in user for the current request. Bearer wins when both
  * header and cookie are present; otherwise this behaves exactly as before.

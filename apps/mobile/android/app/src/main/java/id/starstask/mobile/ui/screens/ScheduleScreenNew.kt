@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import id.starstask.mobile.ui.theme.PressedScaleModifier
+import id.starstask.mobile.ui.theme.mockColors
+import id.starstask.mobile.ui.theme.LocalDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,13 +57,6 @@ import id.starstask.mobile.data.CalendarSyncResult
 import id.starstask.mobile.data.shiftCalendarAnchor
 import id.starstask.mobile.ui.components.WebAlert
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentBackground
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.AssignmentBorder
-import id.starstask.mobile.ui.theme.SoftFill
 
 private enum class ScheduleMode { WEEK, MONTH, LIST }
 
@@ -166,6 +161,7 @@ fun ScheduleScreen(
         editingItem = null
     }
 
+    val palette = mockColors()
     val pullState = rememberPullToRefreshState()
     PullToRefreshBox(
         state = pullState,
@@ -179,7 +175,7 @@ fun ScheduleScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(AssignmentBackground),
+            .background(if (LocalDarkTheme.current) Color(0xFF000000) else Color(0xFFF2F2F7)),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 128.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -191,7 +187,7 @@ fun ScheduleScreen(
                 ) {
                     Text(
                         "Schedule",
-                        color = AssignmentForeground,
+                        color = palette.ink,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f),
@@ -199,19 +195,19 @@ fun ScheduleScreen(
                     Icon(
                         imageVector = Lucide.SlidersHorizontal,
                         contentDescription = "Filters",
-                        tint = AssignmentSecondary,
+                        tint = palette.muted,
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White)
-                            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
+                            .background(palette.card)
+                            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                             .clickable { showFilters = true }
                             .padding(12.dp),
                     )
                 }
                 Text(
                     "Your assignments, classes, and events — all in one place.",
-                    color = AssignmentSecondary,
+                    color = palette.muted,
                     fontSize = 14.sp,
                 )
             }
@@ -225,7 +221,7 @@ fun ScheduleScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(999.dp))
-                                .background(AssignmentAccent)
+                                .background(palette.accent)
                                 .then(PressedScaleModifier(onPress = { offerCreate("official") }, pressedScale = 0.97f))
                                 .padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center,
@@ -240,14 +236,14 @@ fun ScheduleScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(999.dp))
-                            .background(SoftFill)
+                            .background(palette.chip)
                             .then(PressedScaleModifier(onPress = { offerCreate("personal") }, pressedScale = 0.97f))
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Lucide.UserRound, contentDescription = null, tint = AssignmentForeground, modifier = Modifier.size(18.dp))
-                            Text("Personal Event", color = AssignmentForeground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                            Icon(Lucide.UserRound, contentDescription = null, tint = palette.ink, modifier = Modifier.size(18.dp))
+                            Text("Personal Event", color = palette.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -283,12 +279,12 @@ fun ScheduleScreen(
                     WebAlert(message = error!!)
                     Text(
                         "Retry",
-                        color = AssignmentAccent,
+                        color = palette.accent,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .clip(RoundedCornerShape(999.dp))
-                            .background(SoftFill)
+                            .background(palette.chip)
                             .clickable { reloadTick++ }
                             .padding(horizontal = 20.dp, vertical = 12.dp),
                     )
@@ -366,8 +362,8 @@ fun ScheduleScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Surface)
-                        .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
+                        .background(palette.card)
+                        .border(0.5.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -375,12 +371,12 @@ fun ScheduleScreen(
                     Icon(
                         imageVector = Lucide.CalendarClock,
                         contentDescription = null,
-                        tint = AssignmentSecondary,
+                        tint = palette.muted,
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
                         "All times in your device timezone.",
-                        color = AssignmentSecondary,
+                        color = palette.muted,
                         fontSize = 13.sp,
                         modifier = Modifier.weight(1f),
                     )
@@ -500,6 +496,7 @@ fun ScheduleScreen(
 
 @Composable
 private fun ScheduleModeSelector(mode: ScheduleMode, onSelect: (ScheduleMode) -> Unit) {
+    val palette = mockColors()
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf(
             ScheduleMode.WEEK to "Week",
@@ -508,7 +505,7 @@ private fun ScheduleModeSelector(mode: ScheduleMode, onSelect: (ScheduleMode) ->
         ).forEach { (value, label) ->
             val selected = mode == value
             val bg by animateColorAsState(
-                targetValue = if (selected) AssignmentAccent else Color.White,
+                targetValue = if (selected) palette.accent else palette.card,
                 label = "mode-bg",
             )
             Box(
@@ -516,14 +513,14 @@ private fun ScheduleModeSelector(mode: ScheduleMode, onSelect: (ScheduleMode) ->
                     .weight(1f)
                     .clip(RoundedCornerShape(999.dp))
                     .background(bg)
-                    .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
+                    .border(0.5.dp, palette.cardBorder, RoundedCornerShape(999.dp))
                     .clickable { onSelect(value) }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     label,
-                    color = if (selected) Color.White else AssignmentForeground,
+                    color = if (selected) Color.White else palette.ink,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -541,6 +538,7 @@ private fun ScheduleNavBar(
     showHistory: Boolean,
     onToggleHistory: () -> Unit,
 ) {
+    val palette = mockColors()
     // One quiet row: prev/range/next. "Today" and "Past events" are text links
     // on the next row — no competing pills, no tight stacking.
     Row(
@@ -551,7 +549,7 @@ private fun ScheduleNavBar(
         NavCircle(icon = Lucide.ChevronLeft, label = "Previous period", onClick = onPrevious)
         Text(
             rangeLabel,
-            color = AssignmentForeground,
+            color = palette.ink,
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -569,7 +567,7 @@ private fun ScheduleNavBar(
     ) {
         Text(
             "Today",
-            color = AssignmentAccent,
+            color = palette.accent,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier
@@ -578,7 +576,7 @@ private fun ScheduleNavBar(
         )
         Text(
             if (showHistory) "Past events: On" else "Past events: Off",
-            color = if (showHistory) AssignmentAccent else AssignmentSecondary,
+            color = if (showHistory) palette.accent else palette.muted,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier
@@ -590,16 +588,17 @@ private fun ScheduleNavBar(
 
 @Composable
 private fun NavCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    val palette = mockColors()
     Box(
         modifier = Modifier
             .size(48.dp)
             .clip(RoundedCornerShape(999.dp))
-            .background(Color.White)
-            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(999.dp))
+            .background(palette.card)
+            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(999.dp))
             .then(PressedScaleModifier(onPress = onClick, pressedScale = 0.9f)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(imageVector = icon, contentDescription = label, tint = AssignmentForeground, modifier = Modifier.size(20.dp))
+        Icon(imageVector = icon, contentDescription = label, tint = palette.ink, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -609,10 +608,11 @@ private fun UpcomingSection(
     onViewAll: () -> Unit,
     onOpen: (CalendarAssignmentBar) -> Unit,
 ) {
+    val palette = mockColors()
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             "Upcoming",
-            color = AssignmentForeground,
+            color = palette.ink,
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -621,8 +621,8 @@ private fun UpcomingSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.White)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
+                .background(palette.card)
+                .border(0.5.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
         ) {
             Row(
                 modifier = Modifier
@@ -633,13 +633,13 @@ private fun UpcomingSection(
             ) {
                 Text(
                     "Nearest deadline first",
-                    color = AssignmentSecondary,
+                    color = palette.muted,
                     fontSize = 13.sp,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     "View all",
-                    color = AssignmentAccent,
+                    color = palette.accent,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clickable { onViewAll() },
@@ -648,7 +648,7 @@ private fun UpcomingSection(
             if (assignments.isEmpty()) {
                 Text(
                     "No upcoming assignments.",
-                    color = AssignmentSecondary,
+                    color = palette.muted,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 )
@@ -658,16 +658,16 @@ private fun UpcomingSection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(if (alt) AssignmentBackground else Color.Transparent)
+                            .background(if (alt) palette.cardElevated else Color.Transparent)
                             .clickable { onOpen(bar) }
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(bar.title, color = AssignmentForeground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(bar.title, color = palette.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(
                                 "${bar.courseName ?: bar.className ?: "Assignment"} · ${formatShortDayMonth(bar.startKey)} – ${formatShortDayMonth(bar.endKey)}",
-                                color = AssignmentSecondary,
+                                color = palette.muted,
                                 fontSize = 13.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -675,7 +675,7 @@ private fun UpcomingSection(
                         }
                         Text(
                             if (bar.isCompleted) "Done" else formatShortDayMonth(bar.endKey),
-                            color = if (bar.isCompleted) AssignmentSecondary else AssignmentAccent,
+                            color = if (bar.isCompleted) palette.muted else palette.accent,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                         )

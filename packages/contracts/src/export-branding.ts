@@ -67,14 +67,10 @@ const logoUrl = (label: string) =>
     .trim()
     .max(600)
     .nullish()
-    .transform((value) =>
-      value === undefined || value === null ? "" : value,
-    )
+    .transform((value) => (value === undefined || value === null ? "" : value))
     .refine(
       (value) =>
-        value === "" ||
-        value.startsWith("https://") ||
-        value.startsWith("/"),
+        value === "" || value.startsWith("https://") || value.startsWith("/"),
       { message: `${label} must be an https URL or a site path` },
     );
 
@@ -105,16 +101,16 @@ export const exportBrandingSchema = z.object({
     .trim()
     .max(200)
     .nullish()
-    .transform((value) =>
-      value ? value.trim() : DEFAULT_DOCUMENT_TITLE,
-    ),
+    .transform((value) => (value ? value.trim() : DEFAULT_DOCUMENT_TITLE)),
   footerText: optionalText(300),
   productName: z
     .string()
     .trim()
     .max(80)
     .nullish()
-    .transform((value) => (value?.trim() ? value.trim() : DEFAULT_PRODUCT_NAME)),
+    .transform((value) =>
+      value?.trim() ? value.trim() : DEFAULT_PRODUCT_NAME,
+    ),
   productTagline: z
     .string()
     .trim()
@@ -127,16 +123,16 @@ export const exportBrandingSchema = z.object({
     value === "" ? DEFAULT_PRODUCT_LOGO_URL : value,
   ),
   productFooter: optionalText(300),
-  brandingEnabled: z.boolean().nullish().transform((value) => value ?? true),
+  brandingEnabled: z
+    .boolean()
+    .nullish()
+    .transform((value) => value ?? true),
   passingThreshold: z
     .number()
     .nullish()
     .transform((value) => value ?? DEFAULT_PASSING_THRESHOLD)
     .transform((value) =>
-      Math.min(
-        MAX_PASSING_THRESHOLD,
-        Math.max(MIN_PASSING_THRESHOLD, value),
-      ),
+      Math.min(MAX_PASSING_THRESHOLD, Math.max(MIN_PASSING_THRESHOLD, value)),
     ),
   universityLogoUrl: logoUrl("University logo URL"),
 });

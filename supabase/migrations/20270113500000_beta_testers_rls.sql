@@ -11,9 +11,8 @@
 -- Rollback: ALTER TABLE public.beta_testers DISABLE ROW LEVEL SECURITY;
 -- GRANT SELECT ON public.beta_testers TO authenticated;
 -- =====================================================================
+ALTER TABLE public.beta_testers ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beta_testers
-  ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.beta_testers
 FROM
@@ -21,5 +20,5 @@ FROM
   anon,
   authenticated;
 
-COMMENT ON TABLE public.beta_testers IS
-  'Beta tester allowlist. No client policies and no client grants: reading goes through is_beta_tester() only. Writes are manual, audited operator operations.';
+
+COMMENT ON TABLE public.beta_testers IS 'Beta tester allowlist. No client policies and no client grants: reading goes through is_beta_tester() only. Writes are manual, audited operator operations.';

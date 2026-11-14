@@ -8,12 +8,11 @@
 --
 -- The 25..500 m radius cap replaces the historical 25..1000 m bound in the
 -- three location-setting functions. Existing rows are never rewritten.
-
 -- ---------------------------------------------------------------------------
 -- Correction audit
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.attendance_correction_audits (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id uuid NOT NULL REFERENCES public.discussion_sessions (id) ON DELETE CASCADE,
   class_id uuid NOT NULL REFERENCES public.classes (id) ON DELETE CASCADE,
   subject_id uuid REFERENCES public.class_subjects (id) ON DELETE SET NULL,
@@ -22,49 +21,53 @@ CREATE TABLE IF NOT EXISTS public.attendance_correction_audits (
   previous_status text NOT NULL,
   new_status text NOT NULL,
   reason text NOT NULL,
-  physically_verified boolean NOT NULL DEFAULT false,
+  physically_verified boolean NOT NULL DEFAULT FALSE,
   verification_method text NOT NULL DEFAULT 'manual',
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT attendance_correction_audits_new_status CHECK (
-    new_status IN ('present', 'late', 'excused', 'absent')
-  ),
+  CONSTRAINT attendance_correction_audits_new_status CHECK (new_status IN ('present', 'late', 'excused', 'absent')),
   CONSTRAINT attendance_correction_audits_previous_status CHECK (
     previous_status IN ('present', 'late', 'excused', 'absent', 'not_recorded')
   ),
-  CONSTRAINT attendance_correction_audits_reason CHECK (
-    char_length(btrim(reason)) BETWEEN 3 AND 500
-  ),
-  CONSTRAINT attendance_correction_audits_method CHECK (
-    verification_method IN ('manual', 'physical')
-  ),
+  CONSTRAINT attendance_correction_audits_reason CHECK (char_length(btrim(reason)) BETWEEN 3 AND 500),
+  CONSTRAINT attendance_correction_audits_method CHECK (verification_method IN ('manual', 'physical')),
   CONSTRAINT attendance_correction_audits_metadata_object CHECK (jsonb_typeof(metadata) = 'object')
 );
 
+
 COMMENT ON TABLE public.attendance_correction_audits IS 'Append-only record of every manual attendance correction. Written only by record_attendance_correction(); students cannot see or change it.';
 
-CREATE INDEX IF NOT EXISTS attendance_correction_audits_session_idx
-  ON public.attendance_correction_audits (session_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS attendance_correction_audits_class_subject_idx
-  ON public.attendance_correction_audits (class_id, subject_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS attendance_correction_audits_session_idx ON public.attendance_correction_audits (session_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS attendance_correction_audits_student_idx
-  ON public.attendance_correction_audits (student_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS attendance_correction_audits_class_subject_idx ON public.attendance_correction_audits (class_id, subject_id, created_at DESC);
+
+
+CREATE INDEX IF NOT EXISTS attendance_correction_audits_student_idx ON public.attendance_correction_audits (student_id, created_at DESC);
+
 
 ALTER TABLE public.attendance_correction_audits ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.attendance_correction_audits FROM anon, authenticated;
+
+REVOKE ALL ON public.attendance_correction_audits
+FROM
+  anon,
+  authenticated;
+
 
 DROP POLICY IF EXISTS attendance_correction_audits_manager_read ON public.attendance_correction_audits;
 
-CREATE POLICY attendance_correction_audits_manager_read ON public.attendance_correction_audits
-FOR SELECT
+
+CREATE POLICY attendance_correction_audits_manager_read ON public.attendance_correction_audits FOR
+SELECT
   TO authenticated USING (public.can_manage_class (class_id));
 
+
 GRANT
-  SELECT
-    ON public.attendance_correction_audits TO authenticated;
+SELECT
+  ON public.attendance_correction_audits TO authenticated;
+
 
 -- ---------------------------------------------------------------------------
 -- record_attendance_correction
@@ -74,7 +77,7 @@ CREATE OR REPLACE FUNCTION public.record_attendance_correction (
   p_user_id uuid,
   p_status text,
   p_reason text,
-  p_physically_verified boolean DEFAULT false
+  p_physically_verified boolean DEFAULT FALSE
 ) returns uuid language plpgsql security definer
 SET
   search_path = public,
@@ -221,15 +224,14 @@ begin
 end;
 $$;
 
+
 COMMENT ON function public.record_attendance_correction (uuid, uuid, text, text, boolean) IS 'Manager-only manual correction. A present/late override requires an explicit physical-verification attestation; every correction writes an append-only audit row.';
+
 
 -- ---------------------------------------------------------------------------
 -- attendance_correction_audit_list
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.attendance_correction_audit_list (
-  p_class_id uuid,
-  p_subject_id uuid DEFAULT NULL
-) returns TABLE (
+CREATE OR REPLACE FUNCTION public.attendance_correction_audit_list (p_class_id uuid, p_subject_id uuid DEFAULT NULL) returns TABLE (
   id uuid,
   session_id uuid,
   meeting_number integer,
@@ -287,7 +289,9 @@ begin
 end;
 $$;
 
+
 COMMENT ON function public.attendance_correction_audit_list (uuid, uuid) IS 'Append-only correction audit for exports and review. Class managers only.';
+
 
 REVOKE ALL ON function public.record_attendance_correction (uuid, uuid, text, text, boolean)
 FROM
@@ -295,17 +299,21 @@ FROM
   anon,
   authenticated;
 
+
 REVOKE ALL ON function public.attendance_correction_audit_list (uuid, uuid)
 FROM
   public,
   anon,
   authenticated;
 
-GRANT
-  EXECUTE ON function public.record_attendance_correction (uuid, uuid, text, text, boolean) TO authenticated;
 
 GRANT
-  EXECUTE ON function public.attendance_correction_audit_list (uuid, uuid) TO authenticated;
+EXECUTE ON function public.record_attendance_correction (uuid, uuid, text, text, boolean) TO authenticated;
+
+
+GRANT
+EXECUTE ON function public.attendance_correction_audit_list (uuid, uuid) TO authenticated;
+
 
 -- ---------------------------------------------------------------------------
 -- Radius cap: 25..500 m (was 25..1000 m)
@@ -395,6 +403,7 @@ begin
 end;
 $$;
 
+
 CREATE OR REPLACE FUNCTION public.set_discussion_session_checkin_location (
   p_session_id uuid,
   p_latitude double precision,
@@ -471,6 +480,7 @@ begin
   return true;
 end;
 $$;
+
 
 CREATE OR REPLACE FUNCTION public.create_attendance_meeting (
   p_class_id uuid,

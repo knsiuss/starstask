@@ -7,7 +7,6 @@
 --    class B from pointing at a course that belongs to class A. The UI filters
 --    on both ids, so such a row was invisible in the wrong place — but it was
 --    still real data with an impossible relationship.
-
 -- ---------------------------------------------------------------------------
 -- 1. A subject must belong to the class the row is attached to
 -- ---------------------------------------------------------------------------
@@ -43,8 +42,8 @@ COMMENT ON FUNCTION public.ensure_subject_in_class () IS 'Rejects a row whose su
 DROP TRIGGER IF EXISTS assignments_subject_in_class ON public.assignments;
 
 
-CREATE TRIGGER assignments_subject_in_class BEFORE INSERT
-OR UPDATE OF subject_id,
+CREATE TRIGGER assignments_subject_in_class
+BEFORE INSERT OR UPDATE OF subject_id,
 class_id ON public.assignments FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_in_class ();
 
@@ -52,8 +51,8 @@ EXECUTE FUNCTION public.ensure_subject_in_class ();
 DROP TRIGGER IF EXISTS discussion_sessions_subject_in_class ON public.discussion_sessions;
 
 
-CREATE TRIGGER discussion_sessions_subject_in_class BEFORE INSERT
-OR UPDATE OF subject_id,
+CREATE TRIGGER discussion_sessions_subject_in_class
+BEFORE INSERT OR UPDATE OF subject_id,
 class_id ON public.discussion_sessions FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_in_class ();
 
@@ -61,8 +60,8 @@ EXECUTE FUNCTION public.ensure_subject_in_class ();
 DROP TRIGGER IF EXISTS class_calendar_events_subject_in_class ON public.class_calendar_events;
 
 
-CREATE TRIGGER class_calendar_events_subject_in_class BEFORE INSERT
-OR UPDATE OF subject_id,
+CREATE TRIGGER class_calendar_events_subject_in_class
+BEFORE INSERT OR UPDATE OF subject_id,
 class_id ON public.class_calendar_events FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_in_class ();
 
@@ -70,8 +69,8 @@ EXECUTE FUNCTION public.ensure_subject_in_class ();
 DROP TRIGGER IF EXISTS class_course_schedules_subject_in_class ON public.class_course_schedules;
 
 
-CREATE TRIGGER class_course_schedules_subject_in_class BEFORE INSERT
-OR UPDATE OF subject_id,
+CREATE TRIGGER class_course_schedules_subject_in_class
+BEFORE INSERT OR UPDATE OF subject_id,
 class_id ON public.class_course_schedules FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_in_class ();
 

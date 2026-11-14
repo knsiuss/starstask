@@ -25,18 +25,13 @@ import id.starstask.mobile.data.CalendarTimelineItem
 import id.starstask.mobile.data.formatCalendarTime
 import id.starstask.mobile.data.formatGroupLabel
 import id.starstask.mobile.data.formatShortDayMonth
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
+import id.starstask.mobile.ui.theme.mockColors
 import id.starstask.mobile.ui.theme.Danger
 import id.starstask.mobile.ui.theme.Success
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.AssignmentBorder
-import id.starstask.mobile.ui.theme.AssignmentBackground
 
 // Quiet agenda rows — no dividers, no rails. Rows breathe via spacing and
 // a small dot for kind; time sits on the right like Apple Calendar.
 
-private val RowAlt = AssignmentBackground
 
 private fun scheduleDot(item: CalendarTimelineItem): Color {
     val completed = item.kind == "assignment" && item.isCompleted
@@ -85,10 +80,11 @@ fun ScheduleEventItem(
     completionSlot: (@Composable () -> Unit)? = null,
     alt: Boolean = false,
 ) {
+    val palette = mockColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (alt) RowAlt else Color.Transparent)
+            .background(if (alt) palette.cardElevated else Color.Transparent)
             .clickable { onOpen(item) }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -103,7 +99,7 @@ fun ScheduleEventItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 item.title,
-                color = AssignmentForeground,
+                color = palette.ink,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
@@ -111,7 +107,7 @@ fun ScheduleEventItem(
             )
             Text(
                 scheduleSubtitle(item),
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -123,7 +119,7 @@ fun ScheduleEventItem(
             Box(modifier = Modifier.size(width = 8.dp, height = 0.dp))
             Text(
                 time,
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
@@ -140,6 +136,7 @@ fun ScheduleDayGroup(
     onOpen: (CalendarTimelineItem) -> Unit,
     completionSlot: ((CalendarTimelineItem) -> (@Composable () -> Unit)?)?,
 ) {
+    val palette = mockColors()
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -147,14 +144,14 @@ fun ScheduleDayGroup(
         ) {
             Text(
                 formatGroupLabel(dateKey),
-                color = AssignmentForeground,
+                color = palette.ink,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 items.size.toString(),
-                color = AssignmentSecondary,
+                color = palette.muted,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
             )
@@ -163,8 +160,8 @@ fun ScheduleDayGroup(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Surface)
-                .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp)),
+                .background(palette.card)
+                .border(0.5.dp, palette.cardBorder, RoundedCornerShape(12.dp)),
         ) {
             items.forEachIndexed { index, item ->
                 ScheduleEventItem(

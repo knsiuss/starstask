@@ -61,14 +61,10 @@ import id.starstask.mobile.ui.components.WebSkeletonCard
 import id.starstask.mobile.ui.icons.Lucide
 import id.starstask.mobile.ui.theme.Surface
 import id.starstask.mobile.ui.theme.dashColors
-import id.starstask.mobile.ui.theme.SoftFill
 import id.starstask.mobile.ui.theme.PressedScaleModifier
-import id.starstask.mobile.ui.theme.Muted
 import id.starstask.mobile.ui.theme.Danger
 import kotlinx.coroutines.launch
 
-private val SearchBg = Muted
-private val FilterBg = SoftFill
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -343,9 +339,9 @@ fun AssignmentsWorkspaceScreen(
                             ),
                             shape = RoundedCornerShape(999.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = SearchBg,
-                                unfocusedContainerColor = SearchBg,
-                                disabledContainerColor = SearchBg,
+                                focusedContainerColor = palette.chip,
+                                unfocusedContainerColor = palette.chip,
+                                disabledContainerColor = palette.chip,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
                                 cursorColor = palette.accent,
@@ -357,7 +353,7 @@ fun AssignmentsWorkspaceScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(999.dp))
-                            .background(FilterBg)
+                            .background(palette.chip)
                             .then(PressedScaleModifier(onPress = { showFilterSheet = true }, pressedScale = 0.94f))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         contentAlignment = Alignment.Center,

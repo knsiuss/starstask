@@ -11,7 +11,7 @@
 --
 -- Predicates are SECURITY DEFINER on purpose: RLS policies call them, and a
 -- policy that queried class_members directly would recurse.
-create or replace function public.is_platform_admin () returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.is_platform_admin () returns boolean language sql stable security definer
 SET
   search_path = '' AS $$
 select
@@ -29,7 +29,7 @@ select
 $$;
 
 
-create or replace function public.is_class_member (p_class_id uuid) returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.is_class_member (p_class_id uuid) returns boolean language sql stable security definer
 SET
   search_path = '' AS $$
 select
@@ -48,7 +48,7 @@ select
 $$;
 
 
-create or replace function public.is_class_admin (p_class_id uuid) returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.is_class_admin (p_class_id uuid) returns boolean language sql stable security definer
 SET
   search_path = '' AS $$
 select
@@ -67,7 +67,7 @@ select
 $$;
 
 
-create or replace function public.can_manage_class (p_class_id uuid) returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.can_manage_class (p_class_id uuid) returns boolean language sql stable security definer
 SET
   search_path = '' AS $$
 select
@@ -79,7 +79,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Internal helpers
 -- ---------------------------------------------------------------------------
-create or replace function public.record_audit (
+CREATE OR REPLACE FUNCTION public.record_audit (
   p_action text,
   p_entity_type text,
   p_entity_id uuid,
@@ -108,7 +108,7 @@ $$;
 -- Queues a push event only for users who opted in and still have an active
 -- device. Late delivery of a one-off event is useless, so the filter happens
 -- here rather than at send time.
-create or replace function public.enqueue_notification_event (
+CREATE OR REPLACE FUNCTION public.enqueue_notification_event (
   p_user_id uuid,
   p_kind text,
   p_dedupe_key text,
@@ -146,7 +146,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Class applications
 -- ---------------------------------------------------------------------------
-create or replace function public.apply_for_class (
+CREATE OR REPLACE FUNCTION public.apply_for_class (
   p_proposed_slug text,
   p_proposed_name text,
   p_course_name text,
@@ -212,7 +212,7 @@ end;
 $$;
 
 
-create or replace function public.revise_class_application (
+CREATE OR REPLACE FUNCTION public.revise_class_application (
   p_application_id uuid,
   p_proposed_slug text,
   p_proposed_name text,
@@ -275,7 +275,7 @@ end;
 $$;
 
 
-create or replace function public.withdraw_class_application (p_application_id uuid) returns boolean language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.withdraw_class_application (p_application_id uuid) returns boolean language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -309,7 +309,7 @@ $$;
 
 -- Approval creates the class and, only when the platform admin asks for it, the
 -- applicant's class admin role. The applicant never triggers this themselves.
-create or replace function public.decide_class_application (
+CREATE OR REPLACE FUNCTION public.decide_class_application (
   p_application_id uuid,
   p_decision text,
   p_note text DEFAULT NULL,
@@ -462,7 +462,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Invitations
 -- ---------------------------------------------------------------------------
-create or replace function public.create_class_invitation (
+CREATE OR REPLACE FUNCTION public.create_class_invitation (
   p_class_id uuid,
   p_token_hash text,
   p_expires_at timestamptz,
@@ -563,7 +563,7 @@ end;
 $$;
 
 
-create or replace function public.revoke_class_invitation (p_invitation_id uuid) returns boolean language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.revoke_class_invitation (p_invitation_id uuid) returns boolean language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -604,7 +604,7 @@ $$;
 -- The raw token never reaches the database: only its SHA-256 hex digest is
 -- compared. Expiry, revocation, usage limits, class state, and the optional
 -- email restriction are all verified here, on the server.
-create or replace function public.accept_class_invitation (p_token text) returns uuid language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.accept_class_invitation (p_token text) returns uuid language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -694,7 +694,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Membership and admin assignment
 -- ---------------------------------------------------------------------------
-create or replace function public.assign_class_admin (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.assign_class_admin (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -743,7 +743,7 @@ end;
 $$;
 
 
-create or replace function public.revoke_class_admin (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.revoke_class_admin (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$ begin if not public.is_platform_admin () then raise exception 'platform admin required' using errcode = '42501';
@@ -784,7 +784,7 @@ end;
 $$;
 
 
-create or replace function public.remove_class_member (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.remove_class_member (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$ begin if not public.can_manage_class (p_class_id) then raise exception 'class admin required' using errcode = '42501';
@@ -825,7 +825,7 @@ end;
 $$;
 
 
-create or replace function public.set_class_status (p_class_id uuid, p_status text) returns boolean language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.set_class_status (p_class_id uuid, p_status text) returns boolean language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$ begin if not public.is_platform_admin () then raise exception 'platform admin required' using errcode = '42501';
@@ -854,7 +854,7 @@ end;
 $$;
 
 
-create or replace function public.update_class_metadata (
+CREATE OR REPLACE FUNCTION public.update_class_metadata (
   p_class_id uuid,
   p_name text,
   p_description text,
@@ -905,7 +905,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Assignment submission and review
 -- ---------------------------------------------------------------------------
-create or replace function public.submit_class_assignment (
+CREATE OR REPLACE FUNCTION public.submit_class_assignment (
   p_class_id uuid,
   p_title text,
   p_description text,
@@ -1004,7 +1004,7 @@ end;
 $$;
 
 
-create or replace function public.revise_class_assignment (
+CREATE OR REPLACE FUNCTION public.revise_class_assignment (
   p_assignment_id uuid,
   p_title text,
   p_description text,
@@ -1066,7 +1066,7 @@ end;
 $$;
 
 
-create or replace function public.review_class_assignment (
+CREATE OR REPLACE FUNCTION public.review_class_assignment (
   p_assignment_id uuid,
   p_decision text,
   p_reason text DEFAULT NULL
@@ -1171,7 +1171,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Post-publication moderation
 -- ---------------------------------------------------------------------------
-create or replace function public.moderate_assignment (
+CREATE OR REPLACE FUNCTION public.moderate_assignment (
   p_assignment_id uuid,
   p_action text,
   p_reason text DEFAULT NULL
@@ -1263,10 +1263,7 @@ $$;
 -- Returns the storage path so the caller can delete the object with the service
 -- role. Removing the row first means the file is unreachable even if the
 -- storage delete fails and needs a retry.
-create or replace function public.remove_assignment_attachment (
-  p_attachment_id uuid,
-  p_reason text DEFAULT NULL
-) returns text language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.remove_assignment_attachment (p_attachment_id uuid, p_reason text DEFAULT NULL) returns text language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -1318,206 +1315,230 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Function privileges
 -- ---------------------------------------------------------------------------
-revoke all on function public.record_audit (text, text, uuid, uuid, jsonb)
-from
+REVOKE ALL ON function public.record_audit (text, text, uuid, uuid, jsonb)
+FROM
   public,
   anon,
   authenticated;
 
 
-revoke all on function public.enqueue_notification_event (uuid, text, text, jsonb)
-from
+REVOKE ALL ON function public.enqueue_notification_event (uuid, text, text, jsonb)
+FROM
   public,
   anon,
   authenticated;
 
 
-revoke all on function public.is_platform_admin ()
-from
+REVOKE ALL ON function public.is_platform_admin ()
+FROM
   public;
 
 
-revoke all on function public.is_class_member (uuid)
-from
+REVOKE ALL ON function public.is_class_member (uuid)
+FROM
   public;
 
 
-revoke all on function public.is_class_admin (uuid)
-from
+REVOKE ALL ON function public.is_class_admin (uuid)
+FROM
   public;
 
 
-revoke all on function public.can_manage_class (uuid)
-from
+REVOKE ALL ON function public.can_manage_class (uuid)
+FROM
   public;
 
 
-grant
-execute on function public.is_platform_admin () to authenticated;
+GRANT
+EXECUTE ON function public.is_platform_admin () TO authenticated;
 
 
-grant
-execute on function public.is_class_member (uuid) to authenticated;
+GRANT
+EXECUTE ON function public.is_class_member (uuid) TO authenticated;
 
 
-grant
-execute on function public.is_class_admin (uuid) to authenticated;
+GRANT
+EXECUTE ON function public.is_class_admin (uuid) TO authenticated;
 
 
-grant
-execute on function public.can_manage_class (uuid) to authenticated;
+GRANT
+EXECUTE ON function public.can_manage_class (uuid) TO authenticated;
 
 
-revoke all on function public.apply_for_class (text, text, text, text, text, text, text, text, text, text)
-from
+REVOKE ALL ON function public.apply_for_class (text, text, text, text, text, text, text, text, text, text)
+FROM
   public;
 
 
-grant
-execute on function public.apply_for_class (text, text, text, text, text, text, text, text, text, text) to authenticated;
+GRANT
+EXECUTE ON function public.apply_for_class (text, text, text, text, text, text, text, text, text, text) TO authenticated;
 
 
-revoke all on function public.revise_class_application (uuid, text, text, text, text, text, text, text, text, text, text)
-from
+REVOKE ALL ON function public.revise_class_application (
+  uuid,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text
+)
+FROM
   public;
 
 
-grant
-execute on function public.revise_class_application (uuid, text, text, text, text, text, text, text, text, text, text) to authenticated;
+GRANT
+EXECUTE ON function public.revise_class_application (
+  uuid,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text
+) TO authenticated;
 
 
-revoke all on function public.withdraw_class_application (uuid)
-from
+REVOKE ALL ON function public.withdraw_class_application (uuid)
+FROM
   public;
 
 
-grant
-execute on function public.withdraw_class_application (uuid) to authenticated;
+GRANT
+EXECUTE ON function public.withdraw_class_application (uuid) TO authenticated;
 
 
-revoke all on function public.decide_class_application (uuid, text, text, boolean)
-from
+REVOKE ALL ON function public.decide_class_application (uuid, text, text, boolean)
+FROM
   public,
   anon,
   authenticated;
 
 
-grant
-execute on function public.decide_class_application (uuid, text, text, boolean) to authenticated;
+GRANT
+EXECUTE ON function public.decide_class_application (uuid, text, text, boolean) TO authenticated;
 
 
-revoke all on function public.create_class_invitation (uuid, text, timestamptz, integer, text)
-from
+REVOKE ALL ON function public.create_class_invitation (uuid, text, timestamptz, integer, text)
+FROM
   public;
 
 
-grant
-execute on function public.create_class_invitation (uuid, text, timestamptz, integer, text) to authenticated;
+GRANT
+EXECUTE ON function public.create_class_invitation (uuid, text, timestamptz, integer, text) TO authenticated;
 
 
-revoke all on function public.revoke_class_invitation (uuid)
-from
+REVOKE ALL ON function public.revoke_class_invitation (uuid)
+FROM
   public;
 
 
-grant
-execute on function public.revoke_class_invitation (uuid) to authenticated;
+GRANT
+EXECUTE ON function public.revoke_class_invitation (uuid) TO authenticated;
 
 
-revoke all on function public.accept_class_invitation (text)
-from
+REVOKE ALL ON function public.accept_class_invitation (text)
+FROM
   public;
 
 
-grant
-execute on function public.accept_class_invitation (text) to authenticated;
+GRANT
+EXECUTE ON function public.accept_class_invitation (text) TO authenticated;
 
 
-revoke all on function public.assign_class_admin (uuid, uuid)
-from
+REVOKE ALL ON function public.assign_class_admin (uuid, uuid)
+FROM
   public;
 
 
-grant
-execute on function public.assign_class_admin (uuid, uuid) to authenticated;
+GRANT
+EXECUTE ON function public.assign_class_admin (uuid, uuid) TO authenticated;
 
 
-revoke all on function public.revoke_class_admin (uuid, uuid)
-from
+REVOKE ALL ON function public.revoke_class_admin (uuid, uuid)
+FROM
   public;
 
 
-grant
-execute on function public.revoke_class_admin (uuid, uuid) to authenticated;
+GRANT
+EXECUTE ON function public.revoke_class_admin (uuid, uuid) TO authenticated;
 
 
-revoke all on function public.remove_class_member (uuid, uuid)
-from
+REVOKE ALL ON function public.remove_class_member (uuid, uuid)
+FROM
   public;
 
 
-grant
-execute on function public.remove_class_member (uuid, uuid) to authenticated;
+GRANT
+EXECUTE ON function public.remove_class_member (uuid, uuid) TO authenticated;
 
 
-revoke all on function public.set_class_status (uuid, text)
-from
+REVOKE ALL ON function public.set_class_status (uuid, text)
+FROM
   public;
 
 
-grant
-execute on function public.set_class_status (uuid, text) to authenticated;
+GRANT
+EXECUTE ON function public.set_class_status (uuid, text) TO authenticated;
 
 
-revoke all on function public.submit_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb)
-from
+REVOKE ALL ON function public.submit_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb)
+FROM
   public;
 
 
-grant
-execute on function public.submit_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb) to authenticated;
+GRANT
+EXECUTE ON function public.submit_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb) TO authenticated;
 
 
-revoke all on function public.revise_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb)
-from
+REVOKE ALL ON function public.revise_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb)
+FROM
   public;
 
 
-grant
-execute on function public.revise_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb) to authenticated;
+GRANT
+EXECUTE ON function public.revise_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb) TO authenticated;
 
 
-revoke all on function public.review_class_assignment (uuid, text, text)
-from
+REVOKE ALL ON function public.review_class_assignment (uuid, text, text)
+FROM
   public;
 
 
-grant
-execute on function public.review_class_assignment (uuid, text, text) to authenticated;
+GRANT
+EXECUTE ON function public.review_class_assignment (uuid, text, text) TO authenticated;
 
 
-revoke all on function public.moderate_assignment (uuid, text, text)
-from
+REVOKE ALL ON function public.moderate_assignment (uuid, text, text)
+FROM
   public;
 
 
-grant
-execute on function public.moderate_assignment (uuid, text, text) to authenticated;
+GRANT
+EXECUTE ON function public.moderate_assignment (uuid, text, text) TO authenticated;
 
 
-revoke all on function public.remove_assignment_attachment (uuid, text)
-from
+REVOKE ALL ON function public.remove_assignment_attachment (uuid, text)
+FROM
   public;
 
 
-grant
-execute on function public.remove_assignment_attachment (uuid, text) to authenticated;
+GRANT
+EXECUTE ON function public.remove_assignment_attachment (uuid, text) TO authenticated;
 
 
-revoke all on function public.update_class_metadata (uuid, text, text, text, text, text, text, text)
-from
+REVOKE ALL ON function public.update_class_metadata (uuid, text, text, text, text, text, text, text)
+FROM
   public;
 
 
-grant
-execute on function public.update_class_metadata (uuid, text, text, text, text, text, text, text) to authenticated;
+GRANT
+EXECUTE ON function public.update_class_metadata (uuid, text, text, text, text, text, text, text) TO authenticated;

@@ -17,7 +17,6 @@
 -- 20261029002700_profile_onboarding.sql; drop maybe_grant_lecturer_membership();
 -- existing memberships are NOT reverted.
 -- =====================================================================
-
 -- ---------------------------------------------------------------------------
 -- Internal grant: insert a lecturer membership for one (user, university) pair
 -- when the user's confirmed domain is registered there. No authorization reads;
@@ -27,11 +26,9 @@ CREATE OR REPLACE FUNCTION public.grant_lecturer_membership_if_eligible (
   p_user_id uuid,
   p_email text,
   p_verification_method text DEFAULT 'domain_email_auto'
-) RETURNS uuid
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_domain text;
   v_university public.universities;
@@ -111,11 +108,16 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.grant_lecturer_membership_if_eligible (uuid, text, text)
-FROM public, anon, authenticated;
 
-COMMENT ON FUNCTION public.grant_lecturer_membership_if_eligible (uuid, text, text) IS
-  'Internal: enroll a confirmed account as lecturer for the active university whose institutional_domains match the email domain. No client grants; called by signup/confirmation triggers and the self-claim RPC.';
+REVOKE ALL ON FUNCTION public.grant_lecturer_membership_if_eligible (uuid, text, text)
+FROM
+  public,
+  anon,
+  authenticated;
+
+
+COMMENT ON FUNCTION public.grant_lecturer_membership_if_eligible (uuid, text, text) IS 'Internal: enroll a confirmed account as lecturer for the active university whose institutional_domains match the email domain. No client grants; called by signup/confirmation triggers and the self-claim RPC.';
+
 
 -- ---------------------------------------------------------------------------
 -- handle_email_confirmed: accounts whose email becomes confirmed after insert
@@ -123,12 +125,9 @@ COMMENT ON FUNCTION public.grant_lecturer_membership_if_eligible (uuid, text, te
 -- handles already-confirmed OAuth inserts; this closes the later-confirmation
 -- path without any client interaction.
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.handle_email_confirmed ()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION public.handle_email_confirmed () RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 BEGIN
   IF OLD.email_confirmed_at IS NULL AND NEW.email_confirmed_at IS NOT NULL THEN
     PERFORM public.grant_lecturer_membership_if_eligible(
@@ -142,27 +141,30 @@ BEGIN
 END;
 $$;
 
+
 REVOKE ALL ON FUNCTION public.handle_email_confirmed ()
-FROM public, anon, authenticated;
+FROM
+  public,
+  anon,
+  authenticated;
+
 
 DROP TRIGGER IF EXISTS on_auth_user_email_confirmed ON auth.users;
 
+
 CREATE TRIGGER on_auth_user_email_confirmed
-  AFTER UPDATE OF email_confirmed_at ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_email_confirmed ();
+AFTER UPDATE OF email_confirmed_at ON auth.users FOR EACH ROW
+EXECUTE FUNCTION public.handle_email_confirmed ();
+
 
 -- ---------------------------------------------------------------------------
 -- handle_new_user: profiles as before, plus lecturer auto-claim for accounts
 -- whose email is already confirmed at insert (Google OAuth). Unconfirmed
 -- emails are handled by claim_lecturer_persona after confirmation.
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.handle_new_user ()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION public.handle_new_user () RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_display_name text;
   v_full_name text;
@@ -209,6 +211,7 @@ BEGIN
 END;
 $$;
 
+
 -- ---------------------------------------------------------------------------
 -- update_my_profile: NIM required only for accounts that are NOT lecturers.
 -- Lecturers persist a NULL nim; university stays free text for everyone.
@@ -221,11 +224,10 @@ CREATE OR REPLACE FUNCTION public.update_my_profile (
   p_nim text,
   p_university text,
   p_declared_class text DEFAULT NULL
-) RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_user uuid := auth.uid ();
   v_full text := nullif(btrim(coalesce(p_full_name, '')), '');
@@ -291,18 +293,14 @@ BEGIN
 END;
 $$;
 
+
 -- ---------------------------------------------------------------------------
 -- claim_lecturer_persona: NIDN optional (auto-claim may carry none); format
 -- still enforced when supplied.
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.claim_lecturer_persona (
-  p_nidn text DEFAULT NULL,
-  p_university_id uuid DEFAULT NULL
-) RETURNS uuid
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION public.claim_lecturer_persona (p_nidn text DEFAULT NULL, p_university_id uuid DEFAULT NULL) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_user uuid := auth.uid();
   v_email text;
@@ -403,8 +401,15 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_lecturer_persona (text, uuid) FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.claim_lecturer_persona (text, uuid) TO authenticated;
 
-COMMENT ON FUNCTION public.claim_lecturer_persona (text, uuid) IS
-  'Self-claim the lecturer persona for the university whose institutional_domains contain the caller''s confirmed auth email domain. NIDN is checked for format only when supplied. Never downgrades an existing university_admin; suspended memberships stay suspended. Unofficial claim — revocable by platform admin or that university''s university_admin.';
+REVOKE ALL ON FUNCTION public.claim_lecturer_persona (text, uuid)
+FROM
+  public,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.claim_lecturer_persona (text, uuid) TO authenticated;
+
+
+COMMENT ON FUNCTION public.claim_lecturer_persona (text, uuid) IS 'Self-claim the lecturer persona for the university whose institutional_domains contain the caller''s confirmed auth email domain. NIDN is checked for format only when supplied. Never downgrades an existing university_admin; suspended memberships stay suspended. Unofficial claim — revocable by platform admin or that university''s university_admin.';

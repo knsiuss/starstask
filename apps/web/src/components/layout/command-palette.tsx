@@ -103,11 +103,17 @@ export function CommandPalette() {
             onClick={() => setOpen(false)}
             className="text-muted-foreground hover:text-foreground focus-visible:outline-accent -m-1 cursor-pointer rounded-md p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <X aria-hidden="true" className="h-4 w-4" />
+            <X
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
           </button>
         </label>
 
-        <ul className="max-h-80 overflow-y-auto p-2" role="listbox">
+        <ul
+          className="max-h-80 overflow-y-auto p-2"
+          role="listbox"
+        >
           {filtered.map((item, i) => (
             <li key={item.id}>
               <button
@@ -123,7 +129,10 @@ export function CommandPalette() {
                     : "hover:bg-muted/60",
                 )}
               >
-                <Command aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <Command
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0"
+                />
                 {item.label}
               </button>
             </li>

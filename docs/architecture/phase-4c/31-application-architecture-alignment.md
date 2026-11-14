@@ -2,13 +2,13 @@
 
 ## 31.1 Responsibility boundaries (RECOMMENDED)
 
-| Layer | Owns (RECOMMENDED) | Must never own |
-|-------|--------------------|----------------|
-| Postgres constraints | Uniqueness, FK integrity, composite-FK tenant pairing, status enums, last-admin guard (trigger), append-only history | Business workflow sequencing |
-| RLS | Row visibility (tenant + membership predicates) | Complex orchestration |
-| SECURITY DEFINER functions | Atomic state transitions + audit + token redemption | Pure reads better served by RLS + typed client |
-| Services (`features/*-service.ts`) | Multi-step orchestration, validation, notifications enqueue, CSV parse coordination | SQL fragments |
-| Workers (API cron) | Retention, fan-out, instance materialization (chunked) | User-facing mutations |
+| Layer                              | Owns (RECOMMENDED)                                                                                                   | Must never own                                 |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Postgres constraints               | Uniqueness, FK integrity, composite-FK tenant pairing, status enums, last-admin guard (trigger), append-only history | Business workflow sequencing                   |
+| RLS                                | Row visibility (tenant + membership predicates)                                                                      | Complex orchestration                          |
+| SECURITY DEFINER functions         | Atomic state transitions + audit + token redemption                                                                  | Pure reads better served by RLS + typed client |
+| Services (`features/*-service.ts`) | Multi-step orchestration, validation, notifications enqueue, CSV parse coordination                                  | SQL fragments                                  |
+| Workers (API cron)                 | Retention, fan-out, instance materialization (chunked)                                                               | User-facing mutations                          |
 
 ## 31.2 Patterns
 

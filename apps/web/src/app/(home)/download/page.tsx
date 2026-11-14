@@ -81,7 +81,8 @@ export default function DownloadPage() {
             <li>Download the APK with your Android browser or file manager.</li>
             <li>
               Open the file. When Android asks, allow installation from that
-              source &ldquo;Install unknown apps&rdquo; &mdash; you can turn it off afterwards.
+              source &ldquo;Install unknown apps&rdquo; &mdash; you can turn it
+              off afterwards.
             </li>
             <li>
               If you previously installed another StarsTask debug APK, uninstall
@@ -93,10 +94,10 @@ export default function DownloadPage() {
 
         <p className="text-muted-foreground text-xs leading-relaxed">
           Security notice: this APK is signed with a development (debug)
-          keystore, not the production Play Store key. Treat it as a beta
-          build. If you see a signature mismatch, the APK you installed before
-          came from a different key — uninstall the old app and install this
-          one again. Questions: {""}
+          keystore, not the production Play Store key. Treat it as a beta build.
+          If you see a signature mismatch, the APK you installed before came
+          from a different key — uninstall the old app and install this one
+          again. Questions: {""}
           <Link
             href="/feedback"
             className="text-accent font-medium underline underline-offset-2"

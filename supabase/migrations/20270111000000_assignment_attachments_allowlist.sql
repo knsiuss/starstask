@@ -6,24 +6,25 @@
 -- Bucket stays private; RLS policies and bucket flags are unchanged. The
 -- native shell picks the mime type from an explicit extension mapping, so this
 -- does not introduce arbitrary uploads.
-
 UPDATE storage.buckets
-SET allowed_mime_types = ARRAY[
-  'application/pdf',
-  'application/zip',
-  'application/json',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'image/png',
-  'image/jpeg',
-  'text/csv',
-  'text/plain',
-  'text/markdown',
-  'text/x-python',
-  'text/javascript',
-  'text/typescript',
-  'video/mp4',
-  'audio/mpeg'
-]
-WHERE id = 'assignment-attachments';
+SET
+  allowed_mime_types = ARRAY[
+    'application/pdf',
+    'application/zip',
+    'application/json',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'image/png',
+    'image/jpeg',
+    'text/csv',
+    'text/plain',
+    'text/markdown',
+    'text/x-python',
+    'text/javascript',
+    'text/typescript',
+    'video/mp4',
+    'audio/mpeg'
+  ]
+WHERE
+  id = 'assignment-attachments';

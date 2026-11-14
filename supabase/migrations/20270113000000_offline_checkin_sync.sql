@@ -13,16 +13,17 @@
 -- function exists only for the sync path, and rows are marked
 -- method = 'offline_sync' so reviewers can tell them apart from live geo
 -- check-ins.
-
 -- 1. Allow the new method.
 ALTER TABLE public.discussion_session_checkins
-  DROP CONSTRAINT IF EXISTS discussion_session_checkins_method_allowed;
+DROP CONSTRAINT IF EXISTS discussion_session_checkins_method_allowed;
+
 
 ALTER TABLE public.discussion_session_checkins
-  ADD CONSTRAINT discussion_session_checkins_method_allowed
-  CHECK (method IN ('geo', 'manual', 'offline_sync'));
+ADD CONSTRAINT discussion_session_checkins_method_allowed CHECK (method IN ('geo', 'manual', 'offline_sync'));
+
 
 COMMENT ON TABLE public.discussion_session_checkins IS 'Attendance for one session. geo rows: live GPS check-in; offline_sync rows: captured on device without network and uploaded later (validated against captured time); manual rows: organizer-recorded, no coordinates.';
+
 
 -- 2. Offline sync RPC.
 CREATE OR REPLACE FUNCTION public.sync_offline_attendance_meeting (
@@ -33,8 +34,8 @@ CREATE OR REPLACE FUNCTION public.sync_offline_attendance_meeting (
   p_longitude double precision,
   p_accuracy_m double precision,
   p_captured_at timestamptz,
-  p_time_from_gnss boolean DEFAULT true,
-  p_device_clock_auto boolean DEFAULT true
+  p_time_from_gnss boolean DEFAULT TRUE,
+  p_device_clock_auto boolean DEFAULT TRUE
 ) returns jsonb language plpgsql security definer
 SET
   search_path = public,
@@ -370,12 +371,46 @@ begin
 end;
 $$;
 
-REVOKE ALL ON function public.sync_offline_attendance_meeting (
-  uuid, text, text, double precision, double precision, double precision, timestamptz, boolean, boolean
-) FROM public, anon, authenticated;
 
-GRANT EXECUTE ON function public.sync_offline_attendance_meeting (
-  uuid, text, text, double precision, double precision, double precision, timestamptz, boolean, boolean
+REVOKE ALL ON function public.sync_offline_attendance_meeting (
+  uuid,
+  text,
+  text,
+  double precision,
+  double precision,
+  double precision,
+  timestamptz,
+  boolean,
+  boolean
+)
+FROM
+  public,
+  anon,
+  authenticated;
+
+
+GRANT
+EXECUTE ON function public.sync_offline_attendance_meeting (
+  uuid,
+  text,
+  text,
+  double precision,
+  double precision,
+  double precision,
+  timestamptz,
+  boolean,
+  boolean
 ) TO authenticated;
 
-COMMENT ON function public.sync_offline_attendance_meeting (uuid, text, text, double precision, double precision, double precision, timestamptz, boolean, boolean) IS 'Offline-sync check-in for attendance meetings. Validates membership, window, accuracy, radius, and identity against the captured (usually GNSS) time, never against sync time, and records the row as method = offline_sync.';
+
+COMMENT ON function public.sync_offline_attendance_meeting (
+  uuid,
+  text,
+  text,
+  double precision,
+  double precision,
+  double precision,
+  timestamptz,
+  boolean,
+  boolean
+) IS 'Offline-sync check-in for attendance meetings. Validates membership, window, accuracy, radius, and identity against the captured (usually GNSS) time, never against sync time, and records the row as method = offline_sync.';

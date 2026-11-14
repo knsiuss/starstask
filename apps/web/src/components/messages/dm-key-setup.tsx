@@ -26,7 +26,9 @@ export function DmKeySetup() {
         const existing = await fetch("/api/dm/keys/me").then((response) =>
           response.ok
             ? (response.json() as Promise<{ publicKey: string | null }>)
-            : Promise.resolve<{ publicKey: string | null }>({ publicKey: null }),
+            : Promise.resolve<{ publicKey: string | null }>({
+                publicKey: null,
+              }),
         );
 
         if (existing.publicKey) {

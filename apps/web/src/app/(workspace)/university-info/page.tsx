@@ -29,7 +29,12 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ program?: string; q?: string; from?: string; to?: string }>;
+  searchParams: Promise<{
+    program?: string;
+    q?: string;
+    from?: string;
+    to?: string;
+  }>;
 };
 
 const KIND_LABELS: Record<PluginEvent["kind"], string> = {
@@ -64,9 +69,7 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
 
   const myProfile = session ? await getMyProfile().catch(() => null) : null;
 
-  if (
-    !(await isUnpamMember(session?.user.id ?? null, myProfile?.university))
-  ) {
+  if (!(await isUnpamMember(session?.user.id ?? null, myProfile?.university))) {
     notFound();
   }
 
@@ -74,9 +77,7 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
   // Auto program dari academic unit bila ?program= tidak diisi (personalization).
   const autoProgram = await getMyProgramId(session?.user.id ?? null);
   const program: ProgramId =
-    params.program != null
-      ? parseProgramParam(params.program)
-      : autoProgram;
+    params.program != null ? parseProgramParam(params.program) : autoProgram;
 
   // DB dulu (persisted via cron), fallback live fetch. DB = offline + bisa search.
   const persisted = await getPersistedUnpamEvents();
@@ -101,7 +102,10 @@ export default async function UniversityInfoPage({ searchParams }: PageProps) {
         </p>
       </header>
 
-      <form method="get" className="flex flex-wrap gap-2">
+      <form
+        method="get"
+        className="flex flex-wrap gap-2"
+      >
         <input
           name="q"
           defaultValue={params.q ?? ""}

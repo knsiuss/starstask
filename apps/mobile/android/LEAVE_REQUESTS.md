@@ -14,16 +14,16 @@ and the migrations under `supabase/migrations/20261029*_leave_*`,
 
 ### Statuses and transitions
 
-| Backend status | UI label | Meaning |
-| --- | --- | --- |
-| `draft` | Draft | Half-filled, private to the student. |
-| `submitted` | Pending | Sent to the class admin for a decision. |
-| `approved` | Approved | Class admin approved. Covered sessions become `excused`, never `present`. |
-| `rejected` | Rejected | Class admin rejected. Attendance unchanged. |
-| `forwarded` | Forwarded | Included in a class admin's forwarding package. **Not a decision.** |
-| `cancelled` | Cancelled | Withdrawn by the student, or cancelled by the class admin. |
-| `revision_requested` | Revision Requested | Returned for edit and resubmit. |
-| `needs_revision` | Pending | Legacy rows pre-migration; mapped to `submitted` like the web data layer. |
+| Backend status       | UI label           | Meaning                                                                   |
+| -------------------- | ------------------ | ------------------------------------------------------------------------- |
+| `draft`              | Draft              | Half-filled, private to the student.                                      |
+| `submitted`          | Pending            | Sent to the class admin for a decision.                                   |
+| `approved`           | Approved           | Class admin approved. Covered sessions become `excused`, never `present`. |
+| `rejected`           | Rejected           | Class admin rejected. Attendance unchanged.                               |
+| `forwarded`          | Forwarded          | Included in a class admin's forwarding package. **Not a decision.**       |
+| `cancelled`          | Cancelled          | Withdrawn by the student, or cancelled by the class admin.                |
+| `revision_requested` | Revision Requested | Returned for edit and resubmit.                                           |
+| `needs_revision`     | Pending            | Legacy rows pre-migration; mapped to `submitted` like the web data layer. |
 
 Transitions: `draft → submitted` (submit); `submitted → approved/rejected`
 (class admin review); `submitted → revision_requested` (class admin);
@@ -110,8 +110,8 @@ Request**, Absence → **Leave** (bottom-tab label). Backend tables, columns
   (summary/complete PDFs built from evidence downloads) are generated on the
   Next.js server **first**, and only then is
   `complete_leave_forwarding(p_class_id, p_request_ids, p_recipient_name,
-  p_recipient_email, p_report_reference, p_report_format,
-  p_idempotency_key)` called — "a generation failure cannot leave a request
+p_recipient_email, p_report_reference, p_report_format,
+p_idempotency_key)` called — "a generation failure cannot leave a request
   falsely marked as forwarded". The native shell has no report-PDF generator
   and no reachable Next.js route, so calling the RPC directly would record a
   forwarding without any package existing. Until a mobile API route exists,

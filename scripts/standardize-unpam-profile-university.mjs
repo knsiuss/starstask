@@ -32,7 +32,11 @@ const SUPABASE_MODULE = path.join(
 );
 const PAGE_SIZE = 1000;
 const CANONICAL = "Universitas Pamulang";
-const TARGETS = new Set(["universitas pamulang", "pamulang university", "unpam"]);
+const TARGETS = new Set([
+  "universitas pamulang",
+  "pamulang university",
+  "unpam",
+]);
 
 const args = process.argv.slice(2);
 function valueFor(flag, fallback) {
@@ -76,10 +80,14 @@ function parseEnv(filePath) {
 
 async function findClient() {
   const env = parseEnv(envArg ? path.resolve(REPO_ROOT, envArg) : ENV_PATH);
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRole) {
-    throw new Error("Missing Supabase env in apps/web/.env.local or environment.");
+    throw new Error(
+      "Missing Supabase env in apps/web/.env.local or environment.",
+    );
   }
   const { createClient } = await import(pathToFileURL(SUPABASE_MODULE).href);
   return createClient(url, serviceRole, { auth: { persistSession: false } });
@@ -97,7 +105,9 @@ async function loadTargets(client, { exactOnly = false } = {}) {
     for (const row of data) {
       if (typeof row.university !== "string") continue;
       const isTarget = TARGETS.has(normalize(row.university));
-      const needsUpdate = exactOnly ? isTarget && row.university !== CANONICAL : isTarget;
+      const needsUpdate = exactOnly
+        ? isTarget && row.university !== CANONICAL
+        : isTarget;
       if (needsUpdate) rows.push({ id: row.id, university: row.university });
     }
     if (data.length < PAGE_SIZE) break;
@@ -112,7 +122,9 @@ async function summarize(client) {
     variants.set(row.university, (variants.get(row.university) ?? 0) + 1);
   }
   console.log(`matching rows: ${targets.length}`);
-  for (const [variant, count] of [...variants.entries()].sort((a, b) => b[1] - a[1])) {
+  for (const [variant, count] of [...variants.entries()].sort(
+    (a, b) => b[1] - a[1],
+  )) {
     console.log(`  ${String(count).padStart(4)} | ${variant}`);
   }
   return targets;
@@ -132,7 +144,9 @@ async function main() {
   const client = await findClient();
   if (!apply) {
     await summarize(client);
-    console.log("dry-run only; rerun with --apply --backup <file> to standardize");
+    console.log(
+      "dry-run only; rerun with --apply --backup <file> to standardize",
+    );
     return;
   }
 
@@ -144,10 +158,18 @@ async function main() {
     console.log("matching rows: 0 (already standardized)");
     return;
   }
-  fs.writeFileSync(backupPath, JSON.stringify({ rows, reason: "unpam-university-standardization" }, null, 2), {
-    encoding: "utf8",
-    mode: 0o600,
-  });
+  fs.writeFileSync(
+    backupPath,
+    JSON.stringify(
+      { rows, reason: "unpam-university-standardization" },
+      null,
+      2,
+    ),
+    {
+      encoding: "utf8",
+      mode: 0o600,
+    },
+  );
   console.log(`backup written: ${backupPath}`);
   console.log(`rows to update: ${rows.length}`);
 
@@ -162,11 +184,14 @@ async function main() {
       updated.push(row);
     }
     const remaining = await loadTargets(client, { exactOnly: true });
-    if (remaining.length > 0) throw new Error(`post-check left ${remaining.length} matching row(s)`);
+    if (remaining.length > 0)
+      throw new Error(`post-check left ${remaining.length} matching row(s)`);
     console.log(`updated ${updated.length} row(s) to ${CANONICAL}`);
   } catch (error) {
     await restoreBackup(client, updated);
-    throw new Error(`failed; rolled back ${updated.length} row(s): ${error.message ?? error}`);
+    throw new Error(
+      `failed; rolled back ${updated.length} row(s): ${error.message ?? error}`,
+    );
   }
 }
 

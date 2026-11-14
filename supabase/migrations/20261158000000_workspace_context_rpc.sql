@@ -17,14 +17,9 @@
 --
 -- Rollback: DROP FUNCTION public.get_workspace_context();
 -- Code falls back to the legacy multi-query path on error.
-
-CREATE OR REPLACE FUNCTION public.get_workspace_context()
-RETURNS jsonb
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION public.get_workspace_context () RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_user_id uuid := auth.uid();
   v_profile jsonb;
@@ -75,10 +70,15 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.get_workspace_context()
-FROM public, anon;
 
-GRANT EXECUTE ON FUNCTION public.get_workspace_context()
-TO authenticated;
+REVOKE ALL ON FUNCTION public.get_workspace_context ()
+FROM
+  public,
+  anon;
 
-COMMENT ON FUNCTION public.get_workspace_context() IS 'Workspace layout context in 1 roundtrip: profile, admin flags, unread count, beta status. Mirrors WorkspaceLayout lookups.';
+
+GRANT
+EXECUTE ON FUNCTION public.get_workspace_context () TO authenticated;
+
+
+COMMENT ON FUNCTION public.get_workspace_context () IS 'Workspace layout context in 1 roundtrip: profile, admin flags, unread count, beta status. Mirrors WorkspaceLayout lookups.';

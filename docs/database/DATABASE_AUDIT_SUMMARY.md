@@ -23,15 +23,15 @@ Phase 1 + read-only Phase 2 audit complete. **No production schema, RLS, functio
 
 ## Missing evidence / blocked
 
-| Item | Status |
-|---|---|
-| Full `pg_policies.qual` text review | NOT VERIFIED (dump pending) |
-| `pg_get_functiondef` + `search_path` full sweep | NOT VERIFIED (spot check clean) |
-| Storage object counts per bucket | UNKNOWN |
+| Item                                                | Status                                    |
+| --------------------------------------------------- | ----------------------------------------- |
+| Full `pg_policies.qual` text review                 | NOT VERIFIED (dump pending)               |
+| `pg_get_functiondef` + `search_path` full sweep     | NOT VERIFIED (spot check clean)           |
+| Storage object counts per bucket                    | UNKNOWN                                   |
 | `pg_stat_statements` top queries / EXPLAIN at scale | NOT COLLECTED (correctly avoided on prod) |
-| Check-constraint full count | NOT VERIFIED (query truncated) |
-| pg_cron / purge jobs running | UNKNOWN |
-| PITR status from dashboard | UNKNOWN |
+| Check-constraint full count                         | NOT VERIFIED (query truncated)            |
+| pg_cron / purge jobs running                        | UNKNOWN                                   |
+| PITR status from dashboard                          | UNKNOWN                                   |
 
 ## Diagrams
 

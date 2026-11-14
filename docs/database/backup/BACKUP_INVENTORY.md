@@ -18,13 +18,13 @@ Views/matviews: none inventoried in public (catalog check); functions/triggers/R
 
 ## Backup coverage
 
-| Component | Logical snapshot (`backup_20261104`) | Limitation |
-|---|---|---|
-| `public` data (52 tables) | Covered (CREATE TABLE AS) | No schema objects, sequences, indexes, triggers, functions, RLS |
-| Schema-only (DDL, indexes, RLS) | Not covered | Requires `pg_dump -s` — not performed |
-| `auth` schema | Not covered | Supabase managed, no safe export this phase |
-| Storage objects | Not covered | Only bucket/object counts inventoried; file bytes need separate procedure |
-| Extensions, cron jobs | Not covered | Extension versions not recorded yet |
+| Component                       | Logical snapshot (`backup_20261104`) | Limitation                                                                |
+| ------------------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `public` data (52 tables)       | Covered (CREATE TABLE AS)            | No schema objects, sequences, indexes, triggers, functions, RLS           |
+| Schema-only (DDL, indexes, RLS) | Not covered                          | Requires `pg_dump -s` — not performed                                     |
+| `auth` schema                   | Not covered                          | Supabase managed, no safe export this phase                               |
+| Storage objects                 | Not covered                          | Only bucket/object counts inventoried; file bytes need separate procedure |
+| Extensions, cron jobs           | Not covered                          | Extension versions not recorded yet                                       |
 
 ## Backup limitations
 

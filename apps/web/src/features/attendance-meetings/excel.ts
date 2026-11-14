@@ -21,10 +21,7 @@ import type {
 } from "@/lib/attendance/meeting-types";
 import type { ClassSummary } from "@/lib/db/classes";
 import type { CourseComponentGrades } from "@/lib/db/course-grades";
-import {
-  addBrandingFooterNote,
-  addBrandingHeader,
-} from "./excel-header";
+import { addBrandingFooterNote, addBrandingHeader } from "./excel-header";
 
 const TIME_ZONE = "Asia/Jakarta";
 const HEADER_FILL = "FF0F172A";
@@ -505,7 +502,12 @@ export async function buildRecapWorkbook(
           : presentScores.reduce((sum, score) => sum + score, 0) /
             presentScores.length;
 
-      gradeValues.push(scores[0] ?? null, scores[1] ?? null, scores[2] ?? null, finalGrade);
+      gradeValues.push(
+        scores[0] ?? null,
+        scores[1] ?? null,
+        scores[2] ?? null,
+        finalGrade,
+      );
     }
 
     dataRow.values = [...values, ...gradeValues];
@@ -560,9 +562,7 @@ export async function buildRecapWorkbook(
 
     if (grades) {
       for (let offset = 0; offset < GRADE_COLUMN_COUNT; offset += 1) {
-        const gradeCell = dataRow.getCell(
-          percentageColumn + 1 + offset,
-        );
+        const gradeCell = dataRow.getCell(percentageColumn + 1 + offset);
         gradeCell.alignment = { horizontal: "center", vertical: "middle" };
         gradeCell.numFmt = GRADE_NUM_FMT;
       }
@@ -1017,9 +1017,7 @@ function studentFinalGrades(
     const presentScores = COURSE_GRADE_COMPONENTS.flatMap((component) => {
       const score = grades[`${student.userId}:${component}`];
 
-      return typeof score === "number" && Number.isFinite(score)
-        ? [score]
-        : [];
+      return typeof score === "number" && Number.isFinite(score) ? [score] : [];
     });
 
     if (presentScores.length === 0) {
@@ -1104,13 +1102,15 @@ function addAttendanceGraduationSummary(
     meetingCount === 0 || recap.students.length === 0
       ? "—"
       : `${(
-          recap.students.reduce(
+          (recap.students.reduce(
             (sum, student) => sum + student.totals.present,
             0,
           ) /
-          (meetingCount * recap.students.length) *
+            (meetingCount * recap.students.length)) *
           100
-        ).toFixed(1).replace(".", ",")}%`;
+        )
+          .toFixed(1)
+          .replace(".", ",")}%`;
   const rows: [string, number | string][] = [
     ["Total Mahasiswa", recap.students.length],
     ["Rata-rata Kehadiran", attendance],

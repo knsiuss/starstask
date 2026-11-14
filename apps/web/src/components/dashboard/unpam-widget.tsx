@@ -20,7 +20,10 @@ export function UnpamWidget({ events }: { events: PluginEvent[] }) {
       </CardHeader>
       <ul className="space-y-2 px-4 pb-4">
         {upcoming.map((e, i) => (
-          <li key={i} className="text-sm">
+          <li
+            key={i}
+            className="text-sm"
+          >
             <span className="font-medium">{e.title}</span>
             <span className="text-muted-foreground"> • {e.startsAt}</span>
           </li>

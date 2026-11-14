@@ -14,7 +14,6 @@
 --
 -- `cancelled` is reachable from `draft` and `submitted` only. `forwarded` is
 -- terminal: once a request is in a package, StarsTask no longer changes it.
-
 -- ---------------------------------------------------------------------------
 -- 1. Fold the retired revision state into submitted
 -- ---------------------------------------------------------------------------
@@ -30,9 +29,9 @@ WHERE
 -- 2. Cancellation columns
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.leave_requests
-ADD COLUMN if NOT EXISTS cancelled_at timestamptz,
-ADD COLUMN if NOT EXISTS cancelled_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
-ADD COLUMN if NOT EXISTS cancellation_note text;
+ADD COLUMN IF NOT EXISTS cancelled_at timestamptz,
+ADD COLUMN IF NOT EXISTS cancelled_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS cancellation_note text;
 
 
 -- ---------------------------------------------------------------------------
@@ -55,9 +54,7 @@ DROP CONSTRAINT if EXISTS leave_requests_revision_count_range;
 
 
 ALTER TABLE public.leave_requests
-ADD CONSTRAINT leave_requests_status_allowed CHECK (
-  status IN ('draft', 'submitted', 'forwarded', 'cancelled')
-);
+ADD CONSTRAINT leave_requests_status_allowed CHECK (status IN ('draft', 'submitted', 'forwarded', 'cancelled'));
 
 
 -- A cancelled draft was never completed, so the completeness rule only applies
@@ -77,9 +74,7 @@ ADD CONSTRAINT leave_requests_complete CHECK (
 
 
 ALTER TABLE public.leave_requests
-ADD CONSTRAINT leave_requests_cancel_consistency CHECK (
-  (status = 'cancelled') = (cancelled_at IS NOT NULL)
-);
+ADD CONSTRAINT leave_requests_cancel_consistency CHECK ((status = 'cancelled') = (cancelled_at IS NOT NULL));
 
 
 ALTER TABLE public.leave_requests
@@ -100,8 +95,8 @@ ADD CONSTRAINT leave_requests_cancellation_note_length CHECK (
 -- 4. Retired revision bookkeeping
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.leave_requests
-DROP COLUMN if EXISTS revision_count,
-DROP COLUMN if EXISTS last_review_note;
+DROP COLUMN IF EXISTS revision_count,
+DROP COLUMN IF EXISTS last_review_note;
 
 
 -- ---------------------------------------------------------------------------
@@ -181,7 +176,7 @@ ADD CONSTRAINT notification_events_kind_allowed CHECK (
 -- ---------------------------------------------------------------------------
 -- 8. Student edits happen on a draft only
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.update_leave_request (
+CREATE OR REPLACE FUNCTION public.update_leave_request (
   p_request_id uuid,
   p_leave_start_date date,
   p_leave_end_date date,
@@ -239,7 +234,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE function public.record_leave_request_ocr (
+CREATE OR REPLACE FUNCTION public.record_leave_request_ocr (
   p_request_id uuid,
   p_provider text,
   p_status text,
@@ -301,10 +296,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE function public.confirm_leave_request_ocr (
-  p_request_id uuid,
-  p_field_sources jsonb
-) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.confirm_leave_request_ocr (p_request_id uuid, p_field_sources jsonb) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -359,7 +351,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE function public.add_leave_request_evidence (
+CREATE OR REPLACE FUNCTION public.add_leave_request_evidence (
   p_request_id uuid,
   p_storage_path text,
   p_original_filename text,
@@ -471,7 +463,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE function public.remove_leave_request_evidence (p_evidence_id uuid) returns text language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.remove_leave_request_evidence (p_evidence_id uuid) returns text language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -537,7 +529,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 9. Submit is a one-way step out of draft
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.submit_leave_request (p_request_id uuid) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.submit_leave_request (p_request_id uuid) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -660,10 +652,7 @@ $$;
  * The reason is optional and is kept for the audit trail only. It is never put
  * into a push payload, because it can describe medical circumstances.
  */
-CREATE OR REPLACE FUNCTION public.cancel_leave_request (
-  p_request_id uuid,
-  p_note text DEFAULT NULL
-) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.cancel_leave_request (p_request_id uuid, p_note text DEFAULT NULL) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -815,11 +804,7 @@ DROP FUNCTION if EXISTS public.request_leave_revision (uuid, text);
 -- column-level grant; the new columns need their own.
 GRANT
 SELECT
-  (
-    cancelled_at,
-    cancelled_by,
-    cancellation_note
-  ) ON public.leave_requests TO authenticated;
+  (cancelled_at, cancelled_by, cancellation_note) ON public.leave_requests TO authenticated;
 
 
 REVOKE ALL ON function public.cancel_leave_request (uuid, text)
@@ -829,4 +814,4 @@ FROM
 
 
 GRANT
-execute ON function public.cancel_leave_request (uuid, text) TO authenticated;
+EXECUTE ON function public.cancel_leave_request (uuid, text) TO authenticated;

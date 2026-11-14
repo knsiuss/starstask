@@ -47,28 +47,35 @@ CREATE TABLE IF NOT EXISTS public.academic_units (
     code IS NULL
     OR char_length(btrim(code)) BETWEEN 1 AND 40
   ),
-  CONSTRAINT academic_units_status_allowed CHECK (
-    status IN ('draft', 'active', 'archived')
-  ),
+  CONSTRAINT academic_units_status_allowed CHECK (status IN ('draft', 'active', 'archived')),
   CONSTRAINT academic_units_no_self_parent CHECK (parent_id IS DISTINCT FROM id)
 );
 
 
 COMMENT ON TABLE public.academic_units IS 'Flexible per-university academic organization tree (ADR-003). Tenant-owned: children stay in the same university via a composite parent FK. Written only by platform operators via service_role; clients can read units of universities where they hold an active membership.';
 
+
 COMMENT ON COLUMN public.academic_units.parent_id IS 'Parent unit, or NULL for top-level units. Cross-university parents are rejected by the composite FK (parent_id, university_id).';
+
+
 COMMENT ON COLUMN public.academic_units.code IS 'Short code of the unit (e.g. faculty code). Unique within a university under one parent when present.';
+
+
 COMMENT ON COLUMN public.academic_units.unit_type IS 'Free-type unit kind; seed values: faculty, department, program, branch, other. Not an enum by design (flexible hierarchy, §09).';
+
+
 COMMENT ON COLUMN public.academic_units.status IS 'Lifecycle: draft -> active -> archived.';
+
 
 -- Enables the composite parent FK below (referenced side must be unique).
 CREATE UNIQUE INDEX IF NOT EXISTS academic_units_id_university_unique ON public.academic_units (id, university_id);
 
+
 -- Composite parent FK: a unit's parent must live in the same university.
 -- MATCH SIMPLE (default): rows with parent_id IS NULL skip the check.
 ALTER TABLE public.academic_units
-ADD CONSTRAINT academic_units_parent_same_university FOREIGN KEY (parent_id, university_id)
-REFERENCES public.academic_units (id, university_id) ON DELETE RESTRICT;
+ADD CONSTRAINT academic_units_parent_same_university FOREIGN KEY (parent_id, university_id) REFERENCES public.academic_units (id, university_id) ON DELETE RESTRICT;
+
 
 -- Duplicate-code prevention scoped to (university_id, parent_id, code), per
 -- §23.3. Postgres treats NULLs as distinct in plain unique constraints, so
@@ -78,12 +85,15 @@ WHERE
   parent_id IS NOT NULL
   AND code IS NOT NULL;
 
+
 CREATE UNIQUE INDEX IF NOT EXISTS academic_units_code_unique_top_level ON public.academic_units (university_id, lower(btrim(code)))
 WHERE
   parent_id IS NULL
   AND code IS NOT NULL;
 
+
 CREATE INDEX IF NOT EXISTS academic_units_university_status_idx ON public.academic_units (university_id, status);
+
 
 CREATE TRIGGER academic_units_set_updated_at
 BEFORE UPDATE ON public.academic_units FOR EACH ROW
@@ -133,6 +143,7 @@ $$;
 
 COMMENT ON FUNCTION public.check_academic_unit_cycle () IS 'Rejects academic-unit parent chains that loop back to the row being written. Paired with the composite parent FK for cross-university rejection.';
 
+
 CREATE TRIGGER academic_units_check_cycle
 BEFORE INSERT OR UPDATE OF parent_id ON public.academic_units FOR EACH ROW
 EXECUTE FUNCTION public.check_academic_unit_cycle ();
@@ -165,42 +176,55 @@ CREATE TABLE IF NOT EXISTS public.student_identities (
   updated_at timestamptz NOT NULL DEFAULT now(),
   -- One identity row per membership: the identity IS the academic persona.
   CONSTRAINT student_identities_membership_unique UNIQUE (university_membership_id),
-  CONSTRAINT student_identities_student_id_format CHECK (
-    student_id ~ '^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$'
-  ),
+  CONSTRAINT student_identities_student_id_format CHECK (student_id ~ '^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$'),
   CONSTRAINT student_identities_entry_year_range CHECK (
     entry_year IS NULL
     OR entry_year BETWEEN 1950 AND 2100
   ),
-  CONSTRAINT student_identities_status_allowed CHECK (
-    status IN ('pending', 'active', 'suspended', 'graduated')
-  ),
+  CONSTRAINT student_identities_status_allowed CHECK (status IN ('pending', 'active', 'suspended', 'graduated')),
   -- Denormalized tenant key must agree with the membership's university.
-  CONSTRAINT student_identities_membership_same_university FOREIGN KEY (university_membership_id, university_id)
-    REFERENCES public.university_memberships (id, university_id) ON DELETE CASCADE,
+  CONSTRAINT student_identities_membership_same_university FOREIGN KEY (university_membership_id, university_id) REFERENCES public.university_memberships (id, university_id) ON DELETE CASCADE,
   -- Unit must belong to the same university (MATCH SIMPLE: NULL skips).
-  CONSTRAINT student_identities_unit_same_university FOREIGN KEY (academic_unit_id, university_id)
-    REFERENCES public.academic_units (id, university_id) ON DELETE RESTRICT
+  CONSTRAINT student_identities_unit_same_university FOREIGN KEY (academic_unit_id, university_id) REFERENCES public.academic_units (id, university_id) ON DELETE RESTRICT
 );
 
 
 COMMENT ON TABLE public.student_identities IS 'Per-university academic identity for a membership persona (ADR-001). Rows are created/changed only by platform operators via the platform RPC or service_role; clients can read only their own rows. Not every member has one (not every member is a student).';
 
+
 COMMENT ON COLUMN public.student_identities.university_membership_id IS 'The university_memberships persona this identity describes. One identity per membership (UNIQUE). CASCADE: identity is a pure extension of the membership and dies with it.';
+
+
 COMMENT ON COLUMN public.student_identities.university_id IS 'Denormalized tenant key, kept consistent with the membership''s university by the composite FK. RESTRICT: a university in use cannot be deleted.';
+
+
 COMMENT ON COLUMN public.student_identities.academic_unit_id IS 'Program/department unit, or NULL when unassigned. Composite FK rejects units from another university.';
+
+
 COMMENT ON COLUMN public.student_identities.student_id IS 'Student ID number (NIM) at this university only. Unique within the university (case-insensitive, trimmed), mirroring profiles_nim_unique.';
+
+
 COMMENT ON COLUMN public.student_identities.entry_year IS 'Entry cohort year (ADR-004). Independent of academic periods (ADR-004 / §10.6): enrolling in a later period never changes it. Nullable in the expand phase; the contract step may tighten to NOT NULL once verified identities always carry one.';
+
+
 COMMENT ON COLUMN public.student_identities.status IS 'Persona lifecycle: pending -> active -> suspended/graduated. Graduated rows may be reactivated to active by the platform RPC (same row, stable identity); graduated_at is then cleared.';
+
+
 COMMENT ON COLUMN public.student_identities.started_at IS 'When the identity first became active. Optional repair: set by the platform RPC on first activation.';
+
+
 COMMENT ON COLUMN public.student_identities.graduated_at IS 'When the identity graduated. Non-null only while status = ''graduated'' in RPC-managed rows; reactivation clears it.';
+
 
 -- One student_id number per university, case-insensitive and trimmed.
 CREATE UNIQUE INDEX IF NOT EXISTS student_identities_student_id_unique ON public.student_identities (university_id, lower(btrim(student_id)));
 
+
 CREATE INDEX IF NOT EXISTS student_identities_membership_idx ON public.student_identities (university_membership_id);
 
+
 CREATE UNIQUE INDEX IF NOT EXISTS student_identities_id_university_unique ON public.student_identities (id, university_id);
+
 
 CREATE TRIGGER student_identities_set_updated_at
 BEFORE UPDATE ON public.student_identities FOR EACH ROW
@@ -240,16 +264,20 @@ COMMENT ON FUNCTION public.is_university_member (uuid) IS 'True when the caller 
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.academic_units ENABLE ROW LEVEL SECURITY;
 
+
 REVOKE ALL ON public.academic_units
 FROM
   anon,
   authenticated;
 
+
 GRANT
 SELECT
   ON public.academic_units TO authenticated;
 
+
 DROP POLICY IF EXISTS academic_units_member_read ON public.academic_units;
+
 
 CREATE POLICY academic_units_member_read ON public.academic_units FOR
 SELECT
@@ -261,30 +289,34 @@ SELECT
 
 ALTER TABLE public.student_identities ENABLE ROW LEVEL SECURITY;
 
+
 REVOKE ALL ON public.student_identities
 FROM
   anon,
   authenticated;
 
+
 GRANT
 SELECT
   ON public.student_identities TO authenticated;
 
+
 DROP POLICY IF EXISTS student_identities_owner_read ON public.student_identities;
+
 
 CREATE POLICY student_identities_owner_read ON public.student_identities FOR
 SELECT
   TO authenticated USING (
     public.is_platform_admin ()
-    OR exists (
-      select
+    OR EXISTS (
+      SELECT
         1
-      from
+      FROM
         public.university_memberships m
-      where
+      WHERE
         m.id = university_membership_id
-        and m.user_id = (
-          select
+        AND m.user_id = (
+          SELECT
             auth.uid ()
         )
     )
@@ -446,8 +478,10 @@ FROM
   anon,
   authenticated;
 
+
 GRANT
 EXECUTE ON FUNCTION public.platform_upsert_student_identity (uuid, uuid, text, int, text) TO authenticated;
+
 
 REVOKE ALL ON FUNCTION public.check_academic_unit_cycle ()
 FROM
@@ -455,9 +489,11 @@ FROM
   anon,
   authenticated;
 
+
 REVOKE ALL ON FUNCTION public.is_university_member (uuid)
 FROM
   public;
+
 
 GRANT
 EXECUTE ON FUNCTION public.is_university_member (uuid) TO authenticated;

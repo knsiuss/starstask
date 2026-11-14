@@ -40,7 +40,9 @@ function findLucideDir() {
     );
     if (existsSync(candidate)) return candidate;
   }
-  throw new Error("lucide-react not found in node_modules/.pnpm; run pnpm install first.");
+  throw new Error(
+    "lucide-react not found in node_modules/.pnpm; run pnpm install first.",
+  );
 }
 
 const ICON_DIRS = [
@@ -106,8 +108,7 @@ const MATERIAL_FALLBACK = {
 
 function collectUsedIconNames() {
   const names = new Set();
-  const importRe =
-    /import\s*\{([^}]*)\}\s*from\s*["']lucide-react["']/g;
+  const importRe = /import\s*\{([^}]*)\}\s*from\s*["']lucide-react["']/g;
   const files = [];
   for (const dir of ICON_DIRS) {
     const base = path.join(repoRoot, dir);
@@ -115,7 +116,8 @@ function collectUsedIconNames() {
       for (const entry of readdirSync(d, { withFileTypes: true })) {
         const full = path.join(d, entry.name);
         if (entry.isDirectory()) {
-          if (entry.name !== "node_modules" && entry.name !== ".next") walk(full);
+          if (entry.name !== "node_modules" && entry.name !== ".next")
+            walk(full);
           continue;
         }
         if (/\.(tsx?|jsx?)$/.test(entry.name)) files.push(full);
@@ -151,7 +153,9 @@ function resolveIconFile(dir, kebab) {
   let file = path.join(dir, `${kebab}.mjs`);
   if (!existsSync(file)) return null;
   let src = readFileSync(file, "utf8");
-  const reexport = src.match(/export\s*\{\s*default\s*\}\s*from\s*['"]\.\/([^'"]+)\.mjs['"]/);
+  const reexport = src.match(
+    /export\s*\{\s*default\s*\}\s*from\s*['"]\.\/([^'"]+)\.mjs['"]/,
+  );
   if (reexport) {
     file = path.join(dir, `${reexport[1]}.mjs`);
     src = readFileSync(file, "utf8");
@@ -204,7 +208,9 @@ function attrsToKotlin(attrs) {
     const value = String(raw);
     switch (key) {
       case "d":
-        out.push(`pathData = PathParser().parsePathString("${value}").toNodes()`);
+        out.push(
+          `pathData = PathParser().parsePathString("${value}").toNodes()`,
+        );
         break;
       case "cx":
       case "cy":
@@ -252,7 +258,10 @@ function attrsToKotlin(attrs) {
           .split(/\s+/)
           .map((p) => p.split(",").map(Number));
         const body = pts
-          .map((p, i) => `                    ${i === 0 ? "MoveTo" : "LineTo"}(${num(p[0])}, ${num(p[1])}),`)
+          .map(
+            (p, i) =>
+              `                    ${i === 0 ? "MoveTo" : "LineTo"}(${num(p[0])}, ${num(p[1])}),`,
+          )
           .join("\n");
         out.push(`pathData = listOf(\n${body}\n                )`);
         return out;
@@ -333,7 +342,7 @@ function generate() {
     "private val strokeSpec = SolidColor(Color.Black)",
     "",
     "private fun arcPath(cx: Float, cy: Float, r: Float): String =",
-    "    \"M ${cx - r} $cy a $r $r 0 1 0 ${r * 2} 0 a $r $r 0 1 0 ${-r * 2} 0\"",
+    '    "M ${cx - r} $cy a $r $r 0 1 0 ${r * 2} 0 a $r $r 0 1 0 ${-r * 2} 0"',
     "",
     "private fun roundedRectPath(",
     "    x: Float,",
@@ -343,12 +352,15 @@ function generate() {
     "    rx: Float,",
     "    ry: Float,",
     "): String =",
-    "    \"M ${x + rx} $y h ${w - rx * 2} a $rx $ry 0 0 1 $rx $ry v ${h - ry * 2} a $rx $ry 0 0 1 ${-rx} $ry h ${-w + rx * 2} a $rx $ry 0 0 1 ${-rx} ${-ry} v ${-h + ry * 2} a $rx $ry 0 0 1 $rx ${-ry} z\"",
+    '    "M ${x + rx} $y h ${w - rx * 2} a $rx $ry 0 0 1 $rx $ry v ${h - ry * 2} a $rx $ry 0 0 1 ${-rx} $ry h ${-w + rx * 2} a $rx $ry 0 0 1 ${-rx} ${-ry} v ${-h + ry * 2} a $rx $ry 0 0 1 $rx ${-ry} z"',
     "",
   ];
 
   const fallbackAliases = Object.entries(MATERIAL_FALLBACK)
-    .map(([material, lucide]) => `    val ${material}: ImageVector get() = Lucide.${lucide}\n`)
+    .map(
+      ([material, lucide]) =>
+        `    val ${material}: ImageVector get() = Lucide.${lucide}\n`,
+    )
     .join("");
 
   const body = [
@@ -371,7 +383,9 @@ function generate() {
   ];
 
   if (skipped.length) {
-    process.stderr.write(`skipped ${skipped.length} icon(s):\n${skipped.join("\n")}\n`);
+    process.stderr.write(
+      `skipped ${skipped.length} icon(s):\n${skipped.join("\n")}\n`,
+    );
   }
   if (multiElement.length) {
     process.stderr.write(
@@ -387,7 +401,9 @@ const generated = generate();
 if (checkOnly) {
   const current = existsSync(outPath) ? readFileSync(outPath, "utf8") : "";
   if (current !== generated) {
-    process.stderr.write(`check failed: ${outPath} is stale. Re-run the generator.\n`);
+    process.stderr.write(
+      `check failed: ${outPath} is stale. Re-run the generator.\n`,
+    );
     process.exit(1);
   }
   process.stdout.write(`check passed: ${outPath}\n`);

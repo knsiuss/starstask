@@ -15,11 +15,9 @@
 -- set_university_admin_role, list_university_members; restore joined_via CHECKs
 -- and notification_events_kind_allowed from 20261147000000/20270114000000.
 -- =====================================================================
-
 -- ---------------------------------------------------------------------------
 -- create_class_as_lecturer
 -- ---------------------------------------------------------------------------
-
 CREATE OR REPLACE FUNCTION public.create_class_as_lecturer (
   p_proposed_slug text,
   p_proposed_name text,
@@ -31,11 +29,9 @@ CREATE OR REPLACE FUNCTION public.create_class_as_lecturer (
   p_lecturer_name text DEFAULT NULL,
   p_proposed_class_code text DEFAULT NULL,
   p_university_id uuid DEFAULT NULL
-) RETURNS uuid
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_user uuid := auth.uid();
   v_university uuid := p_university_id;
@@ -216,18 +212,23 @@ EXCEPTION
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.create_class_as_lecturer (text, text, text, text, text, text, text, text, text, uuid)
-FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.create_class_as_lecturer (text, text, text, text, text, text, text, text, text, uuid)
-TO authenticated;
 
-COMMENT ON FUNCTION public.create_class_as_lecturer (text, text, text, text, text, text, text, text, text, uuid) IS
-  'Direct class creation for lecturer/university_admin personas. Bypasses the application queue; mirrors decide_class_application. Actor is auth.uid() evaluated in-function.';
+REVOKE ALL ON FUNCTION public.create_class_as_lecturer (text, text, text, text, text, text, text, text, text, uuid)
+FROM
+  public,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.create_class_as_lecturer (text, text, text, text, text, text, text, text, text, uuid) TO authenticated;
+
+
+COMMENT ON FUNCTION public.create_class_as_lecturer (text, text, text, text, text, text, text, text, text, uuid) IS 'Direct class creation for lecturer/university_admin personas. Bypasses the application queue; mirrors decide_class_application. Actor is auth.uid() evaluated in-function.';
+
 
 -- ---------------------------------------------------------------------------
 -- list_university_members: tenant-scoped, PII-light read.
 -- ---------------------------------------------------------------------------
-
 CREATE OR REPLACE FUNCTION public.list_university_members (
   p_university_id uuid,
   p_search text DEFAULT NULL,
@@ -244,12 +245,9 @@ CREATE OR REPLACE FUNCTION public.list_university_members (
   status text,
   created_at timestamptz,
   total_count bigint
-)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+) LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_limit integer := least(greatest(coalesce(p_limit, 25), 1), 50);
   v_offset integer := greatest(coalesce(p_offset, 0), 0);
@@ -312,30 +310,33 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.list_university_members (uuid, text, text, integer, integer)
-FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.list_university_members (uuid, text, text, integer, integer)
-TO authenticated;
 
-COMMENT ON FUNCTION public.list_university_members (uuid, text, text, integer, integer) IS
-  'Tenant-scoped member list for university admins. Never returns emails; display name, student id, role, status only. total_count is a window count over the filtered set.';
+REVOKE ALL ON FUNCTION public.list_university_members (uuid, text, text, integer, integer)
+FROM
+  public,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.list_university_members (uuid, text, text, integer, integer) TO authenticated;
+
+
+COMMENT ON FUNCTION public.list_university_members (uuid, text, text, integer, integer) IS 'Tenant-scoped member list for university admins. Never returns emails; display name, student id, role, status only. total_count is a window count over the filtered set.';
+
 
 -- ---------------------------------------------------------------------------
 -- set_university_member_role: promote/demote student <-> lecturer (+ explicit
 -- university_admin by platform admin or another university_admin of the same tenant).
 -- Anti-self-elevation: a caller cannot change their own row.
 -- ---------------------------------------------------------------------------
-
 CREATE OR REPLACE FUNCTION public.set_university_member_role (
   p_university_id uuid,
   p_user_id uuid,
   p_role text,
   p_reason text DEFAULT NULL
-) RETURNS uuid
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_caller uuid := auth.uid();
   v_membership public.university_memberships;
@@ -431,10 +432,15 @@ EXCEPTION
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.set_university_member_role (uuid, uuid, text, text)
-FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.set_university_member_role (uuid, uuid, text, text)
-TO authenticated;
 
-COMMENT ON FUNCTION public.set_university_member_role (uuid, uuid, text, text) IS
-  'Promote/demote member role. University admins scope to their own university; platform admins are unscoped. No caller may change their own membership row.';
+REVOKE ALL ON FUNCTION public.set_university_member_role (uuid, uuid, text, text)
+FROM
+  public,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.set_university_member_role (uuid, uuid, text, text) TO authenticated;
+
+
+COMMENT ON FUNCTION public.set_university_member_role (uuid, uuid, text, text) IS 'Promote/demote member role. University admins scope to their own university; platform admins are unscoped. No caller may change their own membership row.';

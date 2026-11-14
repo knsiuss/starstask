@@ -38,9 +38,7 @@ export default async function AttendanceMeetingPage({
   const viewer = await getSessionUser();
 
   if (!viewer) {
-    redirect(
-      buildLoginPath(`/app/classes/${slug}/attendance/meetings/${id}`),
-    );
+    redirect(buildLoginPath(`/app/classes/${slug}/attendance/meetings/${id}`));
   }
 
   const parsedId = sessionIdSchema.safeParse(id);

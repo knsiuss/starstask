@@ -3,6 +3,7 @@
 ## What changed (migration `20261119000000_phase5l_security_hardening.sql`)
 
 ### 1. Anon EXECUTE revoked (HIGH fix)
+
 `REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM anon;` then
 allow-list re-grants for intentionally public helpers only:
 `get_invitation_preview`, `list_discussion_sessions`, `can_view_session`,
@@ -30,6 +31,7 @@ anon-reachable; they are invoked only from other SECDEF functions or
 service_role workers.
 
 ### 2. search_path hardening (MEDIUM fix)
+
 All SECDEF functions that had `search_path=public, pg_temp` now use
 `search_path=''`, set per-OID (overloads handled). Bodies already use
 public-qualified names (`public.audit_logs`, `public.class_admins`, …).
@@ -38,19 +40,21 @@ and left at `public, pg_temp`; they are internal-only and documented
 in the rollback plan.
 
 ### 3. Sensitive RPC review
-| Function | Why SECDEF | search_path | Grants after | Auth |
-|---|---|---|---|---|
-| `has_class_permission` | reads admin assignments across RLS | `''` | authenticated | `auth.uid()` matched to assignment user/identity |
-| `session_checkin_summary` (anon OK) | derives config, never raw coords | `''` | anon+authenticated (allow-listed) | `can_view_session` gate |
-| `session_checkin_summary_many` (Phase 5K) | batched derive | `''` | authenticated only | `can_view_session` per row |
-| `validate_grade_entry` | pure validation | `''` | authenticated | no data access (checks only) |
-| `platform_upsert_student_identity` | writes tenant data | `''` | authenticated (gated) | `is_platform_admin()` required |
-| `.from("audit_logs").insert` (app) | audit writes | — | service_role path | caller verified; see below |
+
+| Function                                  | Why SECDEF                         | search_path | Grants after                      | Auth                                             |
+| ----------------------------------------- | ---------------------------------- | ----------- | --------------------------------- | ------------------------------------------------ |
+| `has_class_permission`                    | reads admin assignments across RLS | `''`        | authenticated                     | `auth.uid()` matched to assignment user/identity |
+| `session_checkin_summary` (anon OK)       | derives config, never raw coords   | `''`        | anon+authenticated (allow-listed) | `can_view_session` gate                          |
+| `session_checkin_summary_many` (Phase 5K) | batched derive                     | `''`        | authenticated only                | `can_view_session` per row                       |
+| `validate_grade_entry`                    | pure validation                    | `''`        | authenticated                     | no data access (checks only)                     |
+| `platform_upsert_student_identity`        | writes tenant data                 | `''`        | authenticated (gated)             | `is_platform_admin()` required                   |
+| `.from("audit_logs").insert` (app)        | audit writes                       | —           | service_role path                 | caller verified; see below                       |
 
 No function was converted from SECDEF to INVOKER (would break RLS
 policies that deliberately call predicates to avoid recursion).
 
 ## Verification
+
 `supabase/tests/phase5l-grants-validation.sql`:
 §1 anon-on-write-RPC violations = 0; §2 public helpers still granted;
 §3 no SECDEF function with `pg_temp` remains.

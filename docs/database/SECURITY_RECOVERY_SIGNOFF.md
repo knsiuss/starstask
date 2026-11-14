@@ -56,18 +56,18 @@ None confirmed exploitable today from the evidence gathered. The two items that 
 
 Fixtures: 2 universities (U1/U2) × 2 classes (C1 in U1, C2 in U1) × users: `student_A` (C1), `admin_A` (C1), `student_B` (C2), `student_X` (U2), `anon`, `outsider` (no class).
 
-| # | Test | Expected |
-|---|---|---|
-| T1 | `anon` reads `courses`, `profiles`, `classes` (active), `assignments` (public) | Allowed (catalogue) |
-| T2 | `anon` reads 11 private-bucket objects / `leave-evidence` | Denied |
-| T3 | `student_B` reads `class_members` of C1; unauthenticated bucket read of `class-media` object (if any) | Denied / read-only per policy doc |
-| T4 | `student_X` (cross-university) reads C1 `leave_requests`, `discussion_sessions`, `course_materials` | Denied (fails today if university column absent — documents gap) |
-| T5 | `student_A` calls `delete_class`, `delete_class_subject`, `assign_class_admin` with C1 id | Denied (must be admin) |
-| T6 | `student_B` calls `record_attendance_correction` / `check_in_attendance_meeting` with C1 session id | Denied / geofence error, not success |
-| T7 | `student_A` uploads `leave-evidence` to another uid's folder path | Denied |
-| T8 | `admin_A` writes `course_materials` for C2 | Denied |
-| T9 | Each SECURITY DEFINER mutator invoked with foreign `p_class_id` | Denied at function level AND RLS level |
-| T10 | `anon` executes `consume_rate_limit` / `purge_*` | Denied (internal RPC guard) |
+| #   | Test                                                                                                  | Expected                                                         |
+| --- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| T1  | `anon` reads `courses`, `profiles`, `classes` (active), `assignments` (public)                        | Allowed (catalogue)                                              |
+| T2  | `anon` reads 11 private-bucket objects / `leave-evidence`                                             | Denied                                                           |
+| T3  | `student_B` reads `class_members` of C1; unauthenticated bucket read of `class-media` object (if any) | Denied / read-only per policy doc                                |
+| T4  | `student_X` (cross-university) reads C1 `leave_requests`, `discussion_sessions`, `course_materials`   | Denied (fails today if university column absent — documents gap) |
+| T5  | `student_A` calls `delete_class`, `delete_class_subject`, `assign_class_admin` with C1 id             | Denied (must be admin)                                           |
+| T6  | `student_B` calls `record_attendance_correction` / `check_in_attendance_meeting` with C1 session id   | Denied / geofence error, not success                             |
+| T7  | `student_A` uploads `leave-evidence` to another uid's folder path                                     | Denied                                                           |
+| T8  | `admin_A` writes `course_materials` for C2                                                            | Denied                                                           |
+| T9  | Each SECURITY DEFINER mutator invoked with foreign `p_class_id`                                       | Denied at function level AND RLS level                           |
+| T10 | `anon` executes `consume_rate_limit` / `purge_*`                                                      | Denied (internal RPC guard)                                      |
 
 All tests run against isolated staging with synthetic data; destructive tests forbidden on prod. Evidence = SQL returning 0 rows / RPC error for unauthorized cases.
 

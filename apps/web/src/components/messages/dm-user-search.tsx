@@ -49,10 +49,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
         setUsers(data.users ?? []);
         setError(null);
       } catch (searchError) {
-        if (
-          searchError instanceof Error &&
-          searchError.name === "AbortError"
-        ) {
+        if (searchError instanceof Error && searchError.name === "AbortError") {
           return;
         }
         setUsers([]);

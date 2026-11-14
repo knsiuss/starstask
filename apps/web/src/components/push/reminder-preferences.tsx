@@ -122,17 +122,13 @@ export function ReminderPreferences({
           label="24 hours before a session"
           description="Sent for sessions you RSVP'd going to."
           checked={preferences.sessionReminder24h}
-          onChange={(checked) =>
-            void update({ sessionReminder24h: checked })
-          }
+          onChange={(checked) => void update({ sessionReminder24h: checked })}
         />
         <ToggleRow
           label="3 hours before a session"
           description="Cancelled sessions never trigger a reminder."
           checked={preferences.sessionReminder3h}
-          onChange={(checked) =>
-            void update({ sessionReminder3h: checked })
-          }
+          onChange={(checked) => void update({ sessionReminder3h: checked })}
         />
       </fieldset>
 

@@ -12,11 +12,10 @@
 --     └─────────────────── resubmit ───────────────┘
 --
 -- There is no edge into `approved` or `rejected`; those statuses do not exist.
-
 -- ---------------------------------------------------------------------------
 -- Read helpers used by RLS policies and by the app
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.leave_request_class_id (p_request_id uuid) returns uuid language sql stable security definer
+CREATE OR REPLACE FUNCTION public.leave_request_class_id (p_request_id uuid) returns uuid language sql stable security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -29,7 +28,7 @@ where
 $$;
 
 
-CREATE OR REPLACE function public.is_leave_request_owner (p_request_id uuid) returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.is_leave_request_owner (p_request_id uuid) returns boolean language sql stable security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -50,7 +49,7 @@ $$;
 
 
 /** True when the caller owns the request or administers its class. */
-CREATE OR REPLACE function public.can_view_leave_request (p_request_id uuid) returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.can_view_leave_request (p_request_id uuid) returns boolean language sql stable security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -74,7 +73,7 @@ $$;
 
 
 /** Reviewing is a class-admin capability; a student can never review. */
-CREATE OR REPLACE function public.can_review_leave_request (p_request_id uuid) returns boolean language sql stable security definer
+CREATE OR REPLACE FUNCTION public.can_review_leave_request (p_request_id uuid) returns boolean language sql stable security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -98,7 +97,7 @@ $$;
  * request. A malformed key returns null and the storage policy then denies
  * access instead of raising.
  */
-CREATE OR REPLACE function public.leave_request_id_from_object_path (p_name text) returns uuid language plpgsql stable
+CREATE OR REPLACE FUNCTION public.leave_request_id_from_object_path (p_name text) returns uuid language plpgsql stable
 SET
   search_path = public,
   pg_temp AS $$
@@ -130,7 +129,7 @@ $$;
  * OCR output, and no evidence link ever reaches a notification, because the
  * push payload is visible on a lock screen.
  */
-CREATE OR REPLACE function public.notify_class_leave_reviewers (
+CREATE OR REPLACE FUNCTION public.notify_class_leave_reviewers (
   p_class_id uuid,
   p_kind text,
   p_title text,
@@ -168,13 +167,13 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Student: create and edit
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.create_leave_request (
+CREATE OR REPLACE FUNCTION public.create_leave_request (
   p_class_id uuid,
-  p_leave_start_date date DEFAULT null,
-  p_leave_end_date date DEFAULT null,
-  p_reason_category text DEFAULT null,
-  p_explanation text DEFAULT null,
-  p_document_issue_date date DEFAULT null
+  p_leave_start_date date DEFAULT NULL,
+  p_leave_end_date date DEFAULT NULL,
+  p_reason_category text DEFAULT NULL,
+  p_explanation text DEFAULT NULL,
+  p_document_issue_date date DEFAULT NULL
 ) returns TABLE (id uuid, reference text) language plpgsql security definer
 SET
   search_path = public,
@@ -235,7 +234,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE function public.update_leave_request (
+CREATE OR REPLACE FUNCTION public.update_leave_request (
   p_request_id uuid,
   p_leave_start_date date,
   p_leave_end_date date,
@@ -303,7 +302,7 @@ $$;
  * suggestion the student must confirm; it can never submit, forward, or
  * otherwise advance a request.
  */
-CREATE OR REPLACE function public.record_leave_request_ocr (
+CREATE OR REPLACE FUNCTION public.record_leave_request_ocr (
   p_request_id uuid,
   p_provider text,
   p_status text,
@@ -366,10 +365,7 @@ $$;
 
 
 /** Marks which fields the student confirmed or corrected after extraction. */
-CREATE OR REPLACE function public.confirm_leave_request_ocr (
-  p_request_id uuid,
-  p_field_sources jsonb
-) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.confirm_leave_request_ocr (p_request_id uuid, p_field_sources jsonb) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -427,7 +423,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Evidence registration
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.add_leave_request_evidence (
+CREATE OR REPLACE FUNCTION public.add_leave_request_evidence (
   p_request_id uuid,
   p_storage_path text,
   p_original_filename text,
@@ -540,7 +536,7 @@ $$;
 
 
 /** Soft-deletes one evidence row and returns its object key for cleanup. */
-CREATE OR REPLACE function public.remove_leave_request_evidence (p_evidence_id uuid) returns text language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.remove_leave_request_evidence (p_evidence_id uuid) returns text language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -606,7 +602,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Student: submit and resubmit
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.submit_leave_request (p_request_id uuid) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.submit_leave_request (p_request_id uuid) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -727,10 +723,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Class admin: request a revision
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE function public.request_leave_revision (
-  p_request_id uuid,
-  p_note text
-) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.request_leave_revision (p_request_id uuid, p_note text) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -820,9 +813,9 @@ $$;
  * changes. UNIQUE (request_id) on the items table makes double forwarding of a
  * single request structurally impossible.
  */
-CREATE OR REPLACE function public.complete_leave_forwarding (
+CREATE OR REPLACE FUNCTION public.complete_leave_forwarding (
   p_class_id uuid,
-  p_request_ids uuid[],
+  p_request_ids UUID[],
   p_recipient_name text,
   p_recipient_email text,
   p_report_reference text,

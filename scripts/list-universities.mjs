@@ -45,14 +45,20 @@ function parseEnv(filePath) {
 function main() {
   const envPath = process.env.STARSTASK_ENV_PATH ?? ENV_PATH;
   const env = parseEnv(envPath);
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRole) {
-    throw new Error("Missing Supabase env in apps/web/.env.local or environment.");
+    throw new Error(
+      "Missing Supabase env in apps/web/.env.local or environment.",
+    );
   }
   return (async () => {
     const { createClient } = await import(pathToFileURL(SUPABASE_MODULE).href);
-    const client = createClient(url, serviceRole, { auth: { persistSession: false } });
+    const client = createClient(url, serviceRole, {
+      auth: { persistSession: false },
+    });
     const { data, error } = await client
       .from("universities")
       .select("id, slug, name, status, activated_at")

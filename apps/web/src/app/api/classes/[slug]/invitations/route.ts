@@ -64,9 +64,7 @@ export async function POST(
       windowSeconds: 3600,
     });
 
-    const parsed = classInvitationCreateSchema.safeParse(
-      await request.json(),
-    );
+    const parsed = classInvitationCreateSchema.safeParse(await request.json());
 
     if (!parsed.success) {
       throw new ApiError(

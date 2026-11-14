@@ -24,15 +24,12 @@ import id.starstask.mobile.data.CalendarRange
 import id.starstask.mobile.data.CalendarTimelineItem
 import id.starstask.mobile.data.formatShortDay
 import id.starstask.mobile.data.splitIntoWeeks
-import id.starstask.mobile.ui.theme.AssignmentAccent
-import id.starstask.mobile.ui.theme.AssignmentForeground
-import id.starstask.mobile.ui.theme.AssignmentSecondary
-import id.starstask.mobile.ui.theme.AssignmentBorder
+import id.starstask.mobile.ui.theme.mockColors
+import androidx.compose.runtime.getValue
 
 // Calendar strip/grid sit directly on #F7F8FA. No card chrome — mobile
 // is a distinct state, not a desktop board squeezed into a phone.
 
-private val WeekMarker = AssignmentAccent
 private val WEEKDAY_LABELS = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
 
 // Week strip: seven day cells. Each cell is a 48dp touch target (antislop
@@ -47,6 +44,7 @@ fun WeekCalendarView(
     onSelectDay: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val palette = mockColors()
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -65,7 +63,7 @@ fun WeekCalendarView(
                 ) {
                     Text(
                         WEEKDAY_LABELS.getOrElse(index) { formatShortDay(day.dateKey).take(2) },
-                        color = if (selected || isToday) AssignmentAccent else AssignmentSecondary,
+                        color = if (selected || isToday) palette.accent else palette.muted,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (selected || isToday) FontWeight.SemiBold else FontWeight.Normal,
                     )
@@ -76,15 +74,15 @@ fun WeekCalendarView(
                             .clip(RoundedCornerShape(999.dp))
                             .background(
                                 when {
-                                    selected -> AssignmentAccent
-                                    isToday -> Color(0xFFE8EDF7)
+                                    selected -> palette.accent
+                                    isToday -> palette.accentSofter
                                     else -> Color.Transparent
                                 },
                             )
                             .border(
                                 1.dp,
                                 when {
-                                    isToday && !selected -> AssignmentAccent
+                                    isToday && !selected -> palette.accent
                                     else -> Color.Transparent
                                 },
                                 RoundedCornerShape(999.dp),
@@ -95,8 +93,8 @@ fun WeekCalendarView(
                             day.dayOfMonth.toString(),
                             color = when {
                                 selected -> Color.White
-                                isToday -> AssignmentAccent
-                                else -> AssignmentForeground
+                                isToday -> palette.accent
+                                else -> palette.ink
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = if (selected || isToday) FontWeight.SemiBold else FontWeight.Normal,
@@ -109,8 +107,8 @@ fun WeekCalendarView(
                             .clip(RoundedCornerShape(999.dp))
                             .background(
                                 when {
-                                    selected -> AssignmentAccent
-                                    marked -> WeekMarker
+                                    selected -> palette.accent
+                                    marked -> palette.accent
                                     else -> Color.Transparent
                                 },
                             ),
@@ -133,6 +131,7 @@ fun MonthCalendarView(
     onSelectDay: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val palette = mockColors()
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -144,7 +143,7 @@ fun MonthCalendarView(
             WEEKDAY_LABELS.forEach { label ->
                 Text(
                     label,
-                    color = AssignmentSecondary,
+                    color = palette.muted,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f),
@@ -173,15 +172,15 @@ fun MonthCalendarView(
                                 .clip(RoundedCornerShape(999.dp))
                                 .background(
                                     when {
-                                        selected -> AssignmentAccent
-                                        isToday -> Color(0xFFE8EDF7)
+                                        selected -> palette.accent
+                                        isToday -> palette.accentSofter
                                         else -> Color.Transparent
                                     },
                                 )
                                 .border(
                                     1.dp,
                                     when {
-                                        isToday && !selected -> AssignmentAccent
+                                        isToday && !selected -> palette.accent
                                         else -> Color.Transparent
                                     },
                                     RoundedCornerShape(999.dp),
@@ -192,9 +191,9 @@ fun MonthCalendarView(
                                 day.dayOfMonth.toString(),
                                 color = when {
                                     selected -> Color.White
-                                    isToday -> AssignmentAccent
-                                    !day.inMonth -> AssignmentSecondary.copy(alpha = 0.45f)
-                                    else -> AssignmentForeground
+                                    isToday -> palette.accent
+                                    !day.inMonth -> palette.muted.copy(alpha = 0.45f)
+                                    else -> palette.ink
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (selected || isToday) FontWeight.SemiBold else FontWeight.Normal,
@@ -207,8 +206,8 @@ fun MonthCalendarView(
                                 .clip(RoundedCornerShape(999.dp))
                                 .background(
                                     when {
-                                        selected -> AssignmentAccent
-                                        marked -> WeekMarker
+                                        selected -> palette.accent
+                                        marked -> palette.accent
                                         else -> Color.Transparent
                                     },
                                 ),
@@ -273,25 +272,26 @@ fun ScheduleAgendaList(
 
 @Composable
 fun ScheduleEmptyBox(title: String, description: String, modifier: Modifier = Modifier) {
+    val palette = mockColors()
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
-            .border(0.5.dp, AssignmentBorder, RoundedCornerShape(12.dp))
+            .background(palette.card)
+            .border(0.5.dp, palette.cardBorder, RoundedCornerShape(12.dp))
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             title,
-            color = AssignmentForeground,
+            color = palette.ink,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
             description,
-            color = AssignmentSecondary,
+            color = palette.muted,
             style = MaterialTheme.typography.bodySmall,
         )
     }

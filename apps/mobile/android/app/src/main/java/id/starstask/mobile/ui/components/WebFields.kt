@@ -26,26 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import id.starstask.mobile.ui.icons.Lucide
-import id.starstask.mobile.ui.theme.Accent
-import id.starstask.mobile.ui.theme.Background
-import id.starstask.mobile.ui.theme.Border
-import id.starstask.mobile.ui.theme.Danger
-import id.starstask.mobile.ui.theme.Input
-import id.starstask.mobile.ui.theme.DangerSoft
-import id.starstask.mobile.ui.theme.Foreground
+import id.starstask.mobile.ui.theme.mockColors
 import id.starstask.mobile.ui.theme.LinkActionText
-import id.starstask.mobile.ui.theme.MutedForeground
 import id.starstask.mobile.ui.theme.SectionDescription
 import id.starstask.mobile.ui.theme.SectionTitleRail
 import id.starstask.mobile.ui.theme.Spacing
-import id.starstask.mobile.ui.theme.Subtle
-import id.starstask.mobile.ui.theme.Success
-import id.starstask.mobile.ui.theme.SuccessSoft
-import id.starstask.mobile.ui.theme.Surface
-import id.starstask.mobile.ui.theme.Warning
-import id.starstask.mobile.ui.theme.WarningSoft
-import id.starstask.mobile.ui.theme.Muted
-import id.starstask.mobile.ui.theme.AccentSoft
 
 // Web page scaffold: bg-background (#fafaf8), gutter and section rhythm from
 // the canonical spacing scale (web `px-3 sm:px-6 py-4 sm:py-8` and `mt-5`).
@@ -63,10 +48,11 @@ fun WebScreen(
 
 @Composable
 fun WebScreenHeader(title: String, subtitle: String? = null) {
+    val palette = mockColors()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Xxs)) {
-        Text(title, style = MaterialTheme.typography.headlineSmall, color = Foreground)
+        Text(title, style = MaterialTheme.typography.headlineSmall, color = palette.ink)
         if (!subtitle.isNullOrBlank()) {
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MutedForeground)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = palette.muted)
         }
     }
 }
@@ -84,6 +70,7 @@ fun WebSectionTitle(
     onAction: (() -> Unit)? = null,
     rail: Boolean = false,
 ) {
+    val palette = mockColors()
     androidx.compose.foundation.layout.Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -93,13 +80,13 @@ fun WebSectionTitle(
             Text(
                 text,
                 style = if (rail) SectionTitleRail else MaterialTheme.typography.titleMedium,
-                color = Foreground,
+                color = palette.ink,
             )
             if (!description.isNullOrBlank() && !rail) {
                 Text(
                     description,
                     style = SectionDescription,
-                    color = MutedForeground,
+                    color = palette.muted,
                     modifier = androidx.compose.ui.Modifier.padding(top = Spacing.Xs),
                 )
             }
@@ -116,8 +103,8 @@ fun WebSectionTitle(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Xs),
             ) {
-                Text(actionLabel, style = LinkActionText, color = Accent)
-                Icon(Lucide.ArrowRight, contentDescription = null, tint = Accent, modifier = androidx.compose.ui.Modifier.size(Spacing.Xl))
+                Text(actionLabel, style = LinkActionText, color = palette.accent)
+                Icon(Lucide.ArrowRight, contentDescription = null, tint = palette.accent, modifier = androidx.compose.ui.Modifier.size(Spacing.Xl))
             }
         }
     }
@@ -137,12 +124,13 @@ fun WebInput(
     isError: Boolean = false,
     supportingText: String? = null,
 ) {
+    val palette = mockColors()
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         placeholder = placeholder?.let { text -> { Text(text, maxLines = 1) } },
-        supportingText = supportingText?.let { text -> { Text(text, color = Danger) } },
+        supportingText = supportingText?.let { text -> { Text(text, color = palette.riskFg) } },
         isError = isError,
         modifier = modifier.fillMaxWidth(),
         singleLine = singleLine,
@@ -150,10 +138,10 @@ fun WebInput(
         enabled = enabled,
         shape = RoundedCornerShape(8.dp),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Surface,
-            unfocusedContainerColor = Surface,
-            focusedIndicatorColor = Accent,
-            unfocusedIndicatorColor = Input,
+            focusedContainerColor = palette.card,
+            unfocusedContainerColor = palette.card,
+            focusedIndicatorColor = palette.accent,
+            unfocusedIndicatorColor = palette.hairline,
         ),
         textStyle = MaterialTheme.typography.bodyMedium,
     )
@@ -164,11 +152,12 @@ enum class WebAlertVariant { INFO, ERROR, SUCCESS, WARNING }
 
 @Composable
 fun WebAlert(message: String, variant: WebAlertVariant = WebAlertVariant.ERROR, modifier: Modifier = Modifier) {
+    val palette = mockColors()
     val (bg, fg, bd) = when (variant) {
-        WebAlertVariant.INFO -> Triple(Subtle, Foreground, Border)
-        WebAlertVariant.ERROR -> Triple(DangerSoft, Danger, Danger.copy(alpha = 0.3f))
-        WebAlertVariant.SUCCESS -> Triple(SuccessSoft, Success, Success.copy(alpha = 0.3f))
-        WebAlertVariant.WARNING -> Triple(WarningSoft, Warning, Warning.copy(alpha = 0.3f))
+        WebAlertVariant.INFO -> Triple(palette.chip, palette.ink, palette.cardBorder)
+        WebAlertVariant.ERROR -> Triple(palette.riskBg, palette.riskFg, palette.riskFg.copy(alpha = 0.3f))
+        WebAlertVariant.SUCCESS -> Triple(palette.goodBg, palette.goodFg, palette.goodFg.copy(alpha = 0.3f))
+        WebAlertVariant.WARNING -> Triple(palette.fairBg, palette.fairFg, palette.fairFg.copy(alpha = 0.3f))
     }
     Column(
         modifier = modifier.fillMaxWidth()
@@ -209,13 +198,14 @@ fun WebSkeletonCard(modifier: Modifier = Modifier) {
 // px-6 py-14, title text-lg semibold, muted description.
 @Composable
 fun WebEmptyState(title: String, description: String? = null, modifier: Modifier = Modifier) {
+    val palette = mockColors()
     androidx.compose.foundation.layout.Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Surface, RoundedCornerShape(12.dp))
+            .background(palette.card, RoundedCornerShape(12.dp))
             .border(
                 1.dp,
-                Border,
+                palette.cardBorder,
                 RoundedCornerShape(12.dp),
             )
             .padding(horizontal = Spacing.Page, vertical = 48.dp),
@@ -228,7 +218,7 @@ fun WebEmptyState(title: String, description: String? = null, modifier: Modifier
             Text(
                 title,
                 style = MaterialTheme.typography.titleLarge,
-                color = Foreground,
+                color = palette.ink,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
@@ -236,7 +226,7 @@ fun WebEmptyState(title: String, description: String? = null, modifier: Modifier
                 Text(
                     description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MutedForeground,
+                    color = palette.muted,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }

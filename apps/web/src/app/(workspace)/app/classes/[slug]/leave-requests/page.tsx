@@ -155,9 +155,7 @@ export default async function ClassLeaveRequestsPage({
             asChild
             variant="secondary"
           >
-            <Link
-              href={`/app/classes/${found.slug}/leave-requests/history`}
-            >
+            <Link href={`/app/classes/${found.slug}/leave-requests/history`}>
               <History
                 aria-hidden="true"
                 className="h-4 w-4"
@@ -166,9 +164,7 @@ export default async function ClassLeaveRequestsPage({
             </Link>
           </Button>
           <Button asChild>
-            <Link
-              href={`/app/classes/${found.slug}/leave-requests/forward`}
-            >
+            <Link href={`/app/classes/${found.slug}/leave-requests/forward`}>
               <Send
                 aria-hidden="true"
                 className="h-4 w-4"
