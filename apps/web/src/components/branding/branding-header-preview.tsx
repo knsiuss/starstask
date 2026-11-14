@@ -66,7 +66,10 @@ export function BrandingHeaderPreview({
             </p>
           </div>
           {branding.productLogoUrl ? (
-            <BrandImage src={branding.productLogoUrl} alt="Logo Aphelion" />
+            <BrandImage
+              src={branding.productLogoUrl}
+              alt="Logo Aphelion"
+            />
           ) : null}
         </div>
       </div>

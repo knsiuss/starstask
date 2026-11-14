@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const parsed = profileOnboardingSchema.safeParse({
       fullName: readText(formData.get("fullName")),
       nickname: readText(formData.get("nickname")),
-      nim: readText(formData.get("nim")),
+      nim: readText(formData.get("nim")) || undefined,
       university: readText(formData.get("university")),
       className: readText(formData.get("className")),
     });

@@ -82,16 +82,29 @@ describe.skipIf(!hasEnv)("Negative RLS gates", () => {
         .insert({ slug, name: `Neg Uni ${slug}`, status: "active" })
         .select("id")
         .single();
-      if (error || !data) throw new Error(`seed uni ${slug}: ${error?.message}`);
+      if (error || !data)
+        throw new Error(`seed uni ${slug}: ${error?.message}`);
       return data.id as string;
     };
     uniA = await mkUni(`neg-uni-a-${suffix}`);
     uniB = await mkUni(`neg-uni-b-${suffix}`);
 
-    const { error: memErr } = await admin.from("university_memberships").insert([
-      { user_id: userA.id, university_id: uniA, role: "student", status: "active" },
-      { user_id: userB.id, university_id: uniB, role: "student", status: "active" },
-    ]);
+    const { error: memErr } = await admin
+      .from("university_memberships")
+      .insert([
+        {
+          user_id: userA.id,
+          university_id: uniA,
+          role: "student",
+          status: "active",
+        },
+        {
+          user_id: userB.id,
+          university_id: uniB,
+          role: "student",
+          status: "active",
+        },
+      ]);
     if (memErr) throw new Error(`seed memberships: ${memErr.message}`);
 
     const { data: course, error: courseErr } = await admin
@@ -99,7 +112,8 @@ describe.skipIf(!hasEnv)("Negative RLS gates", () => {
       .insert({ name: `Neg Course ${suffix}`, university_id: uniA })
       .select("id")
       .single();
-    if (courseErr || !course) throw new Error(`seed course: ${courseErr?.message}`);
+    if (courseErr || !course)
+      throw new Error(`seed course: ${courseErr?.message}`);
     courseA = course.id as string;
 
     const mkClass = async (slug: string, universityId: string) => {
@@ -119,20 +133,25 @@ describe.skipIf(!hasEnv)("Negative RLS gates", () => {
         })
         .select("id")
         .single();
-      if (error || !data) throw new Error(`seed class ${slug}: ${error?.message}`);
+      if (error || !data)
+        throw new Error(`seed class ${slug}: ${error?.message}`);
       return data.id as string;
     };
     classA = await mkClass(`neg-class-a-${suffix}`, uniA);
     classB = await mkClass(`neg-class-b-${suffix}`, uniB);
 
-    const { error: cmErr } = await admin
-      .from("class_members")
-      .insert({ class_id: classA, user_id: userA.id, joined_via: "invitation" });
+    const { error: cmErr } = await admin.from("class_members").insert({
+      class_id: classA,
+      user_id: userA.id,
+      joined_via: "invitation",
+    });
     if (cmErr) throw new Error(`seed class_members: ${cmErr.message}`);
     // userB is class admin of classB only (must be a member first: FK).
-    const { error: cbmErr } = await admin.from("class_members").insert([
-      { class_id: classB, user_id: userB.id, joined_via: "invitation" },
-    ]);
+    const { error: cbmErr } = await admin
+      .from("class_members")
+      .insert([
+        { class_id: classB, user_id: userB.id, joined_via: "invitation" },
+      ]);
     if (cbmErr) throw new Error(`seed class_members B: ${cbmErr.message}`);
     const { error: caErr } = await admin
       .from("class_admins")

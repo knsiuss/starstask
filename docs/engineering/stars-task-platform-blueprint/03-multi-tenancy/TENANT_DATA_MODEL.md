@@ -2,14 +2,14 @@
 
 Proposed entities (label: **proposed**, not yet in schema — do not treat as existing):
 
-| Entity | Role | Ownership |
-|---|---|---|
-| `universities` (proposed) | Tenant root | — |
-| `university_memberships` (proposed) | user ↔ university + role | ties `auth.users` to university |
-| `university_settings` (proposed) | per-uni flags (calendar domain, semester rules) | scoped to university |
-| `university_roles` (proposed) | platform-admin scoped to university | scoped |
-| `university_domains` (proposed) | invite/email domains for auto-membership | scoped |
-| `university_subscriptions` (proposed) | billing tier per university | scoped (future) |
+| Entity                                | Role                                            | Ownership                       |
+| ------------------------------------- | ----------------------------------------------- | ------------------------------- |
+| `universities` (proposed)             | Tenant root                                     | —                               |
+| `university_memberships` (proposed)   | user ↔ university + role                        | ties `auth.users` to university |
+| `university_settings` (proposed)      | per-uni flags (calendar domain, semester rules) | scoped to university            |
+| `university_roles` (proposed)         | platform-admin scoped to university             | scoped                          |
+| `university_domains` (proposed)       | invite/email domains for auto-membership        | scoped                          |
+| `university_subscriptions` (proposed) | billing tier per university                     | scoped (future)                 |
 
 Existing-scoped candidates (must carry `university_id`): `classes`, `class_members`, `class_subjects`/`subjects`, `class_course_schedules`, `assignments`, `assignment_submissions`, `discussion_sessions`, `discussion_session_checkins`, `attendance_verification_attempts`, `leave_requests`, `leave_request_*`, `notifications` (via user+university), `materials`, `announcements`, `audit_logs`, `push_subscriptions`.
 Global candidates: `auth.users`, `profiles`, platform-admin scope table.

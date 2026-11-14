@@ -17,9 +17,7 @@ export function BackupKeyButton() {
       setPassphrase("");
     } catch (error) {
       setStatus(
-        error instanceof Error
-          ? error.message
-          : "Backup failed — try again.",
+        error instanceof Error ? error.message : "Backup failed — try again.",
       );
     }
   }

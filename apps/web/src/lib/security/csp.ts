@@ -78,6 +78,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     "base-uri 'self'",
     "form-action 'self' https://accounts.google.com",
     "object-src 'none'",
+    "report-uri /api/csp-report",
     ...(isProduction ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 }

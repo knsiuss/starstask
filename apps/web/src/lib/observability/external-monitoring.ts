@@ -66,38 +66,42 @@ export async function getSentrySummary(): Promise<SentrySummary> {
     return null;
   }
 
-  return getCached<SentrySummary>(`monitoring:sentry:${project}`, CACHE_TTL_SECONDS, async () => {
-    const url = `https://sentry.io/api/0/organizations/${encodeURIComponent(org)}/issues/?project=${encodeURIComponent(project)}&statsPeriod=14d&sort=freq&limit=10`;
-    const data = (await fetchJson(url, token)) as {
-      count?: number;
-      results?: {
-        id?: string;
-        title?: string;
-        level?: string;
+  return getCached<SentrySummary>(
+    `monitoring:sentry:${project}`,
+    CACHE_TTL_SECONDS,
+    async () => {
+      const url = `https://sentry.io/api/0/organizations/${encodeURIComponent(org)}/issues/?project=${encodeURIComponent(project)}&statsPeriod=14d&sort=freq&limit=10`;
+      const data = (await fetchJson(url, token)) as {
         count?: number;
-        userCount?: number;
-        lastSeen?: string;
-        permalink?: string;
-      }[];
-    } | null;
+        results?: {
+          id?: string;
+          title?: string;
+          level?: string;
+          count?: number;
+          userCount?: number;
+          lastSeen?: string;
+          permalink?: string;
+        }[];
+      } | null;
 
-    if (!data) {
-      return null;
-    }
+      if (!data) {
+        return null;
+      }
 
-    return {
-      totalIssues: data.count ?? data.results?.length ?? 0,
-      issues: (data.results ?? []).map((issue) => ({
-        id: String(issue.id ?? ""),
-        title: String(issue.title ?? "Unknown error"),
-        level: String(issue.level ?? ""),
-        count: Number(issue.count ?? 0),
-        userCount: Number(issue.userCount ?? 0),
-        lastSeen: issue.lastSeen ?? null,
-        permalink: issue.permalink ?? null,
-      })),
-    };
-  });
+      return {
+        totalIssues: data.count ?? data.results?.length ?? 0,
+        issues: (data.results ?? []).map((issue) => ({
+          id: String(issue.id ?? ""),
+          title: String(issue.title ?? "Unknown error"),
+          level: String(issue.level ?? ""),
+          count: Number(issue.count ?? 0),
+          userCount: Number(issue.userCount ?? 0),
+          lastSeen: issue.lastSeen ?? null,
+          permalink: issue.permalink ?? null,
+        })),
+      };
+    },
+  );
 }
 
 export type PostHogSummary = {
@@ -114,35 +118,40 @@ export async function getPostHogSummary(): Promise<PostHogSummary> {
     return null;
   }
 
-  return getCached<PostHogSummary>(`monitoring:posthog:${projectId}`, CACHE_TTL_SECONDS, async () => {
-    const host = env("NEXT_PUBLIC_POSTHOG_HOST") ?? "https://us.i.posthog.com";
-    const url = `${host}/api/projects/${encodeURIComponent(projectId)}/events/?limit=100`;
-    const data = (await fetchJson(url, token)) as {
-      results?: {
-        event?: string;
-        properties?: { $user_id?: string; $pathname?: string };
-      }[];
-    } | null;
+  return getCached<PostHogSummary>(
+    `monitoring:posthog:${projectId}`,
+    CACHE_TTL_SECONDS,
+    async () => {
+      const host =
+        env("NEXT_PUBLIC_POSTHOG_HOST") ?? "https://us.i.posthog.com";
+      const url = `${host}/api/projects/${encodeURIComponent(projectId)}/events/?limit=100`;
+      const data = (await fetchJson(url, token)) as {
+        results?: {
+          event?: string;
+          properties?: { $user_id?: string; $pathname?: string };
+        }[];
+      } | null;
 
-    if (!data?.results) {
-      return null;
-    }
+      if (!data?.results) {
+        return null;
+      }
 
-    const pageviews = data.results.filter(
-      (event) => event.event === "$pageview",
-    ).length;
-    const uniqueUsers = new Set(
-      data.results
-        .map((event) => event.properties?.$user_id)
-        .filter((id): id is string => Boolean(id)),
-    ).size;
+      const pageviews = data.results.filter(
+        (event) => event.event === "$pageview",
+      ).length;
+      const uniqueUsers = new Set(
+        data.results
+          .map((event) => event.properties?.$user_id)
+          .filter((id): id is string => Boolean(id)),
+      ).size;
 
-    return {
-      pageviews,
-      uniqueUsers,
-      recentEvents: data.results.length,
-    };
-  });
+      return {
+        pageviews,
+        uniqueUsers,
+        recentEvents: data.results.length,
+      };
+    },
+  );
 }
 
 export type ExternalMonitoringStatus = {

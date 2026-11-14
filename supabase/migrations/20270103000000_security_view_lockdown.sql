@@ -16,84 +16,145 @@
 --
 -- Rollback: ALTER VIEW ... SET (security_invoker=false) and re-grant
 -- SELECT to anon, authenticated for the affected view.
-
 ALTER VIEW public.assignments_owner_reporting
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.audit_logs_university_gap
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.classes_legacy_vs_fk_gap
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.discussion_sessions_domain_view
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.dual_write_drift
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.nim_drift
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.notification_daily_digest
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.observability_tenant_gap
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 ALTER VIEW public.semester_rollover_candidates
-  SET (security_invoker = true);
+SET
+  (security_invoker = TRUE);
+
 
 REVOKE ALL ON public.assignments_owner_reporting
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.audit_logs_university_gap
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.classes_legacy_vs_fk_gap
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.discussion_sessions_domain_view
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.dual_write_drift
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.nim_drift
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.notification_daily_digest
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.observability_tenant_gap
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
+
 
 REVOKE ALL ON public.semester_rollover_candidates
-  FROM anon, authenticated;
+FROM
+  anon,
+  authenticated;
 
-GRANT SELECT ON public.assignments_owner_reporting
-  TO service_role;
 
-GRANT SELECT ON public.audit_logs_university_gap
-  TO service_role;
+GRANT
+SELECT
+  ON public.assignments_owner_reporting TO service_role;
 
-GRANT SELECT ON public.classes_legacy_vs_fk_gap
-  TO service_role;
 
-GRANT SELECT ON public.discussion_sessions_domain_view
-  TO service_role;
+GRANT
+SELECT
+  ON public.audit_logs_university_gap TO service_role;
 
-GRANT SELECT ON public.dual_write_drift
-  TO service_role;
 
-GRANT SELECT ON public.nim_drift
-  TO service_role;
+GRANT
+SELECT
+  ON public.classes_legacy_vs_fk_gap TO service_role;
 
-GRANT SELECT ON public.notification_daily_digest
-  TO service_role;
 
-GRANT SELECT ON public.observability_tenant_gap
-  TO service_role;
+GRANT
+SELECT
+  ON public.discussion_sessions_domain_view TO service_role;
 
-GRANT SELECT ON public.semester_rollover_candidates
-  TO service_role;
+
+GRANT
+SELECT
+  ON public.dual_write_drift TO service_role;
+
+
+GRANT
+SELECT
+  ON public.nim_drift TO service_role;
+
+
+GRANT
+SELECT
+  ON public.notification_daily_digest TO service_role;
+
+
+GRANT
+SELECT
+  ON public.observability_tenant_gap TO service_role;
+
+
+GRANT
+SELECT
+  ON public.semester_rollover_candidates TO service_role;

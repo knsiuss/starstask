@@ -126,7 +126,7 @@ export function JoinClassForm({
                 setResult(null);
               }}
               className={cn(
-                "focus-visible:outline-accent flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                "focus-visible:outline-accent flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2",
                 isActive
                   ? "bg-surface text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -232,7 +232,7 @@ export function JoinClassForm({
       {error ? (
         <Alert
           variant="error"
-          className="mt-4"
+          className="message-in mt-4"
         >
           {error}
         </Alert>
@@ -268,7 +268,7 @@ function JoinResultPanel({
     const joined = result.status === "joined";
 
     return (
-      <div className="mt-4">
+      <div className="message-in mt-4">
         <Alert variant="success">
           <p className="inline-flex items-center gap-1.5 font-medium">
             <CheckCircle2
@@ -294,7 +294,7 @@ function JoinResultPanel({
 
   if (result.status === "blocked_by_policy") {
     return (
-      <div className="mt-4">
+      <div className="message-in mt-4">
         <Alert variant="warning">
           <p className="font-medium">{result.name} requires an invitation</p>
           <p className="mt-1">
@@ -316,7 +316,7 @@ function JoinResultPanel({
 
   if (result.status === "ambiguous") {
     return (
-      <div className="mt-4">
+      <div className="message-in mt-4">
         <Alert variant="info">
           <p className="font-medium">More than one class matches</p>
           <p className="mt-1">Pick the one you are enrolled in.</p>
@@ -339,7 +339,7 @@ function JoinResultPanel({
   }
 
   return (
-    <div className="mt-4">
+    <div className="message-in mt-4">
       <Alert variant="error">
         <p className="font-medium">No class found</p>
         <p className="mt-1">

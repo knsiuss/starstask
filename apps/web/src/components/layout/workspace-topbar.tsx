@@ -14,6 +14,7 @@ type WorkspaceTopbarProps = {
   isPlatformAdmin: boolean;
   isDeveloper: boolean;
   isClassAdmin: boolean;
+  isLecturer?: boolean;
   displayName: string;
   avatarUrl: string | null;
   unreadNotificationCount: number;
@@ -24,6 +25,7 @@ export function WorkspaceTopbar({
   isPlatformAdmin,
   isDeveloper,
   isClassAdmin,
+  isLecturer = false,
   displayName,
   avatarUrl,
   unreadNotificationCount,
@@ -34,6 +36,7 @@ export function WorkspaceTopbar({
         <MobileNav
           isAuthenticated={isAuthenticated}
           isClassAdmin={isClassAdmin}
+          isLecturer={isLecturer}
         />
         <BrandLink className="lg:hidden" />
 

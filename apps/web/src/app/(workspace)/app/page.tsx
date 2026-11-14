@@ -127,9 +127,7 @@ export default async function DashboardPage({
     <PullToRefresh>
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
         <DashboardRealtime />
-        <React.Suspense
-          fallback={<div className="h-24 animate-pulse rounded bg-muted" />}
-        >
+        <React.Suspense fallback={<div className="skeleton h-24 rounded-md" />}>
           <HeaderSection
             userId={session.user.id}
             displayName={session.profile?.display_name ?? null}
@@ -162,17 +160,13 @@ export default async function DashboardPage({
         ) : null}
 
         <React.Suspense
-          fallback={
-            <div className="mt-5 h-20 animate-pulse rounded bg-muted" />
-          }
+          fallback={<div className="skeleton mt-5 h-20 rounded-md" />}
         >
           <ScheduleSection userId={session.user.id} />
         </React.Suspense>
 
         <React.Suspense
-          fallback={
-            <div className="mt-5 h-64 animate-pulse rounded bg-muted" />
-          }
+          fallback={<div className="skeleton mt-5 h-64 rounded-md" />}
         >
           <WeekAndClassesSection
             userId={session.user.id}

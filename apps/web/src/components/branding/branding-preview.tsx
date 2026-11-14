@@ -12,8 +12,9 @@ import type { ExportBrandingInput } from "@starstask/contracts";
  * endpoint is unavailable, so a failure hides this box silently.
  */
 export function BrandingPreview({ classSlug }: { classSlug: string }) {
-  const [branding, setBranding] =
-    React.useState<ExportBrandingInput | null>(null);
+  const [branding, setBranding] = React.useState<ExportBrandingInput | null>(
+    null,
+  );
 
   React.useEffect(() => {
     let cancelled = false;

@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 
 // ---------------------------------------------------------------------------
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.put
 // class row in My classes.
 // ---------------------------------------------------------------------------
 
+@Serializable
 data class AcademicCard(
     val linked: Boolean,
     val universityName: String? = null,

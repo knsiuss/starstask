@@ -3,9 +3,7 @@
 -- Complements create/update_class_subject: a class admin can remove a subject
 -- from their class group. Assignments keep existing (subject_id is set null by
 -- the foreign key) and the subject's weekly schedule rows cascade away.
-
-CREATE OR REPLACE FUNCTION public.delete_class_subject (p_subject_id uuid)
-RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.delete_class_subject (p_subject_id uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$
@@ -41,4 +39,5 @@ END;
 $$;
 
 
-GRANT EXECUTE ON FUNCTION public.delete_class_subject (uuid) TO authenticated;
+GRANT
+EXECUTE ON FUNCTION public.delete_class_subject (uuid) TO authenticated;

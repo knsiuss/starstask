@@ -10,10 +10,7 @@ import {
 } from "@/lib/db/export-branding";
 import { listActiveUniversities } from "@/lib/db/universities";
 
-import {
-  seedBrandingFromClass,
-  type UniversityRegistryMatch,
-} from "./config";
+import { seedBrandingFromClass, type UniversityRegistryMatch } from "./config";
 
 export type ExportBranding = ExportBrandingRow;
 

@@ -3,10 +3,9 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-// WHY any: posthog-js ships its own copy of the React types, which conflicts
-// with the app's copy and makes any strict component type unusable as a JSX
-// element under tsc (same duplicate-types breakage as lucide-react icons).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// posthog-js ships its own copy of the React types, which conflicts with the
+// app's copy and makes any strict component type unusable as a JSX element
+// under tsc (same duplicate-types breakage as lucide-react icons).
 type PostHogProviderComponent = any;
 
 /**

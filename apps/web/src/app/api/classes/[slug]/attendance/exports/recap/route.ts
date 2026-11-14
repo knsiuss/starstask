@@ -11,6 +11,8 @@ import {
   getClassAttendanceSubject,
   listCorrectionAudit,
 } from "@/lib/db/attendance-meetings";
+import { listCourseComponentGrades } from "@/lib/db/course-grades";
+import { loadBrandingForExport } from "@/features/export-branding/service";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import {
@@ -84,8 +86,12 @@ export async function GET(
       return apiSuccess({ jobId: job.id, status: "pending" }, 202);
     }
 
-    const recap = await getClassAttendanceRecap(found.id, subject.id);
-    const audits = await listCorrectionAudit(found.id, subject.id);
+    const [recap, audits, branding, grades] = await Promise.all([
+      getClassAttendanceRecap(found.id, subject.id),
+      listCorrectionAudit(found.id, subject.id),
+      loadBrandingForExport(found.id, found),
+      listCourseComponentGrades(found.id, subject.id),
+    ]);
     const generatedAt = new Date();
     const exportContext: AttendanceExportContext = {
       classInfo: found,
@@ -97,7 +103,10 @@ export async function GET(
       generatedAt,
     };
 
-    const bytes = await buildRecapWorkbook(recap, exportContext, audits);
+    const bytes = await buildRecapWorkbook(recap, exportContext, audits, {
+      branding,
+      grades,
+    });
     const filename = buildRecapFilename({
       classCode: found.class_code,
       className: found.name,

@@ -348,3 +348,42 @@ descriptions render as text, never HTML. Reference links are validated before be
 | Verified request after access is revoked              | The status stays `verified` for history; the UI reads the `class_admins` row to show current access, and revocation refuses to remove the last class admin.                       |
 | Verification evidence retained after a decision       | Kept for audit, accessible only through policy and five-minute links; never public and never in notifications.                                                                    |
 | OCR mis-read treated as fact                          | OCR is advisory only: extracted values are shown with provenance and nothing is applied or forwarded without the student confirming each field.                                   |
+
+## 12. Hardening checklist for pilot (2026-11)
+
+Applied this round; keep this list short and honest. Every item is a backlog
+reduction or a direct fix, not an audit sign-off.
+
+- [x] `pnpm audit` now gates CI on `registry.npmjs.org` with `--audit-level=high`;
+      mirror registry lacks advisories and gives false confidence.
+- [x] `pnpm.overrides` forces `bl`, `uuid`, `fast-csv`, `glob`, `minimatch` to
+      patched ranges; `pnpm audit --prod` reports zero known vulnerabilities.
+- [x] `ci.yml` has `permissions: contents: read` (least privilege).
+- [x] `.env*` tracked-file check added to CI as a second net behind gitleaks.
+- [x] CSP always emits `report-uri /api/csp-report`; violations are logged with
+      directive/blocked/source only, never payloads (which can echo tokens).
+- [x] `proxy.ts` fail-open on Supabase outage instead of 500 for every route;
+      pages still re-verify identity before trusting anything.
+- [x] `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Resource-Policy: same-origin`
+      added; `Permissions-Policy`, `Referrer-Policy`, HSTS unchanged.
+- [x] `/api/media/*` rate limit identifier is the client IP hash, not the constant
+      bucket `"media"`; avatar/class media cache is `private, max-age=60, must-revalidate`
+      instead of immutable public, so deleted avatars expire at the edge.
+- [x] Text-like uploads reject inline `<script>` / `javascript:` / event-handler
+      markup before an object is ever written (`hasHtmlScript`).
+- [x] `export_jobs` narrow INSERT policy + column grant added (`user_id, kind, params`);
+      web enqueue was dead (42501) before; worker stays the only status writer.
+- [ ] APK still debug-signed with no `signingConfig` in
+      `build.gradle.kts`; `assetlinks.json` does not match a distributable key.
+      Release signing is an open owner decision, not something this repo can fix
+      alone.
+- [ ] `.gitleaks.toml` still allows `sb_publishable_*` and has no explicit
+      `sb_secret_*` deny rule; the current scanner catches legacy JWTs by shape.
+- [ ] Service-role call sites beyond `announcements/route.ts` pattern have not
+      been re-verified one by one this round.
+- [ ] `proxy.ts` fail-open keeps static pages reachable during Supabase outage;
+      it does not keep personalized pages correct. Sensitive pages still fail
+      closed inside their own guards.
+- [ ] Cron `log-retention` was verified locally by the false-positive agent report;
+      `audit_logs` trigger allows DELETE only for `current_user='postgres'`, and
+      `purge_audit_logs` is a SECURITY DEFINER owned by `postgres`.

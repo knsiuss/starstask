@@ -41,6 +41,7 @@ ADD CONSTRAINT leave_requests_status_allowed CHECK (
   )
 );
 
+
 -- A revision request is a completed request that is back with the student, so
 -- completeness applies to it exactly as it does to `submitted`.
 ALTER TABLE public.leave_requests
@@ -58,6 +59,7 @@ ADD CONSTRAINT leave_requests_complete CHECK (
     AND submitted_at IS NOT NULL
   )
 );
+
 
 -- A cancelled revision returns to the student; cancellation from this state is
 -- allowed, so no new consistency constraint is needed.
@@ -86,14 +88,16 @@ ADD CONSTRAINT leave_request_history_action_allowed CHECK (
   )
 );
 
+
 -- `leave_request_revision_requested` is already in the kind list; keeping the
 -- full list here makes this migration self-documenting and no-op-safe.
 -- ---------------------------------------------------------------------------
 -- 3. Indexes for the admin queues
 -- ---------------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS leave_requests_action_center_idx
-ON public.leave_requests (class_id, submitted_at DESC)
-WHERE status IN ('submitted', 'revision_requested');
+CREATE INDEX IF NOT EXISTS leave_requests_action_center_idx ON public.leave_requests (class_id, submitted_at DESC)
+WHERE
+  status IN ('submitted', 'revision_requested');
+
 
 -- ---------------------------------------------------------------------------
 -- 4. Review function: approved / rejected / revision_requested
@@ -305,6 +309,7 @@ $$;
 
 COMMENT ON FUNCTION public.review_leave_request (uuid, text, text) IS 'Approves, rejects, or returns a submitted absence for revision. Class managers only. Approval marks matching sessions as excused and never as present; revision changes no attendance.';
 
+
 -- ---------------------------------------------------------------------------
 -- 5. Owner edits: draft OR revision_requested
 -- ---------------------------------------------------------------------------
@@ -413,6 +418,7 @@ $$;
 
 COMMENT ON FUNCTION public.set_leave_request_subjects (uuid, UUID[]) IS 'Replaces the courses one draft or returned absence request covers. Owner only.';
 
+
 -- OCR stays advisory and editable in the same states as the request body.
 CREATE OR REPLACE FUNCTION public.record_leave_request_ocr (
   p_request_id uuid,
@@ -473,10 +479,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE FUNCTION public.confirm_leave_request_ocr (
-  p_request_id uuid,
-  p_field_sources jsonb
-) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.confirm_leave_request_ocr (p_request_id uuid, p_field_sources jsonb) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -529,6 +532,7 @@ values (
   );
 end;
 $$;
+
 
 -- ---------------------------------------------------------------------------
 -- 6. Resubmit: revision_requested -> submitted ('resubmitted')
@@ -651,6 +655,7 @@ $$;
 
 
 COMMENT ON FUNCTION public.submit_leave_request (uuid) IS 'Submits a draft or resubmits a returned request. Revision resubmits record `resubmitted` in history.';
+
 
 -- ---------------------------------------------------------------------------
 -- 7. Evidence: owner may manage it while the request is a draft or returned
@@ -824,4 +829,3 @@ values (
   return v_evidence.storage_path;
 end;
 $$;
-

@@ -64,8 +64,22 @@ export async function updateSession(
   // this no longer repeats the network round-trip that pages make with
   // getUser(). Pages keep that getUser() call as their authoritative check.
   // getSession() alone is not a trust boundary.
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims;
+  //
+  // Supabase outage (or an unparseable cookie) must not 500 every route —
+  // let the request through; pages still re-verify identity before trusting
+  // anything, and the sign-in page stays reachable to recover.
+  let claims: { email?: string } | undefined;
+
+  try {
+    const { data: claimsData } = await supabase.auth.getClaims();
+    claims = claimsData?.claims as { email?: string } | undefined;
+  } catch (error) {
+    console.error("[proxy] getClaims failed", {
+      name: error instanceof Error ? error.name : typeof error,
+      path: request.nextUrl.pathname,
+    });
+    return response;
+  }
 
   const allowlist = parseDeveloperEmails(process.env.DEVELOPER_EMAILS);
 

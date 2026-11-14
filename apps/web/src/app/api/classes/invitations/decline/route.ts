@@ -40,7 +40,10 @@ export async function POST(request: Request) {
 
     await declineClassInvitation(parsed.data.invitationId);
 
-    return apiSuccess({ declined: true, invitationId: parsed.data.invitationId });
+    return apiSuccess({
+      declined: true,
+      invitationId: parsed.data.invitationId,
+    });
   } catch (error) {
     return handleRouteError(error);
   }

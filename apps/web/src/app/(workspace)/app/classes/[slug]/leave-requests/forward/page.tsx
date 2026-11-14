@@ -39,9 +39,7 @@ export default async function ForwardLeaveRequestsPage({
   const { slug } = await params;
 
   if (!session) {
-    redirect(
-      buildLoginPath(`/app/classes/${slug}/leave-requests/forward`),
-    );
+    redirect(buildLoginPath(`/app/classes/${slug}/leave-requests/forward`));
   }
 
   const found = await getClassBySlug(slug);

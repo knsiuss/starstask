@@ -130,9 +130,7 @@ export function shareTokenDigestsEqual(a: string, b: string): boolean {
   const bufferA = Buffer.from(a, "utf8");
   const bufferB = Buffer.from(b, "utf8");
 
-  return (
-    bufferA.length === bufferB.length && timingSafeEqual(bufferA, bufferB)
-  );
+  return bufferA.length === bufferB.length && timingSafeEqual(bufferA, bufferB);
 }
 
 export async function listMyDriveSubmissions(

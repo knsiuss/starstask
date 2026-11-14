@@ -36,12 +36,13 @@ const ACTIONS = [
   },
 ] as const;
 
-function CalendarDaysIcon({
-  className,
-}: {
-  className?: string;
-}) {
-  return <CalendarCheck aria-hidden="true" className={className} />;
+function CalendarDaysIcon({ className }: { className?: string }) {
+  return (
+    <CalendarCheck
+      aria-hidden="true"
+      className={className}
+    />
+  );
 }
 
 export function QuickActions() {
@@ -56,7 +57,10 @@ export function QuickActions() {
           href={action.href}
           className="border-border bg-surface hover:bg-accent-soft hover:text-accent flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-95"
         >
-          <action.icon aria-hidden="true" className="h-4 w-4" />
+          <action.icon
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
           {action.label}
         </Link>
       ))}

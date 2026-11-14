@@ -200,6 +200,22 @@ export function ClassAttendanceMeetings({
               asChild
               size="sm"
               variant="secondary"
+              title="Used by the StarsTask SIS autofill extension; your session cookies stay in the browser"
+            >
+              <a
+                href={`/api/classes/${classSlug}/attendance/recap-json?subjectId=${exportSubjectId}`}
+              >
+                <Download
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
+                Recap JSON
+              </a>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="secondary"
             >
               <a
                 href={`/api/classes/${classSlug}/attendance/exports/checklist?subjectId=${exportSubjectId}`}

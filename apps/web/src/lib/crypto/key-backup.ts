@@ -85,11 +85,7 @@ export async function backupPrivateKey(passphrase: string): Promise<void> {
   const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await derivePassphraseKey(
-    passphrase,
-    salt,
-    CURRENT_ITERATIONS,
-  );
+  const key = await derivePassphraseKey(passphrase, salt, CURRENT_ITERATIONS);
   const cipher = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,

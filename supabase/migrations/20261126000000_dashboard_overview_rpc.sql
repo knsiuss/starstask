@@ -1,9 +1,9 @@
 -- Dashboard overview RPC: 8+ queries -> 1 roundtrip (perf, free).
 -- Returns JSONB matching DashboardOverview shape (classes, stats, recentTasks, timeZone, nowIso).
 -- Logic mirrors getDashboardOverview in apps/web/src/lib/db/dashboard.ts.
-
-CREATE OR REPLACE FUNCTION public.get_dashboard_overview(p_user_id uuid)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+CREATE OR REPLACE FUNCTION public.get_dashboard_overview (p_user_id uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET
+  search_path = '' AS $$
 DECLARE
   v_tz text;
   v_now timestamptz := now();
@@ -57,6 +57,15 @@ BEGIN
   RETURN v_result;
 END; $$;
 
-REVOKE ALL ON FUNCTION public.get_dashboard_overview (uuid) FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.get_dashboard_overview (uuid) TO authenticated;
+
+REVOKE ALL ON FUNCTION public.get_dashboard_overview (uuid)
+FROM
+  public,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.get_dashboard_overview (uuid) TO authenticated;
+
+
 COMMENT ON FUNCTION public.get_dashboard_overview (uuid) IS 'Dashboard overview in 1 roundtrip: classes+stats+recent. Mirrors lib/db/dashboard.ts logic (scoped tasks only, public course tasks counted in app layer).';

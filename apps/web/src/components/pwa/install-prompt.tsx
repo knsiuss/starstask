@@ -18,8 +18,9 @@ const SHOW_AFTER_MS = 1200;
  * Never shows when already installed (standalone) or after dismiss.
  */
 export function InstallPrompt() {
-  const [deferred, setDeferred] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
+    null,
+  );
   const [iosHint, setIosHint] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -56,7 +57,6 @@ export function InstallPrompt() {
     }, SHOW_AFTER_MS);
 
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function dismiss() {

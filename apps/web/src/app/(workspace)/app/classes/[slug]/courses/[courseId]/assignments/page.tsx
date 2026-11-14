@@ -186,9 +186,7 @@ export default async function CourseAssignmentsPage({
               size="sm"
               variant="secondary"
             >
-              <Link
-                href={`/app/classes/${found.slug}/manage?tab=content`}
-              >
+              <Link href={`/app/classes/${found.slug}/manage?tab=content`}>
                 <Inbox
                   aria-hidden="true"
                   className="h-4 w-4"

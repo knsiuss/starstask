@@ -15,6 +15,7 @@ as correct and left intact:
   (SELECT-only grants + no write policy = writes denied at two layers).
 
 ## USING / WITH CHECK review
+
 - All Phase-5 policies are `SELECT`-only, so `WITH CHECK` is N/A.
 - Legacy write policies (assignments, attachments, class_subjects,
   class_subject_members, leave, push) all use owner-or-manager
@@ -22,12 +23,14 @@ as correct and left intact:
 - No policy grants based on authentication alone.
 
 ## Change made
+
 - `course_invite_tokens`: `course_invite_tokens_member_read`
   (any university member could read token hashes) replaced by
   `course_invite_tokens_admin_read`:
   `is_platform_admin() OR EXISTS(course_offerings.id = offering_id AND is_class_admin(class_id))`.
 
 ## Verification
+
 `supabase/tests/phase5l-grants-validation.sql` §6 confirms the new policy.
 `supabase/tests/phase5l-tenant-isolation-validation.sql` covers CRUD
 separately (SELECT/INSERT/UPDATE/DELETE) for tenant tables.

@@ -5,11 +5,7 @@
 -- evidence or a platform admin decision. A class can hold at most 5 class
 -- admins, enforced by a trigger on every insert path so no future code path
 -- can bypass the cap.
-
-CREATE OR REPLACE FUNCTION public.enforce_class_admin_cap ()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.enforce_class_admin_cap () RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$
@@ -47,10 +43,7 @@ BEFORE INSERT ON public.class_admins FOR EACH ROW
 EXECUTE FUNCTION public.enforce_class_admin_cap ();
 
 
-CREATE OR REPLACE FUNCTION public.become_class_representative (p_class_id uuid)
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.become_class_representative (p_class_id uuid) RETURNS text LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$
@@ -134,4 +127,5 @@ END;
 $$;
 
 
-GRANT EXECUTE ON FUNCTION public.become_class_representative (uuid) TO authenticated;
+GRANT
+EXECUTE ON FUNCTION public.become_class_representative (uuid) TO authenticated;

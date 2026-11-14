@@ -29,7 +29,9 @@ const ITERATIONS = 25;
 const PAGE = 10;
 
 if (!SERVICE_KEY) {
-  console.error("BLOCKED: SUPABASE_TEST_SERVICE_ROLE_KEY not set (local only).");
+  console.error(
+    "BLOCKED: SUPABASE_TEST_SERVICE_ROLE_KEY not set (local only).",
+  );
   process.exit(2);
 }
 const admin = createClient(URL, SERVICE_KEY, {
@@ -38,7 +40,8 @@ const admin = createClient(URL, SERVICE_KEY, {
 
 function percentiles(samples) {
   const sorted = [...samples].sort((a, b) => a - b);
-  const at = (p) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+  const at = (p) =>
+    sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
   return {
     p50: at(0.5),
     p95: at(0.95),
@@ -74,7 +77,9 @@ const { data: classes } = await admin
   .limit(4);
 const classIds = (classes ?? []).map((c) => c.id);
 if (classIds.length === 0) {
-  console.error("BLOCKED: no syn- classes seeded. Run staging-synthetic-seed.sql first.");
+  console.error(
+    "BLOCKED: no syn- classes seeded. Run staging-synthetic-seed.sql first.",
+  );
   process.exit(2);
 }
 const synClassId = classIds[0];
@@ -116,7 +121,13 @@ results.push(
         .from("attendance_records")
         .select("status,recorded_at,meeting_id")
         .in("university_id", [
-          (await admin.from("universities").select("id").eq("slug", "syn-uni-a").single()).data?.id,
+          (
+            await admin
+              .from("universities")
+              .select("id")
+              .eq("slug", "syn-uni-a")
+              .single()
+          ).data?.id,
         ])
         .order("recorded_at")
         .range(i * 0, PAGE - 1);
@@ -126,14 +137,22 @@ results.push(
   ),
 );
 
-console.log("notification-inbox: ABSENT (no notifications table in local schema; see report).");
+console.log(
+  "notification-inbox: ABSENT (no notifications table in local schema; see report).",
+);
 
 // N+1 guard: each list flow issues a bounded number of queries per request.
 const N1_BOUND = 3;
 const violations = results.filter((r) => r.queriesPerCall > N1_BOUND);
 if (violations.length > 0) {
-  console.error(`N+1 GUARD FAILED: ${violations.map((v) => v.label).join(", ")} exceed ${N1_BOUND} queries/call`);
+  console.error(
+    `N+1 GUARD FAILED: ${violations.map((v) => v.label).join(", ")} exceed ${N1_BOUND} queries/call`,
+  );
   process.exit(1);
 }
-console.log(`N+1 GUARD PASS: every flow <= ${N1_BOUND} queries per request (bounded, no per-row fan-out).`);
-console.log("Harness note: service_role path (no RLS overhead); local synthetic scale only.");
+console.log(
+  `N+1 GUARD PASS: every flow <= ${N1_BOUND} queries per request (bounded, no per-row fan-out).`,
+);
+console.log(
+  "Harness note: service_role path (no RLS overhead); local synthetic scale only.",
+);

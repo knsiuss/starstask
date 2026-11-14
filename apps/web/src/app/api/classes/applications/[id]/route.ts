@@ -47,9 +47,7 @@ export async function PATCH(
       windowSeconds: 3600,
     });
 
-    const parsed = classApplicationReviseSchema.safeParse(
-      await request.json(),
-    );
+    const parsed = classApplicationReviseSchema.safeParse(await request.json());
 
     if (!parsed.success) {
       throw new ApiError(

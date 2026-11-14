@@ -81,10 +81,9 @@ export async function PATCH(request: Request) {
       throw new ApiError(404, "profile_missing", "Your profile was not found.");
     }
 
-    // `update_my_profile` writes full_name, nim, and university together and
-    // rejects a null. A profile without them never finished onboarding, so the
-    // honest answer is to send the student back through that flow.
-    if (!current.nim || !current.university) {
+    // `update_my_profile` writes full_name, nim, and university together;
+    // university marks the finished profile. NIM stays optional for lecturers.
+    if (!current.university) {
       throw new ApiError(
         409,
         "onboarding_incomplete",
@@ -95,7 +94,7 @@ export async function PATCH(request: Request) {
     const profile = await updateMyProfile({
       fullName: parsed.data.fullName,
       nickname: parsed.data.nickname,
-      nim: current.nim,
+      nim: current.nim ?? undefined,
       university: current.university,
       className: current.declaredClassName ?? undefined,
     });

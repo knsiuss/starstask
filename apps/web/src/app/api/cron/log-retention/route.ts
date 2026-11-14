@@ -42,9 +42,12 @@ export async function GET(request: Request) {
     const results: Record<string, number> = {};
 
     for (const purge of purges) {
-      const { data, error } = await supabase.rpc(purge.name as never, {
-        p_retention_days: purge.retentionDays,
-      } as never);
+      const { data, error } = await supabase.rpc(
+        purge.name as never,
+        {
+          p_retention_days: purge.retentionDays,
+        } as never,
+      );
 
       if (error) {
         throw error;

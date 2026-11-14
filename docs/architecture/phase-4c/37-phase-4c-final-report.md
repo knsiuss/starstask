@@ -3,18 +3,23 @@
 > **Status:** READ-ONLY INVESTIGATION COMPLETE (draft docs). **No production or code changes.**
 
 ## 1. What Phase 4C did
+
 Read-only architecture documentation of StarsTask (`C:\project\Startask`) producing the target multi-tenant design for Domains A–Q, grounded in repo evidence (83 migrations, generated types, app code, Phase 4A/4B docs).
 
 ## 2. Files created (exact paths — all under `docs/architecture/phase-4c/`)
+
 `README.md`, `01-repository-and-evidence-inventory.md`, `02-current-state-architecture.md`, `03-existing-schema-inventory.md`, `04-existing-relationship-analysis.md`, `05-application-database-mapping.md`, `06-product-domain-model.md`, `07-global-identity.md`, `08-university-registry-and-tenant-model.md`, `09-academic-organization.md`, `10-academic-period.md`, `11-student-identity.md`, `12-class-and-membership.md`, `13-course-catalog-vs-offering-vs-enrollment.md`, `14-course-invitation.md`, `15-class-administration-rbac.md`, `16-assignments.md`, `17-attendance.md`, `18-grading.md`, `19-schedule.md`, `20-materials-and-storage.md`, `21-social-announcements-discussions.md`, `22-notifications-audit.md`, `23-multi-tenant-security-architecture.md`, `24-rls-and-function-security-review.md`, `25-performance-and-scalability.md`, `26-target-database-schema.md`, `27-schema-constraints-and-indexes.md`, `28-entity-relationship-diagrams.md`, `29-existing-to-target-mapping.md`, `30-data-migration-strategy.md`, `31-application-architecture-alignment.md`, `32-testing-and-validation-strategy.md`, `33-disaster-recovery-and-operations.md`, `34-architecture-decision-records.md`, `35-implementation-roadmap.md`, `36-open-questions-and-assumptions.md`, `37-phase-4c-final-report.md` (38 files total: 37 numbered + README).
 
 ## 3. Evidence inspected
+
 Root `package.json`/`AGENTS.md`, `supabase/config.toml` + all 83 migration filenames + targeted greps (CREATE TABLE, SECURITY DEFINER 208 occ., policies 115 occ., indexes 108 occ., triggers 43 occ., FKs 153 occ., `is_class_member`, `universit`, `grade|nilai` 0 hits, `pg_cron` 0 hits), `database.generated.ts` (52 tables, 143 functions), app `api/` listing, `packages/contracts/src/` (16 modules), `docs/database/architecture/PHASE_4B_DECISION_REPORT.md` (prior context), storage-bucket definitions.
 
 ## 4. Tables verified: 52 / 52 (all accounted for in migrations + generated types; `auth.users` excluded as expected)
+
 ## 5. Functions reviewed: 143 in generated types (VERIFIED count); 208 `security definer` occurrences classified in `24` (NOT 143 as SECURITY DEFINER — prior claim corrected).
 
 ## 6. Key decisions (ADR-001…ADR-018, one line each)
+
 - ADR-001 one global account + per-university personas — APPROVED.
 - ADR-002 single-table tenant registry — PROPOSED.
 - ADR-003 generalized academic units — APPROVED.
@@ -37,6 +42,7 @@ Root `package.json`/`AGENTS.md`, `supabase/config.toml` + all 83 migration filen
 ## 7. Open questions: see `36` (15 items; grading CSV + catalogue scope top).
 
 ## 8. Quality gates A–G
+
 - **A (evidence grounding):** PASS — every table/function count cited with file/line or grep counts; REPORTED items marked.
 - **B (no fabrication):** PASS — UNKNOWN/REPORTED/UNRESOLVED used throughout; no live stats invented.
 - **C (consistency):** PASS — names (`course_offerings`, `enrollments`, `attendance_meetings`, `student_identities`, `universities`) match across `06/13/14/17/23/26/28/29/30/34/35`; ERDs match specs; ADR statuses consistent (APPROVED only for CONFIRMED-basis).
@@ -46,6 +52,7 @@ Root `package.json`/`AGENTS.md`, `supabase/config.toml` + all 83 migration filen
 - **G (safety / files touched):** PASS — 37 files created, all under `docs/architecture/phase-4c/`; zero files modified elsewhere. Full list in §2 above.
 
 ## 9. Limitations
+
 - **No live DB access:** sizes, row counts, seq-scans, pg_cron-in-prod, `rls_auto_enable` presence remain REPORTED (see `02`).
 - **No production verification:** counts come from generated types + migrations, not catalog queries.
 - **Schedule evidence partial:** weekly-row model VERIFIED; PDF-import + class-posts table shape UNRESOLVED (needs 5A line reads).
@@ -55,7 +62,7 @@ Root `package.json`/`AGENTS.md`, `supabase/config.toml` + all 83 migration filen
 
 ---
 
-*Phase 4C complete. Next: Phase 5A evidence closure before any migration is written.*
+_Phase 4C complete. Next: Phase 5A evidence closure before any migration is written._
 
 ### Expansion addendum (2026-11-04 — 13 files expanded in place)
 

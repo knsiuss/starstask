@@ -8,7 +8,6 @@
 -- 20261104120000_leave_revision_flow with the identical decision logic and
 -- the course predicate added to both attendance writes — the same predicate
 -- used by record_leave_lecturer_outcome in 20261104200000_lecturer_outcomes.
-
 CREATE OR REPLACE FUNCTION public.review_leave_request (
   p_request_id uuid,
   p_decision text,

@@ -4,13 +4,13 @@ Evidence: `SELECT bucket_id, count(*) FROM storage.objects GROUP BY bucket_id`, 
 
 ## Bucket inventory
 
-| Bucket | Public? | Objects | Content (from code/seed) | Verdict |
-|---|---|---|---|---|
-| `assignment-attachments` | private | 2 | Student assignment files. | OK — owner + `published` + reviewer read rules. |
-| `avatars` | public | 3 | Profile avatars. | OK — anyone can read avatar; acceptable public identity. |
-| `class-media` | **public** | **0** | Class avatar/cover (`set_class_media` RPC writes URLs here). | **P1 — see below.** |
-| `leave-evidence` | private | 6 | Absence supporting docs. | OK — owner + leave-request-owner checks on write; read via `can_review_leave_request`. |
-| `verification-evidence` | private | 0 | Class verification documents. | OK — owner + `can_edit_class_verification` on write; read via `can_view_class_verification`. |
+| Bucket                   | Public?    | Objects | Content (from code/seed)                                     | Verdict                                                                                      |
+| ------------------------ | ---------- | ------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `assignment-attachments` | private    | 2       | Student assignment files.                                    | OK — owner + `published` + reviewer read rules.                                              |
+| `avatars`                | public     | 3       | Profile avatars.                                             | OK — anyone can read avatar; acceptable public identity.                                     |
+| `class-media`            | **public** | **0**   | Class avatar/cover (`set_class_media` RPC writes URLs here). | **P1 — see below.**                                                                          |
+| `leave-evidence`         | private    | 6       | Absence supporting docs.                                     | OK — owner + leave-request-owner checks on write; read via `can_review_leave_request`.       |
+| `verification-evidence`  | private    | 0       | Class verification documents.                                | OK — owner + `can_edit_class_verification` on write; read via `can_view_class_verification`. |
 
 Total objects: 11. No bucket visibility or file was changed in this phase.
 

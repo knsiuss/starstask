@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { ProfileOnboardingForm } from "@/components/profile/profile-onboarding-form";
 import { getSessionUser } from "@/lib/auth/session";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { safeRedirectPath } from "@/lib/security/redirect";
@@ -51,6 +52,7 @@ export default async function OnboardingPage({
   }
 
   const profile = await getMyProfile();
+  const lecturer = await isLecturer();
   const googleName = session.profile?.display_name ?? "";
 
   return (
@@ -63,6 +65,8 @@ export default async function OnboardingPage({
         university: profile?.university ?? "",
         className: profile?.declaredClassName ?? "",
         avatarUrl: session.profile?.avatar_url ?? null,
+        emailDomain: session.user.email?.split("@")[1]?.toLowerCase() ?? null,
+        isLecturer: lecturer,
       }}
     />
   );

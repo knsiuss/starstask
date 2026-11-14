@@ -28,8 +28,9 @@ NIM migration, onboarding function, `is_platform_admin` + grants, class RLS.
 VERIFIED, `supabase/migrations/20261029003110_profile_nim_unique.sql`:
 
 ```sql
-CREATE UNIQUE INDEX IF NOT EXISTS profiles_nim_unique ON public.profiles (lower(btrim(nim)))
-WHERE nim IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_nim_unique ON public.profiles (lower(btrim (nim)))
+WHERE
+  nim IS NOT NULL;
 ```
 
 So: partial (NULL NIMs exempt), case-insensitive, trimmed, **global**
@@ -39,11 +40,11 @@ different people is rejected today.
 
 App dependencies on `profiles.nim` (VERIFIED by grep this session):
 
-| Surface | Evidence | Role |
-|---|---|---|
-| Onboarding write | `update_my_profile()` sets `profiles.nim` + `profiles.university` (`20261029002700_profile_onboarding.sql:300`); app wrapper `apps/web/src/lib/db/profiles.ts:48` | Actively written on every onboarding save. |
-| Authenticated read | `get_my_profile()` + settings page `settings/profile/page.tsx:144` | Display of the raw NIM. |
-| Attendance flows | `student-meeting-list.tsx` (nim input), `attendance-meetings/pdf.ts`, `excel.ts`, `attendance-sheet.tsx` (display), `meeting-service.ts` (RPC arg) | Read + write via `update_my_profile`-adjacent RPCs (`p_nim`). |
+| Surface            | Evidence                                                                                                                                                          | Role                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Onboarding write   | `update_my_profile()` sets `profiles.nim` + `profiles.university` (`20261029002700_profile_onboarding.sql:300`); app wrapper `apps/web/src/lib/db/profiles.ts:48` | Actively written on every onboarding save.                    |
+| Authenticated read | `get_my_profile()` + settings page `settings/profile/page.tsx:144`                                                                                                | Display of the raw NIM.                                       |
+| Attendance flows   | `student-meeting-list.tsx` (nim input), `attendance-meetings/pdf.ts`, `excel.ts`, `attendance-sheet.tsx` (display), `meeting-service.ts` (RPC arg)                | Read + write via `update_my_profile`-adjacent RPCs (`p_nim`). |
 
 Conclusion (VERIFIED): `profiles.nim` IS actively written by onboarding and
 read by display/attendance code. It is the **current system of record** for
@@ -54,13 +55,13 @@ step). The global unique index stays exactly as-is.
 ## 4. Platform-admin mechanism (the existing mechanism, verified)
 
 - VERIFIED, `20261029000900_classes.sql:23-30`: `platform_admins(user_id PK
-  → auth.users CASCADE, granted_at, granted_by)`. "Written only through SQL
+→ auth.users CASCADE, granted_at, granted_by)`. "Written only through SQL
   or the service role". RLS enabled, **no client policies at all**
   (`20261029001200_class_rls.sql:41-46` — REVOKE ALL from anon/authenticated).
 - VERIFIED, `20261029001100_class_functions.sql:14-29`: `is_platform_admin()`
   is `STABLE`, `SECURITY DEFINER`, `search_path = ''`, `EXISTS(... platform_admins
-  WHERE user_id = (select auth.uid()))`. Grants: `REVOKE ALL FROM public;
-  GRANT EXECUTE TO authenticated` (lines 1335, 1355-1356) — i.e. no anon
+WHERE user_id = (select auth.uid()))`. Grants: `REVOKE ALL FROM public;
+GRANT EXECUTE TO authenticated` (lines 1335, 1355-1356) — i.e. no anon
   access, deliberate.
 - At least 19 migration files call `is_platform_admin()` in RPC gates and RLS
   policies (count RECORDed in 4C `24`; pattern re-confirmed by grep).

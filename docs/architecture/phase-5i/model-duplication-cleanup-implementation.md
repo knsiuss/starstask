@@ -8,13 +8,13 @@ No switch, backfill, rename, or NOT NULL is claimed. Every legacy table/column k
 
 ## What was implemented (exact files)
 
-| File | Change | Validation |
-|---|---|---|
+| File                                                               | Change                                                                                                                                                                                                                                                                                                                                                                                                                                       | Validation                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `supabase/migrations/20261119000002_model_duplication_cleanup.sql` | **NEW** — additive deprecation comments (legacy membership/admin tables, dual-column `classes`, `discussion_sessions` god-table, `assignments` four grains) + 1 redundant provably-safe CHECK (`assignments_status_archived_consistency`, NOT VALID → VALIDATED) + 3 reporting views (`discussion_sessions_domain_view`, `assignments_owner_reporting`, `classes_legacy_vs_fk_gap`). **No data moves, no DROP, no NOT NULL, no RLS change.** | Applied to disposable local stack (`supabase_db_starstask`, PG 17) with `ON_ERROR_STOP=1`: all statements PASS (13 COMMENT, 2 DO, 3 CREATE VIEW). Syntax fixed once (`pg_description.description` vs `comment`). Views and CHECK then **dropped** to leave the local schema pristine. |
-| `supabase/tests/model-duplication-cleanup-validation.sql` | **NEW** — read-only validation queries | Executed locally: comments present (4 rows), views return counts (12 gap rows, 0/0 grains/sessions), CHECK validated (`convalidated=t`), 23 constraints on `assignments` (1 added). |
-| `scripts/reconcile-nim-dry-run.mjs` | **NEW** — dry-run NIM gap report (PostgREST read-only, refuses non-local URLs) | Executed locally: `profiles_nim_set: 0 / student_identities_nim_set: 0 / gaps 0 / spanning 0` — PASS, "no writes performed". One bug fixed (54322 is Postgres-direct; default corrected to 54321 REST + zero-dependency `fetch`). |
-| `docs/architecture/phase-5i/migration-mapping.md` | **NEW** — source-of-truth table (§1–8) | This pass's primary deliverable; see file. |
-| `docs/architecture/phase-5i/naming-conventions.md` | **NEW** — §26-A naming for NEW columns; no renames | Per phase-4c §26 header; documents evidence table. |
+| `supabase/tests/model-duplication-cleanup-validation.sql`          | **NEW** — read-only validation queries                                                                                                                                                                                                                                                                                                                                                                                                       | Executed locally: comments present (4 rows), views return counts (12 gap rows, 0/0 grains/sessions), CHECK validated (`convalidated=t`), 23 constraints on `assignments` (1 added).                                                                                                   |
+| `scripts/reconcile-nim-dry-run.mjs`                                | **NEW** — dry-run NIM gap report (PostgREST read-only, refuses non-local URLs)                                                                                                                                                                                                                                                                                                                                                               | Executed locally: `profiles_nim_set: 0 / student_identities_nim_set: 0 / gaps 0 / spanning 0` — PASS, "no writes performed". One bug fixed (54322 is Postgres-direct; default corrected to 54321 REST + zero-dependency `fetch`).                                                     |
+| `docs/architecture/phase-5i/migration-mapping.md`                  | **NEW** — source-of-truth table (§1–8)                                                                                                                                                                                                                                                                                                                                                                                                       | This pass's primary deliverable; see file.                                                                                                                                                                                                                                            |
+| `docs/architecture/phase-5i/naming-conventions.md`                 | **NEW** — §26-A naming for NEW columns; no renames                                                                                                                                                                                                                                                                                                                                                                                           | Per phase-4c §26 header; documents evidence table.                                                                                                                                                                                                                                    |
 
 ## TRUE local evidence (disposable stack, 2026-11-05)
 
@@ -41,13 +41,13 @@ Interpretation: **the new normalized tables are structurally present but functio
 
 ## Test results (TRUE)
 
-| Test | Result |
-|---|---|
-| `20261119000002` applied to disposable local stack | **PASS** (all statements; 1 syntax bug found+fixed first) |
-| `model-duplication-cleanup-validation.sql` | **PASS** (comments/views/CHECK/23 constraints) |
-| `reconcile-nim-dry-run.mjs` | **PASS** (0/0/0/0/0, no writes) |
-| `20261110000000_subject_enrollment.sql` hash start=end | **PASS** `59CE5DAF…ECEC3` |
-| `git status` scope compliance | **PASS** — only this pass's 6 files added; all pre-existing dirty WIP preserved (see mapping doc scope note + final `git status` below) |
+| Test                                                   | Result                                                                                                                                  |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261119000002` applied to disposable local stack     | **PASS** (all statements; 1 syntax bug found+fixed first)                                                                               |
+| `model-duplication-cleanup-validation.sql`             | **PASS** (comments/views/CHECK/23 constraints)                                                                                          |
+| `reconcile-nim-dry-run.mjs`                            | **PASS** (0/0/0/0/0, no writes)                                                                                                         |
+| `20261110000000_subject_enrollment.sql` hash start=end | **PASS** `59CE5DAF…ECEC3`                                                                                                               |
+| `git status` scope compliance                          | **PASS** — only this pass's 6 files added; all pre-existing dirty WIP preserved (see mapping doc scope note + final `git status` below) |
 
 ## Remaining blockers (unchanged, none dissolved by this pass)
 
@@ -59,15 +59,15 @@ Interpretation: **the new normalized tables are structurally present but functio
 
 ## Readiness verdict
 
-| # | Verdict |
-|---|---|
-| 1 Model duplication | CUTOVER DEFERRED |
-| 2 Dual-column classes | NOT IMPLEMENTED (documented, deferred) |
-| 3 NIM sync | FIXED for docs/script; uniqueness risk CUTOVER DEFERRED |
-| 4 Assignments ambiguity | NOT IMPLEMENTED (blocked on #2) |
-| 5 discussion_sessions | FIXED (labels; rename deferred) |
-| 6 Dual state sources | CUTOVER DEFERRED |
-| 7 Naming conventions | FIXED (docs; renames deferred) |
-| 8 Legacy university_id nullable | DOCUMENTED only |
+| #                               | Verdict                                                 |
+| ------------------------------- | ------------------------------------------------------- |
+| 1 Model duplication             | CUTOVER DEFERRED                                        |
+| 2 Dual-column classes           | NOT IMPLEMENTED (documented, deferred)                  |
+| 3 NIM sync                      | FIXED for docs/script; uniqueness risk CUTOVER DEFERRED |
+| 4 Assignments ambiguity         | NOT IMPLEMENTED (blocked on #2)                         |
+| 5 discussion_sessions           | FIXED (labels; rename deferred)                         |
+| 6 Dual state sources            | CUTOVER DEFERRED                                        |
+| 7 Naming conventions            | FIXED (docs; renames deferred)                          |
+| 8 Legacy university_id nullable | DOCUMENTED only                                         |
 
 **Honesty statement:** nothing that changes a read path, a constraint on real data, or a business rule is claimed. The migration is written, locally validated, dropped after validation, and **never pushed to remote**.

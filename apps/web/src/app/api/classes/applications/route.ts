@@ -1,4 +1,7 @@
-import { classApplicationCreateSchema, toFieldErrors } from "@starstask/contracts";
+import {
+  classApplicationCreateSchema,
+  toFieldErrors,
+} from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
@@ -53,9 +56,7 @@ export async function POST(request: Request) {
       windowSeconds: 3600,
     });
 
-    const parsed = classApplicationCreateSchema.safeParse(
-      await request.json(),
-    );
+    const parsed = classApplicationCreateSchema.safeParse(await request.json());
 
     if (!parsed.success) {
       throw new ApiError(

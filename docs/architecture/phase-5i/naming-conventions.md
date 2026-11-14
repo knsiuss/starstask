@@ -12,16 +12,16 @@ Tenant classes: GLOBAL / TENANT_OWNED / TENANT_DERIVED / CROSS_TENANT_REFERENCE 
 
 ## The inconsistency (evidence from migrations)
 
-| Column name | Table(s) | Referent | Evidence |
-|---|---|---|---|
-| `user_id` | `assignments`, `class_members`, `class_admins`, `university_memberships`, `announcement_reads` | `auth.users(id)` | 20261029 core schema |
-| `created_by` | `classes`, `class_applications`, `class_invitations` | `auth.users(id)` | 20261029000900 |
-| `author` | `announcements.author` | `profiles(id)` | 20261116000000 |
-| `organizer_id` | `discussion_sessions.organizer_id` | `auth.users(id)` | 20261029001600 |
-| `actor_id` | `audit_logs.actor_id` | `auth.users(id)` | 20261029001100 |
-| `applicant_id` | `class_applications.applicant_id` | `auth.users(id)` | 20261029000900 |
-| `student_id` | `university_memberships.student_id`, `student_identities.student_id` | **NIM text, not a FK** | 20261111/20261112 |
-| `student_identity_id` | `class_memberships`, `class_admin_assignments`, `enrollments` | `student_identities(id)` | 20261114/20261113 |
+| Column name           | Table(s)                                                                                       | Referent                 | Evidence             |
+| --------------------- | ---------------------------------------------------------------------------------------------- | ------------------------ | -------------------- |
+| `user_id`             | `assignments`, `class_members`, `class_admins`, `university_memberships`, `announcement_reads` | `auth.users(id)`         | 20261029 core schema |
+| `created_by`          | `classes`, `class_applications`, `class_invitations`                                           | `auth.users(id)`         | 20261029000900       |
+| `author`              | `announcements.author`                                                                         | `profiles(id)`           | 20261116000000       |
+| `organizer_id`        | `discussion_sessions.organizer_id`                                                             | `auth.users(id)`         | 20261029001600       |
+| `actor_id`            | `audit_logs.actor_id`                                                                          | `auth.users(id)`         | 20261029001100       |
+| `applicant_id`        | `class_applications.applicant_id`                                                              | `auth.users(id)`         | 20261029000900       |
+| `student_id`          | `university_memberships.student_id`, `student_identities.student_id`                           | **NIM text, not a FK**   | 20261111/20261112    |
+| `student_identity_id` | `class_memberships`, `class_admin_assignments`, `enrollments`                                  | `student_identities(id)` | 20261114/20261113    |
 
 One referent (`auth.users`) is spelled 5 ways (`user_id`, `created_by`, `author`, `organizer_id`, `actor_id`, `applicant_id`). Two different things (`auth.users` vs `student_identities`) both start with `student_`, and `student_id` is a NIM string — not an id of anything. Renaming any of these is **a breaking cutover, not a cleanup**, and is out of scope for this pass.
 

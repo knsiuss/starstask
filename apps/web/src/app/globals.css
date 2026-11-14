@@ -70,6 +70,7 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
   }
@@ -235,7 +236,7 @@ select option:checked {
 
 /* Toasts live in a fixed layer, so animating them never shifts page content. */
 .toast-enter {
-  animation: toast-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: toast-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .toast-exit {
@@ -489,6 +490,62 @@ select option:checked {
 .rise-in {
   animation: rise-in 420ms ease-out both;
   animation-delay: var(--rise-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .message-in,
+  .typing-dot {
+    animation: none !important;
+  }
+}
+
+/* Dialog: overlay fades, content rises with a single shared easing. */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.dropdown-content {
+  animation: menu-in 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dialog-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.dialog-overlay {
+  animation: dialog-overlay-in 160ms ease-out both;
+}
+.dialog-content {
+  animation: dialog-content-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay,
+  .dialog-content,
+  .dropdown-content {
+    animation: none !important;
+  }
 }
 
 @keyframes message-in {

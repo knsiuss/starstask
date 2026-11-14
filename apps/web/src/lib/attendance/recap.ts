@@ -121,8 +121,7 @@ export function buildAttendanceRecap(input: {
           // meetings stay NR so lecturers can still record late arrivals.
           const finalizedOverdue =
             meeting.finalizedAt !== null &&
-            Date.now() - Date.parse(meeting.finalizedAt) >
-              NR_ABSENT_AFTER_MS;
+            Date.now() - Date.parse(meeting.finalizedAt) > NR_ABSENT_AFTER_MS;
 
           if (finalizedOverdue) {
             absent += 1;

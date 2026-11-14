@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpenText,
   CalendarDays,
   ClipboardList,
   Compass,
@@ -73,6 +74,20 @@ const LEADER_ITEMS: NavItem[] = [
 ];
 
 /**
+ * Verified-lecturer destinations render only for users whose workspace context
+ * carries `lecturer_anywhere`. The flag is cosmetic; /app/lecturer re-checks
+ * the lecturer role server-side.
+ */
+const LECTURER_ITEMS: NavItem[] = [
+  {
+    href: "/app/lecturer",
+    label: "Lecturer",
+    icon: BookOpenText,
+    requiresAuth: true,
+  },
+];
+
+/**
  * Notifications and Google Calendar are deliberately absent: the topbar bell
  * owns notifications, and the calendar connection lives under Schedule and
  * Settings. A second sidebar destination would only duplicate them.
@@ -121,6 +136,8 @@ type WorkspaceNavProps = {
   isAuthenticated: boolean;
   /** Renders the Action center; true only for users leading a class. */
   isClassAdmin?: boolean;
+  /** Renders the Lecturer section; true only for verified lecturers. */
+  isLecturer?: boolean;
   /** Icon-only rendering for the collapsed desktop sidebar. */
   compact?: boolean;
   /** Menampilkan section University Info (UNPAM/FTI). */
@@ -139,6 +156,7 @@ type WorkspaceNavProps = {
 export function WorkspaceNav({
   isAuthenticated,
   isClassAdmin = false,
+  isLecturer = false,
   compact = false,
   showUniversityInfo = false,
   onNavigate,
@@ -148,6 +166,7 @@ export function WorkspaceNav({
   const items = [
     ...STUDY_ITEMS,
     ...(isClassAdmin ? LEADER_ITEMS : []),
+    ...(isLecturer ? LECTURER_ITEMS : []),
     ...(showUniversityInfo ? UNIVERSITY_ITEMS : []),
     ...(isAuthenticated ? ACCOUNT_ITEMS : []),
   ].filter((item) => !item.requiresAuth || isAuthenticated);
@@ -207,6 +226,14 @@ export function WorkspaceNav({
           compact={compact}
         >
           {LEADER_ITEMS.map(renderItem)}
+        </NavSection>
+      ) : null}
+      {isLecturer && isAuthenticated ? (
+        <NavSection
+          label="Lecturer"
+          compact={compact}
+        >
+          {LECTURER_ITEMS.map(renderItem)}
         </NavSection>
       ) : null}
       {showUniversityInfo ? (

@@ -2,7 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
-  '@firebase/util': true
+  "@firebase/util": true
   core-js: true
   esbuild: true
   protobufjs: true
@@ -11,3 +11,9 @@ minimumReleaseAgeExclude:
   - "@types/node@26.6.6"
   - lucide-react@1.63.0
   - unpdf@2.0.0
+overrides:
+  bl: ^4.0.3
+  uuid: ^11.1.1
+  fast-csv: ^4.3.6
+  glob: ^14.0.2
+  minimatch: ^11.0.1

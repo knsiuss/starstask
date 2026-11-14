@@ -4,14 +4,14 @@ Evidence: `pg_indexes` (public), `pg_stat_user_tables` (seq/idx scans), index na
 
 ## Measured (from pg_stat)
 
-| Table | seq_scan / seq_tup_read | idx_scan | n_live | Verdict |
-|---|---|---|---|---|
-| `class_members` | 23903 / 357726 | 37331 | 30 | Hot RLS path, tiny size — cache at app layer, consider `is_class_member` memoization in same request (already done for `listMyClasses` via `cebc170`). Do not add index; already indexed (`pkey`, `user_idx`). |
-| `profiles` | 7484 / 108814 | 2339 | 32 | Seq dominates — member-list queries (`loadProfiles`) run per page. P2: batch load (already single query), avoid per-member N+1. |
-| `discussion_session_checkins` | 1133 / 105137 | 4678 | 129 | Mixed; recap needs `(session_id)` composite — exists via `session_idx` + `one_per_user`. OK at 129, watch at 10k. |
-| `assignments` | 4864 / 7665 | 8514 | 4 | Index healthy (10 indexes incl. `search_idx`, `public_recent_idx`, `review_queue_idx`). Slight over-indexing (10 on 4 rows) — harmless now, prune after prod traffic measured. |
-| `attendance_verification_attempts` | 228 / 12430 | 1632 | 55 | Only `session_idx`. Theoretical P2 composite `(session_id, user_id, created_at)`. |
-| `class_subjects` | 602 / 3463 | 5491 | 8 | Index healthy. |
+| Table                              | seq_scan / seq_tup_read | idx_scan | n_live | Verdict                                                                                                                                                                                                        |
+| ---------------------------------- | ----------------------- | -------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `class_members`                    | 23903 / 357726          | 37331    | 30     | Hot RLS path, tiny size — cache at app layer, consider `is_class_member` memoization in same request (already done for `listMyClasses` via `cebc170`). Do not add index; already indexed (`pkey`, `user_idx`). |
+| `profiles`                         | 7484 / 108814           | 2339     | 32     | Seq dominates — member-list queries (`loadProfiles`) run per page. P2: batch load (already single query), avoid per-member N+1.                                                                                |
+| `discussion_session_checkins`      | 1133 / 105137           | 4678     | 129    | Mixed; recap needs `(session_id)` composite — exists via `session_idx` + `one_per_user`. OK at 129, watch at 10k.                                                                                              |
+| `assignments`                      | 4864 / 7665             | 8514     | 4      | Index healthy (10 indexes incl. `search_idx`, `public_recent_idx`, `review_queue_idx`). Slight over-indexing (10 on 4 rows) — harmless now, prune after prod traffic measured.                                 |
+| `attendance_verification_attempts` | 228 / 12430             | 1632     | 55     | Only `session_idx`. Theoretical P2 composite `(session_id, user_id, created_at)`.                                                                                                                              |
+| `class_subjects`                   | 602 / 3463              | 5491     | 8      | Index healthy.                                                                                                                                                                                                 |
 
 ## Duplicate / redundant candidates
 

@@ -73,10 +73,27 @@ const requiredText = (label: string, min: number, max: number) =>
     .max(max, `${label} must be ${max} characters or fewer`);
 
 /**
+ * Onboarding personas.
+ *
+ * The persona is derived in the database from the caller's confirmed email
+ * domain and membership, never from client input. Students fill in a NIM;
+ * lecturers may leave it blank. The client's NIM-optional path exists so the
+ * form can render for both, but the server enforces it per persona — see
+ * update_my_profile (20270119000000_lecturer_auto_active.sql).
+ */
+export const PROFILE_ONBOARDING_PERSONAS = ["student", "lecturer"] as const;
+
+export type ProfileOnboardingPersona =
+  (typeof PROFILE_ONBOARDING_PERSONAS)[number];
+
+/**
  * The onboarding form payload.
  *
- * The class name is optional: a profile is complete without a class, and an
- * unmatched name is stored as the student typed it rather than dropped.
+ * `nim` is optional so institutional-email accounts (auto-activated lecturers)
+ * are not forced to invent one. The server rejects a missing/invalid NIM for
+ * accounts that are not lecturers, and the form marks it required when the
+ * persona is student. The class name remains optional: an unmatched name is
+ * stored as typed rather than dropped.
  */
 export const profileOnboardingSchema = z.object({
   fullName: requiredText(
@@ -92,11 +109,14 @@ export const profileOnboardingSchema = z.object({
   nim: z
     .string()
     .trim()
-    .min(PROFILE_NIM_MIN, "Enter your NIM")
     .max(PROFILE_NIM_MAX, `NIM must be ${PROFILE_NIM_MAX} characters or fewer`)
-    .regex(
-      PROFILE_NIM_PATTERN,
+    .refine(
+      (value) => value === "" || PROFILE_NIM_PATTERN.test(value),
       "Use letters, digits, dot, underscore, or hyphen",
+    )
+    .optional()
+    .transform((value) =>
+      value === undefined || value === "" ? undefined : value,
     ),
   university: requiredText(
     "University",
@@ -236,3 +256,46 @@ export const classJoinByNameSchema = z.object({
 });
 
 export type ClassJoinByNameInput = z.infer<typeof classJoinByNameSchema>;
+
+/**
+ * Student self-created class payload for `create_class_as_student`.
+ *
+ * Mirrors the RPC checks: slug format, lengths, and academic_year shape.
+ * `joinPolicy` defaults to invitation so a new class is not discoverable
+ * before its owner shares the link.
+ */
+export const studentCreateClassSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(
+      /^[a-z0-9]+(-[a-z0-9]+)*$/,
+      "Use lowercase letters, numbers and hyphens",
+    )
+    .min(3, "Slug must be at least 3 characters")
+    .max(80, "Slug must be 80 characters or fewer"),
+  name: z
+    .string()
+    .trim()
+    .min(3, "Class name must be at least 3 characters")
+    .max(120, "Class name must be 120 characters or fewer"),
+  courseName: z
+    .string()
+    .trim()
+    .min(2, "Course name must be at least 2 characters")
+    .max(120, "Course name must be 120 characters or fewer"),
+  semester: z.string().trim().min(1, "Semester is required").max(20),
+  academicYear: z
+    .string()
+    .trim()
+    .regex(/^\d{4}\/\d{4}$/, "Use the format 2026/2027"),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Description must be at least 10 characters")
+    .max(5000, "Description must be 5000 characters or fewer"),
+  joinPolicy: z.enum(["invitation", "open"]).default("invitation"),
+});
+
+export type StudentCreateClassInput = z.infer<typeof studentCreateClassSchema>;

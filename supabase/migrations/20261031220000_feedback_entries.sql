@@ -14,15 +14,9 @@ CREATE TABLE IF NOT EXISTS public.feedback_entries (
   status text NOT NULL DEFAULT 'open',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT feedback_entries_category_allowed CHECK (
-    category IN ('bug', 'confusing', 'idea', 'other')
-  ),
-  CONSTRAINT feedback_entries_status_allowed CHECK (
-    status IN ('open', 'reviewing', 'resolved', 'dismissed')
-  ),
-  CONSTRAINT feedback_entries_message_length CHECK (
-    char_length(btrim(message)) BETWEEN 10 AND 2000
-  ),
+  CONSTRAINT feedback_entries_category_allowed CHECK (category IN ('bug', 'confusing', 'idea', 'other')),
+  CONSTRAINT feedback_entries_status_allowed CHECK (status IN ('open', 'reviewing', 'resolved', 'dismissed')),
+  CONSTRAINT feedback_entries_message_length CHECK (char_length(btrim(message)) BETWEEN 10 AND 2000),
   CONSTRAINT feedback_entries_page_path_length CHECK (
     page_path IS NULL
     OR char_length(page_path) BETWEEN 1 AND 200
@@ -54,8 +48,9 @@ FROM
 
 
 GRANT
-SELECT,
-INSERT ON public.feedback_entries TO authenticated;
+SELECT
+,
+  INSERT ON public.feedback_entries TO authenticated;
 
 
 -- Only the triage status is writable, and only for platform admins.
@@ -68,15 +63,25 @@ DROP POLICY IF EXISTS feedback_entries_owner_read ON public.feedback_entries;
 
 CREATE POLICY feedback_entries_owner_read ON public.feedback_entries FOR
 SELECT
-  TO authenticated USING (user_id = (SELECT auth.uid ()));
+  TO authenticated USING (
+    user_id = (
+      SELECT
+        auth.uid ()
+    )
+  );
 
 
 DROP POLICY IF EXISTS feedback_entries_owner_insert ON public.feedback_entries;
 
 
-CREATE POLICY feedback_entries_owner_insert ON public.feedback_entries FOR
-INSERT
-  TO authenticated WITH CHECK (user_id = (SELECT auth.uid ()));
+CREATE POLICY feedback_entries_owner_insert ON public.feedback_entries FOR INSERT TO authenticated
+WITH
+  CHECK (
+    user_id = (
+      SELECT
+        auth.uid ()
+    )
+  );
 
 
 DROP POLICY IF EXISTS feedback_entries_admin_read ON public.feedback_entries;
@@ -90,6 +95,8 @@ SELECT
 DROP POLICY IF EXISTS feedback_entries_admin_update ON public.feedback_entries;
 
 
-CREATE POLICY feedback_entries_admin_update ON public.feedback_entries FOR
-UPDATE TO authenticated USING (public.is_platform_admin ())
-WITH CHECK (public.is_platform_admin ());
+CREATE POLICY feedback_entries_admin_update ON public.feedback_entries
+FOR UPDATE
+  TO authenticated USING (public.is_platform_admin ())
+WITH
+  CHECK (public.is_platform_admin ());

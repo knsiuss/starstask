@@ -815,6 +815,84 @@ export interface Database {
         };
         Relationships: [];
       };
+      class_export_branding: {
+        Row: {
+          class_id: string;
+          university_name: string;
+          university_short_name: string | null;
+          university_tagline: string | null;
+          faculty: string | null;
+          department: string | null;
+          study_program: string | null;
+          address: string | null;
+          city: string | null;
+          official_website: string | null;
+          official_email: string | null;
+          contact_number: string | null;
+          document_title: string;
+          footer_text: string | null;
+          product_name: string;
+          product_tagline: string;
+          product_logo_url: string;
+          product_footer: string | null;
+          branding_enabled: boolean;
+          passing_threshold: number;
+          university_logo_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          class_id: string;
+          university_name?: string;
+          university_short_name?: string | null;
+          university_tagline?: string | null;
+          faculty?: string | null;
+          department?: string | null;
+          study_program?: string | null;
+          address?: string | null;
+          city?: string | null;
+          official_website?: string | null;
+          official_email?: string | null;
+          contact_number?: string | null;
+          document_title?: string;
+          footer_text?: string | null;
+          product_name?: string;
+          product_tagline?: string;
+          product_logo_url?: string;
+          product_footer?: string | null;
+          branding_enabled?: boolean;
+          passing_threshold?: number;
+          university_logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          class_id?: string;
+          university_name?: string;
+          university_short_name?: string | null;
+          university_tagline?: string | null;
+          faculty?: string | null;
+          department?: string | null;
+          study_program?: string | null;
+          address?: string | null;
+          city?: string | null;
+          official_website?: string | null;
+          official_email?: string | null;
+          contact_number?: string | null;
+          document_title?: string;
+          footer_text?: string | null;
+          product_name?: string;
+          product_tagline?: string;
+          product_logo_url?: string;
+          product_footer?: string | null;
+          branding_enabled?: boolean;
+          passing_threshold?: number;
+          university_logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       classes: {
         Row: {
           entry_year: number | null;
@@ -1310,6 +1388,51 @@ export interface Database {
             columns: ["incident_id"];
             isOneToOne: false;
             referencedRelation: "developer_incidents";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      export_jobs: {
+        Row: {
+          created_at: string;
+          error_category: string | null;
+          id: string;
+          kind: string;
+          params: Json;
+          result_path: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          error_category?: string | null;
+          id?: string;
+          kind: string;
+          params?: Json;
+          result_path?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          error_category?: string | null;
+          id?: string;
+          kind?: string;
+          params?: Json;
+          result_path?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -3332,6 +3455,111 @@ export interface Database {
           },
         ];
       };
+      class_ketua_assignments: {
+        Row: {
+          assigned_at: string;
+          class_id: string;
+          id: string;
+          removed_reason: string | null;
+          revoked_at: string | null;
+          source: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          assigned_at?: string;
+          class_id: string;
+          id?: string;
+          removed_reason?: string | null;
+          revoked_at?: string | null;
+          source: string;
+          user_id: string;
+        };
+        Update: {
+          assigned_at?: string;
+          class_id?: string;
+          id?: string;
+          removed_reason?: string | null;
+          revoked_at?: string | null;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_ketua_assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_ketua_recall_votes: {
+        Row: {
+          created_at: string;
+          recall_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          recall_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          recall_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_ketua_recall_votes_recall_id_fkey";
+            columns: ["recall_id"];
+            isOneToOne: false;
+            referencedRelation: "class_ketua_recalls";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_ketua_recalls: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          decided_at: string | null;
+          id: string;
+          opened_by: string;
+          reason: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          decided_at?: string | null;
+          id?: string;
+          opened_by: string;
+          reason?: string | null;
+          status?: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          id?: string;
+          opened_by?: string;
+          reason?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_ketua_recalls_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       attendance_meetings: {
         Row: {
           created_at: string;
@@ -3625,6 +3853,625 @@ export interface Database {
           },
         ];
       };
+      beta_testers: {
+        Row: {
+          granted_at: string;
+          granted_by: string | null;
+          note: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          granted_at?: string;
+          granted_by?: string | null;
+          note?: string | null;
+          user_id: string;
+        };
+        Update: {
+          granted_at?: string;
+          granted_by?: string | null;
+          note?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      class_subject_members: {
+        Row: {
+          class_id: string;
+          enrolled_at: string;
+          enrolled_via: string;
+          subject_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          enrolled_at?: string;
+          enrolled_via?: string;
+          subject_id: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          enrolled_at?: string;
+          enrolled_via?: string;
+          subject_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_subject_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_subject_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_subject_members_class_id_user_id_fkey";
+            columns: ["class_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "class_members";
+            referencedColumns: ["class_id", "user_id"];
+          },
+          {
+            foreignKeyName: "class_subject_members_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      course_component_grades: {
+        Row: {
+          class_id: string;
+          component: string;
+          created_at: string;
+          id: string;
+          score: number;
+          student_id: string;
+          subject_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          component: string;
+          created_at?: string;
+          id?: string;
+          score: number;
+          student_id: string;
+          subject_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          class_id?: string;
+          component?: string;
+          created_at?: string;
+          id?: string;
+          score?: number;
+          student_id?: string;
+          subject_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_component_grades_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_component_grades_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_component_grades_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      course_retake_enrollments: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          created_by: string | null;
+          enrolled_via: string;
+          subject_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          enrolled_via?: string;
+          subject_id: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          enrolled_via?: string;
+          subject_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_retake_enrollments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_retake_enrollments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_retake_enrollments_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_calls: {
+        Row: {
+          caller_id: string;
+          conversation_id: string;
+          created_at: string;
+          ended_at: string | null;
+          id: string;
+          kind: string;
+          signal: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          caller_id: string;
+          conversation_id: string;
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          kind?: string;
+          signal?: string | null;
+          status?: string;
+        };
+        Update: {
+          caller_id?: string;
+          conversation_id?: string;
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          kind?: string;
+          signal?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_calls_caller_id_fkey";
+            columns: ["caller_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_calls_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_group_keys: {
+        Row: {
+          conversation_id: string;
+          user_id: string;
+          wrapped_key: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          conversation_id: string;
+          user_id: string;
+          wrapped_key: string;
+        };
+        Update: {
+          conversation_id?: string;
+          user_id?: string;
+          wrapped_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_group_keys_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_group_keys_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_key_backup: {
+        Row: {
+          updated_at: string;
+          user_id: string;
+          wrapped_private_key: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          updated_at?: string;
+          user_id: string;
+          wrapped_private_key: string;
+        };
+        Update: {
+          updated_at?: string;
+          user_id?: string;
+          wrapped_private_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_key_backup_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_key_history: {
+        Row: {
+          created_at: string;
+          id: string;
+          public_key: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          public_key: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          public_key?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_key_history_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_stories: {
+        Row: {
+          caption: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          mime: string;
+          path: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          caption?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          mime: string;
+          path: string;
+          user_id: string;
+        };
+        Update: {
+          caption?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          mime?: string;
+          path?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_stories_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_typing: {
+        Row: {
+          conversation_id: string;
+          is_typing: boolean;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          conversation_id: string;
+          is_typing?: boolean;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          conversation_id?: string;
+          is_typing?: boolean;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_typing_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_typing_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      google_drive_connections: {
+        Row: {
+          access_token_ciphertext: string;
+          connected_at: string;
+          drive_email: string | null;
+          last_error_category: string | null;
+          last_refreshed_at: string | null;
+          refresh_token_ciphertext: string | null;
+          scope: string;
+          status: string;
+          token_expires_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_token_ciphertext: string;
+          connected_at?: string;
+          drive_email?: string | null;
+          last_error_category?: string | null;
+          last_refreshed_at?: string | null;
+          refresh_token_ciphertext?: string | null;
+          scope: string;
+          status?: string;
+          token_expires_at: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          access_token_ciphertext?: string;
+          connected_at?: string;
+          drive_email?: string | null;
+          last_error_category?: string | null;
+          last_refreshed_at?: string | null;
+          refresh_token_ciphertext?: string | null;
+          scope?: string;
+          status?: string;
+          token_expires_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      offline_checkin_queue: {
+        Row: {
+          captured_at: string;
+          created_at: string;
+          id: string;
+          payload: NonNullable<Json>;
+          session_id: string;
+          synced_at: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          captured_at?: string;
+          created_at?: string;
+          id?: string;
+          payload: NonNullable<Json>;
+          session_id: string;
+          synced_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          captured_at?: string;
+          created_at?: string;
+          id?: string;
+          payload?: NonNullable<Json>;
+          session_id?: string;
+          synced_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "offline_checkin_queue_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      plugin_events: {
+        Row: {
+          content_hash: string;
+          description: string | null;
+          ends_at: string | null;
+          first_seen_at: string;
+          id: string;
+          kind: string;
+          last_seen_at: string;
+          location: string | null;
+          plugin_id: string;
+          program_id: string;
+          source_url: string | null;
+          starts_at: string;
+          title: string;
+          university_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          content_hash: string;
+          description?: string | null;
+          ends_at?: string | null;
+          first_seen_at?: string;
+          id?: string;
+          kind: string;
+          last_seen_at?: string;
+          location?: string | null;
+          plugin_id: string;
+          program_id?: string;
+          source_url?: string | null;
+          starts_at: string;
+          title: string;
+          university_id: string;
+        };
+        Update: {
+          content_hash?: string;
+          description?: string | null;
+          ends_at?: string | null;
+          first_seen_at?: string;
+          id?: string;
+          kind?: string;
+          last_seen_at?: string;
+          location?: string | null;
+          plugin_id?: string;
+          program_id?: string;
+          source_url?: string | null;
+          starts_at?: string;
+          title?: string;
+          university_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plugin_events_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      plugin_sync_status: {
+        Row: {
+          event_count: number;
+          last_attempt_at: string | null;
+          last_error: string | null;
+          last_success_at: string | null;
+          plugin_id: string;
+          university_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          event_count?: number;
+          last_attempt_at?: string | null;
+          last_error?: string | null;
+          last_success_at?: string | null;
+          plugin_id: string;
+          university_id: string;
+        };
+        Update: {
+          event_count?: number;
+          last_attempt_at?: string | null;
+          last_error?: string | null;
+          last_success_at?: string | null;
+          plugin_id?: string;
+          university_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plugin_sync_status_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      university_plugins: {
+        Row: {
+          enabled: boolean;
+          plugin_id: string;
+          university_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          enabled?: boolean;
+          plugin_id: string;
+          university_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          enabled?: boolean;
+          plugin_id?: string;
+          university_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "university_plugins_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "university_plugins_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       grade_history: {
         Row: {
           changed_at: string;
@@ -3680,6 +4527,64 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      drive_submissions: {
+        Row: {
+          assignment_id: string;
+          created_at: string;
+          drive_file_id: string | null;
+          drive_file_name: string;
+          file_size: number;
+          id: string;
+          mime_type: string;
+          share_expires_at: string | null;
+          share_revoked_at: string | null;
+          share_token: string;
+          share_token_hash: string | null;
+          source: string;
+          storage_path: string;
+          storage_provider: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          assignment_id: string;
+          created_at?: string;
+          drive_file_id?: string | null;
+          drive_file_name: string;
+          file_size: number;
+          id?: string;
+          mime_type: string;
+          share_expires_at?: string | null;
+          share_revoked_at?: string | null;
+          share_token?: string;
+          share_token_hash?: string | null;
+          source?: string;
+          storage_path: string;
+          storage_provider: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          assignment_id?: string;
+          created_at?: string;
+          drive_file_id?: string | null;
+          drive_file_name?: string;
+          file_size?: number;
+          id?: string;
+          mime_type?: string;
+          share_expires_at?: string | null;
+          share_revoked_at?: string | null;
+          share_token?: string;
+          share_token_hash?: string | null;
+          source?: string;
+          storage_path?: string;
+          storage_provider?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       announcements: {
         Row: {
@@ -3872,9 +4777,11 @@ export interface Database {
           created_by: string | null;
           deactivated_at: string | null;
           id: string;
+          institutional_domains: string[];
           locale: string | null;
           logo_url: string | null;
           name: string;
+          nim_prefix: string | null;
           province: string | null;
           short_name: string | null;
           slug: string;
@@ -3894,9 +4801,11 @@ export interface Database {
           created_by?: string | null;
           deactivated_at?: string | null;
           id?: string;
+          institutional_domains?: string[];
           locale?: string | null;
           logo_url?: string | null;
           name: string;
+          nim_prefix?: string | null;
           province?: string | null;
           short_name?: string | null;
           slug: string;
@@ -3915,9 +4824,11 @@ export interface Database {
           created_by?: string | null;
           deactivated_at?: string | null;
           id?: string;
+          institutional_domains?: string[];
           locale?: string | null;
           logo_url?: string | null;
           name?: string;
+          nim_prefix?: string | null;
           province?: string | null;
           short_name?: string | null;
           slug?: string;
@@ -3987,9 +4898,27 @@ export interface Database {
           id: string;
           created_at: string;
           updated_at: string;
+          is_group: boolean;
+          group_key: string | null;
+          group_name: string | null;
         };
-        Insert: { id?: string; created_at?: string; updated_at?: string };
-        Update: { id?: string; created_at?: string; updated_at?: string };
+        ComputedFields: never;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          is_group?: boolean;
+          group_key?: string | null;
+          group_name?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          is_group?: boolean;
+          group_key?: string | null;
+          group_name?: string | null;
+        };
         Relationships: [];
       };
       dm_participants: {
@@ -3998,18 +4927,40 @@ export interface Database {
           user_id: string;
           last_read_at: string | null;
           left_at: string | null;
+          archived_at: string | null;
+          is_archived: boolean;
+          is_muted: boolean;
+          is_pinned: boolean;
+          last_seen_at: string | null;
+          pinned_at: string | null;
+          theme: string | null;
         };
+        ComputedFields: never;
         Insert: {
           conversation_id: string;
           user_id: string;
           last_read_at?: string | null;
           left_at?: string | null;
+          archived_at?: string | null;
+          is_archived?: boolean;
+          is_muted?: boolean;
+          is_pinned?: boolean;
+          last_seen_at?: string | null;
+          pinned_at?: string | null;
+          theme?: string | null;
         };
         Update: {
           conversation_id?: string;
           user_id?: string;
           last_read_at?: string | null;
           left_at?: string | null;
+          archived_at?: string | null;
+          is_archived?: boolean;
+          is_muted?: boolean;
+          is_pinned?: boolean;
+          last_seen_at?: string | null;
+          pinned_at?: string | null;
+          theme?: string | null;
         };
         Relationships: [];
       };
@@ -4022,7 +4973,17 @@ export interface Database {
           created_at: string;
           edited_at: string | null;
           deleted_at: string | null;
+          attachment_mime: string | null;
+          attachment_name: string | null;
+          attachment_path: string | null;
+          attachment_size: number | null;
+          group_wraps: Json | null;
+          is_pinned: boolean;
+          key_epoch: number;
+          reactions: Json;
+          reply_to_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           id?: string;
           conversation_id: string;
@@ -4031,6 +4992,15 @@ export interface Database {
           created_at?: string;
           edited_at?: string | null;
           deleted_at?: string | null;
+          attachment_mime?: string | null;
+          attachment_name?: string | null;
+          attachment_path?: string | null;
+          attachment_size?: number | null;
+          group_wraps?: Json | null;
+          is_pinned?: boolean;
+          key_epoch?: number;
+          reactions?: Json;
+          reply_to_id?: string | null;
         };
         Update: {
           id?: string;
@@ -4040,6 +5010,15 @@ export interface Database {
           created_at?: string;
           edited_at?: string | null;
           deleted_at?: string | null;
+          attachment_mime?: string | null;
+          attachment_name?: string | null;
+          attachment_path?: string | null;
+          attachment_size?: number | null;
+          group_wraps?: Json | null;
+          is_pinned?: boolean;
+          key_epoch?: number;
+          reactions?: Json;
+          reply_to_id?: string | null;
         };
         Relationships: [];
       };
@@ -4083,7 +5062,263 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: { [_ in never]: never };
+    Views: {
+      assignments_owner_reporting: {
+        Row: {
+          class_id: string | null;
+          content_type: string;
+          course_id: string;
+          effective_owner_grain: string | null;
+          id: string;
+          offering_id: string | null;
+          status: string;
+          subject_id: string | null;
+          university_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id?: string | null;
+          content_type?: string | null;
+          course_id?: string | null;
+          effective_owner_grain?: never;
+          id?: string | null;
+          offering_id?: string | null;
+          status?: string | null;
+          subject_id?: string | null;
+          university_id?: string | null;
+        };
+        Update: {
+          class_id?: string | null;
+          content_type?: string | null;
+          course_id?: string | null;
+          effective_owner_grain?: never;
+          id?: string | null;
+          offering_id?: string | null;
+          status?: string | null;
+          subject_id?: string | null;
+          university_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_offering_same_university";
+            columns: ["offering_id", "university_id"];
+            isOneToOne: false;
+            referencedRelation: "course_offerings";
+            referencedColumns: ["id", "university_id"];
+          },
+          {
+            foreignKeyName: "assignments_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      audit_logs_university_gap: {
+        Row: {
+          day: string | null;
+          null_university_rows: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      classes_legacy_vs_fk_gap: {
+        Row: {
+          academic_year: string;
+          id: string;
+          missing_class_code: boolean | null;
+          missing_semester_fk: boolean | null;
+          missing_university_fk: boolean | null;
+          missing_year_fk: boolean | null;
+          semester: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          academic_year?: string | null;
+          id?: string | null;
+          missing_class_code?: never;
+          missing_semester_fk?: never;
+          missing_university_fk?: never;
+          missing_year_fk?: never;
+          semester?: string | null;
+        };
+        Update: {
+          academic_year?: string | null;
+          id?: string | null;
+          missing_class_code?: never;
+          missing_semester_fk?: never;
+          missing_university_fk?: never;
+          missing_year_fk?: never;
+          semester?: string | null;
+        };
+        Relationships: [];
+      };
+      discussion_sessions_domain_view: {
+        Row: {
+          assignment_id: string | null;
+          cancelled_at: string | null;
+          class_id: string;
+          completed_at: string | null;
+          ends_at: string;
+          id: string;
+          is_cancelled: boolean | null;
+          is_completed: boolean | null;
+          is_upcoming: boolean | null;
+          meeting_type: string;
+          organizer_id: string;
+          starts_at: string;
+          status: string;
+          window_length: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          assignment_id?: string | null;
+          cancelled_at?: string | null;
+          class_id?: string | null;
+          completed_at?: string | null;
+          ends_at?: string | null;
+          id?: string | null;
+          is_cancelled?: never;
+          is_completed?: never;
+          is_upcoming?: never;
+          meeting_type?: string | null;
+          organizer_id?: string | null;
+          starts_at?: string | null;
+          status?: string | null;
+          window_length?: never;
+        };
+        Update: {
+          assignment_id?: string | null;
+          cancelled_at?: string | null;
+          class_id?: string | null;
+          completed_at?: string | null;
+          ends_at?: string | null;
+          id?: string | null;
+          is_cancelled?: never;
+          is_completed?: never;
+          is_upcoming?: never;
+          meeting_type?: string | null;
+          organizer_id?: string | null;
+          starts_at?: string | null;
+          status?: string | null;
+          window_length?: never;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discussion_sessions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dual_write_drift: {
+        Row: {
+          legacy_members: number | null;
+          legacy_without_new: number | null;
+          new_memberships: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      nim_drift: {
+        Row: {
+          identities_total: number | null;
+          prefixed: number | null;
+          unprefixed: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      notification_daily_digest: {
+        Row: {
+          day: string | null;
+          items: Json | null;
+          total: number | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      observability_tenant_gap: {
+        Row: {
+          null_university_rows: number | null;
+          source: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      semester_rollover_candidates: {
+        Row: {
+          old_code: string;
+          old_status: string;
+          old_year_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          old_code?: string | null;
+          old_status?: string | null;
+          old_year_id?: string | null;
+        };
+        Update: {
+          old_code?: string | null;
+          old_status?: string | null;
+          old_year_id?: string | null;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       dm_get_or_create_conversation: {
         Args: { p_other: string };
@@ -4404,6 +5639,19 @@ export interface Database {
           p_initial_status?: string;
         };
         Returns: string | null;
+      };
+      create_class_as_student: {
+        Args: {
+          p_academic_year: string;
+          p_course_name: string;
+          p_description: string;
+          p_join_policy?: string;
+          p_proposed_name: string;
+          p_proposed_slug: string;
+          p_semester: string;
+          p_university_id?: string;
+        };
+        Returns: string;
       };
       create_class_invitation: {
         Args: {
@@ -5139,7 +6387,7 @@ export interface Database {
         Args: {
           p_full_name: string;
           p_nickname: string;
-          p_nim: string;
+          p_nim: string | null;
           p_university: string;
           p_declared_class?: string | null;
         };
