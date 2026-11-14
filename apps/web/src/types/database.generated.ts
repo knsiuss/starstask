@@ -6667,6 +6667,14 @@ export type Database = {
         Args: { p_class_id: string; p_source: string; p_user_id: string };
         Returns: boolean;
       };
+      grant_lecturer_membership_if_eligible: {
+        Args: {
+          p_email: string;
+          p_user_id: string;
+          p_verification_method?: string;
+        };
+        Returns: string;
+      };
       has_class_permission: {
         Args: { p_class_id: string; p_permission: string };
         Returns: boolean;
@@ -7407,7 +7415,7 @@ export type Database = {
           p_declared_class?: string;
           p_full_name: string;
           p_nickname: string;
-          p_nim: string | null;
+          p_nim: string;
           p_university: string;
         };
         Returns: Json;
