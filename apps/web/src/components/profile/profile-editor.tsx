@@ -25,6 +25,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUnsavedChanges } from "@/lib/hooks/use-unsaved-changes";
 
+/**
+ * Persona shown on the identity card.
+ *
+ * The card used to hardcode "Student" for every account, so a lecturer or a
+ * university admin could not tell what the app thinks of them.
+ */
+export type ProfileRole =
+  "Student" | "Lecturer" | "University admin" | "Platform admin";
+
 type ProfileEditorProps = {
   fullName: string;
   nickname: string;
@@ -33,6 +42,7 @@ type ProfileEditorProps = {
   avatarUrl: string | null;
   memberSince: string | null;
   activeClassCount: number;
+  role: ProfileRole;
   children: React.ReactNode;
 };
 
@@ -65,6 +75,7 @@ export function ProfileEditor({
   avatarUrl,
   memberSince,
   activeClassCount,
+  role,
   children,
 }: ProfileEditorProps) {
   const router = useRouter();
@@ -213,7 +224,7 @@ export function ProfileEditor({
           ) : null}
 
           <div className="mt-2.5 flex justify-center">
-            <Badge variant="accent">Student</Badge>
+            <Badge variant="accent">{role}</Badge>
           </div>
 
           {!isEditing ? (

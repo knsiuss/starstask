@@ -23,6 +23,12 @@
 -- already carry the 2026-11-05 `admin` value that must not be rejected.
 -- Roles stay extensible (1-40 chars); callers gate on status='active' and the
 -- predicate functions below, never on an exhaustive value list.
+--
+-- 'name_match' and 'student_created' are part of the class_members
+-- joined_via allowlist: join_class_by_name still inserts 'name_match', and
+-- 20270117000000_student_class_self_service_ketua.sql writes
+-- 'student_created'. Leaving them out of this CHECK rejects existing rows on
+-- any database that already holds them.
 COMMENT ON COLUMN public.university_memberships.role IS 'Membership role. Extensible (student (default), lecturer, university_admin are the canonical values; legacy admin is treated as university_admin by the predicates in this migration and is not written by new code). Lecturer/university_admin grants nothing outside their own university; class capability comes from class_admins via can_manage_class().';
 
 
@@ -36,7 +42,9 @@ ADD CONSTRAINT class_members_joined_via_allowed CHECK (
     'invitation',
     'admin_assignment',
     'platform_assignment',
-    'lecturer_assignment'
+    'lecturer_assignment',
+    'name_match',
+    'student_created'
   )
 );
 

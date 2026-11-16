@@ -8,6 +8,7 @@ import { LecturerStatusPanel } from "@/components/profile/claim-lecturer-panel";
 import { ClassAdminApplyPanel } from "@/components/profile/class-admin-apply-panel";
 import { ProfileAcademic } from "@/components/profile/profile-academic";
 import { ProfileEditor } from "@/components/profile/profile-editor";
+import type { ProfileRole } from "@/components/profile/profile-editor";
 import { ProfileSection } from "@/components/profile/profile-section";
 import type { GrantableClass } from "@/components/verification/representative-grant-form";
 import { getSessionUser } from "@/lib/auth/session";
@@ -15,6 +16,10 @@ import { isLecturer } from "@/lib/auth/lecturer";
 import { isPlatformAdmin, listMyClasses } from "@/lib/db/classes";
 import { getMyProfile } from "@/lib/db/profiles";
 import { listMyRepresentativeClassIds } from "@/lib/db/verification";
+import {
+  getWorkspaceContext,
+  type WorkspaceContext,
+} from "@/lib/db/workspace-context";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { buildLoginPath } from "@/lib/security/redirect";
 import { formatDate } from "@starstask/shared";
@@ -28,6 +33,31 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const pageContainer = "mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10";
+
+/**
+ * Persona shown on the identity card.
+ *
+ * The workspace context knows the caller's role; `isLecturer` stays the
+ * authority for the lecturer panel because it fails closed on error.
+ */
+function resolveProfileRole(
+  lecturer: boolean,
+  context: WorkspaceContext | null,
+): ProfileRole {
+  if (context?.platformAdmin) {
+    return "Platform admin";
+  }
+
+  if ((context?.universityAdminUniversities.length ?? 0) > 0) {
+    return "University admin";
+  }
+
+  if (lecturer) {
+    return "Lecturer";
+  }
+
+  return "Student";
+}
 
 export default async function ProfileSettingsPage() {
   if (!isSupabaseConfigured()) {
@@ -72,11 +102,15 @@ export default async function ProfileSettingsPage() {
     );
   }
 
-  const [classes, representativeClassIds, lecturer] = await Promise.all([
-    listMyClasses(session.user.id),
-    listMyRepresentativeClassIds(session.user.id),
-    isLecturer(),
-  ]);
+  const [classes, representativeClassIds, lecturer, workspaceContext] =
+    await Promise.all([
+      listMyClasses(session.user.id),
+      listMyRepresentativeClassIds(session.user.id),
+      isLecturer(),
+      getWorkspaceContext(),
+    ]);
+
+  const role = resolveProfileRole(lecturer, workspaceContext);
 
   const emailDomain = session.user.email?.split("@")[1]?.toLowerCase() ?? null;
 
@@ -114,6 +148,7 @@ export default async function ProfileSettingsPage() {
         activeClassCount={
           classes.filter((item) => item.status === "active").length
         }
+        role={role}
       >
         <ProfileAcademic
           nim={profile?.nim ?? null}
