@@ -78,21 +78,18 @@ function CourseMobileRow({ row }: { row: CourseAttendanceRow }) {
 
 function CourseStatus({ row }: { row: CourseAttendanceRow }) {
   return (
-    <div className="flex items-center justify-end gap-2">
-      <div className="text-right">
-        <p className="text-sm font-semibold tabular-nums">
+    <div className="flex items-center justify-end gap-2.5">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold tabular-nums">
           {formatAttendancePercentage(row.counts.percentage)}
-        </p>
-        <Badge
-          variant={STATUS_VARIANTS[row.status]}
-          className="mt-1"
-        >
+        </span>
+        <Badge variant={STATUS_VARIANTS[row.status]}>
           {COURSE_ATTENDANCE_STATUS_LABELS[row.status]}
         </Badge>
       </div>
       <ChevronRight
         aria-hidden="true"
-        className="text-muted-foreground h-4 w-4"
+        className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
       />
     </div>
   );
@@ -121,7 +118,7 @@ export function CourseAttendanceTable({
 
   return (
     <div className="border-border bg-surface overflow-hidden rounded-xl border">
-      <div className="border-border text-muted-foreground hidden border-b px-4 py-2 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,2.4fr)_repeat(3,minmax(0,0.6fr))_minmax(0,1.1fr)] sm:gap-3">
+      <div className="border-border bg-subtle text-muted-foreground hidden border-b px-4 py-2.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,2.4fr)_repeat(3,minmax(0,0.6fr))_minmax(0,1.1fr)] sm:gap-3">
         <span>Course</span>
         <span className="text-center">Sessions</span>
         <span className="text-center">Present</span>

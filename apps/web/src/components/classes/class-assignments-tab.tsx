@@ -1,8 +1,11 @@
-import { ArrowUpRight, FileText, Inbox } from "lucide-react";
+import { FileText, Inbox } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { Pagination } from "@/components/assignments/pagination";
+import {
+  ClassAssignmentsList,
+  ClassEmptyNotice,
+} from "@/components/classes/class-assignments-list";
 import {
   type ClassTab,
   classTabHref,
@@ -12,26 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { MyClassSubmission } from "@/lib/db/class-submissions";
 import type { AssignmentListItem } from "@/types/database";
-import type {
-  AssignmentStatus,
-  ClassSubjectWithTaskCount,
-} from "@starstask/contracts";
-import {
-  APP_TIME_ZONE,
-  APP_TIME_ZONE_LABEL,
-  type DeadlineState,
-  deadlineStateLabel,
-  formatDate,
-  formatSessionTime,
-  getDeadlineState,
-} from "@starstask/shared";
-import { cn } from "@/lib/utils/cn";
-
-/**
- * `list_assignments` filters on `a.status = 'published'` and does not project
- * the column, so every row of this listing is published by that contract.
- */
-const LISTING_STATUS: AssignmentStatus = "published";
+import type { ClassSubjectWithTaskCount } from "@starstask/contracts";
+import { formatDate } from "@starstask/shared";
 
 /** This view is the `?tab=` state named by the class workspace tab map. */
 const ASSIGNMENTS_TAB: ClassTab = "assignments";
@@ -87,7 +72,7 @@ export function ClassAssignmentsTab({
           <form
             action={base}
             method="get"
-            className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
+            className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
           >
             <input
               type="hidden"
@@ -104,7 +89,7 @@ export function ClassAssignmentsTab({
               id="assignment-subject-filter"
               name="subject"
               defaultValue={selectedSubjectId ?? ""}
-              className="min-w-0 flex-1 sm:w-56 sm:flex-none"
+              className="min-h-[44px] w-full sm:h-10 sm:min-h-0 sm:w-56"
             >
               <option value="">All subjects</option>
               {subjects.map((subject) => (
@@ -116,27 +101,31 @@ export function ClassAssignmentsTab({
                 </option>
               ))}
             </Select>
-            <Button
-              type="submit"
-              variant="secondary"
-            >
-              Filter
-            </Button>
-            {selectedSubject ? (
+            <div className="flex items-center gap-2">
               <Button
-                asChild
-                variant="ghost"
+                type="submit"
+                variant="secondary"
+                className="min-h-[44px] flex-1 sm:min-h-0 sm:flex-none"
               >
-                <Link href={classTabHref(classSlug, ASSIGNMENTS_TAB)}>
-                  Clear
-                </Link>
+                Filter
               </Button>
-            ) : null}
+              {selectedSubject ? (
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="min-h-[44px] sm:min-h-0"
+                >
+                  <Link href={classTabHref(classSlug, ASSIGNMENTS_TAB)}>
+                    Clear
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           </form>
         </div>
 
         {assignments.length === 0 ? (
-          <EmptyNotice
+          <ClassEmptyNotice
             icon={
               <FileText
                 aria-hidden="true"
@@ -155,145 +144,7 @@ export function ClassAssignmentsTab({
             }
           />
         ) : (
-          <>
-            <div className="border-border bg-surface mt-4 hidden overflow-x-auto rounded-xl border md:block">
-              <table className="w-full text-sm">
-                <caption className="sr-only">
-                  Published assignments in this class
-                </caption>
-                <thead className="bg-subtle text-muted-foreground">
-                  <tr className="text-left text-xs font-medium tracking-wide uppercase">
-                    <th
-                      scope="col"
-                      className="w-[38%] px-4 py-2.5 font-medium"
-                    >
-                      Title
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2.5 font-medium"
-                    >
-                      Subject
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2.5 font-medium whitespace-nowrap"
-                    >
-                      Published
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2.5 font-medium whitespace-nowrap"
-                    >
-                      Deadline
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2.5 font-medium"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2.5 text-right font-medium whitespace-nowrap"
-                    >
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-border divide-y">
-                  {assignments.map((assignment) => (
-                    <tr
-                      key={assignment.id}
-                      className="hover:bg-muted/40"
-                    >
-                      <td className="px-4 py-3 align-middle">
-                        <Link
-                          href={`/assignments/${assignment.id}`}
-                          className="font-medium hover:text-accent hover:underline"
-                        >
-                          {assignment.title}
-                        </Link>
-                      </td>
-                      <td className="text-muted-foreground px-4 py-3 align-middle">
-                        {courseLabel(assignment)}
-                      </td>
-                      <td className="text-muted-foreground px-4 py-3 align-middle whitespace-nowrap">
-                        {formatDate(assignment.created_at)}
-                      </td>
-                      <td className="px-4 py-3 align-middle">
-                        <Deadline deadline={assignment.deadline} />
-                      </td>
-                      <td className="px-4 py-3 align-middle">
-                        <StatusBadge status={LISTING_STATUS} />
-                      </td>
-                      <td className="px-4 py-3 text-right align-middle">
-                        <Link
-                          href={`/assignments/${assignment.id}`}
-                          className="text-accent inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                        >
-                          Open
-                          <ArrowUpRight
-                            aria-hidden="true"
-                            className="h-3.5 w-3.5"
-                          />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <ul className="divide-border border-border bg-surface mt-4 divide-y rounded-xl border md:hidden">
-              {assignments.map((assignment) => (
-                <li
-                  key={assignment.id}
-                  className="px-4 py-3.5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link
-                        href={`/assignments/${assignment.id}`}
-                        className="text-sm font-medium hover:text-accent hover:underline"
-                      >
-                        {assignment.title}
-                      </Link>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        {courseLabel(assignment)}
-                      </p>
-                    </div>
-                    <StatusBadge
-                      status={LISTING_STATUS}
-                      className="shrink-0"
-                    />
-                  </div>
-
-                  <div className="border-border mt-3 flex items-end justify-between gap-3 border-t pt-3">
-                    <div className="min-w-0">
-                      <Deadline deadline={assignment.deadline} />
-                      <p className="text-muted-foreground mt-1.5 text-xs">
-                        Published {formatDate(assignment.created_at)}
-                      </p>
-                    </div>
-                    <Button
-                      asChild
-                      variant="secondary"
-                      className="shrink-0"
-                    >
-                      <Link href={`/assignments/${assignment.id}`}>
-                        Open
-                        <ArrowUpRight
-                          aria-hidden="true"
-                          className="h-3.5 w-3.5"
-                        />
-                      </Link>
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
+          <ClassAssignmentsList assignments={assignments} />
         )}
 
         <Pagination
@@ -319,7 +170,7 @@ export function ClassAssignmentsTab({
         </h2>
 
         {submissions.length === 0 ? (
-          <EmptyNotice
+          <ClassEmptyNotice
             icon={
               <Inbox
                 aria-hidden="true"
@@ -335,15 +186,15 @@ export function ClassAssignmentsTab({
             className="mt-3"
           />
         ) : (
-          <ul className="divide-border border-border mt-3 divide-y rounded-xl border">
+          <ul className="divide-border border-border bg-surface mt-3 divide-y rounded-xl border">
             {submissions.map((submission) => (
               <li
                 key={submission.id}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5 text-sm"
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{submission.title}</p>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
+                  <p className="text-muted-foreground mt-0.5 text-xs tabular-nums">
                     Revision {submission.revision} ·{" "}
                     {formatDate(submission.updated_at)}
                   </p>
@@ -355,12 +206,12 @@ export function ClassAssignmentsTab({
                   ) : null}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 items-center gap-2">
                   <StatusBadge status={submission.status} />
                   {submission.status === "published" ? (
                     <Link
                       href={`/assignments/${submission.id}`}
-                      className="text-accent text-xs font-medium hover:underline"
+                      className="text-accent focus-visible:outline-accent inline-flex min-h-[44px] items-center rounded-md px-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 hover:underline sm:min-h-0"
                     >
                       View
                     </Link>
@@ -368,7 +219,7 @@ export function ClassAssignmentsTab({
                   {submission.status === "rejected" ? (
                     <Link
                       href={`${base}/submissions/${submission.id}/revise`}
-                      className="text-accent text-xs font-medium hover:underline"
+                      className="text-accent focus-visible:outline-accent inline-flex min-h-[44px] items-center rounded-md px-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 hover:underline sm:min-h-0"
                     >
                       Revise
                     </Link>
@@ -381,83 +232,4 @@ export function ClassAssignmentsTab({
       </section>
     </div>
   );
-}
-
-const DEADLINE_TEXT_STYLES: Record<DeadlineState, string> = {
-  none: "text-muted-foreground",
-  upcoming: "text-foreground",
-  due_today: "text-warning",
-  overdue: "text-danger",
-};
-
-/** Deadline states that deserve their own label line under the date. */
-const EMPHASIZED_DEADLINE_STATES: DeadlineState[] = ["due_today", "overdue"];
-
-/** Deadline rendered as a compact date line plus a time line. */
-function Deadline({ deadline }: { deadline: string | null }) {
-  const state = getDeadlineState(deadline);
-
-  if (!deadline || state === "none") {
-    return (
-      <span className="text-muted-foreground text-xs">
-        {deadlineStateLabel("none")}
-      </span>
-    );
-  }
-
-  return (
-    <div className="leading-tight">
-      <p
-        className={cn(
-          "text-sm font-medium whitespace-nowrap",
-          DEADLINE_TEXT_STYLES[state],
-        )}
-      >
-        {formatDate(deadline)}
-      </p>
-      <p className="text-muted-foreground text-xs whitespace-nowrap">
-        {formatSessionTime(deadline, APP_TIME_ZONE)} {APP_TIME_ZONE_LABEL}
-      </p>
-      {EMPHASIZED_DEADLINE_STATES.includes(state) ? (
-        <p
-          className={cn(
-            "mt-0.5 text-xs font-medium whitespace-nowrap",
-            DEADLINE_TEXT_STYLES[state],
-          )}
-        >
-          {deadlineStateLabel(state)}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-type EmptyNoticeProps = {
-  icon: ReactNode;
-  title: string;
-  body: string;
-  className?: string;
-};
-
-function EmptyNotice({ icon, title, body, className }: EmptyNoticeProps) {
-  return (
-    <div
-      className={cn(
-        "border-border bg-subtle mt-4 flex items-center gap-3 rounded-xl border border-dashed px-4 py-4",
-        className,
-      )}
-    >
-      <span className="text-muted-foreground shrink-0">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-muted-foreground mt-0.5 text-xs">{body}</p>
-      </div>
-    </div>
-  );
-}
-
-function courseLabel(assignment: AssignmentListItem): string {
-  return assignment.course_code
-    ? `${assignment.course_code} · ${assignment.course_name}`
-    : assignment.course_name;
 }

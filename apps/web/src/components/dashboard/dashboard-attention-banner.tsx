@@ -1,5 +1,6 @@
-import { ArrowRight, TriangleAlert } from "lucide-react";
 import Link from "next/link";
+
+import { ArrowRight, TriangleAlert } from "lucide-react";
 
 import { pluralize } from "@starstask/shared";
 
@@ -8,7 +9,7 @@ type DashboardAttentionBannerProps = {
 };
 
 /**
- * Prominent callout shown only when published tasks in the caller's classes
+ * Unobtrusive callout shown only when published tasks in the caller's classes
  * have slipped past their deadline. Hidden entirely when the count is zero,
  * so a healthy week stays quiet.
  */
@@ -22,34 +23,33 @@ export function DashboardAttentionBanner({
   return (
     <div
       role="status"
-      className="border-danger/30 bg-danger-soft mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-xl border px-4 py-3.5 sm:px-5"
+      className="border-danger/30 bg-danger-soft flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border px-3.5 py-2.5 sm:px-4"
     >
-      <div className="flex min-w-0 items-start gap-3">
+      <div className="flex min-w-0 items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="bg-surface text-danger flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+          className="bg-surface text-danger flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
         >
-          <TriangleAlert className="h-4 w-4" />
+          <TriangleAlert className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0">
           <p className="text-foreground text-sm font-semibold">
             {pastDeadline} {pluralize(pastDeadline, "task")} past deadline
-          </p>
-          <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
-            Deadlines that have already passed in your classes. Worth checking
-            whether any of them still accept late work.
+            <span className="text-muted-foreground ml-1.5 hidden font-normal sm:inline">
+              Check whether any still accept late submissions.
+            </span>
           </p>
         </div>
       </div>
 
       <Link
-        href="/app/assignments?due=overdue"
-        className="text-danger hover:text-danger/80 inline-flex shrink-0 items-center gap-1.5 rounded-lg text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        href="/assignments?due=overdue"
+        className="text-danger hover:text-danger/80 focus-visible:outline-accent inline-flex shrink-0 items-center gap-1.5 rounded-md text-xs font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm"
       >
         Review overdue
         <ArrowRight
           aria-hidden="true"
-          className="h-4 w-4"
+          className="h-3.5 w-3.5"
         />
       </Link>
     </div>

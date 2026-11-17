@@ -18,6 +18,12 @@ function toError(error: unknown) {
       { status: error.status },
     );
   }
+  if (error instanceof SyntaxError) {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 },
+    );
+  }
   const code =
     error instanceof Error && "code" in error
       ? String((error as { code?: unknown }).code)
@@ -73,8 +79,16 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   try {
+    await enforceRateLimit({
+      action: "dm:messages:delete",
+      identifier: getClientIdentifier(request),
+      limit: 60,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
+
     const { id, messageId } = await params;
     await deleteMessage(messageId, id);
     return NextResponse.json({ ok: true });

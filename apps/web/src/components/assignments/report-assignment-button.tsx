@@ -98,7 +98,7 @@ export function ReportAssignmentButton({
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground"
+          className="text-muted-foreground min-h-[44px] px-4 sm:min-h-8 sm:px-3"
         >
           <Flag
             aria-hidden="true"
@@ -120,6 +120,7 @@ export function ReportAssignmentButton({
               <Button
                 type="button"
                 onClick={() => handleOpenChange(false)}
+                className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
               >
                 Done
               </Button>
@@ -183,12 +184,13 @@ export function ReportAssignmentButton({
               </Alert>
             ) : null}
 
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => handleOpenChange(false)}
                 disabled={isSubmitting}
+                className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
               >
                 Cancel
               </Button>
@@ -196,6 +198,7 @@ export function ReportAssignmentButton({
                 type="submit"
                 disabled={isSubmitting}
                 aria-busy={isSubmitting}
+                className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
               >
                 {isSubmitting ? (
                   <>

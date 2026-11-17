@@ -4,6 +4,11 @@ import type { AssignmentCreateInput } from "@starstask/contracts";
 
 import { ApiError, notFound } from "@/lib/api/errors";
 import {
+  ASSIGNMENT_DETAIL_CACHE_TAG,
+  LISTING_CACHE_TAG,
+  invalidateCacheTag,
+} from "@/lib/cache/redis-cache";
+import {
   DataAccessError,
   deleteAssignmentRecord,
   getOrCreateCourse,
@@ -31,21 +36,18 @@ export async function createAssignmentForUser(params: {
   files: File[];
 }): Promise<CreateAssignmentResult> {
   const validated: ValidatedAttachment[] = [];
-  let hasInvalidFile = false;
 
   for (const file of params.files) {
     const result = await validateAttachmentFile(file);
 
     if (!result.ok) {
-      hasInvalidFile = true;
-      continue;
+      throw new ApiError(400, "invalid_attachment", result.error, {
+        attachments: result.error,
+      });
     }
 
     validated.push(result.value);
   }
-
-  // File out/nggak allowed → simpan sebagai draft, bukan gagal total.
-  const forceDraft = hasInvalidFile;
 
   const course = await getOrCreateCourse(
     params.input.courseName,
@@ -60,7 +62,6 @@ export async function createAssignmentForUser(params: {
       params.userId,
       params.input,
       course.id,
-      forceDraft,
     );
   } catch (error) {
     throw toApiError(error, "Could not create the assignment.");
@@ -212,6 +213,9 @@ export async function addAttachmentsToOwnedAssignment(params: {
       })),
     );
 
+    await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+    await invalidateCacheTag(LISTING_CACHE_TAG);
+
     return records.map((record) => ({
       id: record.id,
       originalFilename: record.original_filename,
@@ -276,6 +280,8 @@ export async function renameAttachmentForUser(params: {
     throw notFound();
   }
 
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+
   return { id: data.id, originalFilename: data.original_filename };
 }
 
@@ -324,6 +330,9 @@ export async function deleteAttachmentForUser(params: {
       storageProvider: existing.storage_provider ?? "supabase",
     },
   ]);
+
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+  await invalidateCacheTag(LISTING_CACHE_TAG);
 
   return true;
 }

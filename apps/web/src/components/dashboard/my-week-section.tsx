@@ -1,56 +1,31 @@
 "use client";
 
+import Link from "next/link";
+import * as React from "react";
+
 import {
   CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Plus,
 } from "lucide-react";
-import Link from "next/link";
-import * as React from "react";
 
-import type { MyWeek, MyWeekItem, MyWeekItemKind } from "@/lib/db/dashboard";
-import { cn } from "@/lib/utils/cn";
-import { WeekScroller } from "@/components/dashboard/week-scroller";
 import { APP_TIME_ZONE, toJakartaDateKey } from "@starstask/shared";
 
+import { WeekDayColumn } from "@/components/dashboard/week-day-column";
+import { WeekScroller } from "@/components/dashboard/week-scroller";
+import type { MyWeek, MyWeekItem } from "@/lib/db/dashboard";
+import { cn } from "@/lib/utils/cn";
+
 const DAY_MS = 86_400_000;
-
-/** Mirrors MAX_WEEK_OFFSET in the dashboard page; the data layer clamps too. */
 const MAX_WEEK_OFFSET = 52;
-
-const KIND_BORDER: Record<MyWeekItemKind, string> = {
-  assignment: "border-l-warning",
-  session: "border-l-accent",
-  leave: "border-l-success",
-};
-
-const KIND_TINT: Record<MyWeekItemKind, string> = {
-  assignment: "bg-warning-soft",
-  session: "bg-accent-soft",
-  leave: "bg-success-soft",
-};
-
-const weekdayFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeZone: APP_TIME_ZONE,
-  weekday: "short",
-});
+const WEEK_OPTIONS = [-2, -1, 0, 1, 2];
 
 const dayMonthFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: APP_TIME_ZONE,
   day: "numeric",
   month: "short",
 });
-
-const timeFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeZone: APP_TIME_ZONE,
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
-
-const MAX_ITEMS_PER_DAY = 3;
 
 type MyWeekSectionProps = {
   week: MyWeek;
@@ -64,13 +39,13 @@ type MyWeekSectionProps = {
 function useDismissableMenu() {
   const ref = React.useRef<HTMLDetailsElement>(null);
 
-  React.useEffect(() => {
-    const close = () => {
-      if (ref.current) {
-        ref.current.open = false;
-      }
-    };
+  const close = React.useCallback(() => {
+    if (ref.current) {
+      ref.current.open = false;
+    }
+  }, []);
 
+  React.useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       const el = ref.current;
 
@@ -92,28 +67,19 @@ function useDismissableMenu() {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, []);
+  }, [close]);
 
-  return ref;
+  return { ref, close };
 }
 
 function weekHref(offset: number): string {
   return offset === 0 ? "/app" : `/app?week=${offset}`;
 }
 
-/** Labels a week relative to the current one, so the menu reads naturally. */
 function weekOptionLabel(offset: number, currentWeekStart: Date): string {
-  if (offset === 0) {
-    return "This week";
-  }
-
-  if (offset === -1) {
-    return "Last week";
-  }
-
-  if (offset === 1) {
-    return "Next week";
-  }
+  if (offset === 0) return "This week";
+  if (offset === -1) return "Last week";
+  if (offset === 1) return "Next week";
 
   const start = new Date(currentWeekStart.getTime() + offset * 7 * DAY_MS);
 
@@ -124,8 +90,7 @@ function weekOptionLabel(offset: number, currentWeekStart: Date): string {
  * One week at a glance: deadlines, sessions, and the student's own absences.
  *
  * Days are grouped in Asia/Jakarta so a late-night deadline never lands on the
- * wrong column. `weekOffset` moves the window; the data layer owns the range so
- * the UI never has to guess which rows belong to which week.
+ * wrong column. `weekOffset` moves the window; the data layer owns the range.
  */
 export function MyWeekSection({
   week,
@@ -139,13 +104,13 @@ export function MyWeekSection({
   const currentWeekStart = new Date(
     weekStart.getTime() - weekOffset * 7 * DAY_MS,
   );
-  const menuRef = useDismissableMenu();
+  const { ref: menuRef, close: closeMenu } = useDismissableMenu();
   const atPrevBound = weekOffset <= -MAX_WEEK_OFFSET;
   const atNextBound = weekOffset >= MAX_WEEK_OFFSET;
-  const rangeLabel = `${dayMonthFormatter.format(weekStart)} – ${dayMonthFormatter.format(
+  const rangeLabel = `${dayMonthFormatter.format(weekStart)} - ${dayMonthFormatter.format(
     new Date(weekEnd.getTime() - 1),
   )}`;
-  const weekOptions = [-2, -1, 0, 1, 2];
+
   const days = Array.from({ length: 7 }, (_, index) => {
     const day = new Date(weekStart.getTime() + index * DAY_MS);
 
@@ -171,25 +136,25 @@ export function MyWeekSection({
   return (
     <section
       aria-labelledby="my-week"
-      className="border-border bg-surface rise-in rounded-xl border p-4 shadow-[0_1px_2px_rgba(9,9,11,0.03)] sm:p-5"
+      className="border-border bg-surface rise-in rounded-xl border p-4 sm:p-5"
     >
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+          <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
             <CalendarDays
               aria-hidden="true"
-              className="h-[18px] w-[18px]"
+              className="h-4 w-4"
             />
           </span>
           <div className="min-w-0">
             <h2
               id="my-week"
-              className="text-foreground text-base font-semibold tracking-tight sm:text-lg"
+              className="text-foreground text-base font-semibold tracking-tight"
             >
               My week
             </h2>
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              Deadlines, sessions, and your absences for the selected week.
+            <p className="text-muted-foreground text-xs tabular-nums">
+              {rangeLabel}
             </p>
           </div>
         </div>
@@ -198,56 +163,60 @@ export function MyWeekSection({
           <Link
             href={weekHref(0)}
             className={cn(
-              "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex h-8 items-center rounded-md border px-2.5 text-xs font-medium transition-colors",
               weekOffset === 0
                 ? "border-accent/30 bg-accent-soft text-accent"
-                : "border-border text-muted-foreground hover:bg-hover",
+                : "border-border text-muted-foreground hover:bg-hover hover:text-foreground",
             )}
           >
             Today
           </Link>
-          {atPrevBound ? (
-            <span
-              aria-disabled="true"
-              className="border-border text-muted-foreground/50 cursor-not-allowed rounded-md border p-1.5"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </span>
-          ) : (
-            <Link
-              href={weekHref(weekOffset - 1)}
-              aria-label="Previous week"
-              className="border-border text-muted-foreground hover:bg-hover hover:text-foreground rounded-md border p-1.5 transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Link>
-          )}
-          {atNextBound ? (
-            <span
-              aria-disabled="true"
-              className="border-border text-muted-foreground/50 cursor-not-allowed rounded-md border p-1.5"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </span>
-          ) : (
-            <Link
-              href={weekHref(weekOffset + 1)}
-              aria-label="Next week"
-              className="border-border text-muted-foreground hover:bg-hover hover:text-foreground rounded-md border p-1.5 transition-colors"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          )}
 
-          <span className="text-muted-foreground px-1 text-xs font-medium tabular-nums">
-            {rangeLabel}
-          </span>
+          {[
+            {
+              disabled: atPrevBound,
+              offset: weekOffset - 1,
+              label: "Previous week",
+              Icon: ChevronLeft,
+            },
+            {
+              disabled: atNextBound,
+              offset: weekOffset + 1,
+              label: "Next week",
+              Icon: ChevronRight,
+            },
+          ].map(({ disabled, offset, label, Icon }) =>
+            disabled ? (
+              <span
+                key={label}
+                aria-disabled="true"
+                className="border-border text-muted-foreground/50 inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-md border"
+              >
+                <Icon
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+              </span>
+            ) : (
+              <Link
+                key={label}
+                href={weekHref(offset)}
+                aria-label={label}
+                className="border-border text-muted-foreground hover:bg-hover hover:text-foreground inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+              >
+                <Icon
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+              </Link>
+            ),
+          )}
 
           <details
             ref={menuRef}
             className="relative"
           >
-            <summary className="border-border text-muted-foreground hover:bg-hover hover:text-foreground flex cursor-pointer list-none items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors [&::-webkit-details-marker]:hidden">
+            <summary className="border-border text-muted-foreground hover:bg-hover hover:text-foreground inline-flex h-8 cursor-pointer list-none items-center gap-1 rounded-md border px-2.5 text-xs font-medium transition-colors [&::-webkit-details-marker]:hidden">
               Week
               <ChevronDown
                 aria-hidden="true"
@@ -255,12 +224,13 @@ export function MyWeekSection({
               />
             </summary>
 
-            <div className="border-border bg-surface absolute right-0 z-20 mt-1 w-48 rounded-lg border p-1 shadow-lg">
+            <div className="border-border bg-surface absolute right-0 z-20 mt-1 w-48 rounded-lg border p-1 shadow-sm">
               <ul>
-                {weekOptions.map((offset) => (
+                {WEEK_OPTIONS.map((offset) => (
                   <li key={offset}>
                     <Link
                       href={weekHref(offset)}
+                      onClick={closeMenu}
                       aria-current={offset === weekOffset ? "page" : undefined}
                       className={cn(
                         "flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-colors",
@@ -278,6 +248,7 @@ export function MyWeekSection({
               <div className="border-border mt-1 border-t pt-1">
                 <Link
                   href="/schedule"
+                  onClick={closeMenu}
                   className="text-muted-foreground hover:bg-hover hover:text-foreground flex items-center rounded-md px-2.5 py-1.5 text-xs transition-colors"
                 >
                   Open full schedule
@@ -289,144 +260,18 @@ export function MyWeekSection({
       </div>
 
       <WeekScroller>
-        {/* `w-max` lets the grid grow past the viewport so narrow screens
-            scroll sideways; without it the columns squeeze and clip. */}
-        <ol className="grid w-max min-w-full grid-flow-col auto-cols-[minmax(7rem,1fr)] gap-2">
-          {days.map((day) => {
-            const isToday = day.key === todayKey;
-            const items = itemsByDay.get(day.key) ?? [];
-            const visible = items.slice(0, MAX_ITEMS_PER_DAY);
-            const hidden = items.length - visible.length;
-
-            return (
-              <li
-                key={day.key}
-                data-today={isToday ? "true" : undefined}
-                className={cn(
-                  // A floor, not a ceiling: grid stretch keeps every column the
-                  // same height while a busy day can grow instead of clipping.
-                  "flex min-h-40 snap-start flex-col rounded-xl border p-3 sm:min-h-44",
-                  isToday
-                    ? "border-accent bg-accent text-accent-foreground"
-                    : "border-border bg-subtle/40",
-                )}
-              >
-                <div className="text-center">
-                  <p
-                    className={cn(
-                      "text-[11px] font-semibold tracking-wider uppercase",
-                      isToday ? "" : "text-muted-foreground",
-                    )}
-                  >
-                    {weekdayFormatter.format(day.date)}
-                  </p>
-                  <p
-                    className={cn(
-                      "mt-0.5 text-sm font-semibold tabular-nums",
-                      isToday ? "" : "text-foreground",
-                    )}
-                  >
-                    {dayMonthFormatter.format(day.date)}
-                  </p>
-                </div>
-
-                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-3">
-                  <CalendarDays
-                    aria-hidden="true"
-                    className={cn(
-                      "h-5 w-5",
-                      isToday ? "opacity-80" : "text-muted-foreground",
-                    )}
-                  />
-                  {items.length === 0 ? (
-                    <>
-                      <p
-                        className={cn(
-                          "text-[11px]",
-                          isToday ? "opacity-80" : "text-muted-foreground",
-                        )}
-                      >
-                        No events
-                      </p>
-                      {canScheduleSessions ? (
-                        <Link
-                          href="/sessions/new"
-                          aria-label={`Add an event on ${dayMonthFormatter.format(day.date)}`}
-                          className={cn(
-                            "flex h-6 w-6 items-center justify-center rounded-full border transition-colors",
-                            isToday
-                              ? "border-accent-foreground/30 hover:bg-accent-foreground/10"
-                              : "border-border text-muted-foreground hover:bg-hover hover:text-foreground",
-                          )}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Link>
-                      ) : null}
-                    </>
-                  ) : (
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap",
-                        isToday
-                          ? "bg-accent-foreground/15"
-                          : "bg-accent-soft text-accent",
-                      )}
-                    >
-                      {items.length} {items.length === 1 ? "event" : "events"}
-                    </span>
-                  )}
-                </div>
-
-                {items.length > 0 ? (
-                  <ul className="space-y-1.5">
-                    {visible.map((item) => (
-                      <li key={item.key}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "focus-visible:outline-accent block truncate rounded-md border-y border-r border-l-[3px] px-1.5 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2",
-                            isToday
-                              ? "border-accent-foreground/20 bg-accent-foreground/10 hover:bg-accent-foreground/20"
-                              : cn(
-                                  "hover:bg-hover",
-                                  KIND_BORDER[item.kind],
-                                  KIND_TINT[item.kind],
-                                ),
-                          )}
-                        >
-                          <span className="block truncate">{item.title}</span>
-                          <span
-                            className={cn(
-                              "block truncate text-[10px] font-normal tabular-nums",
-                              isToday ? "opacity-75" : "text-muted-foreground",
-                            )}
-                          >
-                            {item.allDay
-                              ? "All day"
-                              : timeFormatter.format(new Date(item.at))}
-                            {item.endsAt && !item.allDay
-                              ? ` – ${timeFormatter.format(new Date(item.endsAt))}`
-                              : null}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-
-                    {hidden > 0 ? (
-                      <li
-                        className={cn(
-                          "px-1.5 text-[10px] font-medium",
-                          isToday ? "opacity-75" : "text-muted-foreground",
-                        )}
-                      >
-                        +{hidden} more
-                      </li>
-                    ) : null}
-                  </ul>
-                ) : null}
-              </li>
-            );
-          })}
+        {/* On desktop (`lg+`), all 7 days fit side-by-side without horizontal
+            scroll; narrower screens scroll sideways instead of squeezing. */}
+        <ol className="grid w-max min-w-full grid-flow-col auto-cols-[minmax(8.5rem,1fr)] gap-2 lg:w-full lg:grid-flow-row lg:grid-cols-7 lg:auto-cols-auto">
+          {days.map((day) => (
+            <WeekDayColumn
+              key={day.key}
+              date={day.date}
+              items={itemsByDay.get(day.key) ?? []}
+              isToday={day.key === todayKey}
+              canScheduleSessions={canScheduleSessions}
+            />
+          ))}
         </ol>
       </WeekScroller>
     </section>

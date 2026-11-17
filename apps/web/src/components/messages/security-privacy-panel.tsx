@@ -78,11 +78,15 @@ export function SecurityPrivacyPanel() {
         if (!value) {
           const pair = await getOrCreateKeyPair();
           value = await exportPublicKey(pair);
-          await fetch("/api/dm/keys/me", {
+          const putResponse = await fetch("/api/dm/keys/me", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ publicKey: value }),
           });
+
+          if (!putResponse.ok) {
+            throw new Error("Failed to publish key");
+          }
         }
 
         if (!cancelled && value) {

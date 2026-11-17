@@ -3,7 +3,6 @@
 import { CalendarDays, Clock } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { BrandMark } from "@/components/layout/brand-mark";
 import {
   APP_TIME_ZONE,
   isKnownTimeZone,
@@ -108,7 +107,7 @@ function firstName(displayName: string | null): string | null {
   const first = parts[0];
 
   // A single-letter first token is an initial ("P KANISIUS ..."), not a
-  // name — show the full display name instead of a lone initial.
+  // name, so show the full display name instead of a lone initial.
   if (first && first.length > 1) {
     return first;
   }
@@ -153,60 +152,43 @@ export function DashboardHeader({
   const zoneLabel = timeZoneLabel(zone);
 
   return (
-    <header className="border-border bg-surface rise-in relative overflow-hidden rounded-2xl border px-4 py-5 sm:px-6 sm:py-6">
-      <div
-        aria-hidden="true"
-        className="from-accent-soft via-band to-surface pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l opacity-70 sm:block"
-      />
-
-      <div className="relative flex items-start justify-between gap-6">
+    <header className="border-border bg-surface rounded-xl border px-4 py-3.5 sm:px-5 sm:py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="min-w-0">
-          <p className="text-muted-foreground text-sm font-medium">
-            {greeting},
-          </p>
-          <h1 className="text-foreground mt-0.5 truncate text-2xl leading-tight font-semibold tracking-tight sm:text-[30px]">
-            {name ?? "Welcome"}
+          <h1 className="text-foreground truncate text-xl leading-tight font-semibold tracking-tight sm:text-2xl">
+            {greeting}, {name ?? "Welcome"}
           </h1>
-          <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
-            {summary ??
-              "Here is an overview of your academic activities today."}
+          <p className="text-muted-foreground mt-0.5 text-sm leading-snug">
+            {summary ?? "Your academic schedule and tasks for today."}
           </p>
         </div>
 
-        <div
-          aria-hidden="true"
-          className="hidden shrink-0 sm:block"
-        >
-          <BrandMark
-            size={88}
-            className="st-float opacity-90"
-          />
-        </div>
-      </div>
-
-      <div className="border-border relative mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-3.5">
-        <p className="text-muted-foreground flex items-center gap-2 text-sm">
-          <span className="bg-accent-soft text-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+        <div className="border-border flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t pt-2.5 text-xs sm:shrink-0 sm:flex-nowrap sm:border-t-0 sm:pt-0">
+          <p className="text-muted-foreground inline-flex items-center gap-1.5 font-medium">
             <CalendarDays
               aria-hidden="true"
-              className="h-3.5 w-3.5"
+              className="h-3.5 w-3.5 shrink-0"
             />
-          </span>
-          {dateLabel}
-        </p>
-        <p className="text-muted-foreground flex items-center gap-2 text-sm">
-          <span className="bg-accent-soft text-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+            <span>{dateLabel}</span>
+          </p>
+
+          <span
+            aria-hidden="true"
+            className="bg-border hidden h-3.5 w-px sm:block"
+          />
+
+          <p className="text-muted-foreground inline-flex items-center gap-1.5">
             <Clock
               aria-hidden="true"
-              className="h-3.5 w-3.5"
+              className="text-accent h-3.5 w-3.5 shrink-0"
             />
-          </span>
-          <span className="text-foreground font-semibold tabular-nums">
-            <span className="sr-only">Current time: </span>
-            <time dateTime={now.toISOString()}>{clockLabel}</time>
-          </span>
-          {zoneLabel}
-        </p>
+            <span className="text-foreground font-semibold tabular-nums">
+              <span className="sr-only">Current time: </span>
+              <time dateTime={now.toISOString()}>{clockLabel}</time>
+            </span>
+            <span>{zoneLabel}</span>
+          </p>
+        </div>
       </div>
     </header>
   );

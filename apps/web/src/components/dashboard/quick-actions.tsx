@@ -1,17 +1,21 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   CalendarCheck,
+  CalendarDays,
   ClipboardList,
   MessageCircle,
   Plus,
 } from "lucide-react";
-import Link from "next/link";
 
-const ACTIONS = [
+import { SectionHeader } from "@/components/dashboard/section-header";
+
+const SECONDARY_ACTIONS = [
   {
     href: "/attendance",
-    label: "Check in now",
+    label: "Check in",
     icon: CalendarCheck,
   },
   {
@@ -21,49 +25,57 @@ const ACTIONS = [
   },
   {
     href: "/schedule",
-    label: "Today's schedule",
-    icon: CalendarDaysIcon,
+    label: "Schedule",
+    icon: CalendarDays,
   },
   {
     href: "/messages",
-    label: "Open messages",
+    label: "Messages",
     icon: MessageCircle,
-  },
-  {
-    href: "/submit",
-    label: "New assignment",
-    icon: Plus,
   },
 ] as const;
 
-function CalendarDaysIcon({ className }: { className?: string }) {
-  return (
-    <CalendarCheck
-      aria-hidden="true"
-      className={className}
-    />
-  );
-}
-
 export function QuickActions() {
   return (
-    <nav
-      aria-label="Quick actions"
-      className="flex gap-2 overflow-x-auto pb-1"
+    <section
+      aria-labelledby="quick-actions-heading"
+      className="border-border bg-surface rounded-xl border p-4"
     >
-      {ACTIONS.map((action) => (
+      <SectionHeader
+        id="quick-actions-heading"
+        title="Quick actions"
+        density="rail"
+      />
+
+      <nav
+        aria-label="Quick actions"
+        className="mt-3 grid grid-cols-2 gap-2"
+      >
+        {SECONDARY_ACTIONS.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="border-border bg-surface text-foreground hover:border-accent/40 hover:bg-hover hover:text-accent focus-visible:outline-accent flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <action.icon
+              aria-hidden="true"
+              className="text-muted-foreground h-4 w-4 shrink-0"
+            />
+            <span className="truncate">{action.label}</span>
+          </Link>
+        ))}
+
         <Link
-          key={action.href}
-          href={action.href}
-          className="border-border bg-surface hover:bg-accent-soft hover:text-accent flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-95"
+          href="/submit"
+          className="border-accent/25 bg-accent-soft/60 text-accent hover:bg-accent-soft focus-visible:outline-accent col-span-2 flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <action.icon
+          <Plus
             aria-hidden="true"
-            className="h-4 w-4"
+            className="h-4 w-4 shrink-0"
           />
-          {action.label}
+          <span>New assignment</span>
         </Link>
-      ))}
-    </nav>
+      </nav>
+    </section>
   );
 }

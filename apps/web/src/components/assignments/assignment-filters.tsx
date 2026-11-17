@@ -91,9 +91,9 @@ export function AssignmentFilters({ query }: AssignmentFiltersProps) {
       role="search"
       aria-label="Search and filter assignments"
       onSubmit={submit}
-      className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
+      className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
     >
-      <div className="relative min-w-[13rem] flex-1 sm:max-w-sm">
+      <div className="relative w-full min-w-0 sm:max-w-sm sm:min-w-[13rem] sm:flex-1">
         <Label
           htmlFor="filter-search"
           className="sr-only"
@@ -111,13 +111,13 @@ export function AssignmentFilters({ query }: AssignmentFiltersProps) {
           defaultValue={query.search ?? ""}
           placeholder="Search assignments"
           maxLength={100}
-          className="h-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
+          className="min-h-[44px] pr-10 pl-9 sm:h-9 sm:min-h-0 sm:pr-8 [&::-webkit-search-cancel-button]:appearance-none"
         />
         {query.search ? (
           <Link
             href={clearSearchHref}
             aria-label="Clear search"
-            className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
+            className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-1 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:right-1.5 sm:h-7 sm:w-7"
           >
             <X
               aria-hidden="true"
@@ -127,55 +127,57 @@ export function AssignmentFilters({ query }: AssignmentFiltersProps) {
         ) : null}
       </div>
 
-      <div>
-        <Label
-          htmlFor="filter-type"
-          className="sr-only"
-        >
-          Assignment type
-        </Label>
-        <Select
-          id="filter-type"
-          name="type"
-          defaultValue={query.type ?? ""}
-          onChange={() => formRef.current?.requestSubmit()}
-          className="border-border bg-surface h-9 w-auto min-w-[8.5rem] py-0 text-[13px]"
-        >
-          <option value="">All types</option>
-          {ASSIGNMENT_TYPES.map((type) => (
-            <option
-              key={type}
-              value={type}
-            >
-              {capitalize(type)}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+        <div>
+          <Label
+            htmlFor="filter-type"
+            className="sr-only"
+          >
+            Assignment type
+          </Label>
+          <Select
+            id="filter-type"
+            name="type"
+            defaultValue={query.type ?? ""}
+            onChange={() => formRef.current?.requestSubmit()}
+            className="border-border bg-surface min-h-[44px] w-full py-0 text-[13px] sm:h-9 sm:min-h-0 sm:w-auto sm:min-w-[8.5rem]"
+          >
+            <option value="">All types</option>
+            {ASSIGNMENT_TYPES.map((type) => (
+              <option
+                key={type}
+                value={type}
+              >
+                {capitalize(type)}
+              </option>
+            ))}
+          </Select>
+        </div>
 
-      <div>
-        <Label
-          htmlFor="filter-sort"
-          className="sr-only"
-        >
-          Sort by
-        </Label>
-        <Select
-          id="filter-sort"
-          name="sort"
-          defaultValue={query.sort}
-          onChange={() => formRef.current?.requestSubmit()}
-          className="border-border bg-surface h-9 w-auto min-w-[9rem] py-0 text-[13px]"
-        >
-          {ASSIGNMENT_SORTS.map((sort) => (
-            <option
-              key={sort}
-              value={sort}
-            >
-              {SORT_LABELS[sort]}
-            </option>
-          ))}
-        </Select>
+        <div>
+          <Label
+            htmlFor="filter-sort"
+            className="sr-only"
+          >
+            Sort by
+          </Label>
+          <Select
+            id="filter-sort"
+            name="sort"
+            defaultValue={query.sort}
+            onChange={() => formRef.current?.requestSubmit()}
+            className="border-border bg-surface min-h-[44px] w-full py-0 text-[13px] sm:h-9 sm:min-h-0 sm:w-auto sm:min-w-[9rem]"
+          >
+            {ASSIGNMENT_SORTS.map((sort) => (
+              <option
+                key={sort}
+                value={sort}
+              >
+                {SORT_LABELS[sort]}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       <button

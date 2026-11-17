@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { cache } from "react";
 
 import { createClient } from "@supabase/supabase-js";
@@ -107,6 +108,11 @@ export async function getPersistedUnpamEvents(): Promise<PluginEventRow[]> {
   }));
 }
 
+/** Computes a collision-resistant SHA-256 hex digest for plugin event deduplication. */
+export function hashPluginEventContent(input: string): string {
+  return createHash("sha256").update(input).digest("hex");
+}
+
 /** Persist fetched plugin events (upsert by content hash) + sync status. Service-role only (cron). */
 export async function persistUnpamEvents(
   events: PluginEventRow[],
@@ -120,11 +126,6 @@ export async function persistUnpamEvents(
     .eq("slug", "universitas-pamulang")
     .maybeSingle();
   if (!uni) return { count: 0 };
-  const hash = (s: string) =>
-    Buffer.from(s)
-      .toString("base64")
-      .replace(/[^A-Za-z0-9]/g, "")
-      .slice(0, 32);
   const now = new Date().toISOString();
   if (events.length > 0) {
     const rows = events.map((e) => ({
@@ -138,7 +139,9 @@ export async function persistUnpamEvents(
       description: e.description,
       source_url: e.sourceUrl,
       program_id: e.programId,
-      content_hash: hash(`${e.kind}|${e.title}|${e.startsAt}`),
+      content_hash: hashPluginEventContent(
+        `${e.kind}|${e.title}|${e.startsAt}`,
+      ),
       last_seen_at: now,
     }));
     const { error: upsertError } = await client

@@ -2,6 +2,12 @@ import "server-only";
 
 import type { PublicAssignmentReviewInput } from "@starstask/contracts";
 
+import {
+  ASSIGNMENT_DETAIL_CACHE_TAG,
+  DASHBOARD_CACHE_TAG,
+  LISTING_CACHE_TAG,
+  invalidateCacheTag,
+} from "@/lib/cache/redis-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toClassApiError } from "@/features/classes/errors";
 
@@ -27,6 +33,10 @@ export async function reviewPublicAssignment(
   if (error || !data) {
     throw toClassApiError(error, "Could not record the review.");
   }
+
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+  await invalidateCacheTag(LISTING_CACHE_TAG);
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
 
   return { status: data };
 }

@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils/cn";
 
 type CopyLinkButtonProps = {
   url: string;
@@ -81,7 +82,7 @@ export function CopyLinkButton({ url, className }: CopyLinkButtonProps) {
       variant="secondary"
       size="sm"
       onClick={() => void handleCopy()}
-      className={className}
+      className={cn("min-h-[44px] px-4 sm:min-h-8 sm:px-3", className)}
       aria-live="polite"
     >
       {copied ? (

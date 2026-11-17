@@ -1,142 +1,25 @@
-"use client";
+﻿"use client";
 
-import {
-  BookOpenText,
-  CalendarDays,
-  ClipboardList,
-  Compass,
-  GraduationCap,
-  LayoutDashboard,
-  ListChecks,
-  MessageSquare,
-  MessagesSquare,
-  Settings,
-  ShieldCheck,
-  UserCheck,
-  UserRound,
-  Building2,
-  Loader2,
-  type LucideIcon,
-} from "lucide-react";
+import { Loader2, type LucideIcon } from "lucide-react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 
+import {
+  ACCOUNT_ITEMS,
+  LEADER_ITEMS,
+  LEARNING_ITEMS,
+  STUDY_ITEMS,
+  TEACHING_ITEMS,
+  UNIVERSITY_ITEMS,
+  getActiveNavHref,
+  type NavItem,
+} from "@/components/layout/workspace-nav-items";
 import { cn } from "@/lib/utils/cn";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  requiresAuth?: boolean;
-};
-
-const STUDY_ITEMS: NavItem[] = [
-  {
-    href: "/app",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    requiresAuth: true,
-  },
-  { href: "/assignments", label: "Assignments", icon: Compass },
-  { href: "/classes", label: "My Classes", icon: GraduationCap },
-  {
-    href: "/attendance",
-    label: "Attendance",
-    icon: UserCheck,
-    requiresAuth: true,
-  },
-  { href: "/schedule", label: "Schedule", icon: CalendarDays },
-  {
-    href: "/leave-requests",
-    label: "Absence Requests",
-    icon: ClipboardList,
-    requiresAuth: true,
-  },
-  {
-    href: "/messages",
-    label: "Messages",
-    icon: MessagesSquare,
-    requiresAuth: true,
-  },
-];
-
-/**
- * Leader destinations render only for users who administer at least one class.
- * The flag is cosmetic; /app/actions re-checks every class role on load.
- */
-const LEADER_ITEMS: NavItem[] = [
-  {
-    href: "/app/actions",
-    label: "Action center",
-    icon: ListChecks,
-    requiresAuth: true,
-  },
-];
-
-/**
- * Verified-lecturer destinations render only for users whose workspace context
- * carries `lecturer_anywhere`. The flag is cosmetic; /app/lecturer re-checks
- * the lecturer role server-side.
- */
-const LECTURER_ITEMS: NavItem[] = [
-  {
-    href: "/app/lecturer",
-    label: "Lecturer",
-    icon: BookOpenText,
-    requiresAuth: true,
-  },
-];
-
-/**
- * Notifications and Google Calendar are deliberately absent: the topbar bell
- * owns notifications, and the calendar connection lives under Schedule and
- * Settings. A second sidebar destination would only duplicate them.
- */
-/**
- * University Info hanya muncul untuk pengguna yang terhubung ke kampus
- * dengan plugin aktif (mis. UNPAM). Flag dari server/layout; default false
- * berarti menu tidak dirender sama sekali.
- */
-const UNIVERSITY_ITEMS: NavItem[] = [
-  {
-    href: "/university-info",
-    label: "University Info",
-    icon: Building2,
-  },
-];
-
-const ACCOUNT_ITEMS: NavItem[] = [
-  {
-    href: "/settings/profile",
-    label: "Profile",
-    icon: UserRound,
-    requiresAuth: true,
-  },
-  {
-    href: "/settings/notifications",
-    label: "Settings",
-    icon: Settings,
-    requiresAuth: true,
-  },
-  {
-    href: "/settings/security",
-    label: "Security & Privacy",
-    icon: ShieldCheck,
-    requiresAuth: true,
-  },
-  {
-    href: "/settings/feedback",
-    label: "Feedback",
-    icon: MessageSquare,
-    requiresAuth: true,
-  },
-];
-
 type WorkspaceNavProps = {
   isAuthenticated: boolean;
   /** Renders the Action center; true only for users leading a class. */
   isClassAdmin?: boolean;
-  /** Renders the Lecturer section; true only for verified lecturers. */
+  /** Renders the Teaching section first; true only for verified lecturers. */
   isLecturer?: boolean;
   /** Icon-only rendering for the collapsed desktop sidebar. */
   compact?: boolean;
@@ -147,11 +30,13 @@ type WorkspaceNavProps = {
 };
 
 /**
- * Student navigation.
+ * Role-aware workspace navigation.
  *
- * Class admins gain the leader section and management actions inside My
- * Classes. Platform and developer consoles deliberately have their own shells
- * and navigation; access is still enforced server-side on every console route.
+ * A lecturer sees the Teaching section first and keeps their student
+ * destinations under "My studies". Class admins gain the leader section and
+ * management actions inside My Classes. Platform and developer consoles
+ * deliberately have their own shells; access is still enforced server-side on
+ * every console route.
  */
 export function WorkspaceNav({
   isAuthenticated,
@@ -162,20 +47,22 @@ export function WorkspaceNav({
   onNavigate,
 }: WorkspaceNavProps) {
   const pathname = usePathname();
+  const studyItems = isLecturer ? LEARNING_ITEMS : STUDY_ITEMS;
 
   const items = [
-    ...STUDY_ITEMS,
-    ...(isClassAdmin ? LEADER_ITEMS : []),
-    ...(isLecturer ? LECTURER_ITEMS : []),
+    ...(isLecturer ? TEACHING_ITEMS : []),
+    ...studyItems,
+    // Teaching already carries the Action center, so a lecturer never gets it twice.
+    ...(isClassAdmin && !isLecturer ? LEADER_ITEMS : []),
     ...(showUniversityInfo ? UNIVERSITY_ITEMS : []),
     ...(isAuthenticated ? ACCOUNT_ITEMS : []),
   ].filter((item) => !item.requiresAuth || isAuthenticated);
 
   // Pick the most specific match so a nested page keeps its section active.
-  const activeHref = items
-    .map((item) => item.href)
-    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
-    .sort((left, right) => right.length - left.length)[0];
+  const activeHref = getActiveNavHref(
+    pathname,
+    items.map((item) => item.href),
+  );
 
   const renderItem = (item: NavItem) => {
     if (item.requiresAuth && !isAuthenticated) {
@@ -214,26 +101,26 @@ export function WorkspaceNav({
 
   return (
     <div className="flex flex-col gap-6">
+      {isLecturer && isAuthenticated ? (
+        <NavSection
+          label="Teaching"
+          compact={compact}
+        >
+          {TEACHING_ITEMS.map(renderItem)}
+        </NavSection>
+      ) : null}
       <NavSection
-        label="Study"
+        label={isLecturer ? "My studies" : "Study"}
         compact={compact}
       >
-        {STUDY_ITEMS.map(renderItem)}
+        {studyItems.map(renderItem)}
       </NavSection>
-      {isClassAdmin && isAuthenticated ? (
+      {isClassAdmin && !isLecturer && isAuthenticated ? (
         <NavSection
           label="Class leader"
           compact={compact}
         >
           {LEADER_ITEMS.map(renderItem)}
-        </NavSection>
-      ) : null}
-      {isLecturer && isAuthenticated ? (
-        <NavSection
-          label="Lecturer"
-          compact={compact}
-        >
-          {LECTURER_ITEMS.map(renderItem)}
         </NavSection>
       ) : null}
       {showUniversityInfo ? (

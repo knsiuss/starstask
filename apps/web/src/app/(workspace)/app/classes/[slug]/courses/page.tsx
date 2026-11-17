@@ -1,16 +1,19 @@
-import { BookOpen, ChevronRight, PlusCircle } from "lucide-react";
+import { BookOpen, ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 
 import { CreateSubjectForm } from "@/components/classes/create-subject-form";
 import { StatusBadge } from "@/components/classes/status-badge";
 import { ClassWorkspaceTabs } from "@/components/classes/class-workspace-tabs";
+import { getSessionUser } from "@/lib/auth/session";
 import {
   countPublishedAssignmentsBySubject,
+  getClassBySlug,
   getClassRole,
   listClassSubjects,
 } from "@/lib/db/classes";
-import { requireClassMember } from "@/features/classes/class-access";
+import { buildLoginPath } from "@/lib/security/redirect";
 import { formatCount, pluralize } from "@starstask/shared";
 
 export const metadata: Metadata = {
@@ -33,10 +36,25 @@ type CoursesPageProps = {
  */
 export default async function ClassCoursesPage({ params }: CoursesPageProps) {
   const { slug } = await params;
-  const { class: found } = await requireClassMember(slug);
+  const session = await getSessionUser();
+
+  if (!session) {
+    redirect(buildLoginPath(`/app/classes/${slug}/courses`));
+  }
+
+  const found = await getClassBySlug(slug);
+
+  if (!found) {
+    notFound();
+  }
 
   // Role first: archived courses are only listed for people who can manage them.
   const role = await getClassRole(found.id);
+
+  if (!role.isMember) {
+    notFound();
+  }
+
   const [courses, assignmentCounts] = await Promise.all([
     listClassSubjects(found.id, { includeArchived: role.canManage }),
     countPublishedAssignmentsBySubject(found.id),

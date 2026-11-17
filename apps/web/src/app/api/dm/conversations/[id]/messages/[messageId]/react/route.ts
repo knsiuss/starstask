@@ -38,6 +38,12 @@ export async function POST(
         { status: error.status },
       );
     }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: "Could not react" }, { status: 500 });
   }
 }

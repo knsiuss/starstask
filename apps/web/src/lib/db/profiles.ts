@@ -5,12 +5,23 @@ import { cache } from "react";
 import {
   classJoinResultSchema,
   myProfileSchema,
+  parseCanonicalClassName,
+  type CanonicalClassIdentity,
   type ClassJoinResult,
   type MyProfile,
   type ProfileBioInput,
   type ProfileOnboardingInput,
-  type StudentCreateClassInput,
 } from "@starstask/contracts";
+
+export type CreateClassRpcInput = {
+  slug: string;
+  name: string;
+  courseName: string;
+  semester: string;
+  academicYear: string;
+  description: string;
+  joinPolicy: "invitation" | "open";
+};
 
 import { DataAccessError } from "@/lib/db/assignments";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -133,11 +144,11 @@ export async function joinClassByName(
  *
  * The RPC inserts the class, adds the creator as its first member
  * (`joined_via = 'student_created'`, so the auto-ketua trigger names them
- * ketua), and applies the 3-active-class abuse cap. It raises P0001 when the
- * cap is reached; the route maps that to a 409.
+ * ketua), and applies the 8-active-class cap to non-lecturers. It raises P0001
+ * when the cap is reached; the route maps that to a 409.
  */
 export async function createClassAsStudent(
-  input: StudentCreateClassInput,
+  input: CreateClassRpcInput,
 ): Promise<string> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("create_class_as_student", {
@@ -168,6 +179,12 @@ export async function createClassAsStudent(
 export async function joinOrCreateClass(
   className: string,
 ): Promise<ClassJoinResult> {
+  const canonical = parseCanonicalClassName(className);
+
+  if (canonical) {
+    return joinOrCreateCanonicalClass(canonical);
+  }
+
   const joined = await joinClassByName(className);
 
   if (joined.status !== "no_match") {
@@ -175,22 +192,81 @@ export async function joinOrCreateClass(
   }
 
   const year = new Date().getFullYear();
-  const created = await createClassAsStudent({
-    slug: slugifyClassName(className),
-    name: className,
-    courseName: className,
-    semester: "Ganjil",
-    academicYear: `${year}/${year + 1}`,
-    description: `Kelas yang dibuat saat onboarding oleh mahasiswa untuk ${className}.`,
-    joinPolicy: "open",
-  });
+  const slug = slugifyClassName(className);
 
-  return {
-    status: "joined",
-    classId: created,
-    slug: slugifyClassName(className),
-    name: className,
-  };
+  try {
+    const created = await createClassAsStudent({
+      slug,
+      name: className,
+      courseName: className,
+      semester: "Ganjil",
+      academicYear: `${year}/${year + 1}`,
+      description: `Kelas yang dibuat saat onboarding oleh mahasiswa untuk ${className}.`,
+      joinPolicy: "open",
+    });
+
+    return {
+      status: "joined",
+      classId: created,
+      slug,
+      name: className,
+    };
+  } catch (error) {
+    if (error instanceof DataAccessError && error.code === "23505") {
+      return joinClassByName(slug);
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Joins an existing canonical class (`05TPLM002-24/25`) or auto-creates it
+ * when nobody has created that cohort class yet.
+ *
+ * If two students submit simultaneously (`23505`), the second request falls
+ * back to `joinClassByName` so there is no collision.
+ */
+export async function joinOrCreateCanonicalClass(
+  identity: CanonicalClassIdentity,
+): Promise<ClassJoinResult & { autoCreated?: boolean }> {
+  const bySlug = await joinClassByName(identity.slug);
+
+  if (bySlug.status !== "no_match") {
+    return bySlug;
+  }
+
+  const byName = await joinClassByName(identity.name);
+
+  if (byName.status !== "no_match") {
+    return byName;
+  }
+
+  try {
+    const created = await createClassAsStudent({
+      slug: identity.slug,
+      name: identity.name,
+      courseName: identity.classCode,
+      semester: identity.semesterLabel,
+      academicYear: identity.academicYear,
+      description: `Class workspace for ${identity.name}.`,
+      joinPolicy: "open",
+    });
+
+    return {
+      status: "joined",
+      classId: created,
+      slug: identity.slug,
+      name: identity.name,
+      autoCreated: true,
+    };
+  } catch (error) {
+    if (error instanceof DataAccessError && error.code === "23505") {
+      return joinClassByName(identity.slug);
+    }
+
+    throw error;
+  }
 }
 
 /** Mirrors the slug rule JOIN uses server-side: lowercase letters/digits/hyphen. */

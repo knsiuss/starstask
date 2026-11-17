@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -59,22 +60,28 @@ export default async function EditAssignmentPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 pt-6 pb-24 sm:px-6 sm:py-10">
       <Link
         href={`/assignments/${assignment.id}`}
-        className="text-muted-foreground hover:text-foreground text-sm"
+        className="text-muted-foreground hover:text-foreground focus-visible:outline-accent inline-flex min-h-[44px] items-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-0"
       >
+        <ArrowLeft
+          aria-hidden="true"
+          className="h-4 w-4"
+        />
         Back to the assignment
       </Link>
 
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-        Edit assignment
-      </h1>
-      <p className="text-muted-foreground mt-2 text-sm">
-        Only you can edit this contribution. Ownership cannot be transferred.
-      </p>
+      <header className="mt-3 space-y-1.5">
+        <h1 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
+          Edit assignment
+        </h1>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Only you can edit this contribution. Ownership cannot be transferred.
+        </p>
+      </header>
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <AssignmentForm
           mode="edit"
           assignmentId={assignment.id}

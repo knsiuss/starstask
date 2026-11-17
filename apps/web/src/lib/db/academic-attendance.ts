@@ -349,7 +349,7 @@ export async function createMeeting(
   return { meetingId };
 }
 
-/** Resolves a meeting back to its offering/tenant keys, or null. */
+/** Resolves a meeting back to its offering/tenant keys and status, or null. */
 async function getMeetingScope(
   client: ServiceClient,
   meetingId: string,
@@ -358,11 +358,12 @@ async function getMeetingScope(
   offeringId: string;
   universityId: string;
   classId: string;
+  status: AttendanceMeetingStatus;
 } | null> {
   const { data, error } = await client
     .from("attendance_meetings")
     .select(
-      "id, offering_id, university_id, course_offerings!attendance_meetings_offering_same_university ( class_id )",
+      "id, offering_id, university_id, status, course_offerings!attendance_meetings_offering_same_university ( class_id )",
     )
     .eq("id", meetingId)
     .maybeSingle();
@@ -379,6 +380,7 @@ async function getMeetingScope(
     id: string;
     offering_id: string;
     university_id: string;
+    status: AttendanceMeetingStatus;
     course_offerings: { class_id: string } | null;
   };
 
@@ -391,6 +393,7 @@ async function getMeetingScope(
     offeringId: row.offering_id,
     universityId: row.university_id,
     classId: row.course_offerings.class_id,
+    status: row.status,
   };
 }
 
@@ -408,6 +411,13 @@ export async function recordRosterUpsert(
       upserted: 0,
       skipped: entries.map((entry) => entry.studentIdentityId),
     };
+  }
+
+  if (scope.status === "closed" || scope.status === "cancelled") {
+    throw new DataAccessError(
+      "Cannot record attendance for a closed or cancelled meeting",
+      "22023",
+    );
   }
 
   // Only identities actively enrolled in this offering may be recorded;
@@ -444,8 +454,55 @@ export async function recordRosterUpsert(
     return { upserted: 0, skipped };
   }
 
+  // Reject roster upserts that would change an existing record without an
+  // attendance_corrections ledger entry, and skip unchanged existing rows so
+  // historical recorded_by/recorded_at metadata is preserved.
+  const { data: existingRows, error: existingError } = await client
+    .from("attendance_records")
+    .select("student_identity_id, status")
+    .eq("meeting_id", scope.meetingId)
+    .in(
+      "student_identity_id",
+      writable.map((entry) => entry.studentIdentityId),
+    );
+
+  if (existingError) {
+    throw new DataAccessError(
+      "Could not check existing attendance records",
+      existingError.code,
+    );
+  }
+
+  const existingStatusByStudent = new Map(
+    (existingRows ?? []).map((row) => [
+      row.student_identity_id,
+      row.status as AttendanceRecordStatus,
+    ]),
+  );
+
+  const hasConflict = writable.some((entry) => {
+    const existingStatus = existingStatusByStudent.get(entry.studentIdentityId);
+
+    return existingStatus !== undefined && existingStatus !== entry.status;
+  });
+
+  if (hasConflict) {
+    throw new DataAccessError(
+      "Existing attendance records cannot be overwritten; use attendance correction instead",
+      "23505",
+    );
+  }
+
+  const newEntries = writable.filter(
+    (entry) => !existingStatusByStudent.has(entry.studentIdentityId),
+  );
+
+  if (newEntries.length === 0) {
+    return { upserted: 0, skipped };
+  }
+
   const { error: upsertError } = await client.from("attendance_records").upsert(
-    writable.map((entry) => ({
+    newEntries.map((entry) => ({
       university_id: scope.universityId,
       meeting_id: scope.meetingId,
       student_identity_id: entry.studentIdentityId,
@@ -453,7 +510,7 @@ export async function recordRosterUpsert(
       recorded_by: actorId,
       recorded_at: new Date().toISOString(),
     })),
-    { onConflict: "meeting_id,student_identity_id" },
+    { onConflict: "meeting_id,student_identity_id", ignoreDuplicates: true },
   );
 
   if (upsertError) {
@@ -467,10 +524,10 @@ export async function recordRosterUpsert(
     entityId: scope.meetingId,
     classId: scope.classId,
     universityId: scope.universityId,
-    metadata: { upserted: writable.length, skipped: skipped.length },
+    metadata: { upserted: newEntries.length, skipped: skipped.length },
   });
 
-  return { upserted: writable.length, skipped };
+  return { upserted: newEntries.length, skipped };
 }
 
 /**
@@ -513,7 +570,7 @@ export async function correctRecord(
     return "unchanged";
   }
 
-  const { error: correctionError } = await client
+  const { data: correctionRow, error: correctionError } = await client
     .from("attendance_corrections")
     .insert({
       university_id: scope.universityId,
@@ -522,7 +579,9 @@ export async function correctRecord(
       new_status: newStatus,
       reason,
       corrected_by: actorId,
-    });
+    })
+    .select("id")
+    .single();
 
   if (correctionError) {
     throw new DataAccessError(
@@ -541,6 +600,13 @@ export async function correctRecord(
     .eq("id", record.id);
 
   if (updateError) {
+    // Clean up the newly inserted correction row so a failed update never
+    // leaves an orphaned ledger entry.
+    await client
+      .from("attendance_corrections")
+      .delete()
+      .eq("id", correctionRow.id);
+
     throw new DataAccessError(
       "Could not apply the corrected status",
       updateError.code,

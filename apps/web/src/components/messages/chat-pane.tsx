@@ -303,7 +303,13 @@ export function ChatPane({
         onPresence(conversation.otherUserId, isOnline);
       },
     );
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (typingTimer.current) {
+        window.clearTimeout(typingTimer.current);
+        typingTimer.current = null;
+      }
+    };
   }, [conversationId, loadPage, onPresence, router, conversation.otherUserId]);
 
   useEffect(() => {
@@ -536,11 +542,21 @@ export function ChatPane({
   }
 
   async function remove(messageId: string): Promise<void> {
-    await fetch(
-      `/api/dm/conversations/${conversationId}/messages/${messageId}`,
-      { method: "DELETE" },
-    ).catch(() => {});
-    setMessages((current) => current.filter((m) => m.id !== messageId));
+    try {
+      const response = await fetch(
+        `/api/dm/conversations/${conversationId}/messages/${messageId}`,
+        { method: "DELETE" },
+      );
+
+      if (!response.ok) {
+        setError("Could not delete message");
+        return;
+      }
+
+      setMessages((current) => current.filter((m) => m.id !== messageId));
+    } catch {
+      setError("Could not delete message");
+    }
   }
 
   async function copyMessage(message: RenderMessage): Promise<void> {
@@ -582,32 +598,45 @@ export function ChatPane({
       setError("Type not allowed (image/video/pdf/audio)");
       return;
     }
-    const supabase = createSupabaseBrowserClient();
-    const buf = await file.arrayBuffer();
-    const wire = await encryptFile(peerPublicKey, buf);
-    const path = `${conversationId}/${crypto.randomUUID()}.enc`;
-    const { error: uploadError } = await supabase.storage
-      .from("dm-media")
-      .upload(path, wire, { contentType: "text/plain" });
-    if (uploadError) {
-      setError("Upload failed");
-      return;
-    }
-    const ciphertext = await encryptMessage(peerPublicKey, file.name);
-    await fetch(`/api/dm/conversations/${conversationId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ciphertext,
-        attachment: {
-          name: file.name,
-          mime: file.type,
-          size: file.size,
-          path,
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const buf = await file.arrayBuffer();
+      const wire = await encryptFile(peerPublicKey, buf);
+      const path = `${conversationId}/${crypto.randomUUID()}.enc`;
+      const { error: uploadError } = await supabase.storage
+        .from("dm-media")
+        .upload(path, wire, { contentType: "text/plain" });
+      if (uploadError) {
+        setError("Upload failed");
+        return;
+      }
+      const ciphertext = await encryptMessage(peerPublicKey, file.name);
+      const response = await fetch(
+        `/api/dm/conversations/${conversationId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ciphertext,
+            attachment: {
+              name: file.name,
+              mime: file.type,
+              size: file.size,
+              path,
+            },
+          }),
         },
-      }),
-    });
-    router.refresh();
+      );
+
+      if (!response.ok) {
+        setError("Could not send file");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setError("Could not send file");
+    }
   }
 
   async function recordVoice(): Promise<void> {

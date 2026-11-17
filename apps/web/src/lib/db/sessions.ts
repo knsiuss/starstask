@@ -317,6 +317,7 @@ export async function getSessionParticipants(
         .select("user_id, status, updated_at")
         .eq("session_id", sessionId)
         .order("updated_at", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to),
     (code) => {
       throw new DataAccessError("Could not load participants", code);

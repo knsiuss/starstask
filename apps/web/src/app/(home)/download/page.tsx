@@ -99,7 +99,7 @@ export default function DownloadPage() {
           from a different key — uninstall the old app and install this one
           again. Questions: {""}
           <Link
-            href="/feedback"
+            href="/settings/feedback"
             className="text-accent font-medium underline underline-offset-2"
           >
             send feedback

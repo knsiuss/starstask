@@ -63,7 +63,7 @@ export function AttendanceOverviewMetrics({
             className="border-border bg-surface flex items-center gap-2.5 rounded-xl border p-3 sm:gap-3 sm:px-4 sm:py-4"
           >
             <span
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10 ${metric.iconBackground}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${metric.iconBackground}`}
             >
               <Icon
                 aria-hidden="true"

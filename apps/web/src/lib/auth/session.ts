@@ -35,6 +35,11 @@ export async function getSessionUserFromBearer(
   const { createClient } = await import("@supabase/supabase-js");
   const { url, key } = getSupabaseConfig();
   const supabase = createClient(url, key, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false,

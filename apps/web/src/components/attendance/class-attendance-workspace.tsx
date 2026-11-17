@@ -109,7 +109,10 @@ export function ClassAttendanceWorkspace({
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:overflow-hidden lg:p-6">
         <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
-          <section className="border-border bg-surface rounded-2xl border p-4 sm:p-5">
+          <section
+            id="create-attendance"
+            className="border-border bg-surface scroll-mt-16 rounded-2xl border p-4 sm:p-5"
+          >
             <header className="flex items-center gap-2.5">
               <span className="bg-accent-soft text-accent flex h-9 w-9 items-center justify-center rounded-lg">
                 <CalendarDays

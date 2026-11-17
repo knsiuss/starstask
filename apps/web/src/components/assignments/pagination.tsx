@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -36,22 +37,27 @@ export function Pagination({
   return (
     <nav
       aria-label="Pagination"
-      className="mt-8 flex flex-wrap items-center justify-between gap-3"
+      className="mt-6 flex flex-wrap items-center justify-between gap-3 sm:mt-8"
     >
-      <p className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground text-sm tabular-nums">
         Page {page} of {totalPages}
       </p>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         {page > 1 ? (
           <Button
             asChild
             variant="secondary"
             size="sm"
+            className="min-h-[44px] px-4 sm:min-h-9 sm:px-3"
           >
             <Link
               href={buildHref(page - 1)}
               rel="prev"
             >
+              <ChevronLeft
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
               Previous
             </Link>
           </Button>
@@ -60,7 +66,12 @@ export function Pagination({
             variant="secondary"
             size="sm"
             disabled
+            className="min-h-[44px] px-4 sm:min-h-9 sm:px-3"
           >
+            <ChevronLeft
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
             Previous
           </Button>
         )}
@@ -69,12 +80,17 @@ export function Pagination({
             asChild
             variant="secondary"
             size="sm"
+            className="min-h-[44px] px-4 sm:min-h-9 sm:px-3"
           >
             <Link
               href={buildHref(page + 1)}
               rel="next"
             >
               Next
+              <ChevronRight
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
             </Link>
           </Button>
         ) : (
@@ -82,8 +98,13 @@ export function Pagination({
             variant="secondary"
             size="sm"
             disabled
+            className="min-h-[44px] px-4 sm:min-h-9 sm:px-3"
           >
             Next
+            <ChevronRight
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
           </Button>
         )}
       </div>

@@ -125,11 +125,21 @@ export async function POST(
     const service = requireServiceRoleClient();
     const meetingRow = await service
       .from("attendance_meetings")
-      .select("id, offering_id")
+      .select(
+        "id, offering_id, university_id, course_offerings!attendance_meetings_offering_same_university ( class_id )",
+      )
       .eq("id", meetingId)
       .maybeSingle();
 
-    if (!meetingRow.data) {
+    const offering = meetingRow.data?.course_offerings as
+      { class_id: string } | null | undefined;
+
+    if (
+      !meetingRow.data ||
+      !offering ||
+      offering.class_id !== found.id ||
+      meetingRow.data.university_id !== found.universityId
+    ) {
       throw new ApiError(404, "meeting_not_found", "Meeting not found.");
     }
 

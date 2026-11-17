@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { GraduationCap } from "lucide-react";
+
+import { ChevronRight, GraduationCap } from "lucide-react";
 
 import {
   getMyHomeMembership,
   type HomeMembershipRow,
 } from "@/lib/db/course-offerings";
-import { getIdentityContext } from "@/lib/identity/get-identity-context";
 import type { IdentityContext } from "@/lib/identity/derive-identity-context";
+import { getIdentityContext } from "@/lib/identity/get-identity-context";
 
 type AcademicCardData =
   | { kind: "unlinked" }
@@ -39,8 +40,8 @@ async function loadAcademicCardData(): Promise<AcademicCardData> {
 }
 
 /**
- * Compact academic-identity strip for the dashboard. Any failure renders
- * nothing rather than breaking the dashboard.
+ * Compact academic-identity card for the dashboard right rail.
+ * Any failure renders nothing rather than breaking the dashboard.
  */
 export async function AcademicContextCard() {
   const data = await loadAcademicCardData();
@@ -53,49 +54,67 @@ export async function AcademicContextCard() {
     return (
       <Link
         href="/university"
-        className="border-border bg-card hover:bg-muted flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition-colors"
+        className="border-border bg-surface hover:border-accent/40 hover:bg-hover focus-visible:outline-accent group flex min-h-11 items-center gap-3 rounded-xl border p-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        <GraduationCap
-          aria-hidden="true"
-          className="text-muted-foreground h-5 w-5 shrink-0"
-        />
-        <span className="min-w-0">
-          <span className="font-medium">Not linked to a university yet</span>
-          <span className="text-muted-foreground block text-xs">
-            Find your university and request access from its operator.
+        <span className="border-border bg-subtle text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border">
+          <GraduationCap
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="text-foreground group-hover:text-accent block truncate text-sm font-medium transition-colors">
+            Not linked to a university
+          </span>
+          <span className="text-muted-foreground mt-0.5 block text-xs leading-snug">
+            Find your university and request access.
           </span>
         </span>
+
+        <ChevronRight
+          aria-hidden="true"
+          className="text-muted-foreground/70 group-hover:text-accent h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+        />
       </Link>
     );
   }
 
   const { context, home } = data;
+  const universityLabel =
+    context.university.shortName ?? context.university.name;
 
   return (
     <Link
       href="/university"
-      className="border-border bg-card hover:bg-muted flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition-colors"
+      className="border-border bg-surface hover:border-accent/40 hover:bg-hover focus-visible:outline-accent group flex items-start gap-3 rounded-xl border p-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
-      <GraduationCap
-        aria-hidden="true"
-        className="text-accent h-5 w-5 shrink-0"
-      />
-      <span className="min-w-0">
-        <span className="font-medium">
-          {context.university.shortName ?? context.university.name}
-          {context.identity ? (
-            <span className="text-muted-foreground font-normal">
-              {" "}
-              · {context.identity.studentId}
-            </span>
-          ) : null}
+      <span className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+        <GraduationCap
+          aria-hidden="true"
+          className="h-4 w-4"
+        />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-foreground group-hover:text-accent truncate text-sm font-semibold transition-colors">
+            {universityLabel}
+          </span>
+          <ChevronRight
+            aria-hidden="true"
+            className="text-muted-foreground/70 group-hover:text-accent h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+          />
         </span>
-        <span className="text-muted-foreground block text-xs">
-          {home
-            ? `Home class: ${home.className}`
-            : "No home class assigned yet"}
-          {" · "}
-          View academic identity
+
+        {context.identity ? (
+          <span className="text-muted-foreground mt-0.5 block font-mono text-xs tabular-nums">
+            {context.identity.studentId}
+          </span>
+        ) : null}
+
+        <span className="text-muted-foreground mt-1 block truncate text-xs">
+          {home ? `Home class: ${home.className}` : "No home class assigned"}
         </span>
       </span>
     </Link>

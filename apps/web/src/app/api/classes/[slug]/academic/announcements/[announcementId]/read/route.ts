@@ -3,6 +3,7 @@ import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
 import { requireServiceRoleClient } from "@/lib/authz/service-role";
 import { recordAnnouncementRead } from "@/lib/db/announcements";
+import { getClassBySlug } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
@@ -27,7 +28,7 @@ export async function POST(
       );
     }
 
-    const { announcementId } = await context.params;
+    const { slug, announcementId } = await context.params;
 
     if (!/^[0-9a-f-]{36}$/i.test(announcementId)) {
       throw new ApiError(404, "not_found", "Announcement not found.");
@@ -46,11 +47,18 @@ export async function POST(
       windowSeconds: 3600,
     });
 
+    const foundClass = await getClassBySlug(slug);
+
+    if (!foundClass) {
+      throw new ApiError(404, "not_found", "Announcement not found.");
+    }
+
     const supabase = await createSupabaseServerClient();
     const { data: announcement, error } = await supabase
       .from("announcements")
       .select("id, university_id")
       .eq("id", announcementId)
+      .eq("class_id", foundClass.id)
       .maybeSingle();
 
     if (error) {

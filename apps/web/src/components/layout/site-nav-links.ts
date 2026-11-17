@@ -3,7 +3,7 @@ export const SITE_LINKS = [
   { href: "/classes/discover", label: "Classes" },
   // Anchors on the landing page, so they resolve from every public route.
   { href: "/#how-it-works", label: "How it works" },
-  { href: "/#about", label: "About" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export const SITE_MEMBER_LINKS = [{ href: "/app", label: "Dashboard" }];

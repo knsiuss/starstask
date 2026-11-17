@@ -7,6 +7,12 @@ import type {
 
 import { ApiError } from "@/lib/api/errors";
 import {
+  ASSIGNMENT_DETAIL_CACHE_TAG,
+  DASHBOARD_CACHE_TAG,
+  LISTING_CACHE_TAG,
+  invalidateCacheTag,
+} from "@/lib/cache/redis-cache";
+import {
   deleteAssignmentRecord,
   insertAttachmentRecords,
 } from "@/lib/db/assignments";
@@ -79,12 +85,20 @@ export async function createClassSubmission(params: {
         throw toClassApiError(publishError, "Could not publish the post.");
       }
 
+      await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+      await invalidateCacheTag(LISTING_CACHE_TAG);
+      await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+
       return { id: assignmentId, status: "published" };
     }
   } catch (failure) {
     await deleteOwnSubmission(assignmentId).catch(() => undefined);
     throw failure;
   }
+
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+  await invalidateCacheTag(LISTING_CACHE_TAG);
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
 
   return { id: assignmentId, status: "pending_review" };
 }
@@ -111,7 +125,11 @@ export async function reviseClassSubmission(params: {
     });
   }
 
-  const uploaded: { storagePath: string; storageProvider: string }[] = [];
+  const uploaded: {
+    attachmentId: string | null;
+    storagePath: string;
+    storageProvider: string;
+  }[] = [];
 
   try {
     uploaded.push(...(await uploadAttachments(params.assignmentId, validated)));
@@ -130,7 +148,29 @@ export async function reviseClassSubmission(params: {
     if (error) {
       throw toClassApiError(error, "Could not revise the assignment.");
     }
+
+    await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+    await invalidateCacheTag(LISTING_CACHE_TAG);
+    await invalidateCacheTag(DASHBOARD_CACHE_TAG);
   } catch (error) {
+    const insertedIds = uploaded
+      .map((item) => item.attachmentId)
+      .filter((id): id is string => Boolean(id));
+
+    if (insertedIds.length > 0) {
+      const supabase = await createSupabaseServerClient();
+      const { error: deleteError } = await supabase
+        .from("assignment_attachments")
+        .delete()
+        .in("id", insertedIds);
+
+      if (deleteError) {
+        console.error("[db] class attachment rollback failed", {
+          code: deleteError.code,
+        });
+      }
+    }
+
     await removeObjects(uploaded);
     throw error;
   }
@@ -162,11 +202,17 @@ async function validateFiles(files: File[]): Promise<ValidatedAttachment[]> {
   return validated;
 }
 
-/** Uploads every file and records it; returns the stored objects it created. */
+/** Uploads every file and records it; returns the stored objects and row IDs it created. */
 async function uploadAttachments(
   assignmentId: string,
   validated: ValidatedAttachment[],
-): Promise<{ storagePath: string; storageProvider: string }[]> {
+): Promise<
+  {
+    attachmentId: string | null;
+    storagePath: string;
+    storageProvider: string;
+  }[]
+> {
   if (validated.length === 0) {
     return [];
   }
@@ -181,6 +227,7 @@ async function uploadAttachments(
   }
 
   const uploaded: { storagePath: string; storageProvider: string }[] = [];
+  let records: { id: string }[] = [];
 
   try {
     for (const attachment of validated) {
@@ -209,7 +256,7 @@ async function uploadAttachments(
       }
     }
 
-    await insertAttachmentRecords(
+    records = await insertAttachmentRecords(
       assignmentId,
       validated.map((attachment, index) => ({
         storagePath: uploaded[index]?.storagePath ?? "",
@@ -224,7 +271,10 @@ async function uploadAttachments(
     throw error;
   }
 
-  return uploaded;
+  return uploaded.map((item, index) => ({
+    ...item,
+    attachmentId: records[index]?.id ?? null,
+  }));
 }
 
 async function countExistingAttachments(assignmentId: string): Promise<number> {

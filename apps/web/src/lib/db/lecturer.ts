@@ -42,7 +42,9 @@ export async function getLecturerOverview(
   const supabase = await createSupabaseServerClient();
 
   const directory = await listMyClassDirectory(userId);
-  const adminRows = directory.filter((row) => row.is_admin);
+  const adminRows = directory.filter(
+    (row) => row.is_admin && row.status === "active",
+  );
 
   if (adminRows.length === 0) {
     return {

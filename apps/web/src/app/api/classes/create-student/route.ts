@@ -1,4 +1,8 @@
-import { studentCreateClassSchema, toFieldErrors } from "@starstask/contracts";
+import {
+  buildCanonicalClassIdentity,
+  studentCreateClassSchema,
+  toFieldErrors,
+} from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiError, apiSuccess, handleRouteError } from "@/lib/api/responses";
@@ -17,7 +21,8 @@ const MAX_JSON_BYTES = 8 * 1024;
  * Self-organized class creation for any signed-in user.
  *
  * Every rule lives in `create_class_as_student`: slug format, field lengths,
- * the 3-active-class abuse cap (P0001), and the creator's own membership with
+ * the 8-active-class cap for non-lecturers (P0001), and the creator's own
+ * membership with
  * `joined_via = 'student_created'` so the ketua trigger names them ketua.
  */
 export async function POST(request: Request) {
@@ -68,9 +73,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const classId = await createClassAsStudent(parsed.data);
+    const identity = buildCanonicalClassIdentity(parsed.data);
+    const classId = await createClassAsStudent({
+      slug: identity.slug,
+      name: identity.name,
+      courseName: parsed.data.courseName,
+      semester: identity.semesterLabel,
+      academicYear: identity.academicYear,
+      description: parsed.data.description,
+      joinPolicy: parsed.data.joinPolicy,
+    });
 
-    return apiSuccess({ classId });
+    return apiSuccess({
+      classId,
+      slug: identity.slug,
+      name: identity.name,
+    });
   } catch (error) {
     console.error(
       `[classes:create-student] ${error instanceof Error ? error.name : typeof error}: ` +
@@ -83,7 +101,7 @@ export async function POST(request: Request) {
         return apiError(
           409,
           "self_organized_limit",
-          "You already own 3 active self-organized classes.",
+          "You already own 8 active self-organized classes.",
         );
       }
 
@@ -91,7 +109,11 @@ export async function POST(request: Request) {
         return apiError(
           409,
           "slug_taken",
-          "That class code is already in use.",
+          "That class already exists for this semester and academic year. Ask a classmate for the invitation link or join if it is open.",
+          {
+            classCode:
+              "A class with this code, semester, and academic year already exists.",
+          },
         );
       }
 

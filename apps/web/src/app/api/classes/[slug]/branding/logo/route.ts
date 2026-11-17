@@ -1,5 +1,7 @@
 import { ApiError } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { validateAvatarFile } from "@/lib/storage/avatars";
 import { isB2Configured, uploadToStorageWithKey } from "@/lib/storage/b2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,7 +22,16 @@ export async function POST(
 ) {
   try {
     const { slug } = await context.params;
-    const { class: found } = await requireClassManager(slug);
+    const { session, class: found } = await requireClassManager(slug);
+
+    await enforceRateLimit({
+      action: "classes:branding:logo",
+      identifier: session.user.id,
+      limit: 20,
+      windowSeconds: 300,
+    });
+
+    assertUploadContentLength(request);
 
     const form = await request.formData();
     const file = form.get("file");

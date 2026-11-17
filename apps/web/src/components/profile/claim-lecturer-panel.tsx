@@ -31,10 +31,10 @@ export function LecturerStatusPanel({
       <p className="text-muted-foreground text-sm">
         Lecturer access is active for this account. Manage your classes from{" "}
         <a
-          href="/app/lecturer"
+          href="/app"
           className="text-accent underline underline-offset-4"
         >
-          Lecturer dashboard
+          Teaching home
         </a>
         .
       </p>

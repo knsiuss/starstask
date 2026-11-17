@@ -11,6 +11,7 @@ import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
 import { isUnpamMember } from "@/lib/db/plugins";
 import { isBetaTester } from "@/lib/auth/beta";
 import { isDeveloperEmail } from "@/lib/auth/developer";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
 import { countUnreadNotifications } from "@/lib/db/notifications";
@@ -74,7 +75,7 @@ export default async function WorkspaceLayout({
         // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
         Promise.resolve(false),
         session ? isBetaTester() : Promise.resolve(false),
-        Promise.resolve(false),
+        session ? isLecturer() : Promise.resolve(false),
       ]);
   // getMyProfile's shape has no university (private, RPC-only); fall back to
   // the typed row and keep the check compiling on both types.
@@ -131,7 +132,7 @@ export default async function WorkspaceLayout({
         </main>
       </div>
 
-      {isAuthenticated ? <MobileTabBar /> : null}
+      {isAuthenticated ? <MobileTabBar isLecturer={lecturer} /> : null}
     </div>
   );
 }

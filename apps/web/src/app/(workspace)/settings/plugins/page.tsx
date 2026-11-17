@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { listPlugins } from "@/features/plugins";
 import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
-import { requirePlatformAdmin } from "@/features/classes/class-access";
+import { requirePlatformAdmin } from "@/lib/auth/admin";
 import { getUnpamSyncStatus } from "@/lib/db/plugins";
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  * bukan menulis DB — sesuai batas Phase 3 (tanpa DDL/konfig produksi).
  */
 export default async function PluginSettingsPage() {
-  await requirePlatformAdmin();
+  await requirePlatformAdmin("/settings/plugins");
 
   const plugins = listPlugins();
   const enabled = isUnpamPluginEnabled();

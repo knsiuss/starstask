@@ -15,6 +15,7 @@ import {
 
 import { JoinClassStep } from "@/components/onboarding/join-class-step";
 import { OnboardingWelcome } from "@/components/onboarding/onboarding-welcome";
+import { OnboardingClassInput } from "@/components/profile/onboarding-class-input";
 import { shouldShowJoinStep } from "@/lib/onboarding/init-flow";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -101,9 +102,16 @@ export function ProfileOnboardingForm({
     };
   }, [previewUrl]);
 
-  const update = (key: FieldName, value: string) => {
+  const update = React.useCallback((key: FieldName, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
-  };
+  }, []);
+
+  const handleClassChange = React.useCallback(
+    (canonicalClassName: string) => {
+      update("className", canonicalClassName);
+    },
+    [update],
+  );
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -407,23 +415,10 @@ export function ProfileOnboardingForm({
           />
         </Field>
 
-        <Field
-          id="className"
-          label="Class / Kelas"
+        <OnboardingClassInput
           error={fieldErrors.className}
-          hint="Optional. Type your class code as your university writes it. It is saved either way; if it matches an open class we also add you to it."
-        >
-          <Input
-            id="className"
-            name="className"
-            value={values.className}
-            onChange={(event) => update("className", event.target.value)}
-            maxLength={60}
-            autoComplete="off"
-            aria-invalid={Boolean(fieldErrors.className)}
-            placeholder="e.g. IF-24-01"
-          />
-        </Field>
+          onChange={handleClassChange}
+        />
       </div>
 
       <div className="mt-8">

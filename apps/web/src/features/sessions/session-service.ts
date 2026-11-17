@@ -294,6 +294,7 @@ function isCheckInStatus(value: unknown): value is SessionCheckInStatus {
     value === "present" ||
     value === "late" ||
     value === "excused" ||
+    value === "sick" ||
     value === "absent"
   );
 }

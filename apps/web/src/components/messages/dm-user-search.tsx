@@ -72,6 +72,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
 
   async function openChat(user: User): Promise<void> {
     setBusyId(user.id);
+    setError(null);
 
     try {
       const response = await fetch("/api/dm/conversations", {
@@ -79,6 +80,12 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ otherUserId: user.id }),
       });
+
+      if (!response.ok) {
+        setError("Could not open chat. Try again.");
+        return;
+      }
+
       const data = (await response.json()) as { id?: string };
 
       if (data.id && onSelect) {
@@ -103,7 +110,10 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       if (data.id) {
         router.push(`/messages/${data.id}`);
         router.refresh();
+        return;
       }
+
+      setError("Could not open chat. Try again.");
     } catch {
       setError("Could not open chat. Try again.");
     } finally {

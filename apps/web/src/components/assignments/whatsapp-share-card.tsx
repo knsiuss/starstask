@@ -29,20 +29,22 @@ export function WhatsAppShareCard({
   const preview = buildWhatsAppShareText({ title, deadline, url });
 
   return (
-    <Card>
-      <h2 className="text-sm font-semibold">Share with your class</h2>
-      <p className="text-muted-foreground mt-1 text-xs">
+    <Card className="p-4 sm:p-5">
+      <h2 className="text-foreground text-sm font-semibold tracking-tight">
+        Share with your class
+      </h2>
+      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
         Opens WhatsApp with this message. Only the title, deadline, and link are
         included.
       </p>
-      <pre className="bg-subtle text-muted-foreground mt-3 rounded-md p-3 text-xs leading-relaxed whitespace-pre-wrap">
+      <pre className="border-border/60 bg-subtle text-muted-foreground mt-3 overflow-x-auto rounded-lg border p-3 text-xs leading-relaxed break-words whitespace-pre-wrap">
         {preview}
       </pre>
       <Button
         asChild
         variant="secondary"
         size="sm"
-        className="mt-3"
+        className="mt-3 min-h-[44px] w-full sm:min-h-8 sm:w-auto"
       >
         <a
           href={shareUrl}

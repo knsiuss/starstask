@@ -51,10 +51,11 @@ export function parseGradeCsv(text: string): GradeCsvRow[] {
       semesterCode,
       academicYearCode,
     ] = line.split(",").map((c) => c.trim());
-    const score = Number(scoreRaw);
+    const score = scoreRaw ? Number(scoreRaw) : Number.NaN;
     if (
       !studentId ||
       !courseCode ||
+      !scoreRaw ||
       Number.isNaN(score) ||
       score < 0 ||
       score > 100
@@ -78,23 +79,51 @@ export async function publishGradeBatch(
   batchId: string,
   universityId: string,
 ): Promise<"published" | "already_published" | "not_found"> {
-  const { data: batch } = await client
+  const { data: batch, error: selectError } = await client
     .from("grade_batches")
     .select("id, status")
     .eq("id", batchId)
+    .eq("university_id", universityId)
     .maybeSingle();
+
+  if (selectError) {
+    throw new DataAccessError("Could not load batch", selectError.code);
+  }
+
   if (!batch) return "not_found";
   if (batch.status === "published") return "already_published";
-  const now = new Date().toISOString();
-  await client
+
+  // Publish entries before marking the batch published so a transient failure
+  // never leaves the batch stuck in "already_published" with unpublished rows.
+  const { error: entriesError } = await client
     .from("grade_entries")
     .update({ published: true })
-    .eq("batch_id", batchId);
-  const { error } = await client
+    .eq("batch_id", batchId)
+    .eq("university_id", universityId);
+
+  if (entriesError) {
+    throw new DataAccessError(
+      "Could not publish grade entries",
+      entriesError.code,
+    );
+  }
+
+  const now = new Date().toISOString();
+  const { data: updatedBatch, error: batchError } = await client
     .from("grade_batches")
     .update({ status: "published", published_at: now })
-    .eq("id", batchId);
-  if (error) throw new DataAccessError("Could not publish batch", error.code);
+    .eq("id", batchId)
+    .eq("university_id", universityId)
+    .neq("status", "published")
+    .select("id")
+    .maybeSingle();
+
+  if (batchError) {
+    throw new DataAccessError("Could not publish batch", batchError.code);
+  }
+
+  if (!updatedBatch) return "already_published";
+
   await recordServiceRoleAudit(client, {
     actorId,
     action: "grade_batch_published",
@@ -103,5 +132,6 @@ export async function publishGradeBatch(
     classId: null,
     universityId,
   });
+
   return "published";
 }

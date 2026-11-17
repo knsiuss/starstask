@@ -1,5 +1,4 @@
-import { ArrowRight } from "lucide-react";
-import { Clock } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,14 +43,14 @@ export function RequestCard({ request, mode, reviewAction }: Props) {
   }).format(new Date(request.created_at));
 
   return (
-    <li className="border-border bg-surface rounded-xl border px-4 py-3.5">
-      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+    <li className="border-border bg-surface rounded-xl border p-3.5 sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <Badge variant={STATUS_VARIANTS[request.displayStatus]}>
               {REQUEST_STATUS_LABELS[request.displayStatus]}
             </Badge>
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground truncate">
               {request.course_name}
               {request.class_code ? ` · ${request.class_code}` : ""}
             </span>
@@ -61,15 +60,17 @@ export function RequestCard({ request, mode, reviewAction }: Props) {
               </span>
             ) : null}
           </div>
-          <h3 className="text-foreground mt-1.5 text-[15px] font-semibold tracking-tight">
+
+          <h3 className="text-foreground mt-2 text-[15px] leading-snug font-semibold tracking-tight break-words">
             {request.title}
           </h3>
-          <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+
+          <p className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             <span>{request.class_name}</span>
             <span className="inline-flex items-center gap-1">
               <Clock
                 aria-hidden="true"
-                className="h-3 w-3"
+                className="h-3.5 w-3.5"
               />
               {request.deadline
                 ? `Proposed ${new Intl.DateTimeFormat("en-GB", {
@@ -82,34 +83,38 @@ export function RequestCard({ request, mode, reviewAction }: Props) {
             <span>Submitted {submitted}</span>
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {mode === "admin" && request.displayStatus === "pending"
-            ? reviewAction
-            : null}
-          {request.displayStatus === "approved" ? (
-            <Link
-              href={`/assignments/${request.id}`}
-              className="text-accent hover:text-accent-hover inline-flex items-center gap-1 rounded-md text-xs font-semibold transition-colors"
-            >
-              View
-              <ArrowRight
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
-            </Link>
-          ) : null}
-        </div>
+
+        {(mode === "admin" && request.displayStatus === "pending") ||
+        request.displayStatus === "approved" ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {mode === "admin" && request.displayStatus === "pending"
+              ? reviewAction
+              : null}
+            {request.displayStatus === "approved" ? (
+              <Link
+                href={`/assignments/${request.id}`}
+                className="text-accent hover:text-accent-hover inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors sm:min-h-[32px] sm:px-1"
+              >
+                View
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {feedback ? (
-        <div className="bg-band mt-3 rounded-lg px-3 py-2.5 text-xs">
+        <div className="bg-band border-border/60 mt-3 rounded-lg border px-3.5 py-2.5 text-xs">
           <p className="text-muted-foreground font-medium">Admin feedback</p>
           <p className="text-foreground mt-0.5 leading-relaxed">{feedback}</p>
           {mode === "student" &&
           request.displayStatus === "revision_requested" ? (
             <Link
               href={`/app/classes/${request.class_slug}`}
-              className="text-accent hover:text-accent-hover mt-1.5 inline-flex items-center gap-1 font-semibold"
+              className="text-accent hover:text-accent-hover mt-1 inline-flex min-h-[44px] items-center gap-1 font-semibold sm:mt-1.5 sm:min-h-[28px]"
             >
               Revise in {request.class_name}
               <ArrowRight

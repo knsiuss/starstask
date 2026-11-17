@@ -47,44 +47,41 @@ export async function getOwnExportJob(
   userId: string,
 ): Promise<ExportJob | null> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("export_jobs" as never)
     .select("*")
     .eq("id", jobId)
     .eq("user_id", userId)
     .maybeSingle();
 
+  if (error) {
+    throw new Error("Could not load the export job.");
+  }
+
   return (data as ExportJob | null) ?? null;
 }
 
-/** Worker read: service role, no auth identity needed (QStash-signed). */
+/** Worker read: atomically claims a pending job; finished or running jobs return null. */
 export async function getExportJobForWorker(
   jobId: string,
 ): Promise<ExportJob | null> {
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from("export_jobs" as never)
-    .select("*")
-    .eq("id", jobId)
-    .maybeSingle();
-
-  if (!data) return null;
-
-  const row = data as ExportJob;
-
-  if (row.status === "done" || row.status === "failed") {
-    return null; // Idempotent: finished jobs never run twice.
-  }
-
-  await supabase
+  const { data, error } = await supabase
     .from("export_jobs" as never)
     .update({
       status: "running",
       updated_at: new Date().toISOString(),
     } as never)
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .eq("status", "pending")
+    .select("*")
+    .maybeSingle();
 
-  return row;
+  if (error) {
+    throw new Error("Could not claim the export job.");
+  }
+
+  return (data as ExportJob | null) ?? null;
 }
 
 export async function markExportJobDone(
@@ -92,7 +89,7 @@ export async function markExportJobDone(
   resultPath: string,
 ): Promise<void> {
   const supabase = createSupabaseAdminClient();
-  await supabase
+  const { error } = await supabase
     .from("export_jobs" as never)
     .update({
       status: "done",
@@ -100,6 +97,10 @@ export async function markExportJobDone(
       updated_at: new Date().toISOString(),
     } as never)
     .eq("id", jobId);
+
+  if (error) {
+    throw new Error("Could not mark the export job as done.");
+  }
 }
 
 export async function markExportJobFailed(
@@ -107,7 +108,7 @@ export async function markExportJobFailed(
   errorCategory: string,
 ): Promise<void> {
   const supabase = createSupabaseAdminClient();
-  await supabase
+  const { error } = await supabase
     .from("export_jobs" as never)
     .update({
       status: "failed",
@@ -115,4 +116,8 @@ export async function markExportJobFailed(
       updated_at: new Date().toISOString(),
     } as never)
     .eq("id", jobId);
+
+  if (error) {
+    throw new Error("Could not mark the export job as failed.");
+  }
 }

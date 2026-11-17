@@ -9,7 +9,7 @@ import { insertDriveSubmission } from "@/lib/db/drive-submissions";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { validateAttachmentFile } from "@/lib/storage/attachments";
-import { uploadToStorage } from "@/lib/storage/b2";
+import { deleteStoredObject, uploadToStorage } from "@/lib/storage/b2";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +62,26 @@ export async function POST(
       );
     }
 
+    if (assignment.status !== "published") {
+      throw new ApiError(
+        403,
+        "forbidden",
+        "Submissions are only accepted for published assignments.",
+      );
+    }
+
+    if (assignment.deadline) {
+      const deadlineMs = Date.parse(assignment.deadline);
+
+      if (!Number.isNaN(deadlineMs) && deadlineMs < Date.now()) {
+        throw new ApiError(
+          400,
+          "deadline_passed",
+          "The deadline for this assignment has passed.",
+        );
+      }
+    }
+
     // Refuse oversized bodies (or bodies with no declared length) before the
     // framework buffers the multipart payload into memory.
     assertUploadContentLength(request);
@@ -88,23 +108,32 @@ export async function POST(
       validated.value.mimeType,
     );
 
-    const { row, shareToken } = await insertDriveSubmission({
-      assignmentId: parsed.data,
-      userId: session.user.id,
-      driveFileId: driveFileId || null,
-      driveFileName: validated.value.originalFilename,
-      mimeType: validated.value.mimeType,
-      fileSize: validated.value.fileSize,
-      storagePath: stored.path,
-      storageProvider: stored.provider,
-      source: "google_drive",
-    });
+    let inserted: Awaited<ReturnType<typeof insertDriveSubmission>>;
+
+    try {
+      inserted = await insertDriveSubmission({
+        assignmentId: parsed.data,
+        userId: session.user.id,
+        driveFileId: driveFileId || null,
+        driveFileName: validated.value.originalFilename,
+        mimeType: validated.value.mimeType,
+        fileSize: validated.value.fileSize,
+        storagePath: stored.path,
+        storageProvider: stored.provider,
+        source: "google_drive",
+      });
+    } catch (insertError) {
+      await deleteStoredObject(stored.provider, stored.path).catch(
+        () => undefined,
+      );
+      throw insertError;
+    }
 
     return apiSuccess(
       {
-        submissionId: row.id,
-        fileName: row.drive_file_name,
-        lecturerPath: `/d/${shareToken}`,
+        submissionId: inserted.row.id,
+        fileName: inserted.row.drive_file_name,
+        lecturerPath: `/d/${inserted.shareToken}`,
       },
       201,
     );

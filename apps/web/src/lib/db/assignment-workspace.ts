@@ -205,10 +205,11 @@ export async function listWorkspaceSchedule(
   }
 
   const supabase = await createSupabaseServerClient();
-  const courseIds = await loadCatalogCourseIds(classIds);
-
   const classFilter =
     query.class && classIds.includes(query.class) ? query.class : null;
+  const courseIds = await loadCatalogCourseIds(
+    classFilter ? [classFilter] : classIds,
+  );
 
   const search = query.search;
 
@@ -242,10 +243,6 @@ export async function listWorkspaceSchedule(
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .limit(SCHEDULE_FETCH_LIMIT);
-
-    if (classFilter) {
-      request = request.eq("class_id", classFilter);
-    }
 
     if (search) {
       request = request.ilike("title", `%${escapeLike(search)}%`);
@@ -373,8 +370,6 @@ export async function getWorkspaceOverview(
 
   const supabase = await createSupabaseServerClient();
   const courseIds = await loadCatalogCourseIds(classIds);
-  const now = new Date();
-  const nowIso = now.toISOString();
 
   const [scoped, publicRows] = await Promise.all([
     supabase
@@ -413,6 +408,7 @@ export async function getWorkspaceOverview(
   const classCourseNames = new Map(
     scope.classes.map((item) => [item.id, item.name]),
   );
+  const nowMs = Date.now();
   let upcoming = 0;
   let expired = 0;
 
@@ -421,7 +417,13 @@ export async function getWorkspaceOverview(
       return [];
     }
 
-    if (row.deadline >= nowIso) {
+    const deadlineMs = Date.parse(row.deadline);
+
+    if (Number.isNaN(deadlineMs)) {
+      return [];
+    }
+
+    if (deadlineMs >= nowMs) {
       upcoming += 1;
     } else {
       expired += 1;
@@ -442,14 +444,16 @@ export async function getWorkspaceOverview(
     ];
   });
 
-  upcomingDeadlines.sort((a, b) => a.deadline.localeCompare(b.deadline));
+  upcomingDeadlines.sort(
+    (a, b) => Date.parse(a.deadline) - Date.parse(b.deadline),
+  );
 
   return {
     total: unique.length,
     upcoming,
     expired,
     upcomingDeadlines: upcomingDeadlines
-      .filter((item) => item.deadline >= nowIso)
+      .filter((item) => Date.parse(item.deadline) >= nowMs)
       .slice(0, 5),
   };
 }

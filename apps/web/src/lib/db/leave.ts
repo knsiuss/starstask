@@ -729,7 +729,8 @@ export async function listLeaveReportRows(options: {
           "forwarded",
           "cancelled",
         ])
-        .order("leave_start_date", { ascending: true });
+        .order("leave_start_date", { ascending: true })
+        .order("id", { ascending: true });
 
       if (options.from) {
         query = query.gte("leave_start_date", options.from);

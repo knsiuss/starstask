@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { requirePlatformAdmin } from "@/features/classes/class-access";
+import { requirePlatformAdmin } from "@/lib/auth/admin";
 import { getUnpamSyncStatus } from "@/lib/db/plugins";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ObservabilityPage() {
-  await requirePlatformAdmin();
+  await requirePlatformAdmin("/developer/observability");
   const supabase = await createSupabaseServerClient();
   // Views are not in generated Database types yet — cast via admin path in lib.
   const { getObservabilityViews } = await import("@/lib/db/plugins");

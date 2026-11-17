@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   BookOpen,
   ChevronRight,
@@ -5,33 +7,29 @@ import {
   GraduationCap,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
+
+import { pluralize } from "@starstask/shared";
 
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Button } from "@/components/ui/button";
 import type { DashboardClass } from "@/lib/db/dashboard";
-import { pluralize } from "@starstask/shared";
 
 type MyClassesSectionProps = {
   classes: DashboardClass[];
 };
 
-/** Distinct crops of the brand landscape so each class tile reads separately. */
-const IMAGE_POSITIONS: readonly string[] = [
-  "0% 50%",
-  "33% 50%",
-  "66% 50%",
-  "100% 50%",
-];
-
-const DEFAULT_IMAGE_POSITION = "0% 50%";
-
 export function MyClassesSection({ classes }: MyClassesSectionProps) {
+  const description =
+    classes.length > 0
+      ? `${classes.length} active ${pluralize(classes.length, "class")}`
+      : undefined;
+
   return (
     <section aria-labelledby="my-classes">
       <SectionHeader
         id="my-classes"
         title="My classes"
+        description={description}
         action={
           classes.length > 0
             ? { href: "/classes", label: "View all" }
@@ -40,43 +38,49 @@ export function MyClassesSection({ classes }: MyClassesSectionProps) {
       />
 
       {classes.length === 0 ? (
-        <div className="border-border bg-subtle mt-3 flex flex-col gap-3 rounded-xl border border-dashed px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="border-border bg-subtle mt-3 flex flex-col gap-4 rounded-xl border border-dashed p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <span className="border-border bg-surface text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-md border">
+            <span className="border-border bg-surface text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border">
               <GraduationCap
                 aria-hidden="true"
                 className="h-4 w-4"
               />
             </span>
-            <div>
-              <p className="text-sm font-medium">No active classes yet</p>
+            <div className="min-w-0">
+              <p className="text-foreground text-sm font-medium">
+                No active classes yet
+              </p>
               <p className="text-muted-foreground mt-0.5 max-w-md text-xs leading-relaxed">
                 Join a class group using an invitation link or browse available
-                public classes. Once you join a group, all its subjects are
-                immediately available to you.
+                public classes. All subjects inside the group become available
+                once you join.
               </p>
             </div>
           </div>
+
           <Button
             asChild
             size="sm"
             variant="secondary"
-            className="shrink-0 self-start sm:self-auto"
+            className="min-h-10 shrink-0 self-start sm:self-auto"
           >
             <Link href="/classes/discover">Browse classes</Link>
           </Button>
         </div>
       ) : (
-        <ul className="mt-3 space-y-3">
-          {classes.map((classItem, index) => (
-            <li key={classItem.id}>
-              <ClassRow
-                classItem={classItem}
-                imagePosition={
-                  IMAGE_POSITIONS[index % IMAGE_POSITIONS.length] ??
-                  DEFAULT_IMAGE_POSITION
-                }
-              />
+        <ul
+          className={
+            classes.length === 1
+              ? "mt-3 grid grid-cols-1 gap-3"
+              : "mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"
+          }
+        >
+          {classes.map((classItem) => (
+            <li
+              key={classItem.id}
+              className="min-w-0"
+            >
+              <ClassCard classItem={classItem} />
             </li>
           ))}
         </ul>
@@ -85,75 +89,99 @@ export function MyClassesSection({ classes }: MyClassesSectionProps) {
   );
 }
 
-function ClassRow({
-  classItem,
-  imagePosition,
-}: {
-  classItem: DashboardClass;
-  imagePosition: string;
-}) {
+function getClassInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const [firstWord, secondWord] = words;
+
+  if (!firstWord) {
+    return "CL";
+  }
+
+  return secondWord
+    ? `${firstWord[0] ?? ""}${secondWord[0] ?? ""}`.toUpperCase()
+    : firstWord.slice(0, 2).toUpperCase();
+}
+
+function ClassCard({ classItem }: { classItem: DashboardClass }) {
+  const initials = getClassInitials(classItem.name);
+
   return (
     <Link
       href={`/app/classes/${classItem.slug}`}
-      className="border-border bg-surface hover:border-accent/40 focus-visible:outline-accent group flex items-center gap-3 rounded-xl border p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-4 sm:p-4"
+      className="border-border bg-surface hover:border-accent/40 hover:bg-hover/40 focus-visible:outline-accent group flex h-full min-w-0 flex-col justify-between gap-3 rounded-xl border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
-      <span
-        aria-hidden="true"
-        style={{ backgroundPosition: imagePosition }}
-        className="border-border h-14 w-14 shrink-0 rounded-lg border bg-[url('/hero-dashboard.svg')] bg-cover shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:h-16 sm:w-16"
-      />
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="border-border bg-subtle text-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold tracking-tight"
+        >
+          {initials}
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-foreground group-hover:text-accent truncate text-[15px] font-semibold transition-colors">
-            {classItem.name}
-          </span>
-          <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-mono text-[10px]">
-            {classItem.slug}
-          </span>
-          {classItem.is_admin ? (
-            <span className="bg-accent-soft text-accent rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
-              Class admin
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-foreground group-hover:text-accent truncate text-[15px] leading-snug font-semibold transition-colors">
+              {classItem.name}
             </span>
-          ) : null}
-        </div>
-
-        {classItem.admin_name ? (
-          <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-            <ShieldCheck
+            <ChevronRight
               aria-hidden="true"
-              className="text-accent h-3 w-3 shrink-0"
+              className="text-muted-foreground/70 group-hover:text-accent mt-0.5 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
             />
-            <span className="truncate">Admin: {classItem.admin_name}</span>
-          </p>
-        ) : null}
+          </div>
 
-        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs">
-          <span className="bg-subtle inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 font-mono text-[11px]">
+              {classItem.slug}
+            </span>
+            <span className="text-muted-foreground text-xs whitespace-nowrap">
+              {classItem.semester} {classItem.academic_year}
+            </span>
+            {classItem.is_admin ? (
+              <span className="bg-accent-soft text-accent rounded-md px-1.5 py-0.5 text-[11px] font-medium">
+                Admin
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-border/60 text-muted-foreground flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t pt-2.5 text-xs">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="inline-flex items-center gap-1 tabular-nums">
             <BookOpen
               aria-hidden="true"
-              className="text-accent h-3.5 w-3.5"
+              className="text-accent h-3.5 w-3.5 shrink-0"
             />
             {classItem.subject_count}{" "}
             {pluralize(classItem.subject_count, "subject")}
           </span>
-          <span className="bg-subtle inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium">
+          <span
+            className={
+              classItem.task_count > 0
+                ? "text-foreground inline-flex items-center gap-1 font-medium tabular-nums"
+                : "inline-flex items-center gap-1 tabular-nums"
+            }
+          >
             <ClipboardList
               aria-hidden="true"
-              className="h-3.5 w-3.5"
+              className="text-muted-foreground h-3.5 w-3.5 shrink-0"
             />
             {classItem.task_count} {pluralize(classItem.task_count, "task")}
           </span>
-          <span className="whitespace-nowrap">
-            {classItem.semester} {classItem.academic_year}
-          </span>
         </div>
-      </div>
 
-      <ChevronRight
-        aria-hidden="true"
-        className="text-muted-foreground/60 group-hover:text-accent h-4 w-4 shrink-0 transition-colors"
-      />
+        {classItem.admin_name ? (
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <ShieldCheck
+              aria-hidden="true"
+              className="text-accent h-3.5 w-3.5 shrink-0"
+            />
+            <span className="max-w-[140px] truncate">
+              {classItem.admin_name}
+            </span>
+          </span>
+        ) : null}
+      </div>
     </Link>
   );
 }

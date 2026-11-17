@@ -240,8 +240,10 @@ export async function updateAnnouncement(
   if (input.title !== undefined) patch.title = input.title;
   if (input.body !== undefined) patch.body = input.body;
   if (input.pinned !== undefined) patch.pinned = input.pinned;
-  if (input.publish === true && !existing.published_at) {
-    patch.published_at = new Date().toISOString();
+  if (input.publish === true) {
+    if (!existing.published_at) {
+      patch.published_at = new Date().toISOString();
+    }
     patch.archived_at = null;
   }
   if (input.archive === true) {

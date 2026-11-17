@@ -1,10 +1,15 @@
-import { classJoinByNameSchema, toFieldErrors } from "@starstask/contracts";
+import {
+  buildCanonicalClassIdentity,
+  classJoinByNameSchema,
+  classJoinOrCreateSchema,
+  toFieldErrors,
+} from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiError, apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { DataAccessError } from "@/lib/db/assignments";
 import { isSupabaseConfigured } from "@/lib/env/public";
-import { joinClassByName } from "@/lib/db/profiles";
+import { joinClassByName, joinOrCreateCanonicalClass } from "@/lib/db/profiles";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireSession } from "@/features/classes/class-access";
 
@@ -59,18 +64,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsed = classJoinByNameSchema.safeParse(body);
+    const structured = classJoinOrCreateSchema.safeParse(body);
 
-    if (!parsed.success) {
+    if (structured.success) {
+      const identity = buildCanonicalClassIdentity(structured.data);
+      const result = await joinOrCreateCanonicalClass(identity);
+
+      return apiSuccess({ result });
+    }
+
+    const legacy = classJoinByNameSchema.safeParse(body);
+
+    if (!legacy.success) {
+      const isLegacyAttempt =
+        typeof body === "object" && body !== null && "className" in body;
+
       throw new ApiError(
         422,
         "validation_error",
-        "Enter a class name.",
-        toFieldErrors(parsed.error),
+        isLegacyAttempt
+          ? "Enter a class name."
+          : "Check the highlighted fields.",
+        toFieldErrors(isLegacyAttempt ? legacy.error : structured.error),
       );
     }
 
-    const result = await joinClassByName(parsed.data.className);
+    const result = await joinClassByName(legacy.data.className);
 
     return apiSuccess({ result });
   } catch (error) {
@@ -86,6 +105,14 @@ export async function POST(request: Request) {
     );
 
     if (error instanceof DataAccessError) {
+      if (error.code === "P0001") {
+        return apiError(
+          409,
+          "self_organized_limit",
+          "You already own 8 active self-organized classes.",
+        );
+      }
+
       return apiError(
         503,
         "join_unavailable",

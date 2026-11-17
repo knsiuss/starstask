@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 
 import { BrandLink } from "@/components/layout/brand-link";
-import { CommandPalette } from "@/components/layout/command-palette";
+import { CommandPaletteTrigger } from "@/components/layout/command-palette";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -45,6 +45,7 @@ export function WorkspaceTopbar({
         </div>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <CommandPaletteTrigger className="sm:hidden" />
           <ThemeToggle />
           {isAuthenticated ? (
             <Link

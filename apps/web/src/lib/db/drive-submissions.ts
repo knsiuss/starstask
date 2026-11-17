@@ -34,6 +34,10 @@ export type InsertDriveSubmissionInput = {
   source: "google_drive" | "upload";
 };
 
+/** Explicit column list omitting `share_token_hash` so token digests never cross boundaries. */
+const DRIVE_SUBMISSION_COLUMNS =
+  "id, assignment_id, user_id, drive_file_id, drive_file_name, mime_type, file_size, storage_path, storage_provider, source, share_expires_at, share_revoked_at, created_at, updated_at";
+
 /** Share links live 30 days: long enough for a lecturer review cycle. */
 const SHARE_TTL_DAYS = 30;
 
@@ -72,7 +76,7 @@ export async function insertDriveSubmission(
       share_token_hash: shareTokenHash,
       share_expires_at: expiresAt.toISOString(),
     } as never)
-    .select("*")
+    .select(DRIVE_SUBMISSION_COLUMNS)
     .single();
 
   if (error || !data) {
@@ -88,11 +92,15 @@ export async function getDriveSubmissionByToken(
 ): Promise<DriveSubmissionRow | null> {
   const supabase = createSupabaseAdminClient();
   const tokenHash = await hashShareToken(token);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("drive_submissions" as never)
-    .select("*")
+    .select(DRIVE_SUBMISSION_COLUMNS)
     .eq("share_token_hash", tokenHash)
     .maybeSingle();
+
+  if (error) {
+    throw new Error("Could not load the submission.");
+  }
 
   const row = (data as DriveSubmissionRow | null) ?? null;
 
@@ -111,18 +119,24 @@ export async function getDriveSubmissionByToken(
 export async function revokeDriveSubmission(
   submissionId: string,
   userId: string,
-): Promise<void> {
+  assignmentId: string,
+): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("drive_submissions" as never)
     .update({ share_revoked_at: new Date().toISOString() } as never)
     .eq("id", submissionId)
     .eq("user_id", userId)
-    .is("share_revoked_at", null);
+    .eq("assignment_id", assignmentId)
+    .is("share_revoked_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("Could not revoke the share link.");
   }
+
+  return data !== null;
 }
 
 /** Constant-time comparison, for contexts without indexed lookup. */
@@ -138,12 +152,16 @@ export async function listMyDriveSubmissions(
   assignmentId: string,
 ): Promise<DriveSubmissionRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("drive_submissions" as never)
-    .select("*")
+    .select(DRIVE_SUBMISSION_COLUMNS)
     .eq("user_id", userId)
     .eq("assignment_id", assignmentId)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error("Could not load submissions.");
+  }
 
   return (data ?? []) as DriveSubmissionRow[];
 }

@@ -1,4 +1,3 @@
-import { Search } from "lucide-react";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/layout/brand-mark";
@@ -7,9 +6,9 @@ import { NavLink } from "@/components/layout/nav-link";
 import { SiteMobileNav } from "@/components/layout/site-mobile-nav";
 import { SITE_LINKS } from "@/components/layout/site-nav-links";
 import { UserMenu } from "@/components/layout/user-menu";
-import { isDeveloperEmail } from "@/lib/auth/developer";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
@@ -19,50 +18,37 @@ export async function SiteHeader() {
   const displayName = session?.profile?.display_name ?? "StarsTask member";
 
   return (
-    <header className="border-border bg-background/95 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <SiteMobileNav isAuthenticated={Boolean(session)} />
-
-        <Link
-          href={session ? "/app" : "/"}
-          className="flex items-center gap-2 font-semibold tracking-tight"
-        >
-          <BrandMark size={32} />
-          <span>StarsTask</span>
-        </Link>
-
-        <nav
-          aria-label="Primary"
-          className="hidden items-center gap-0.5 lg:flex"
-        >
-          {SITE_LINKS.map((link) => (
-            <NavLink
-              key={link.href}
-              href={link.href}
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="hidden sm:inline-flex"
-          >
+    <header className="border-border bg-background sticky top-0 z-40 border-b">
+      <div className="mx-auto flex h-15 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <SiteMobileNav isAuthenticated={Boolean(session)} />
             <Link
-              href="/assignments"
-              aria-label="Search assignments"
+              href={session ? "/app" : "/"}
+              className="flex items-center gap-2 font-semibold tracking-tight"
             >
-              <Search
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
+              <BrandMark size={28} />
+              <span>StarsTask</span>
             </Link>
-          </Button>
+          </div>
+
+          <nav
+            aria-label="Primary"
+            className="hidden items-center gap-1 lg:flex"
+          >
+            {SITE_LINKS.map((link) => (
+              <NavLink
+                key={link.href}
+                href={link.href}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
 
           {session ? (
             <UserMenu
@@ -76,6 +62,7 @@ export async function SiteHeader() {
                 asChild
                 variant="ghost"
                 size="sm"
+                className={configured ? "sm:hidden" : undefined}
               >
                 <Link href="/login">Sign in</Link>
               </Button>

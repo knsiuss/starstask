@@ -257,39 +257,127 @@ export const classJoinByNameSchema = z.object({
 
 export type ClassJoinByNameInput = z.infer<typeof classJoinByNameSchema>;
 
+export const classJoinOrCreateSchema = z.object({
+  classCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[A-Z0-9]{2,20}$/,
+      "Use 2 to 20 letters or numbers (for example TPLM002)",
+    ),
+  semesterNumber: z.coerce
+    .number()
+    .int("Semester must be a whole number")
+    .min(1, "Semester must be between 1 and 14")
+    .max(14, "Semester must be between 1 and 14"),
+  academicYear: z
+    .string()
+    .trim()
+    .regex(/^\d{4}\/\d{4}$/, "Use the format 2024/2025"),
+});
+
+export type ClassJoinOrCreateInput = z.infer<typeof classJoinOrCreateSchema>;
+
+export type CanonicalClassIdentity = {
+  classCode: string;
+  semesterNumber: number;
+  semesterLabel: string;
+  academicYear: string;
+  name: string;
+  slug: string;
+};
+
+/**
+ * Builds the deterministic class name and slug from `(semester, classCode, academicYear)`.
+ *
+ * Example: `(5, "tplm002", "2024/2025")` -> name `05TPLM002-24/25`, slug `05tplm002-24-25`.
+ */
+export function buildCanonicalClassIdentity(input: {
+  classCode: string;
+  semesterNumber: number;
+  academicYear: string;
+}): CanonicalClassIdentity {
+  const classCode = input.classCode.trim().toUpperCase();
+  const paddedSemester = String(input.semesterNumber).padStart(2, "0");
+  const [startYear = "", endYear = ""] = input.academicYear.trim().split("/");
+  const shortYear = `${startYear.slice(-2)}/${endYear.slice(-2)}`;
+  const name = `${paddedSemester}${classCode}-${shortYear}`;
+  const slug = `${paddedSemester}${classCode.toLowerCase()}-${startYear.slice(-2)}-${endYear.slice(-2)}`;
+
+  return {
+    classCode,
+    semesterNumber: input.semesterNumber,
+    semesterLabel: `Semester ${input.semesterNumber}`,
+    academicYear: input.academicYear.trim(),
+    name,
+    slug,
+  };
+}
+
+/**
+ * Parses a canonical class label like `05TPLM002-24/25` back into its
+ * structured identity, or returns `null` for free-form strings.
+ */
+export function parseCanonicalClassName(
+  value: string,
+): CanonicalClassIdentity | null {
+  const match = value
+    .trim()
+    .match(/^(\d{2})([A-Za-z0-9]{2,20})-(\d{2})\/(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, rawSem = "", rawCode = "", rawStart = "", rawEnd = ""] = match;
+  const semesterNumber = Number.parseInt(rawSem, 10);
+
+  if (
+    !Number.isInteger(semesterNumber) ||
+    semesterNumber < 1 ||
+    semesterNumber > 14
+  ) {
+    return null;
+  }
+
+  return buildCanonicalClassIdentity({
+    classCode: rawCode,
+    semesterNumber,
+    academicYear: `20${rawStart}/20${rawEnd}`,
+  });
+}
+
 /**
  * Student self-created class payload for `create_class_as_student`.
  *
- * Mirrors the RPC checks: slug format, lengths, and academic_year shape.
- * `joinPolicy` defaults to invitation so a new class is not discoverable
- * before its owner shares the link.
+ * The server derives canonical `name` (`05TPLM002-24/25`) and `slug`
+ * (`05tplm002-24-25`) from `(semesterNumber, classCode, academicYear)` so
+ * duplicate classes for the same cohort cannot be created twice.
  */
 export const studentCreateClassSchema = z.object({
-  slug: z
+  classCode: z
     .string()
     .trim()
-    .toLowerCase()
+    .toUpperCase()
     .regex(
-      /^[a-z0-9]+(-[a-z0-9]+)*$/,
-      "Use lowercase letters, numbers and hyphens",
-    )
-    .min(3, "Slug must be at least 3 characters")
-    .max(80, "Slug must be 80 characters or fewer"),
-  name: z
+      /^[A-Z0-9]{2,20}$/,
+      "Use 2 to 20 letters or numbers (for example TPLM002)",
+    ),
+  semesterNumber: z.coerce
+    .number()
+    .int("Semester must be a whole number")
+    .min(1, "Semester must be between 1 and 14")
+    .max(14, "Semester must be between 1 and 14"),
+  academicYear: z
     .string()
     .trim()
-    .min(3, "Class name must be at least 3 characters")
-    .max(120, "Class name must be 120 characters or fewer"),
+    .regex(/^\d{4}\/\d{4}$/, "Use the format 2024/2025"),
   courseName: z
     .string()
     .trim()
     .min(2, "Course name must be at least 2 characters")
     .max(120, "Course name must be 120 characters or fewer"),
-  semester: z.string().trim().min(1, "Semester is required").max(20),
-  academicYear: z
-    .string()
-    .trim()
-    .regex(/^\d{4}\/\d{4}$/, "Use the format 2026/2027"),
   description: z
     .string()
     .trim()

@@ -1,24 +1,29 @@
 "use client";
 
-import { Loader2, PlusCircle } from "lucide-react";
+import { ArrowRight, Loader2, PlusCircle } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { studentCreateClassSchema, toFieldErrors } from "@starstask/contracts";
+import {
+  buildCanonicalClassIdentity,
+  studentCreateClassSchema,
+  toFieldErrors,
+} from "@starstask/contracts";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type CreateResponse = {
-  data?: { classId?: string };
-  error?: { message?: string; fields?: Record<string, string> };
+  data?: { classId?: string; slug?: string; name?: string };
+  error?: { code?: string; message?: string; fields?: Record<string, string> };
 };
 
-const SEMESTERS = ["Ganjil", "Genap", "Pendek"] as const;
+const SEMESTERS = Array.from({ length: 14 }, (_, index) => index + 1);
 
 function currentAcademicYear(): string {
   const now = new Date();
@@ -29,30 +34,50 @@ function currentAcademicYear(): string {
 /**
  * Student self-created class form.
  *
- * The database owns every rule (`create_class_as_student`): slug format,
- * field lengths, the 3-active-class abuse cap, and naming the creator ketua.
- * This only validates input and reports the outcome.
+ * Derives a deterministic class identity (`05TPLM002-24/25` and slug
+ * `05tplm002-24-25`) from `(semesterNumber, classCode, academicYear)` so the
+ * same cohort class cannot be created twice.
  */
 export function CreateClassForm() {
   const router = useRouter();
   const [values, setValues] = React.useState({
-    name: "",
-    slug: "",
-    courseName: "",
-    semester: "Ganjil",
+    classCode: "",
+    semesterNumber: 5,
     academicYear: currentAcademicYear(),
+    courseName: "",
     description: "",
     joinPolicy: "invitation" as "invitation" | "open",
   });
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
     {},
   );
-  const [formMessage, setFormMessage] = React.useState<string | null>(null);
+  const [formError, setFormError] = React.useState<{
+    code?: string;
+    message: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [createdId, setCreatedId] = React.useState<string | null>(null);
+  const [created, setCreated] = React.useState<{
+    id: string;
+    slug?: string;
+    name?: string;
+  } | null>(null);
 
-  const update = (key: keyof typeof values, value: string) => {
-    setValues((current) => ({ ...current, [key]: value }));
+  const preview = React.useMemo(() => {
+    const code = values.classCode.trim().toUpperCase();
+    const yearValid = /^\d{4}\/\d{4}$/.test(values.academicYear.trim());
+
+    if (!/^[A-Z0-9]{2,20}$/.test(code) || !yearValid) {
+      return null;
+    }
+
+    return buildCanonicalClassIdentity({
+      classCode: code,
+      semesterNumber: values.semesterNumber,
+      academicYear: values.academicYear,
+    });
+  }, [values.academicYear, values.classCode, values.semesterNumber]);
+
+  const clearFieldError = (key: string) => {
     setFieldErrors((current) => {
       if (!current[key]) {
         return current;
@@ -72,8 +97,8 @@ export function CreateClassForm() {
     }
 
     setFieldErrors({});
-    setFormMessage(null);
-    setCreatedId(null);
+    setFormError(null);
+    setCreated(null);
 
     const parsed = studentCreateClassSchema.safeParse(values);
 
@@ -96,22 +121,30 @@ export function CreateClassForm() {
 
       if (!response.ok) {
         setFieldErrors(body?.error?.fields ?? {});
-        setFormMessage(
-          body?.error?.message ?? "Could not create your class. Try again.",
-        );
+        setFormError({
+          code: body?.error?.code,
+          message:
+            body?.error?.message ?? "Could not create your class. Try again.",
+        });
         return;
       }
 
-      setCreatedId(body?.data?.classId ?? null);
+      setCreated({
+        id: body?.data?.classId ?? "",
+        slug: body?.data?.slug,
+        name: body?.data?.name,
+      });
       router.refresh();
     } catch {
-      setFormMessage("Network error. Check your connection and try again.");
+      setFormError({
+        message: "Network error. Check your connection and try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (createdId) {
+  if (created?.id) {
     return (
       <Alert variant="success">
         <p className="inline-flex items-center gap-1.5 font-medium">
@@ -119,106 +152,146 @@ export function CreateClassForm() {
             aria-hidden="true"
             className="h-4 w-4"
           />
-          Your class is ready
+          {created.name
+            ? `Class ${created.name} is ready`
+            : "Your class is ready"}
         </p>
         <p className="mt-1 text-sm">
-          You were added as the first member and ketua kelas. Share the
+          You were added as the first member and class admin. Share the
           invitation link from the class page so your classmates can join.
         </p>
+        {created.slug ? (
+          <div className="mt-4">
+            <Button
+              asChild
+              size="sm"
+              className="min-h-[44px] sm:min-h-9"
+            >
+              <Link href={`/app/classes/${encodeURIComponent(created.slug)}`}>
+                Open class
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
+              </Link>
+            </Button>
+          </div>
+        ) : null}
       </Alert>
     );
   }
 
   return (
     <form
-      className="mt-6 space-y-4"
+      className="mt-6 space-y-5"
       onSubmit={submit}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="create-name">Class name</Label>
+          <Label htmlFor="create-code">Class code</Label>
           <Input
-            id="create-name"
-            value={values.name}
-            onChange={(event) => update("name", event.target.value)}
-            placeholder="TPLM002 - Kelompok 3"
-            maxLength={120}
-            aria-invalid={Boolean(fieldErrors.name)}
-            className="h-11"
+            id="create-code"
+            value={values.classCode}
+            onChange={(event) => {
+              setValues((c) => ({
+                ...c,
+                classCode: event.target.value.toUpperCase(),
+              }));
+              clearFieldError("classCode");
+            }}
+            placeholder="TPLM002"
+            maxLength={20}
+            autoCapitalize="characters"
+            aria-invalid={Boolean(fieldErrors.classCode)}
+            className="h-11 uppercase"
           />
-          {fieldErrors.name ? (
-            <p className="text-danger text-xs">{fieldErrors.name}</p>
+          {fieldErrors.classCode ? (
+            <p className="text-danger text-xs">{fieldErrors.classCode}</p>
           ) : null}
         </div>
+
         <div className="space-y-2">
-          <Label htmlFor="create-slug">Class code</Label>
+          <Label htmlFor="create-semester">Semester</Label>
+          <Select
+            id="create-semester"
+            value={String(values.semesterNumber)}
+            onChange={(event) => {
+              setValues((c) => ({
+                ...c,
+                semesterNumber: Number(event.target.value),
+              }));
+              clearFieldError("semesterNumber");
+            }}
+            className="h-11"
+          >
+            {SEMESTERS.map((semester) => (
+              <option
+                key={semester}
+                value={semester}
+              >
+                Semester {semester}
+              </option>
+            ))}
+          </Select>
+          {fieldErrors.semesterNumber ? (
+            <p className="text-danger text-xs">{fieldErrors.semesterNumber}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="create-year">Academic year</Label>
           <Input
-            id="create-slug"
-            value={values.slug}
-            onChange={(event) => update("slug", event.target.value)}
-            placeholder="tplm002-k3"
-            maxLength={80}
-            autoCapitalize="none"
-            aria-invalid={Boolean(fieldErrors.slug)}
+            id="create-year"
+            value={values.academicYear}
+            onChange={(event) => {
+              setValues((c) => ({ ...c, academicYear: event.target.value }));
+              clearFieldError("academicYear");
+            }}
+            placeholder="2024/2025"
+            maxLength={9}
+            inputMode="numeric"
+            aria-invalid={Boolean(fieldErrors.academicYear)}
             className="h-11"
           />
-          {fieldErrors.slug ? (
-            <p className="text-danger text-xs">{fieldErrors.slug}</p>
+          {fieldErrors.academicYear ? (
+            <p className="text-danger text-xs">{fieldErrors.academicYear}</p>
           ) : null}
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="create-course">Course</Label>
-          <Input
-            id="create-course"
-            value={values.courseName}
-            onChange={(event) => update("courseName", event.target.value)}
-            placeholder="Teknik Persamaan Diferensial"
-            maxLength={120}
-            aria-invalid={Boolean(fieldErrors.courseName)}
-            className="h-11"
-          />
-          {fieldErrors.courseName ? (
-            <p className="text-danger text-xs">{fieldErrors.courseName}</p>
-          ) : null}
+      <div className="border-border bg-subtle rounded-lg border px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-muted-foreground text-xs font-medium">
+            Generated class ID
+          </span>
+          <span className="text-foreground font-mono text-sm font-semibold">
+            {preview ? preview.name : "05TPLM002-24/25"}
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label htmlFor="create-semester">Semester</Label>
-            <Select
-              id="create-semester"
-              value={values.semester}
-              onChange={(event) => update("semester", event.target.value)}
-            >
-              {SEMESTERS.map((semester) => (
-                <option
-                  key={semester}
-                  value={semester}
-                >
-                  {semester}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="create-year">Academic year</Label>
-            <Input
-              id="create-year"
-              value={values.academicYear}
-              onChange={(event) => update("academicYear", event.target.value)}
-              placeholder="2026/2027"
-              maxLength={9}
-              inputMode="numeric"
-              aria-invalid={Boolean(fieldErrors.academicYear)}
-              className="h-11"
-            />
-            {fieldErrors.academicYear ? (
-              <p className="text-danger text-xs">{fieldErrors.academicYear}</p>
-            ) : null}
-          </div>
-        </div>
+        <p className="text-muted-foreground mt-1 text-xs">
+          {preview
+            ? `URL code: ${preview.slug}. Duplicate classes for the same code, semester, and academic year are blocked automatically.`
+            : "Format combines semester, class code, and academic year so existing classes cannot be duplicated."}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="create-course">First course</Label>
+        <Input
+          id="create-course"
+          value={values.courseName}
+          onChange={(event) => {
+            setValues((c) => ({ ...c, courseName: event.target.value }));
+            clearFieldError("courseName");
+          }}
+          placeholder="Pemrograman Web 1"
+          maxLength={120}
+          aria-invalid={Boolean(fieldErrors.courseName)}
+          className="h-11"
+        />
+        {fieldErrors.courseName ? (
+          <p className="text-danger text-xs">{fieldErrors.courseName}</p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -226,8 +299,11 @@ export function CreateClassForm() {
         <Textarea
           id="create-description"
           value={values.description}
-          onChange={(event) => update("description", event.target.value)}
-          placeholder="Kelompok belajar untuk tugas akhir, revisi, dan diskusi soal."
+          onChange={(event) => {
+            setValues((c) => ({ ...c, description: event.target.value }));
+            clearFieldError("description");
+          }}
+          placeholder="Class workspace for assignments, attendance, and schedules."
           maxLength={5000}
           aria-invalid={Boolean(fieldErrors.description)}
         />
@@ -240,41 +316,62 @@ export function CreateClassForm() {
         <legend className="text-foreground text-sm font-medium">
           Who can join?
         </legend>
-        <label className="border-border bg-subtle flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm">
+        <label className="border-border bg-subtle flex min-h-[44px] cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm">
           <input
             type="radio"
             name="joinPolicy"
             value="invitation"
             checked={values.joinPolicy === "invitation"}
-            onChange={() => update("joinPolicy", "invitation")}
+            onChange={() =>
+              setValues((c) => ({ ...c, joinPolicy: "invitation" }))
+            }
             className="mt-0.5"
           />
           <span>
             <span className="font-medium">Invitation only</span>
             <span className="text-muted-foreground block text-xs">
-              You share the link yourself; nobody else can find the class.
+              You share the link yourself; nobody else can join without an
+              invite.
             </span>
           </span>
         </label>
-        <label className="border-border bg-subtle flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm">
+        <label className="border-border bg-subtle flex min-h-[44px] cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm">
           <input
             type="radio"
             name="joinPolicy"
             value="open"
             checked={values.joinPolicy === "open"}
-            onChange={() => update("joinPolicy", "open")}
+            onChange={() => setValues((c) => ({ ...c, joinPolicy: "open" }))}
             className="mt-0.5"
           />
           <span>
             <span className="font-medium">Open to anyone with the code</span>
             <span className="text-muted-foreground block text-xs">
-              Anyone who types the class code can join without an invitation.
+              Classmates who search the class code can join without an
+              invitation.
             </span>
           </span>
         </label>
       </fieldset>
 
-      {formMessage ? <Alert variant="error">{formMessage}</Alert> : null}
+      {formError ? (
+        <Alert
+          variant="error"
+          role="alert"
+        >
+          <p>{formError.message}</p>
+          {formError.code === "slug_taken" ? (
+            <p className="mt-2">
+              <Link
+                href="/classes/join"
+                className="font-medium underline"
+              >
+                Go to Join a class
+              </Link>
+            </p>
+          ) : null}
+        </Alert>
+      ) : null}
 
       <Button
         type="submit"

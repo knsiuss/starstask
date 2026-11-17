@@ -121,6 +121,11 @@ export function DeleteAssignmentButton({
           variant="danger"
           size={variant === "inline" ? "sm" : "md"}
           disabled={isScheduled}
+          className={
+            variant === "inline"
+              ? "min-h-[44px] px-4 sm:min-h-8 sm:px-3"
+              : "min-h-[44px] w-full sm:w-auto"
+          }
         >
           {isScheduled ? (
             <Loader2
@@ -143,11 +148,12 @@ export function DeleteAssignmentButton({
           few seconds to undo after confirming.
         </DialogDescription>
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="secondary"
             onClick={() => setOpen(false)}
+            className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
           >
             Cancel
           </Button>
@@ -155,6 +161,7 @@ export function DeleteAssignmentButton({
             type="button"
             variant="danger"
             onClick={handleDelete}
+            className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
           >
             Delete assignment
           </Button>

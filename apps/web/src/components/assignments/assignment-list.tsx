@@ -18,14 +18,14 @@ export function AssignmentList({
 }: AssignmentListProps) {
   if (assignments.length === 0) {
     return (
-      <div className="border-border bg-surface flex flex-col items-center rounded-xl border px-6 py-16 text-center">
-        <span className="bg-subtle flex h-14 w-14 items-center justify-center rounded-full">
+      <div className="border-border bg-surface flex flex-col items-center rounded-xl border px-4 py-12 text-center sm:px-6 sm:py-16">
+        <span className="bg-subtle border-border/60 flex h-12 w-12 items-center justify-center rounded-full border sm:h-14 sm:w-14">
           <SearchX
             aria-hidden="true"
-            className="text-muted-foreground h-6 w-6"
+            className="text-muted-foreground h-5 w-5 sm:h-6 sm:w-6"
           />
         </span>
-        <h2 className="mt-5 text-lg font-semibold tracking-tight">
+        <h2 className="text-foreground mt-4 text-base font-semibold tracking-tight sm:mt-5 sm:text-lg">
           {emptyTitle}
         </h2>
         <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
@@ -33,7 +33,7 @@ export function AssignmentList({
         </p>
         <Button
           asChild
-          className="mt-6"
+          className="mt-6 min-h-[44px] w-full sm:w-auto"
         >
           <Link href="/submit">Submit an assignment</Link>
         </Button>
@@ -46,7 +46,7 @@ export function AssignmentList({
       {assignments.map((assignment) => (
         <li
           key={assignment.id}
-          className="h-full"
+          className="h-full min-w-0"
         >
           <AssignmentCard assignment={assignment} />
         </li>

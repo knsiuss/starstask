@@ -149,6 +149,13 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
+
     const code =
       error instanceof Error && "code" in error
         ? String((error as { code?: unknown }).code)

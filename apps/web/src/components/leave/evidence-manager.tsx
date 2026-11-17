@@ -63,6 +63,8 @@ export function EvidenceManager({
       }
 
       router.refresh();
+    } catch {
+      setError("Could not upload the file.");
     } finally {
       setBusy(false);
 
@@ -92,6 +94,8 @@ export function EvidenceManager({
       }
 
       router.refresh();
+    } catch {
+      setError("Could not remove the file.");
     } finally {
       setRemoving(null);
     }

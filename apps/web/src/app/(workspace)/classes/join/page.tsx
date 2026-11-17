@@ -79,12 +79,12 @@ export default async function JoinClassPage({
         </span>
 
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">
-          Join a class
+          Join or set up a class
         </h1>
         <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-          Join with the class name or code if the class accepts open joining, or
-          paste the invitation link a class admin sent you. Either way you
-          become a class member only — never a class admin or platform admin.
+          Enter your class code, semester, and academic year to join your cohort
+          class automatically (or create it if nobody has set it up yet). You
+          can also paste an invitation link from a class admin.
         </p>
 
         {showInvalid ? (

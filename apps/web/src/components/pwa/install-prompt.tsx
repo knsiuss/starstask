@@ -33,14 +33,14 @@ export function InstallPrompt() {
       return;
     }
 
+    const onPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferred(event as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener("beforeinstallprompt", onPrompt);
+
     const timer = window.setTimeout(() => {
-      const onPrompt = (event: Event) => {
-        event.preventDefault();
-        setDeferred(event as BeforeInstallPromptEvent);
-      };
-
-      window.addEventListener("beforeinstallprompt", onPrompt);
-
       const userAgent = window.navigator.userAgent;
       // iPadOS 13+ reports as Macintosh; matchTouch on a Mac UA covers it.
       const isIos =
@@ -49,14 +49,12 @@ export function InstallPrompt() {
       if (isIos) {
         setIosHint(true);
       }
-
-      return () => {
-        window.clearTimeout(timer);
-        window.removeEventListener("beforeinstallprompt", onPrompt);
-      };
     }, SHOW_AFTER_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+    };
   }, []);
 
   function dismiss() {
