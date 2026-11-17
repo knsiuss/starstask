@@ -97,7 +97,8 @@ export function CreateSubjectForm({ classSlug }: CreateSubjectFormProps) {
         </button>
       </div>
       <p className="text-muted-foreground mt-0.5 text-xs">
-        This subject will automatically become available to all members of this class group.
+        This subject will automatically become available to all members of this
+        class group.
       </p>
 
       {error ? (

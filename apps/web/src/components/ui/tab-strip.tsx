@@ -66,7 +66,7 @@ export function TabStrip({ label, items, className }: TabStripProps) {
               href={item.href}
               aria-current={item.active ? "page" : undefined}
               className={cn(
-                "focus-visible:outline-accent inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                "focus-visible:outline-accent inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium whitespace-nowrap transition-[color,border-color] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 hover:text-foreground",
                 item.active
                   ? "border-accent text-foreground"
                   : "text-muted-foreground hover:text-foreground border-transparent",

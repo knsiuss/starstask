@@ -4,15 +4,15 @@ Evidence: row counts per table (`pg_stat_user_tables n_live_tup`), retention mig
 
 ## Current retention posture
 
-| Data | Rows | Retention seen | Risk |
-|---|---|---|---|
-| `audit_logs` | 288 | Unbounded (no purge mig) | Growth, but academic audit must be preserved. P2: partition by month at >100k. |
-| `app_error_events` | 228 | Unbounded | PII risk (AGENTS §7.1 forbids logging personal data). P1: scrub + 90-day purge, verify no PII in `error` column (UNKNOWN, needs sampling). |
-| `attendance_correction_audits` | 106 | Permanent (correct — academic record) | Must not prune. |
-| `discussion_session_checkins` | 129 | Coordinates pruned via `checkin_coordinate_retention` | Good. Confirm job runs (NOT VERIFIED). |
-| `notification_deliveries` | 0 | `notification_delivery_retention` mig exists | Code path never ran; purge job unproven. |
-| `leave_request_history` | 18 | Append-only | Preserve (academic history). |
-| Storage objects | UNKNOWN count per bucket | No lifecycle policy observed | P1: orphan sweep for `leave-evidence` (private, uploads outlive requests?) + signed-URL expiry. |
+| Data                           | Rows                     | Retention seen                                        | Risk                                                                                                                                       |
+| ------------------------------ | ------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `audit_logs`                   | 288                      | Unbounded (no purge mig)                              | Growth, but academic audit must be preserved. P2: partition by month at >100k.                                                             |
+| `app_error_events`             | 228                      | Unbounded                                             | PII risk (AGENTS §7.1 forbids logging personal data). P1: scrub + 90-day purge, verify no PII in `error` column (UNKNOWN, needs sampling). |
+| `attendance_correction_audits` | 106                      | Permanent (correct — academic record)                 | Must not prune.                                                                                                                            |
+| `discussion_session_checkins`  | 129                      | Coordinates pruned via `checkin_coordinate_retention` | Good. Confirm job runs (NOT VERIFIED).                                                                                                     |
+| `notification_deliveries`      | 0                        | `notification_delivery_retention` mig exists          | Code path never ran; purge job unproven.                                                                                                   |
+| `leave_request_history`        | 18                       | Append-only                                           | Preserve (academic history).                                                                                                               |
+| Storage objects                | UNKNOWN count per bucket | No lifecycle policy observed                          | P1: orphan sweep for `leave-evidence` (private, uploads outlive requests?) + signed-URL expiry.                                            |
 
 ## Storage lifecycle
 

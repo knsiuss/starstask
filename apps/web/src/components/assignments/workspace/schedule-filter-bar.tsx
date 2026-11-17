@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { RotateCcw, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -40,7 +40,7 @@ const SORT_OPTIONS = [
 
 /**
  * Schedule toolbar. Selects navigate on change and the search waits for
- * Enter, so a filtered view stays a real, shareable URL.
+ * Enter, so a filtered view stays a real, shareable URL across mobile and desktop.
  */
 export function ScheduleFilterBar({
   search,
@@ -54,6 +54,10 @@ export function ScheduleFilterBar({
   const statusOptions = managesAnyClass
     ? [...STATUS_OPTIONS, ...REVIEW_STATUS_OPTIONS]
     : STATUS_OPTIONS;
+
+  const hasActiveFilters = Boolean(
+    search || classId || status !== "all" || sort !== "newest",
+  );
 
   const navigate = (
     overrides: Partial<{
@@ -98,112 +102,133 @@ export function ScheduleFilterBar({
         const form = new FormData(event.currentTarget);
         navigate({ search: String(form.get("search") ?? "") });
       }}
-      className="hidden gap-2 sm:gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-[1fr_180px_180px_180px]"
+      className="space-y-2.5"
     >
-      <div className="relative min-w-0 sm:col-span-2 xl:col-span-1">
-        <Label
-          htmlFor="workspace-search"
-          className="sr-only"
-        >
-          Search assignments
-        </Label>
-        <Search
-          aria-hidden="true"
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-        />
-        <Input
-          id="workspace-search"
-          name="search"
-          type="search"
-          defaultValue={search ?? ""}
-          placeholder="Search assignments…"
-          className="pl-9"
-        />
-        {search ? (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_165px_165px_155px]">
+        <div className="relative min-w-0 sm:col-span-3 lg:col-span-1">
+          <Label
+            htmlFor="workspace-search"
+            className="sr-only"
+          >
+            Search assignments
+          </Label>
+          <Search
+            aria-hidden="true"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+          />
+          <Input
+            id="workspace-search"
+            name="search"
+            type="search"
+            defaultValue={search ?? ""}
+            placeholder="Search assignments..."
+            className="h-11 pr-11 pl-9 sm:h-10"
+          />
+          {search ? (
+            <button
+              type="button"
+              onClick={() => navigate({ search: "" })}
+              aria-label="Clear search"
+              className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-1 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <X
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="min-w-0">
+          <Label
+            htmlFor="workspace-class"
+            className="sr-only"
+          >
+            Filter by class
+          </Label>
+          <Select
+            id="workspace-class"
+            value={classId ?? ""}
+            onChange={(event) => navigate({ class: event.target.value })}
+            className="h-11 sm:h-10"
+          >
+            <option value="">All classes</option>
+            {classes.map((item) => (
+              <option
+                key={item.id}
+                value={item.id}
+              >
+                {item.name}
+                {item.class_code ? ` (${item.class_code})` : ""}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="min-w-0">
+          <Label
+            htmlFor="workspace-status"
+            className="sr-only"
+          >
+            Filter by status
+          </Label>
+          <Select
+            id="workspace-status"
+            value={status}
+            onChange={(event) => navigate({ status: event.target.value })}
+            className="h-11 sm:h-10"
+          >
+            {statusOptions.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="min-w-0">
+          <Label
+            htmlFor="workspace-sort"
+            className="sr-only"
+          >
+            Sort assignments
+          </Label>
+          <Select
+            id="workspace-sort"
+            value={sort}
+            onChange={(event) => navigate({ sort: event.target.value })}
+            className="h-11 sm:h-10"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      {hasActiveFilters ? (
+        <div className="flex items-center justify-end">
           <button
             type="button"
-            onClick={() => navigate({ search: "" })}
-            aria-label="Clear search"
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 rounded p-0.5"
+            onClick={() => router.push("/assignments")}
+            className="text-muted-foreground hover:text-foreground inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors sm:min-h-[32px]"
           >
-            <X
+            <RotateCcw
               aria-hidden="true"
-              className="h-4 w-4"
+              className="h-3.5 w-3.5"
             />
+            Reset filters
           </button>
-        ) : null}
-      </div>
-
-      <div className="min-w-0">
-        <Label
-          htmlFor="workspace-class"
-          className="sr-only"
-        >
-          Filter by class
-        </Label>
-        <Select
-          id="workspace-class"
-          value={classId ?? ""}
-          onChange={(event) => navigate({ class: event.target.value })}
-        >
-          <option value="">All classes</option>
-          {classes.map((item) => (
-            <option
-              key={item.id}
-              value={item.id}
-            >
-              {item.name}
-              {item.class_code ? ` (${item.class_code})` : ""}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <div className="min-w-0">
-        <Label
-          htmlFor="workspace-status"
-          className="sr-only"
-        >
-          Filter by status
-        </Label>
-        <Select
-          id="workspace-status"
-          value={status}
-          onChange={(event) => navigate({ status: event.target.value })}
-        >
-          {statusOptions.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-            >
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <div className="min-w-0">
-        <Label
-          htmlFor="workspace-sort"
-          className="sr-only"
-        >
-          Sort assignments
-        </Label>
-        <Select
-          id="workspace-sort"
-          value={sort}
-          onChange={(event) => navigate({ sort: event.target.value })}
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-            >
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      </div>
+        </div>
+      ) : null}
     </form>
   );
 }

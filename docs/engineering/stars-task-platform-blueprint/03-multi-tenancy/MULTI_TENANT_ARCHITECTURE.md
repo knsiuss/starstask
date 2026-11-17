@@ -4,11 +4,11 @@
 
 **Shared database + shared schema with strict tenant ownership** (`university_id` on tenant-scoped tables) is recommended over schema-per-tenant and database-per-tenant.
 
-| Strategy | Cost | Security | Maintenance | Verdict |
-|---|---|---|---|---|
-| Shared DB + shared schema | Low (single Supabase instance) | Good **iff** tenant-aware RLS + server context | Low | **Recommended** |
-| Shared DB, schema-per-tenant | Medium-large (Nx schema ops) | Strong isolation | High | DO NOT USE (complexity > value at this scale) |
-| Database-per-tenant | High (multiple Supabase projects) | Strongest isolation | High | DO NOT USE until compliance/scale forces |
+| Strategy                     | Cost                              | Security                                       | Maintenance | Verdict                                       |
+| ---------------------------- | --------------------------------- | ---------------------------------------------- | ----------- | --------------------------------------------- |
+| Shared DB + shared schema    | Low (single Supabase instance)    | Good **iff** tenant-aware RLS + server context | Low         | **Recommended**                               |
+| Shared DB, schema-per-tenant | Medium-large (Nx schema ops)      | Strong isolation                               | High        | DO NOT USE (complexity > value at this scale) |
+| Database-per-tenant          | High (multiple Supabase projects) | Strongest isolation                            | High        | DO NOT USE until compliance/scale forces      |
 
 ## Rules (binding for Phase 5–6)
 

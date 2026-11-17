@@ -47,7 +47,10 @@ async function pinnedGet(conversationId: string): Promise<Pinned | null> {
   });
 }
 
-async function pinnedSet(conversationId: string, pinned: Pinned): Promise<void> {
+async function pinnedSet(
+  conversationId: string,
+  pinned: Pinned,
+): Promise<void> {
   const db = await openDb();
 
   return new Promise<void>((resolve, reject) => {
@@ -86,7 +89,10 @@ export function KeyTrustBanner({
       }
 
       if (!pinned) {
-        await pinnedSet(conversationId, { fingerprint, publicKey: peerPublicKey });
+        await pinnedSet(conversationId, {
+          fingerprint,
+          publicKey: peerPublicKey,
+        });
         setCurrent({ fingerprint, publicKey: peerPublicKey });
         setState("trusted");
         return;
@@ -135,8 +141,8 @@ export function KeyTrustBanner({
         This person&apos;s encryption key changed.
       </p>
       <p className="mt-1">
-        New chats encrypt to the key below. Verify it with them outside the
-        chat before trusting it — a changed key can mean a new device, or an
+        New chats encrypt to the key below. Verify it with them outside the chat
+        before trusting it — a changed key can mean a new device, or an
         impersonation attempt.
       </p>
       <p className="mt-1 font-mono break-all">{current.fingerprint}</p>

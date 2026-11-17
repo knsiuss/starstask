@@ -5,14 +5,13 @@
 -- to match ConversationRow in lib/db/direct-messages.ts; the caller maps
 -- snake_case columns to camelCase. No message content is returned: the
 -- preview is a fixed marker because the server cannot decrypt.
-create or replace function public.list_dm_conversations()
-returns table (
+CREATE OR REPLACE FUNCTION public.list_dm_conversations () returns TABLE (
   id uuid,
   other_user_id uuid,
   other_name text,
   other_avatar_url text,
   is_group boolean,
-  participant_names text[],
+  participant_names TEXT[],
   last_message text,
   last_at timestamptz,
   unread boolean,
@@ -20,11 +19,9 @@ returns table (
   is_pinned boolean,
   is_muted boolean,
   is_archived boolean
-)
-language plpgsql
-security invoker
-set search_path = public
-as $$
+) language plpgsql security invoker
+SET
+  search_path = public AS $$
 declare
   me uuid := auth.uid();
 begin
@@ -96,5 +93,12 @@ begin
 end;
 $$;
 
-revoke execute on function public.list_dm_conversations() from anon;
-grant execute on function public.list_dm_conversations() to authenticated;
+
+REVOKE
+EXECUTE ON function public.list_dm_conversations ()
+FROM
+  anon;
+
+
+GRANT
+EXECUTE ON function public.list_dm_conversations () TO authenticated;

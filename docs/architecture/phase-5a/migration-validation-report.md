@@ -6,10 +6,10 @@
 
 ## 1. Environment
 
-| Fact | Evidence |
-|---|---|
-| Local stack running | `supabase status` exit 0; `supabase_db_starstask` "Up 9 hours (healthy)". Only `imgproxy`/`edge_runtime`/`pooler` stopped (irrelevant). |
-| Local DB content | Initially empty: `profiles=0, classes=0, platform_admins=0`; all 92 applied migrations present, all except the user's WIP `20261110000000_subject_enrollment.sql` (verified via `supabase migration list`). |
+| Fact                                | Evidence                                                                                                                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local stack running                 | `supabase status` exit 0; `supabase_db_starstask` "Up 9 hours (healthy)". Only `imgproxy`/`edge_runtime`/`pooler` stopped (irrelevant).                                                                                   |
+| Local DB content                    | Initially empty: `profiles=0, classes=0, platform_admins=0`; all 92 applied migrations present, all except the user's WIP `20261110000000_subject_enrollment.sql` (verified via `supabase migration list`).               |
 | Why files vs content are consistent | WIP migration only creates `class_subject_members`, which is **absent** from the committed `database.generated.ts` (grep: no match). So local-schema === committed-types baseline + Phase 5A tables. Types regen is safe. |
 
 ## 2. How the migration was applied (and how it was NOT)
@@ -40,21 +40,22 @@ Seed: `universitas-contoh` (active) + `universitas-lain` (registered); one
 throwaway `auth.users` + `profiles` + 2 throwaway memberships. All seed rows
 deleted at the end; post-cleanup counts: `universities=0, memberships=0`.
 
-| # | Check | Expected | Actual |
-|---|---|---|---|
-| 1 | Insert 2 universities (service role) | success | `INSERT 0 2` |
-| 2 | Duplicate `slug` | unique violation | `ERROR: duplicate key value violates unique constraint "universities_slug_unique"` |
-| 3 | Duplicate `code` in different case (`UC01` vs `uc01`) | unique violation | `ERROR: duplicate key value violates unique constraint "universities_code_unique"` |
-| 4 | `SET ROLE anon; SELECT count(*) FROM universities` | permission denied (no grant) | `ERROR: permission denied for table universities` |
-| 5 | `SET ROLE authenticated; SELECT count(*)` with 1 active + 1 registered | 1 (active only) | `1` |
-| 6 | Duplicate `(user_id, university_id)` membership | unique violation | `ERROR: duplicate key value violates unique constraint "university_memberships_user_university_unique"` |
-| 7 | Same `student_id` (`nim001`) at a *second* university | allowed (per-tenant unique) | `INSERT 0 1` (total memberships = 2) |
-| 8 | Delete referenced university | RESTRICT violation | `ERROR: ... violates foreign key constraint "university_memberships_university_id_fkey"` |
-| 9 | Invalid `status` (`bogus`) | CHECK violation | `ERROR: ... violates check constraint "universities_status_allowed"` |
-| 10 | Cleanup deletes | all 0 | `universities_after_cleanup=0, memberships_after_cleanup=0` (auth.users + profiles throwaway also removed; profiles row auto-deleted by CASCADE) |
-| 11 | Schema dump after apply (`\d`) | columns/indexes/checks/FKs/policies/triggers as designed | Verified: `universities` (19 cols, 4 indexes incl. partial `code` unique, 9 checks, `created_by→profiles SET NULL`, policy `universities_active_read`, trigger present); `university_memberships` (9 cols, 4 indexes incl. partial `student_id` unique, `user_id→auth.users CASCADE`, `university_id→universities RESTRICT`, policy `university_memberships_owner_read`, trigger present) |
+| #   | Check                                                                  | Expected                                                 | Actual                                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Insert 2 universities (service role)                                   | success                                                  | `INSERT 0 2`                                                                                                                                                                                                                                                                                                                                                                              |
+| 2   | Duplicate `slug`                                                       | unique violation                                         | `ERROR: duplicate key value violates unique constraint "universities_slug_unique"`                                                                                                                                                                                                                                                                                                        |
+| 3   | Duplicate `code` in different case (`UC01` vs `uc01`)                  | unique violation                                         | `ERROR: duplicate key value violates unique constraint "universities_code_unique"`                                                                                                                                                                                                                                                                                                        |
+| 4   | `SET ROLE anon; SELECT count(*) FROM universities`                     | permission denied (no grant)                             | `ERROR: permission denied for table universities`                                                                                                                                                                                                                                                                                                                                         |
+| 5   | `SET ROLE authenticated; SELECT count(*)` with 1 active + 1 registered | 1 (active only)                                          | `1`                                                                                                                                                                                                                                                                                                                                                                                       |
+| 6   | Duplicate `(user_id, university_id)` membership                        | unique violation                                         | `ERROR: duplicate key value violates unique constraint "university_memberships_user_university_unique"`                                                                                                                                                                                                                                                                                   |
+| 7   | Same `student_id` (`nim001`) at a _second_ university                  | allowed (per-tenant unique)                              | `INSERT 0 1` (total memberships = 2)                                                                                                                                                                                                                                                                                                                                                      |
+| 8   | Delete referenced university                                           | RESTRICT violation                                       | `ERROR: ... violates foreign key constraint "university_memberships_university_id_fkey"`                                                                                                                                                                                                                                                                                                  |
+| 9   | Invalid `status` (`bogus`)                                             | CHECK violation                                          | `ERROR: ... violates check constraint "universities_status_allowed"`                                                                                                                                                                                                                                                                                                                      |
+| 10  | Cleanup deletes                                                        | all 0                                                    | `universities_after_cleanup=0, memberships_after_cleanup=0` (auth.users + profiles throwaway also removed; profiles row auto-deleted by CASCADE)                                                                                                                                                                                                                                          |
+| 11  | Schema dump after apply (`\d`)                                         | columns/indexes/checks/FKs/policies/triggers as designed | Verified: `universities` (19 cols, 4 indexes incl. partial `code` unique, 9 checks, `created_by→profiles SET NULL`, policy `universities_active_read`, trigger present); `university_memberships` (9 cols, 4 indexes incl. partial `student_id` unique, `user_id→auth.users CASCADE`, `university_id→universities RESTRICT`, policy `university_memberships_owner_read`, trigger present) |
 
 **Not tested (honest gaps):**
+
 - The `user_id = (select auth.uid())` owner-read policy body under a real JWT —
   `SET ROLE` without session claims cannot mint `auth.uid()`. The policy text
   is byte-identical in pattern to existing policies (`profiles_owner_update`,
@@ -87,12 +88,12 @@ deleted at the end; post-cleanup counts: `universities=0, memberships=0`.
 
 ## 5. App validation
 
-| Command | Real output |
-|---|---|
-| `npx tsc --noEmit` (apps/web) | **exit 0**, no errors |
-| `npx eslint src/types/database.ts src/types/database-contract.ts` | **exit 0** |
-| `npx vitest run` (apps/web) | **94 files, 1079/1079 tests passed** (two consecutive green runs; one earlier run showed 1078/1079 with an unidentified flake, not reproduced) |
-| `pnpm --filter @starstask/web lint` | Could not run — same pre-existing pnpm gate as §4. Mitigated by eslint above covering both changed files. |
+| Command                                                           | Real output                                                                                                                                    |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npx tsc --noEmit` (apps/web)                                     | **exit 0**, no errors                                                                                                                          |
+| `npx eslint src/types/database.ts src/types/database-contract.ts` | **exit 0**                                                                                                                                     |
+| `npx vitest run` (apps/web)                                       | **94 files, 1079/1079 tests passed** (two consecutive green runs; one earlier run showed 1078/1079 with an unidentified flake, not reproduced) |
+| `pnpm --filter @starstask/web lint`                               | Could not run — same pre-existing pnpm gate as §4. Mitigated by eslint above covering both changed files.                                      |
 
 No test files were added or modified by 5A. The migration-versions and
 migration-regex-bounds unit tests (which validate migration filenames/ordering)

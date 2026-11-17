@@ -37,9 +37,7 @@ export default async function ForwardingHistoryPage({
   const { slug } = await params;
 
   if (!session) {
-    redirect(
-      buildLoginPath(`/app/classes/${slug}/leave-requests/history`),
-    );
+    redirect(buildLoginPath(`/app/classes/${slug}/leave-requests/history`));
   }
 
   const found = await getClassBySlug(slug);

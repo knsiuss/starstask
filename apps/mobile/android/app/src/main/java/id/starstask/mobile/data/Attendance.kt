@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 
 // ---------------------------------------------------------------------------
@@ -20,20 +21,28 @@ import kotlinx.serialization.json.put
 // Check-in capture + RPC lives in CheckIn.kt (canonical). The offline
 // queue retry below reuses it with stored positions.
 
-/** Retry every queued check-in; returns how many the server accepted. */
-suspend fun syncQueuedCheckIns(context: android.content.Context): Int {
-    val (synced, _) = syncOfflineQueue(context) { item ->
-        checkInToSession(
-            item.userId,
-            item.sessionId,
-            item.latitude,
-            item.longitude,
-            item.accuracyM,
-        ).ok
+/** Retry queued check-ins for the signed-in user only; returns how many the server accepted. */
+suspend fun syncQueuedCheckIns(context: android.content.Context, userId: String): Int {
+    val (synced, _) = syncOfflineQueue(context, userId) { item ->
+        when (item.sessionKind) {
+            "legacy" -> {
+                val result = checkInLegacySession(
+                    item.sessionId,
+                    item.latitude,
+                    item.longitude,
+                    item.accuracyM,
+                    java.time.Instant.ofEpochMilli(item.capturedAtMs).toString(),
+                )
+                if (result.ok) SyncOutcome.Synced
+                else SyncOutcome.Rejected(result.message ?: "The server rejected this check-in.")
+            }
+            else -> syncOfflineAttendanceMeeting(item)
+        }
     }
     return synced
 }
 
+@Serializable
 data class AttendanceHistoryEntry(
     val sessionId: String,
     val title: String,

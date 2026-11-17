@@ -5,7 +5,6 @@
 -- SECURITY DEFINER function that re-checks ownership, class role, and the
 -- current status. That is what stops a client from submitting `status:
 -- 'forwarded'` and having it stick.
-
 ALTER TABLE public.leave_requests enable ROW LEVEL SECURITY;
 
 

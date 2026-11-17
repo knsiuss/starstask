@@ -3,9 +3,11 @@
 Date: 2026-11-05 · Evidence: local Supabase (disposable) + migration source review.
 
 ## Scope
+
 79 public tables (78 + `audit` evolutions), 147 SECURITY DEFINER functions, 108 public RLS policies, 18 storage policies, 5 buckets.
 
 ## Tables checked (tenant focus)
+
 `universities`, `university_memberships`, `profiles`, `academic_units`,
 `academic_years`, `semesters`, `courses`, `course_offerings`, `enrollments`,
 `classes`, `class_memberships`, `class_admin_assignments`, `assignments`,
@@ -26,6 +28,7 @@ Date: 2026-11-05 · Evidence: local Supabase (disposable) + migration source rev
   graduated / pending members are denied by construction).
 
 ## SECURITY DEFINER functions
+
 147 total, 0 without a `search_path` setting. Predicates
 (`is_platform_admin`, `is_class_member`, `is_class_admin`,
 `is_university_member`, `has_class_permission`,
@@ -34,6 +37,7 @@ Date: 2026-11-05 · Evidence: local Supabase (disposable) + migration source rev
 `check_in_*`, …) ran with `search_path=public, pg_temp`.
 
 ## Grants (pre-fix, live)
+
 67 functions were EXECUTE-able by `anon` via Supabase default privileges.
 Only 2 revokes existed (`create_or_get_course`,
 `register_push_subscription` — see `20261029000800_function_grants.sql`).
@@ -41,18 +45,20 @@ Internal `auth.uid()` checks refused anonymous callers, but the grants
 should not exist.
 
 ## Storage
-| bucket | public | read policy |
-|---|---|---|
-| `assignment-attachments` | false | authenticated, owner or published |
-| `leave-evidence` | false | owner or leave reviewer |
-| `verification-evidence` | false | owner or verification viewer |
-| `avatars` | true | anon+authenticated (intentional public asset) |
-| `class-media` | true | anon+authenticated read; writes class-admin scoped |
+
+| bucket                   | public | read policy                                        |
+| ------------------------ | ------ | -------------------------------------------------- |
+| `assignment-attachments` | false  | authenticated, owner or published                  |
+| `leave-evidence`         | false  | owner or leave reviewer                            |
+| `verification-evidence`  | false  | owner or verification viewer                       |
+| `avatars`                | true   | anon+authenticated (intentional public asset)      |
+| `class-media`            | true   | anon+authenticated read; writes class-admin scoped |
 
 `class-media` / `avatars` public reads cross universities by design
 (class identity images). Writes are scoped to the owning class.
 
 ## Findings
+
 - **HIGH** — anon EXECUTE on ~40 state-changing RPCs (default grants).
 - **HIGH** — `course_invite_tokens_member_read`: any university member
   could SELECT `token_hash` rows.

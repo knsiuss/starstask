@@ -122,8 +122,10 @@ function printCounts(byNorm, source) {
 async function readProfiles() {
   const { createClient } = await import(pathToFileURL(SUPABASE_MODULE).href);
   const env = parseEnv(envPath);
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRole) {
     throw new Error(
       `Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in ${path.relative(REPO_ROOT, envPath)} (or environment).`,
@@ -183,14 +185,19 @@ async function main() {
   const header = "variant,normalized,count\n";
   const body = [...aggregated.byRaw.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([variant, count]) => [variant, normalize(variant), count].map(escapeCsv).join(","))
+    .map(([variant, count]) =>
+      [variant, normalize(variant), count].map(escapeCsv).join(","),
+    )
     .join("\n");
   fs.writeFileSync(outPath, header + body + "\n", { encoding: "utf8" });
   console.log(`Wrote aggregate report: ${path.relative(REPO_ROOT, outPath)}`);
   if (mapArg) {
     const mapPath = path.resolve(REPO_ROOT, mapArg);
     const mappings = new Map();
-    for (const line of fs.readFileSync(mapPath, "utf8").split(/\r?\n/).slice(1)) {
+    for (const line of fs
+      .readFileSync(mapPath, "utf8")
+      .split(/\r?\n/)
+      .slice(1)) {
       const [variant, slug] = line.split(",").map((part) => part?.trim());
       if (variant && slug) mappings.set(variant, slug);
     }

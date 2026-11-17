@@ -7,6 +7,8 @@ export type WorkspaceContext = {
   classAdminAnywhere: boolean;
   unreadNotifications: number;
   betaTester: boolean;
+  lecturerAnywhere: boolean;
+  universityAdminUniversities: string[];
 };
 
 /**
@@ -30,7 +32,17 @@ export async function getWorkspaceContext(): Promise<WorkspaceContext | null> {
       class_admin_anywhere?: unknown;
       unread_notifications?: unknown;
       beta_tester?: unknown;
+      lecturer_anywhere?: unknown;
+      university_admin_universities?: unknown;
     };
+
+    const adminUniversities = Array.isArray(
+      context.university_admin_universities,
+    )
+      ? context.university_admin_universities.filter(
+          (id): id is string => typeof id === "string",
+        )
+      : [];
 
     return {
       platformAdmin: context.platform_admin === true,
@@ -40,6 +52,8 @@ export async function getWorkspaceContext(): Promise<WorkspaceContext | null> {
           ? context.unread_notifications
           : 0,
       betaTester: context.beta_tester === true,
+      lecturerAnywhere: context.lecturer_anywhere === true,
+      universityAdminUniversities: adminUniversities,
     };
   } catch {
     return null;

@@ -1,5 +1,5 @@
 import { notFound, serviceUnavailable } from "@/lib/api/errors";
-import { handleRouteError, publicJson } from "@/lib/api/responses";
+import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getSessionUser } from "@/lib/auth/session";
 import { getMyProfile } from "@/lib/db/profiles";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/lib/db/plugins";
 import { isSupabaseConfigured } from "@/lib/env/public";
 
-// Respons cache CDN 1 jam; fetch ke ftiunpam.com juga revalidate 3600 dtk.
+// Authenticated, per-user gated endpoint; fetch ke ftiunpam.com revalidate 3600 dtk.
 export const dynamic = "force-dynamic";
 
 /**
@@ -63,15 +63,12 @@ export async function GET(request: Request) {
               event.programId === program || event.programId === "semua",
           );
 
-    return publicJson(
-      {
-        pluginId: "unpam",
-        program,
-        count: filtered.length,
-        events: filtered.slice(0, 100),
-      },
-      3600,
-    );
+    return apiSuccess({
+      pluginId: "unpam",
+      program,
+      count: filtered.length,
+      events: filtered.slice(0, 100),
+    });
   } catch (error) {
     return handleRouteError(error);
   }

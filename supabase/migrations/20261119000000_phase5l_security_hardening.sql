@@ -23,8 +23,11 @@
 -- No business rules change. No table/column changes. No RLS policy on
 -- tenant tables changes (is_university_member already requires
 -- status='active', so suspended/graduated/pending members are denied).
+REVOKE
+EXECUTE ON ALL FUNCTIONS IN SCHEMA public
+FROM
+  anon;
 
-REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM anon;
 
 -- Intentionally public read helpers (anonymous browsing is a feature):
 --  - get_invitation_preview: invitee preview link for logged-out users
@@ -33,28 +36,67 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM anon;
 --  - list_assignments, list_classes: public assignment/class browsing
 --  - consume_rate_limit: anonymous rate-limit check (no auth identity)
 --  - assignment_id_from_object_path + path helpers: storage RLS predicates
-GRANT EXECUTE ON FUNCTION public.get_invitation_preview (text) TO anon;
-GRANT EXECUTE ON FUNCTION public.list_discussion_sessions (uuid, text, text, timestamptz, timestamptz, integer, integer) TO anon;
-GRANT EXECUTE ON FUNCTION public.can_view_session (uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.session_checkin_summary (uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.list_assignments (text, uuid, text, text, text, text, integer, integer, uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.list_classes (text, text, integer, integer) TO anon;
-GRANT EXECUTE ON FUNCTION public.consume_rate_limit (text, integer, integer) TO anon;
-GRANT EXECUTE ON FUNCTION public.assignment_id_from_object_path (text) TO anon;
-GRANT EXECUTE ON FUNCTION public.leave_request_id_from_object_path (text) TO anon;
-GRANT EXECUTE ON FUNCTION public.verification_request_id_from_object_path (text) TO anon;
+GRANT
+EXECUTE ON FUNCTION public.get_invitation_preview (text) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.list_discussion_sessions (
+  uuid,
+  text,
+  text,
+  timestamptz,
+  timestamptz,
+  integer,
+  integer
+) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.can_view_session (uuid) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.session_checkin_summary (uuid) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.list_assignments (text, uuid, text, text, text, text, integer, integer, uuid) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.list_classes (text, text, integer, integer) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.consume_rate_limit (text, integer, integer) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.assignment_id_from_object_path (text) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.leave_request_id_from_object_path (text) TO anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.verification_request_id_from_object_path (text) TO anon;
+
 
 -- Predicate helpers used inside RLS policies must stay EXECUTE-able by
 -- authenticated (they were already granted); anon no longer needs them
 -- except where the policy itself runs as anon (can_view_session above).
-
 -- ---------------------------------------------------------------------------
 -- 2. Tighten course_invite_tokens read policy.
 --    Old: any university member could SELECT token_hash rows.
 --    New: platform admin OR class admin of the linked class only.
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS course_invite_tokens_member_read ON public.course_invite_tokens;
+
+
 DROP POLICY IF EXISTS course_invite_tokens_admin_read ON public.course_invite_tokens;
+
 
 CREATE POLICY course_invite_tokens_admin_read ON public.course_invite_tokens FOR
 SELECT
@@ -70,6 +112,7 @@ SELECT
         AND public.is_class_admin (co.class_id)
     )
   );
+
 
 -- ---------------------------------------------------------------------------
 -- 3. audit_logs append-only trigger (enforced for every role except
@@ -89,18 +132,21 @@ BEGIN
 END;
 $$;
 
+
 REVOKE ALL ON FUNCTION public.audit_logs_prevent_mutation ()
 FROM
   public,
   anon,
   authenticated;
 
+
 DROP TRIGGER IF EXISTS audit_logs_prevent_mutation_trg ON public.audit_logs;
 
+
 CREATE TRIGGER audit_logs_prevent_mutation_trg
-BEFORE UPDATE OR DELETE ON public.audit_logs
-FOR EACH ROW
+BEFORE UPDATE OR DELETE ON public.audit_logs FOR EACH ROW
 EXECUTE FUNCTION public.audit_logs_prevent_mutation ();
+
 
 -- Explicit column grants: authenticated may SELECT the non-sensitive
 -- columns only; write grants are intentionally absent.
@@ -109,9 +155,21 @@ FROM
   anon,
   authenticated;
 
+
 GRANT
 SELECT
-  (id, actor_id, action, entity_type, entity_id, class_id, university_id, metadata, created_at) ON public.audit_logs TO authenticated;
+  (
+    id,
+    actor_id,
+    action,
+    entity_type,
+    entity_id,
+    class_id,
+    university_id,
+    metadata,
+    created_at
+  ) ON public.audit_logs TO authenticated;
+
 
 -- ---------------------------------------------------------------------------
 -- 4. Harden search_path on all SECURITY DEFINER functions that currently
@@ -143,5 +201,6 @@ BEGIN
     END;
   END LOOP;
 END $$;
+
 
 COMMENT ON FUNCTION public.audit_logs_prevent_mutation () IS 'Phase 5L: enforces audit_logs append-only for all non-superuser roles.';

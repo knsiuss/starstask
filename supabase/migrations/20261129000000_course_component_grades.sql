@@ -5,9 +5,8 @@
 -- edits inline in the sheet; every write goes through
 -- set_course_component_grade(), which requires a class manager and writes
 -- an audit row in the same transaction.
-
-CREATE TABLE if NOT EXISTS public.course_component_grades (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+CREATE TABLE IF NOT EXISTS public.course_component_grades (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   class_id uuid NOT NULL REFERENCES public.classes (id) ON DELETE CASCADE,
   subject_id uuid NOT NULL REFERENCES public.class_subjects (id) ON DELETE CASCADE,
   student_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
@@ -16,26 +15,16 @@ CREATE TABLE if NOT EXISTS public.course_component_grades (
   updated_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT course_component_grades_component_allowed CHECK (
-    component IN ('tugas', 'uts', 'uas')
-  ),
+  CONSTRAINT course_component_grades_component_allowed CHECK (component IN ('tugas', 'uts', 'uas')),
   CONSTRAINT course_component_grades_score_range CHECK (
     score >= 0
     AND score <= 100
   ),
-  CONSTRAINT course_component_grades_one_per_component UNIQUE (
-    class_id,
-    subject_id,
-    student_id,
-    component
-  )
+  CONSTRAINT course_component_grades_one_per_component UNIQUE (class_id, subject_id, student_id, component)
 );
 
 
-CREATE INDEX if NOT EXISTS course_component_grades_course_idx ON public.course_component_grades (
-  class_id,
-  subject_id
-);
+CREATE INDEX if NOT EXISTS course_component_grades_course_idx ON public.course_component_grades (class_id, subject_id);
 
 
 COMMENT ON TABLE public.course_component_grades IS 'Working per-component scores (Tugas/UTS/UAS) edited inline in the attendance sheet. Managers only; see set_course_component_grade().';
@@ -154,10 +143,7 @@ end;
 $$;
 
 
-CREATE OR REPLACE FUNCTION public.list_course_component_grades (
-  p_class_id uuid,
-  p_subject_id uuid
-) returns jsonb language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.list_course_component_grades (p_class_id uuid, p_subject_id uuid) returns jsonb language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$

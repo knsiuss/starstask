@@ -4,44 +4,44 @@
 -- own class; class admins see their class's operational data; platform admins
 -- see everything. Writing goes through the SECURITY DEFINER functions in
 -- 20261029001100_class_functions.sql, so most tables get no write grants at all.
-alter table public.platform_admins enable row level security;
+ALTER TABLE public.platform_admins enable ROW level security;
 
 
-alter table public.classes enable row level security;
+ALTER TABLE public.classes enable ROW level security;
 
 
-alter table public.class_applications enable row level security;
+ALTER TABLE public.class_applications enable ROW level security;
 
 
-alter table public.class_application_reviews enable row level security;
+ALTER TABLE public.class_application_reviews enable ROW level security;
 
 
-alter table public.class_members enable row level security;
+ALTER TABLE public.class_members enable ROW level security;
 
 
-alter table public.class_admins enable row level security;
+ALTER TABLE public.class_admins enable ROW level security;
 
 
-alter table public.class_invitations enable row level security;
+ALTER TABLE public.class_invitations enable ROW level security;
 
 
-alter table public.class_invitation_acceptances enable row level security;
+ALTER TABLE public.class_invitation_acceptances enable ROW level security;
 
 
-alter table public.assignment_reviews enable row level security;
+ALTER TABLE public.assignment_reviews enable ROW level security;
 
 
-alter table public.audit_logs enable row level security;
+ALTER TABLE public.audit_logs enable ROW level security;
 
 
-alter table public.notification_events enable row level security;
+ALTER TABLE public.notification_events enable ROW level security;
 
 
 -- ---------------------------------------------------------------------------
 -- platform_admins: no client access whatsoever
 -- ---------------------------------------------------------------------------
-revoke all on public.platform_admins
-from
+REVOKE ALL ON public.platform_admins
+FROM
   anon,
   authenticated;
 
@@ -49,86 +49,123 @@ from
 -- ---------------------------------------------------------------------------
 -- classes: public metadata for active classes, managed updates only
 -- ---------------------------------------------------------------------------
-revoke all on public.classes
-from
+REVOKE ALL ON public.classes
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, slug, name, description, course_id, course_name, institution, lecturer_name, semester, academic_year, status, created_at, updated_at) on public.classes to anon,
-authenticated;
+GRANT
+SELECT
+  (
+    id,
+    slug,
+    name,
+    description,
+    course_id,
+    course_name,
+    institution,
+    lecturer_name,
+    semester,
+    academic_year,
+    status,
+    created_at,
+    updated_at
+  ) ON public.classes TO anon,
+  authenticated;
 
 
-drop policy if exists classes_read on public.classes;
+DROP POLICY if EXISTS classes_read ON public.classes;
 
 
-create policy classes_read ON public.classes FOR
-select
+CREATE POLICY classes_read ON public.classes FOR
+SELECT
   TO anon,
   authenticated USING (
     status = 'active'
-    or public.is_class_member (id)
-    or public.can_manage_class (id)
+    OR public.is_class_member (id)
+    OR public.can_manage_class (id)
   );
 
 
 -- ---------------------------------------------------------------------------
 -- class_applications: applicant and platform admins only
 -- ---------------------------------------------------------------------------
-revoke all on public.class_applications
-from
+REVOKE ALL ON public.class_applications
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, applicant_id, proposed_slug, proposed_name, course_name, institution, lecturer_name, semester, academic_year, description, reason, supporting_info, status, reviewed_by, reviewed_at, decision_note, created_class_id, created_at, updated_at) on public.class_applications to authenticated;
+GRANT
+SELECT
+  (
+    id,
+    applicant_id,
+    proposed_slug,
+    proposed_name,
+    course_name,
+    institution,
+    lecturer_name,
+    semester,
+    academic_year,
+    description,
+    reason,
+    supporting_info,
+    status,
+    reviewed_by,
+    reviewed_at,
+    decision_note,
+    created_class_id,
+    created_at,
+    updated_at
+  ) ON public.class_applications TO authenticated;
 
 
-drop policy if exists class_applications_read on public.class_applications;
+DROP POLICY if EXISTS class_applications_read ON public.class_applications;
 
 
-create policy class_applications_read ON public.class_applications FOR
-select
+CREATE POLICY class_applications_read ON public.class_applications FOR
+SELECT
   TO authenticated USING (
     applicant_id = (
-      select
+      SELECT
         auth.uid ()
     )
-    or public.is_platform_admin ()
+    OR public.is_platform_admin ()
   );
 
 
 -- ---------------------------------------------------------------------------
 -- class_application_reviews: decision history, reviewer identity withheld
 -- ---------------------------------------------------------------------------
-revoke all on public.class_application_reviews
-from
+REVOKE ALL ON public.class_application_reviews
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, application_id, decision, note, created_at) on public.class_application_reviews to authenticated;
+GRANT
+SELECT
+  (id, application_id, decision, note, created_at) ON public.class_application_reviews TO authenticated;
 
 
-drop policy if exists class_application_reviews_read on public.class_application_reviews;
+DROP POLICY if EXISTS class_application_reviews_read ON public.class_application_reviews;
 
 
-create policy class_application_reviews_read ON public.class_application_reviews FOR
-select
+CREATE POLICY class_application_reviews_read ON public.class_application_reviews FOR
+SELECT
   TO authenticated USING (
     public.is_platform_admin ()
-    or exists (
-      select
+    OR EXISTS (
+      SELECT
         1
-      from
+      FROM
         public.class_applications a
-      where
+      WHERE
         a.id = application_id
-        and a.applicant_id = (
-          select
+        AND a.applicant_id = (
+          SELECT
             auth.uid ()
         )
     )
@@ -138,103 +175,118 @@ select
 -- ---------------------------------------------------------------------------
 -- class_members: members of the class, plus platform admins
 -- ---------------------------------------------------------------------------
-revoke all on public.class_members
-from
+REVOKE ALL ON public.class_members
+FROM
   anon,
   authenticated;
 
 
-grant
-select (class_id, user_id, joined_via, joined_at) on public.class_members to authenticated;
+GRANT
+SELECT
+  (class_id, user_id, joined_via, joined_at) ON public.class_members TO authenticated;
 
 
-drop policy if exists class_members_read on public.class_members;
+DROP POLICY if EXISTS class_members_read ON public.class_members;
 
 
-create policy class_members_read ON public.class_members FOR
-select
+CREATE POLICY class_members_read ON public.class_members FOR
+SELECT
   TO authenticated USING (
     public.is_class_member (class_id)
-    or public.is_platform_admin ()
+    OR public.is_platform_admin ()
   );
 
 
 -- ---------------------------------------------------------------------------
 -- class_admins: visible to the class and to platform admins
 -- ---------------------------------------------------------------------------
-revoke all on public.class_admins
-from
+REVOKE ALL ON public.class_admins
+FROM
   anon,
   authenticated;
 
 
-grant
-select (class_id, user_id, assigned_at) on public.class_admins to authenticated;
+GRANT
+SELECT
+  (class_id, user_id, assigned_at) ON public.class_admins TO authenticated;
 
 
-drop policy if exists class_admins_read on public.class_admins;
+DROP POLICY if EXISTS class_admins_read ON public.class_admins;
 
 
-create policy class_admins_read ON public.class_admins FOR
-select
+CREATE POLICY class_admins_read ON public.class_admins FOR
+SELECT
   TO authenticated USING (
     public.is_class_member (class_id)
-    or public.is_platform_admin ()
+    OR public.is_platform_admin ()
   );
 
 
 -- ---------------------------------------------------------------------------
 -- class_invitations: managers only, token_hash never granted
 -- ---------------------------------------------------------------------------
-revoke all on public.class_invitations
-from
+REVOKE ALL ON public.class_invitations
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, class_id, created_by, email_restriction, expires_at, max_uses, used_count, revoked_at, revoked_by, created_at) on public.class_invitations to authenticated;
+GRANT
+SELECT
+  (
+    id,
+    class_id,
+    created_by,
+    email_restriction,
+    expires_at,
+    max_uses,
+    used_count,
+    revoked_at,
+    revoked_by,
+    created_at
+  ) ON public.class_invitations TO authenticated;
 
 
-drop policy if exists class_invitations_read on public.class_invitations;
+DROP POLICY if EXISTS class_invitations_read ON public.class_invitations;
 
 
-create policy class_invitations_read ON public.class_invitations FOR
-select
+CREATE POLICY class_invitations_read ON public.class_invitations FOR
+SELECT
   TO authenticated USING (public.can_manage_class (class_id));
 
 
 -- ---------------------------------------------------------------------------
 -- class_invitation_acceptances
 -- ---------------------------------------------------------------------------
-revoke all on public.class_invitation_acceptances
-from
+REVOKE ALL ON public.class_invitation_acceptances
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, invitation_id, user_id, accepted_at) on public.class_invitation_acceptances to authenticated;
+GRANT
+SELECT
+  (id, invitation_id, user_id, accepted_at) ON public.class_invitation_acceptances TO authenticated;
 
 
-drop policy if exists class_invitation_acceptances_read on public.class_invitation_acceptances;
+DROP POLICY if EXISTS class_invitation_acceptances_read ON public.class_invitation_acceptances;
 
 
-create policy class_invitation_acceptances_read ON public.class_invitation_acceptances FOR
-select
+CREATE POLICY class_invitation_acceptances_read ON public.class_invitation_acceptances FOR
+SELECT
   TO authenticated USING (
     user_id = (
-      select
+      SELECT
         auth.uid ()
     )
-    or exists (
-      select
+    OR EXISTS (
+      SELECT
         1
-      from
+      FROM
         public.class_invitations i
-      where
+      WHERE
         i.id = invitation_id
-        and public.can_manage_class (i.class_id)
+        AND public.can_manage_class (i.class_id)
     )
   );
 
@@ -242,38 +294,39 @@ select
 -- ---------------------------------------------------------------------------
 -- assignment_reviews: submitter, class admins, platform admins
 -- ---------------------------------------------------------------------------
-revoke all on public.assignment_reviews
-from
+REVOKE ALL ON public.assignment_reviews
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, assignment_id, decision, reason, created_at) on public.assignment_reviews to authenticated;
+GRANT
+SELECT
+  (id, assignment_id, decision, reason, created_at) ON public.assignment_reviews TO authenticated;
 
 
-drop policy if exists assignment_reviews_read on public.assignment_reviews;
+DROP POLICY if EXISTS assignment_reviews_read ON public.assignment_reviews;
 
 
-create policy assignment_reviews_read ON public.assignment_reviews FOR
-select
+CREATE POLICY assignment_reviews_read ON public.assignment_reviews FOR
+SELECT
   TO authenticated USING (
     public.is_platform_admin ()
-    or exists (
-      select
+    OR EXISTS (
+      SELECT
         1
-      from
+      FROM
         public.assignments a
-      where
+      WHERE
         a.id = assignment_id
-        and (
+        AND (
           a.user_id = (
-            select
+            SELECT
               auth.uid ()
           )
-          or (
-            a.class_id is not null
-            and public.is_class_admin (a.class_id)
+          OR (
+            a.class_id IS NOT NULL
+            AND public.is_class_admin (a.class_id)
           )
         )
     )
@@ -283,26 +336,36 @@ select
 -- ---------------------------------------------------------------------------
 -- audit_logs: append-only, readable by the class admin or platform admin
 -- ---------------------------------------------------------------------------
-revoke all on public.audit_logs
-from
+REVOKE ALL ON public.audit_logs
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, actor_id, action, entity_type, entity_id, class_id, metadata, created_at) on public.audit_logs to authenticated;
+GRANT
+SELECT
+  (
+    id,
+    actor_id,
+    action,
+    entity_type,
+    entity_id,
+    class_id,
+    metadata,
+    created_at
+  ) ON public.audit_logs TO authenticated;
 
 
-drop policy if exists audit_logs_read on public.audit_logs;
+DROP POLICY if EXISTS audit_logs_read ON public.audit_logs;
 
 
-create policy audit_logs_read ON public.audit_logs FOR
-select
+CREATE POLICY audit_logs_read ON public.audit_logs FOR
+SELECT
   TO authenticated USING (
     public.is_platform_admin ()
-    or (
-      class_id is not null
-      and public.is_class_admin (class_id)
+    OR (
+      class_id IS NOT NULL
+      AND public.is_class_admin (class_id)
     )
   );
 
@@ -310,24 +373,25 @@ select
 -- ---------------------------------------------------------------------------
 -- notification_events: a user sees their own queue, never anyone else's
 -- ---------------------------------------------------------------------------
-revoke all on public.notification_events
-from
+REVOKE ALL ON public.notification_events
+FROM
   anon,
   authenticated;
 
 
-grant
-select (id, kind, payload, status, created_at, sent_at) on public.notification_events to authenticated;
+GRANT
+SELECT
+  (id, kind, payload, status, created_at, sent_at) ON public.notification_events TO authenticated;
 
 
-drop policy if exists notification_events_read on public.notification_events;
+DROP POLICY if EXISTS notification_events_read ON public.notification_events;
 
 
-create policy notification_events_read ON public.notification_events FOR
-select
+CREATE POLICY notification_events_read ON public.notification_events FOR
+SELECT
   TO authenticated USING (
     user_id = (
-      select
+      SELECT
         auth.uid ()
     )
   );
@@ -336,24 +400,24 @@ select
 -- ---------------------------------------------------------------------------
 -- assignment_attachments: reviewers must be able to read pending attachments
 -- ---------------------------------------------------------------------------
-drop policy if exists assignment_attachments_reviewer_read ON public.assignment_attachments;
+DROP POLICY if EXISTS assignment_attachments_reviewer_read ON public.assignment_attachments;
 
 
-create policy assignment_attachments_reviewer_read ON public.assignment_attachments FOR
-select
+CREATE POLICY assignment_attachments_reviewer_read ON public.assignment_attachments FOR
+SELECT
   TO authenticated USING (
-    exists (
-      select
+    EXISTS (
+      SELECT
         1
-      from
+      FROM
         public.assignments a
-      where
+      WHERE
         a.id = assignment_id
-        and (
+        AND (
           public.is_platform_admin ()
-          or (
-            a.class_id is not null
-            and public.is_class_admin (a.class_id)
+          OR (
+            a.class_id IS NOT NULL
+            AND public.is_class_admin (a.class_id)
           )
         )
     )
@@ -362,24 +426,24 @@ select
 
 -- Signed URLs for review use the reviewer's own session, so the storage policy
 -- must allow the same reviewers to read the underlying object.
-drop policy if exists assignment_attachments_storage_review_read ON storage.objects;
+DROP POLICY if EXISTS assignment_attachments_storage_review_read ON storage.objects;
 
 
-create policy assignment_attachments_storage_review_read ON storage.objects FOR
-select
+CREATE POLICY assignment_attachments_storage_review_read ON storage.objects FOR
+SELECT
   TO authenticated USING (
     bucket_id = 'assignment-attachments'
-    and exists (
-      select
+    AND EXISTS (
+      SELECT
         1
-      from
+      FROM
         public.assignments a
-      where
+      WHERE
         a.id = public.assignment_id_from_object_path (name)
-        and a.class_id is not null
-        and (
+        AND a.class_id IS NOT NULL
+        AND (
           public.is_class_admin (a.class_id)
-          or public.is_platform_admin ()
+          OR public.is_platform_admin ()
         )
     )
   );

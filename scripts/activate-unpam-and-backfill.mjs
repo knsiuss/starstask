@@ -78,10 +78,14 @@ function parseEnv(filePath) {
 
 async function findClient() {
   const env = parseEnv(envArg ? path.resolve(REPO_ROOT, envArg) : ENV_PATH);
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRole) {
-    throw new Error("Missing Supabase env in apps/web/.env.local or environment.");
+    throw new Error(
+      "Missing Supabase env in apps/web/.env.local or environment.",
+    );
   }
   const { createClient } = await import(pathToFileURL(SUPABASE_MODULE).href);
   return createClient(url, serviceRole, { auth: { persistSession: false } });
@@ -98,7 +102,10 @@ function deriveEntryYear(nim) {
 async function loadAll(client, table, select = "*") {
   const rows = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await client.from(table).select(select).range(from, from + PAGE_SIZE - 1);
+    const { data, error } = await client
+      .from(table)
+      .select(select)
+      .range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(`${table} read failed: ${error.message}`);
     if (!data || data.length === 0) break;
     rows.push(...data);
@@ -113,14 +120,20 @@ async function ensureUniversity(client, actorId) {
     .select("id, slug, name, status, activated_at")
     .eq("slug", SLUG)
     .maybeSingle();
-  if (readError) throw new Error(`universities read failed: ${readError.message}`);
+  if (readError)
+    throw new Error(`universities read failed: ${readError.message}`);
   if (existing) {
     if (existing.status !== "active") {
       const { error } = await client
         .from("universities")
-        .update({ status: "active", activated_at: new Date().toISOString(), name: CANONICAL })
+        .update({
+          status: "active",
+          activated_at: new Date().toISOString(),
+          name: CANONICAL,
+        })
         .eq("id", existing.id);
-      if (error) throw new Error(`universities activation failed: ${error.message}`);
+      if (error)
+        throw new Error(`universities activation failed: ${error.message}`);
       existing.status = "active";
       existing.activated_at = new Date().toISOString();
     }
@@ -148,29 +161,54 @@ async function ensureUniversity(client, actorId) {
 
 async function main() {
   const client = await findClient();
-  const profiles = await loadAll(client, "profiles", "id, nim, university, created_at");
+  const profiles = await loadAll(
+    client,
+    "profiles",
+    "id, nim, university, created_at",
+  );
   const unpamProfiles = profiles.filter(
-    (profile) => typeof profile.university === "string" && profile.university.trim() === CANONICAL,
+    (profile) =>
+      typeof profile.university === "string" &&
+      profile.university.trim() === CANONICAL,
   );
   console.log(`Universitas Pamulang profiles: ${unpamProfiles.length}`);
-  console.log(`profiles nim coverage: ${unpamProfiles.filter((p) => p.nim).length} / ${unpamProfiles.length}`);
-  const legacyMemberships = await loadAll(client, "class_members", "class_id, user_id");
+  console.log(
+    `profiles nim coverage: ${unpamProfiles.filter((p) => p.nim).length} / ${unpamProfiles.length}`,
+  );
+  const legacyMemberships = await loadAll(
+    client,
+    "class_members",
+    "class_id, user_id",
+  );
   const legacyClasses = await loadAll(client, "classes", "id, name, slug");
   const mappedUserIds = new Set(unpamProfiles.map((p) => p.id));
-  const classesWithUnpamMembers = new Map(legacyClasses.map((cls) => [cls.id, cls]));
-  const memberRows = legacyMemberships.filter((row) => mappedUserIds.has(row.user_id));
+  const classesWithUnpamMembers = new Map(
+    legacyClasses.map((cls) => [cls.id, cls]),
+  );
+  const memberRows = legacyMemberships.filter((row) =>
+    mappedUserIds.has(row.user_id),
+  );
   for (const row of memberRows) {
     if (!classesWithUnpamMembers.has(row.class_id)) continue;
   }
   console.log(`legacy class_members for UNPAM users: ${memberRows.length}`);
 
   if (!apply) {
-    console.log("dry-run only; rerun with --apply --backup <file> to activate + backfill identities");
+    console.log(
+      "dry-run only; rerun with --apply --backup <file> to activate + backfill identities",
+    );
     return;
   }
   if (!backupArg) throw new Error("--apply requires --backup <file>.");
   const backupPath = path.resolve(backupArg);
-  fs.writeFileSync(backupPath, JSON.stringify({ phase: "pilot-activation", at: new Date().toISOString() }) + "\n", "utf8");
+  fs.writeFileSync(
+    backupPath,
+    JSON.stringify({
+      phase: "pilot-activation",
+      at: new Date().toISOString(),
+    }) + "\n",
+    "utf8",
+  );
   const university = await ensureUniversity(client, null);
   console.log(`university: ${university.slug} (${university.id})`);
   let memberships = 0;
@@ -194,7 +232,8 @@ async function main() {
       )
       .select("id")
       .single();
-    if (memError) throw new Error(`membership upsert failed: ${memError.message}`);
+    if (memError)
+      throw new Error(`membership upsert failed: ${memError.message}`);
     memberships += 1;
     const { data: identity, error: idError } = await client
       .from("student_identities")
@@ -213,43 +252,53 @@ async function main() {
       .single();
     if (idError) throw new Error(`identity upsert failed: ${idError.message}`);
     identities += 1;
-    for (const row of memberRows.filter((item) => item.user_id === profile.id)) {
+    for (const row of memberRows.filter(
+      (item) => item.user_id === profile.id,
+    )) {
       if (!row.class_id) continue;
       // Roll out class university mapping first (additive, only fills nulls)
-  for (const cls of classesWithUnpamMembers.values()) {
-    const { error } = await client
-      .from("classes")
-      .update({ university_id: university.id })
-      .eq("id", cls.id)
-      .is("university_id", null);
-    if (error) throw new Error(`classes university_id update failed: ${error.message}`);
-  }
-  console.log(`classes university_id linked: ${classesWithUnpamMembers.size}`);
-  // Note: no partial uniques exist for class_memberships(class_id, student_identity_id)
-  // in plain form; use a defensive upsert without onConflict then handle uniqueness
-  // in dry-run by checking if a matching row already exists via select first.
-  const { data: existing } = await client
-    .from("class_memberships")
-    .select("id")
-    .eq("class_id", row.class_id)
-    .eq("student_identity_id", identity.id)
-    .eq("university_id", university.id)
-    .maybeSingle();
-  if (!existing) {
-    const { error: linkError } = await client
-      .from("class_memberships")
-      .insert({
-        university_id: university.id,
-        class_id: row.class_id,
-        student_identity_id: identity.id,
-        is_home: true,
-        joined_via: "home_class",
-        joined_at: new Date().toISOString(),
-        left_at: null,
-      });
-    if (linkError) throw new Error(`class membership insert failed: ${linkError.message}`);
-    classLinks += 1;
-  }
+      for (const cls of classesWithUnpamMembers.values()) {
+        const { error } = await client
+          .from("classes")
+          .update({ university_id: university.id })
+          .eq("id", cls.id)
+          .is("university_id", null);
+        if (error)
+          throw new Error(
+            `classes university_id update failed: ${error.message}`,
+          );
+      }
+      console.log(
+        `classes university_id linked: ${classesWithUnpamMembers.size}`,
+      );
+      // Note: no partial uniques exist for class_memberships(class_id, student_identity_id)
+      // in plain form; use a defensive upsert without onConflict then handle uniqueness
+      // in dry-run by checking if a matching row already exists via select first.
+      const { data: existing } = await client
+        .from("class_memberships")
+        .select("id")
+        .eq("class_id", row.class_id)
+        .eq("student_identity_id", identity.id)
+        .eq("university_id", university.id)
+        .maybeSingle();
+      if (!existing) {
+        const { error: linkError } = await client
+          .from("class_memberships")
+          .insert({
+            university_id: university.id,
+            class_id: row.class_id,
+            student_identity_id: identity.id,
+            is_home: true,
+            joined_via: "home_class",
+            joined_at: new Date().toISOString(),
+            left_at: null,
+          });
+        if (linkError)
+          throw new Error(
+            `class membership insert failed: ${linkError.message}`,
+          );
+        classLinks += 1;
+      }
     }
   }
   console.log(JSON.stringify({ memberships, identities, classLinks }));

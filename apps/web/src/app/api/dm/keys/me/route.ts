@@ -67,6 +67,12 @@ export async function PUT(request: Request) {
         { status: error.status },
       );
     }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: "Could not save key" }, { status: 500 });
   }
 }

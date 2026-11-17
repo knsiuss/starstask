@@ -6,10 +6,12 @@
 -- through `list_class_member_bios()`. That keeps the column out of a global
 -- directory query and out of every public assignment response.
 ALTER TABLE public.profiles
-ADD COLUMN IF NOT EXISTS bio TEXT;
+ADD COLUMN IF NOT EXISTS bio text;
+
 
 ALTER TABLE public.profiles
 DROP CONSTRAINT IF EXISTS profiles_bio_length;
+
 
 ALTER TABLE public.profiles
 ADD CONSTRAINT profiles_bio_length CHECK (
@@ -17,18 +19,16 @@ ADD CONSTRAINT profiles_bio_length CHECK (
   OR char_length(btrim(bio)) BETWEEN 1 AND 280
 );
 
+
 COMMENT ON COLUMN public.profiles.bio IS 'Short self-introduction written by the owner. Readable by classmates through list_class_member_bios(), never granted as a table column.';
+
 
 -- The owner payload gains `bio`, so the settings form can render the current
 -- value without a second request.
-CREATE OR REPLACE FUNCTION public.get_my_profile ()
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.get_my_profile () RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
-  pg_temp
-AS $$
+  pg_temp AS $$
 DECLARE
   v_user uuid := (SELECT auth.uid ());
   v_row public.profiles;
@@ -59,16 +59,13 @@ BEGIN
 END;
 $$;
 
+
 -- The only write path for the bio. An empty value clears it rather than
 -- storing whitespace; identity always comes from auth.uid().
-CREATE OR REPLACE FUNCTION public.update_my_bio (p_bio TEXT)
-RETURNS TEXT
-LANGUAGE plpgsql
-SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.update_my_bio (p_bio text) RETURNS text LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
-  pg_temp
-AS $$
+  pg_temp AS $$
 DECLARE
   v_user uuid := (SELECT auth.uid ());
   v_bio TEXT := nullif(btrim(coalesce(p_bio, '')), '');
@@ -93,18 +90,14 @@ BEGIN
 END;
 $$;
 
+
 -- Class-scoped read model: a member can see the bio of the people in the same
 -- class, and nobody outside it. Names and avatars keep their existing public
 -- profile path; this function returns only ids and bios.
-CREATE OR REPLACE FUNCTION public.list_class_member_bios (p_class_id uuid)
-RETURNS TABLE (user_id uuid, bio TEXT)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.list_class_member_bios (p_class_id uuid) RETURNS TABLE (user_id uuid, bio text) LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET
   search_path = public,
-  pg_temp
-AS $$
+  pg_temp AS $$
 DECLARE
   v_user uuid := (SELECT auth.uid ());
 BEGIN
@@ -131,16 +124,33 @@ BEGIN
 END;
 $$;
 
+
 COMMENT ON FUNCTION public.list_class_member_bios (uuid) IS 'Bios of one class for its members and managers. Gated by class membership, never by a client-supplied user id.';
 
-REVOKE ALL ON FUNCTION public.update_my_bio (TEXT) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION public.update_my_bio (TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.update_my_bio (text)
+FROM
+  PUBLIC;
 
-GRANT EXECUTE ON FUNCTION public.update_my_bio (TEXT) TO authenticated;
 
-REVOKE ALL ON FUNCTION public.list_class_member_bios (uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.update_my_bio (text)
+FROM
+  anon;
 
-REVOKE ALL ON FUNCTION public.list_class_member_bios (uuid) FROM anon;
 
-GRANT EXECUTE ON FUNCTION public.list_class_member_bios (uuid) TO authenticated;
+GRANT
+EXECUTE ON FUNCTION public.update_my_bio (text) TO authenticated;
+
+
+REVOKE ALL ON FUNCTION public.list_class_member_bios (uuid)
+FROM
+  PUBLIC;
+
+
+REVOKE ALL ON FUNCTION public.list_class_member_bios (uuid)
+FROM
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.list_class_member_bios (uuid) TO authenticated;

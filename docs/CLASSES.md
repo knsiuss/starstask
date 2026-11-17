@@ -302,9 +302,22 @@ A class admin's own post never enters that queue. The function stores it as
 `draft`, and the web service calls `publish_class_assignment` after the
 attachments are uploaded. That function requires both the author and a class
 manager, so it cannot publish somebody else's work, and the draft state keeps a
-half-saved post out of public search. There is no lecturer account: the class
-admin is the class authority, and `review_class_assignment` refuses self-review,
-so a queued post would otherwise be stuck forever.
+half-saved post out of public search. Class admins are the class authority; the
+lecturer persona (below) does not change review authority — `review_class_assignment`
+still refuses self-review, so a queued post would otherwise be stuck forever.
+
+### Lecturer persona
+
+A narrow lecturer account can exist alongside class admins. It is activated
+automatically by the database: at signup (or when the account's email becomes
+confirmed), the caller's confirmed sign-in email domain is checked against the
+university's registered institutional domains (`universities.institutional_domains`).
+No NIDN and no owner action is required. It is **not** proof of employment and
+never grants more than classes the user administers. Grant and scope both come
+from the database (`is_lecturer()`, `handle_new_user()`, `handle_email_confirmed()`
+and the idempotent `claim_lecturer_persona()` recheck used by Profile settings).
+Any university admin for that tenant or a platform admin can revoke it through
+`set_university_member_role()`.
 
 A class admin or Platform Admin reviews through `review_class_assignment`:
 

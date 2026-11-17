@@ -75,13 +75,15 @@ export function sortScheduleItems<T extends SortableItem>(
   sort: ScheduleSort,
 ): T[] {
   const sorted = [...items];
+  const compareTimestamps = (a: string, b: string): number =>
+    Date.parse(a) - Date.parse(b);
 
   if (sort === "oldest") {
-    sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    sorted.sort((a, b) => compareTimestamps(a.created_at, b.created_at));
   } else if (sort === "deadline") {
     sorted.sort((a, b) => {
       if (a.deadline && b.deadline) {
-        return a.deadline.localeCompare(b.deadline);
+        return compareTimestamps(a.deadline, b.deadline);
       }
 
       if (a.deadline) {
@@ -92,10 +94,10 @@ export function sortScheduleItems<T extends SortableItem>(
         return 1;
       }
 
-      return a.created_at.localeCompare(b.created_at);
+      return compareTimestamps(a.created_at, b.created_at);
     });
   } else {
-    sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    sorted.sort((a, b) => compareTimestamps(b.created_at, a.created_at));
   }
 
   return sorted;

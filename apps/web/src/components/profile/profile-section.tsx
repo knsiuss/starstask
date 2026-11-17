@@ -28,7 +28,11 @@ export function ProfileSection({
   return (
     <section
       aria-labelledby={`${id}-heading`}
-      className={cn("border-border bg-surface rounded-xl border", className)}
+      id={id}
+      className={cn(
+        "border-border bg-surface scroll-mt-24 rounded-xl border",
+        className,
+      )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
         <div className="min-w-0">

@@ -107,9 +107,7 @@ export function AttendanceCourseFilter({
       {selectedCourseId ? (
         <button
           type="button"
-          onClick={() =>
-            router.push(`${basePath}?view=${activeView}`)
-          }
+          onClick={() => router.push(`${basePath}?view=${activeView}`)}
           className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
         >
           Clear course filter

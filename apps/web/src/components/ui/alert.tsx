@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils/cn";
 
-const alertVariants = cva("rounded-md border p-4 text-sm", {
+const alertVariants = cva("rounded-md border p-4 text-sm transition-colors", {
   variants: {
     variant: {
       info: "border-border bg-subtle text-foreground",

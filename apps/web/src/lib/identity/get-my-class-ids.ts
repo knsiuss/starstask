@@ -22,7 +22,9 @@ import { DataAccessError } from "@/lib/db/assignments";
  */
 
 /** Pure: dedupe + drop nulls + sort a raw class-id column. Unit-tested. */
-export function summarizeClassIds(rows: Array<{ class_id: string | null }>): string[] {
+export function summarizeClassIds(
+  rows: Array<{ class_id: string | null }>,
+): string[] {
   const ids = new Set<string>();
   for (const row of rows) {
     if (row.class_id) {
@@ -33,24 +35,22 @@ export function summarizeClassIds(rows: Array<{ class_id: string | null }>): str
 }
 
 /** Class ids the caller belongs to in this request (empty when signed out). */
-export const getMyClassIds = cache(
-  async (): Promise<string[]> => {
-    const session = await getSessionUser();
+export const getMyClassIds = cache(async (): Promise<string[]> => {
+  const session = await getSessionUser();
 
-    if (!session) {
-      return [];
-    }
+  if (!session) {
+    return [];
+  }
 
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("class_members")
-      .select("class_id")
-      .eq("user_id", session.user.id);
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("class_members")
+    .select("class_id")
+    .eq("user_id", session.user.id);
 
-    if (error) {
-      throw new DataAccessError("Could not load your classes", error.code);
-    }
+  if (error) {
+    throw new DataAccessError("Could not load your classes", error.code);
+  }
 
-    return summarizeClassIds((data ?? []) as Array<{ class_id: string }>);
-  },
-);
+  return summarizeClassIds((data ?? []) as Array<{ class_id: string }>);
+});

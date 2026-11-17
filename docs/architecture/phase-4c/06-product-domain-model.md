@@ -2,25 +2,25 @@
 
 > **Status:** DRAFT. **Decisions:** brief items marked CONFIRMED; rest RECOMMENDED/PROPOSED/UNRESOLVED.
 
-| Domain | Name | Purpose | Lifecycle | Key entities | Docs |
-|--------|------|---------|-----------|--------------|------|
-| A | Global identity | One global user account across universities | register → active (no deletion) | `users` (auth), `profiles` | `07-global-identity.md` |
-| B | University registry / tenant | Central registry; Platform Admin activates | registered → pending → active → suspended → inactive | `universities` (registry) | `08-…` |
-| C | Academic organization | Flexible unit tree (not hardcoded faculty/department) | draft → active → archived | `academic_units` | `09-…` |
-| D | Academic period | Term/semester container | planned → open → closed → archived | `academic_periods` | `10-…` |
-| E | Student identity | Per-university student record (NIM, entry year) | pending → active → suspended → graduated | `student_identities` | `11-…` |
-| F | Class & membership | Cohort (e.g. IF-2024-A) + home class | draft → active → archived | `classes`, `class_memberships` | `12-…` |
-| G | Course catalog vs offering vs enrollment | Catalogue (subject) / Offering (class×subject×period) / Enrollment | catalog active; offering draft→open→closed; enrollment active→dropped→completed | `courses`, `course_offerings`, `enrollments` | `13-…` |
-| H | Course invitation | Secure course-specific link, direct enroll, no approval | active → revoked/expired → (usage-limited) | `course_invite_tokens` | `14-…` |
-| I | Class Administration RBAC | Multiple Class Admins, granular perms, last-admin safeguard | assigned → revoked; last-admin blocks revoke | `class_admin_assignments`, permissions | `15-…` |
-| J | Assignments | Briefs + submissions + materials linkage | draft → published → archived | `assignments` | `16-…` |
-| K | Attendance | Per-meeting, per-enrollment records + corrections | scheduled → open → closed; corrections append-only | `attendance_meetings`, `attendance_records`, `attendance_corrections` | `17-…` |
-| L | Grading | CSV upload, batches, history, verification/publication | batch uploaded → verifying → published | `grade_batches`, `grade_entries`, `grade_history` | `18-…` |
-| M | Schedule | Recurrence vs meetings vs exceptions; per-university timezone | rule → instances → exceptions | `schedule_rules`, `schedule_instances`, `schedule_exceptions` | `19-…` |
-| N | Materials / storage | Files for assignments/materials/evidence | uploaded → linked → retained | `files`, `file_links` | `20-…` |
-| O | Social / announcements / discussions | Feed (candidate), formal announcements, discussions | draft → published → archived | `announcements`, `discussions` | `21-…` |
-| P | Notifications | Outbox + deliveries + push | queued → claimed → delivered/failed | `notification_events` etc. | `22-…` |
-| Q | Audit | Immutable operation log | append-only | `audit_logs` | `22-…` |
+| Domain | Name                                     | Purpose                                                            | Lifecycle                                                                       | Key entities                                                          | Docs                    |
+| ------ | ---------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------- |
+| A      | Global identity                          | One global user account across universities                        | register → active (no deletion)                                                 | `users` (auth), `profiles`                                            | `07-global-identity.md` |
+| B      | University registry / tenant             | Central registry; Platform Admin activates                         | registered → pending → active → suspended → inactive                            | `universities` (registry)                                             | `08-…`                  |
+| C      | Academic organization                    | Flexible unit tree (not hardcoded faculty/department)              | draft → active → archived                                                       | `academic_units`                                                      | `09-…`                  |
+| D      | Academic period                          | Term/semester container                                            | planned → open → closed → archived                                              | `academic_periods`                                                    | `10-…`                  |
+| E      | Student identity                         | Per-university student record (NIM, entry year)                    | pending → active → suspended → graduated                                        | `student_identities`                                                  | `11-…`                  |
+| F      | Class & membership                       | Cohort (e.g. IF-2024-A) + home class                               | draft → active → archived                                                       | `classes`, `class_memberships`                                        | `12-…`                  |
+| G      | Course catalog vs offering vs enrollment | Catalogue (subject) / Offering (class×subject×period) / Enrollment | catalog active; offering draft→open→closed; enrollment active→dropped→completed | `courses`, `course_offerings`, `enrollments`                          | `13-…`                  |
+| H      | Course invitation                        | Secure course-specific link, direct enroll, no approval            | active → revoked/expired → (usage-limited)                                      | `course_invite_tokens`                                                | `14-…`                  |
+| I      | Class Administration RBAC                | Multiple Class Admins, granular perms, last-admin safeguard        | assigned → revoked; last-admin blocks revoke                                    | `class_admin_assignments`, permissions                                | `15-…`                  |
+| J      | Assignments                              | Briefs + submissions + materials linkage                           | draft → published → archived                                                    | `assignments`                                                         | `16-…`                  |
+| K      | Attendance                               | Per-meeting, per-enrollment records + corrections                  | scheduled → open → closed; corrections append-only                              | `attendance_meetings`, `attendance_records`, `attendance_corrections` | `17-…`                  |
+| L      | Grading                                  | CSV upload, batches, history, verification/publication             | batch uploaded → verifying → published                                          | `grade_batches`, `grade_entries`, `grade_history`                     | `18-…`                  |
+| M      | Schedule                                 | Recurrence vs meetings vs exceptions; per-university timezone      | rule → instances → exceptions                                                   | `schedule_rules`, `schedule_instances`, `schedule_exceptions`         | `19-…`                  |
+| N      | Materials / storage                      | Files for assignments/materials/evidence                           | uploaded → linked → retained                                                    | `files`, `file_links`                                                 | `20-…`                  |
+| O      | Social / announcements / discussions     | Feed (candidate), formal announcements, discussions                | draft → published → archived                                                    | `announcements`, `discussions`                                        | `21-…`                  |
+| P      | Notifications                            | Outbox + deliveries + push                                         | queued → claimed → delivered/failed                                             | `notification_events` etc.                                            | `22-…`                  |
+| Q      | Audit                                    | Immutable operation log                                            | append-only                                                                     | `audit_logs`                                                          | `22-…`                  |
 
 ## Cross-domain rules (CONFIRMED per brief)
 
@@ -58,4 +58,4 @@ flowchart LR
 
 ---
 
-*Decision classifications apply throughout; see each domain doc for per-statement labels.*
+_Decision classifications apply throughout; see each domain doc for per-statement labels._

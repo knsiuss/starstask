@@ -7,6 +7,7 @@ export * from "./calendar";
 export * from "./class-schedule";
 export * from "./classes";
 export * from "./developer";
+export * from "./export-branding";
 export * from "./feedback";
 export * from "./leave";
 export * from "./profile";

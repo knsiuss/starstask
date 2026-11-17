@@ -91,7 +91,7 @@ async function runAttendanceRecap(job: ExportJob): Promise<ExportResult> {
   const recap = await getClassAttendanceRecap(classId, subject.id);
   const audits = await listCorrectionAudit(classId, subject.id);
   const classRowForBranding = found as {
-    institution?: string | null;
+    institution: string | null;
   };
   const [branding, grades] = await Promise.all([
     loadBrandingForExport(classId, classRowForBranding),

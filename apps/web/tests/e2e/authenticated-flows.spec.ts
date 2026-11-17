@@ -160,9 +160,7 @@ test.describe("authenticated workspace flows", () => {
 
     await page.getByRole("button", { name: "Join class" }).click();
 
-    await expect(page).toHaveURL(
-      new RegExp(`/app/classes/${classSlug}$`),
-    );
+    await expect(page).toHaveURL(new RegExp(`/app/classes/${classSlug}$`));
     await expect(
       page.getByRole("heading", { level: 1, name: className }),
     ).toBeVisible();

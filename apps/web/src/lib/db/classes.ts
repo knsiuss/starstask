@@ -460,23 +460,64 @@ export async function listMyClassDirectory(
 ): Promise<ClassDirectoryItem[]> {
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
-    .from("class_members")
-    .select(
-      `joined_at,
-       classes!class_members_class_id_fkey ( id, slug, name, class_code, description, course_name, institution, lecturer_name, semester, academic_year, status, archived_at )`,
-    )
-    .eq("user_id", userId)
-    .order("joined_at", { ascending: false })
-    .limit(CLASS_DIRECTORY_LIMIT);
+  const [memberResult, adminResult] = await Promise.all([
+    supabase
+      .from("class_members")
+      .select(
+        `joined_at,
+         classes!class_members_class_id_fkey ( id, slug, name, class_code, description, course_name, institution, lecturer_name, semester, academic_year, status, archived_at )`,
+      )
+      .eq("user_id", userId)
+      .order("joined_at", { ascending: false })
+      .limit(CLASS_DIRECTORY_LIMIT),
+    supabase
+      .from("class_admins")
+      .select("class_id, assigned_at")
+      .eq("user_id", userId)
+      .order("assigned_at", { ascending: false })
+      .limit(CLASS_DIRECTORY_LIMIT),
+  ]);
 
-  if (error) {
-    throw new DataAccessError("Could not load your classes", error.code);
+  if (memberResult.error || adminResult.error) {
+    throw new DataAccessError(
+      "Could not load your classes",
+      memberResult.error?.code ?? adminResult.error?.code,
+    );
   }
 
-  const memberships = (data ?? []).flatMap((row) =>
+  const memberships = (memberResult.data ?? []).flatMap((row) =>
     row.classes ? [{ ...row.classes, joined_at: row.joined_at }] : [],
   );
+
+  const memberClassIds = new Set(memberships.map((m) => m.id));
+  const missingAdminRows = (adminResult.data ?? []).filter(
+    (row) => !memberClassIds.has(row.class_id),
+  );
+
+  if (missingAdminRows.length > 0) {
+    const missingIds = missingAdminRows.map((row) => row.class_id);
+    const assignedAtById = new Map(
+      missingAdminRows.map((row) => [row.class_id, row.assigned_at]),
+    );
+
+    const { data: extraClasses, error: extraError } = await supabase
+      .from("classes")
+      .select(
+        "id, slug, name, class_code, description, course_name, institution, lecturer_name, semester, academic_year, status, archived_at",
+      )
+      .in("id", missingIds);
+
+    if (extraError) {
+      throw new DataAccessError("Could not load your classes", extraError.code);
+    }
+
+    for (const cls of extraClasses ?? []) {
+      memberships.push({
+        ...cls,
+        joined_at: assignedAtById.get(cls.id) ?? cls.archived_at ?? "",
+      });
+    }
+  }
 
   if (memberships.length === 0) {
     return [];

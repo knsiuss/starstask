@@ -5,22 +5,22 @@
 
 ## 1. What was inspected
 
-| Table / area | Existing indexes (in catalog) | Audit note |
-| --- | --- | --- |
-| `class_members` | PK `(class_id, user_id)` + user index exists in catalog view | Membership checks are index-lookup shaped; no seq-scan measured on scratch DB |
-| `discussion_session_checkins` | PK + session-scoped indexes exist | Workload is list-shaped (`session_id`, `user_id`); not measured |
-| attendance tables | PK / scoped indexes exist | No `EXPLAIN (ANALYZE, BUFFERS)` run at production volume |
-| `audit_logs` | PK + append-only hotspot historically named | Phase 3 numbers (not re-measured in 5K) — migration needs load evidence |
-| notification tables | outbox + claim RPC uses `FOR UPDATE SKIP LOCKED` | Back-pressure is via claim, not index |
-| `assignment_completions` | PK `(assignment_id, user_id)` exists | Fine-grained duplicates use PK conflict path |
+| Table / area                  | Existing indexes (in catalog)                                | Audit note                                                                    |
+| ----------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `class_members`               | PK `(class_id, user_id)` + user index exists in catalog view | Membership checks are index-lookup shaped; no seq-scan measured on scratch DB |
+| `discussion_session_checkins` | PK + session-scoped indexes exist                            | Workload is list-shaped (`session_id`, `user_id`); not measured               |
+| attendance tables             | PK / scoped indexes exist                                    | No `EXPLAIN (ANALYZE, BUFFERS)` run at production volume                      |
+| `audit_logs`                  | PK + append-only hotspot historically named                  | Phase 3 numbers (not re-measured in 5K) — migration needs load evidence       |
+| notification tables           | outbox + claim RPC uses `FOR UPDATE SKIP LOCKED`             | Back-pressure is via claim, not index                                         |
+| `assignment_completions`      | PK `(assignment_id, user_id)` exists                         | Fine-grained duplicates use PK conflict path                                  |
 
 ## 2. Candidates considered and deferred
 
-| Candidate | Query it would support | Why deferred |
-| --- | --- | --- |
+| Candidate                                      | Query it would support                | Why deferred                                                                                               |
+| ---------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `(class_id, created_at)` on check-ins / audits | time-ordered check-in and audit lists | Scratch DB has 120 rows — seq-scan cost is near zero; adding index increases write cost without proven win |
-| `(user_id, created_at)` on notifications | inbox pagination | User-visible path; exact counts deliberately kept — new index needs staging p95 proof |
-| Partial `(university_id, ...)` | tenant filtering (Phase 5A–5G tables) | Those tables are inert in prod; building indexes now pays cost with zero benefit |
+| `(user_id, created_at)` on notifications       | inbox pagination                      | User-visible path; exact counts deliberately kept — new index needs staging p95 proof                      |
+| Partial `(university_id, ...)`                 | tenant filtering (Phase 5A–5G tables) | Those tables are inert in prod; building indexes now pays cost with zero benefit                           |
 
 > Deferred until: staging clone with production-like volume + `EXPLAIN ANALYZE BUFFERS` showing seq-scan starvation + a write-amplification note.
 

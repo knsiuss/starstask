@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 
 import { BrandLink } from "@/components/layout/brand-link";
-import { CommandPalette } from "@/components/layout/command-palette";
+import { CommandPaletteTrigger } from "@/components/layout/command-palette";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -14,6 +14,7 @@ type WorkspaceTopbarProps = {
   isPlatformAdmin: boolean;
   isDeveloper: boolean;
   isClassAdmin: boolean;
+  isLecturer?: boolean;
   displayName: string;
   avatarUrl: string | null;
   unreadNotificationCount: number;
@@ -24,6 +25,7 @@ export function WorkspaceTopbar({
   isPlatformAdmin,
   isDeveloper,
   isClassAdmin,
+  isLecturer = false,
   displayName,
   avatarUrl,
   unreadNotificationCount,
@@ -34,6 +36,7 @@ export function WorkspaceTopbar({
         <MobileNav
           isAuthenticated={isAuthenticated}
           isClassAdmin={isClassAdmin}
+          isLecturer={isLecturer}
         />
         <BrandLink className="lg:hidden" />
 
@@ -42,6 +45,7 @@ export function WorkspaceTopbar({
         </div>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <CommandPaletteTrigger className="sm:hidden" />
           <ThemeToggle />
           {isAuthenticated ? (
             <Link

@@ -11,13 +11,13 @@
 
 ## 30.2 Migration risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Identity bridge (`user_id`→`student_identity_id`) ambiguous for ghost users | orphan memberships/enrollments | auto-create pending `student_identities` for unmatched `profiles`; manual review queue |
-| NIM duplicates across free-text `university` strings | per-tenant unique fails | normalize `university` strings to registry rows first (UNRESOLVED mapping — see below); dedupe with audit trail |
-| `academic_period_id` backfill for offerings | null periods | default period per university via Platform Admin (CONFIRMED gate) |
-| Schedule rules→instances materialization cost | large scans | index-first, batch by offering, resumable |
-| Storage path prefixing | signed-URL breakage | keep old paths valid during window; dual-read |
+| Risk                                                                        | Impact                         | Mitigation                                                                                                      |
+| --------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Identity bridge (`user_id`→`student_identity_id`) ambiguous for ghost users | orphan memberships/enrollments | auto-create pending `student_identities` for unmatched `profiles`; manual review queue                          |
+| NIM duplicates across free-text `university` strings                        | per-tenant unique fails        | normalize `university` strings to registry rows first (UNRESOLVED mapping — see below); dedupe with audit trail |
+| `academic_period_id` backfill for offerings                                 | null periods                   | default period per university via Platform Admin (CONFIRMED gate)                                               |
+| Schedule rules→instances materialization cost                               | large scans                    | index-first, batch by offering, resumable                                                                       |
+| Storage path prefixing                                                      | signed-URL breakage            | keep old paths valid during window; dual-read                                                                   |
 
 ## 30.3 Legacy `university` string → registry mapping (UNRESOLVED)
 

@@ -8,12 +8,14 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 
 // ---------------------------------------------------------------------------
 // Next schedule: nearest upcoming deadline-or-session (web getNextSchedule).
 // ---------------------------------------------------------------------------
 
+@Serializable
 data class NextScheduleItem(
     val kind: String, // "assignment" | "session"
     val title: String,

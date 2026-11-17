@@ -1,80 +1,65 @@
-import { BookOpen, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
-import { ArchiveIllustration } from "@/components/landing/archive-illustration";
-
-/**
- * The three notes that float beside the illustration on wide screens. Each one
- * is repeated by the feature strip below, which is what narrow screens show.
- */
-const HERO_NOTES = [
-  {
-    icon: BookOpen,
-    title: "Real briefs",
-    description: "Published by students",
-    position: "top-6 -left-10",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Understand requirements",
-    description: "Read before you start",
-    position: "top-1/2 -right-8",
-  },
-  {
-    icon: Sparkles,
-    title: "Learn from past work",
-    description: "See how it was framed",
-    position: "bottom-10 -left-6",
-  },
-];
+import { HeroArchivePreview } from "@/components/landing/hero-archive-preview";
+import { Button } from "@/components/ui/button";
 
 export function LandingHero() {
   return (
     <section className="border-border bg-subtle border-b">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-10 lg:py-20">
-        <div className="max-w-xl">
-          <p className="border-border bg-background text-muted-foreground inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium">
-            <Sparkles
-              aria-hidden="true"
-              className="text-accent h-3.5 w-3.5"
-            />
-            Built for university students
+      <div className="mx-auto max-w-6xl px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-24 lg:pt-28 lg:pb-28">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="st-fade-up text-accent font-mono text-xs font-semibold tracking-wider uppercase">
+            StarsTask Archive
           </p>
 
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-            Find. Understand. Contribute.
+          <h1
+            style={{ animationDelay: "70ms" }}
+            className="st-fade-up text-foreground mt-3 text-[2rem] leading-[1.1] font-semibold tracking-[-0.035em] text-balance sm:mt-4 sm:text-5xl lg:text-[3.75rem] lg:leading-[1.04]"
+          >
+            Assignment briefs, organized for students.
           </h1>
 
-          <p className="text-muted-foreground mt-5 text-base leading-relaxed sm:text-lg">
-            StarsTask collects assignment briefs from courses across
-            universities, so you can see what a task really asks for before you
-            start. Sign in with Google to browse briefs and contribute your own.
+          <p
+            style={{ animationDelay: "140ms" }}
+            className="st-fade-up text-muted-foreground mx-auto mt-4 max-w-lg text-sm leading-relaxed sm:mt-5 sm:text-lg"
+          >
+            Search real course prompts, deadlines, and starter files before you
+            begin.
           </p>
+
+          <div
+            style={{ animationDelay: "210ms" }}
+            className="st-fade-up mt-7 flex flex-col items-stretch justify-center gap-3 sm:mt-9 sm:flex-row sm:items-center"
+          >
+            <Button
+              asChild
+              size="lg"
+              className="group"
+            >
+              <Link href="/assignments">
+                Explore assignments
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+                />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="secondary"
+            >
+              <Link href="/classes/discover">Browse classes</Link>
+            </Button>
+          </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
-          <ArchiveIllustration />
-
-          {HERO_NOTES.map((note) => (
-            <div
-              key={note.title}
-              className={`border-border bg-surface absolute hidden items-center gap-2.5 rounded-xl border px-3.5 py-2.5 shadow-[0_6px_20px_rgba(9,9,11,0.08)] lg:flex ${note.position}`}
-            >
-              <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-                <note.icon
-                  aria-hidden="true"
-                  className="h-4 w-4"
-                />
-              </span>
-              <span>
-                <span className="text-foreground block text-xs font-semibold">
-                  {note.title}
-                </span>
-                <span className="text-muted-foreground block text-[11px]">
-                  {note.description}
-                </span>
-              </span>
-            </div>
-          ))}
+        <div
+          style={{ animationDelay: "280ms" }}
+          className="st-fade-up mx-auto mt-12 max-w-4xl sm:mt-16"
+        >
+          <HeroArchivePreview />
         </div>
       </div>
     </section>

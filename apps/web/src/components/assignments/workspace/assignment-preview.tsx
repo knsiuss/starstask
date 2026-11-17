@@ -25,6 +25,20 @@ const deadlineFormatter = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
+function formatPreviewDeadline(deadline: string): string {
+  if (!deadline) {
+    return "No deadline set";
+  }
+
+  const parsed = new Date(deadline);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Invalid date";
+  }
+
+  return deadlineFormatter.format(parsed);
+}
+
 /** Live preview card: reflects the form state as the user types. */
 export function AssignmentPreview({
   title,
@@ -36,21 +50,21 @@ export function AssignmentPreview({
   return (
     <section
       aria-label="Assignment preview"
-      className="border-border bg-surface rounded-xl border p-4"
+      className="border-border bg-surface rounded-xl border p-4 sm:p-5"
     >
-      <h3 className="text-foreground text-xs font-semibold tracking-wide uppercase">
-        Assignment Preview
+      <h3 className="text-foreground text-sm font-semibold tracking-tight">
+        Assignment preview
       </h3>
-      <div className="bg-band mt-3 rounded-lg p-3">
-        <p className="text-foreground line-clamp-2 text-sm font-semibold tracking-tight">
+      <div className="border-border/60 bg-subtle mt-3 rounded-lg border p-3.5">
+        <p className="text-foreground line-clamp-2 text-sm font-semibold tracking-tight break-words">
           {title.trim() || "Untitled assignment"}
         </p>
-        <dl className="mt-3 space-y-2 text-xs">
+        <dl className="mt-3 space-y-2.5 text-xs">
           <PreviewRow
             icon={
               <GraduationCap
                 aria-hidden="true"
-                className="h-3.5 w-3.5"
+                className="h-3.5 w-3.5 shrink-0"
               />
             }
             label="Course"
@@ -60,7 +74,7 @@ export function AssignmentPreview({
             icon={
               <Link2
                 aria-hidden="true"
-                className="h-3.5 w-3.5"
+                className="h-3.5 w-3.5 shrink-0"
               />
             }
             label="Class"
@@ -70,21 +84,17 @@ export function AssignmentPreview({
             icon={
               <CalendarClock
                 aria-hidden="true"
-                className="h-3.5 w-3.5"
+                className="h-3.5 w-3.5 shrink-0"
               />
             }
             label="Deadline"
-            value={
-              deadline
-                ? deadlineFormatter.format(new Date(deadline))
-                : "No deadline set"
-            }
+            value={formatPreviewDeadline(deadline)}
           />
           <PreviewRow
             icon={
               <Paperclip
                 aria-hidden="true"
-                className="h-3.5 w-3.5"
+                className="h-3.5 w-3.5 shrink-0"
               />
             }
             label="Attachments"
@@ -111,11 +121,13 @@ function PreviewRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-muted-foreground inline-flex items-center gap-1.5">
+      <dt className="text-muted-foreground inline-flex shrink-0 items-center gap-1.5">
         {icon}
-        {label}
+        <span>{label}</span>
       </dt>
-      <dd className="text-foreground truncate font-medium">{value}</dd>
+      <dd className="text-foreground min-w-0 truncate text-right font-medium">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -132,10 +144,10 @@ export function AssignmentTips() {
   return (
     <section
       aria-label="Tips for a great assignment"
-      className="border-border bg-surface rounded-xl border p-4"
+      className="border-border bg-surface rounded-xl border p-4 sm:p-5"
     >
-      <h3 className="text-foreground text-xs font-semibold tracking-wide uppercase">
-        Tips for a Great Assignment
+      <h3 className="text-foreground text-sm font-semibold tracking-tight">
+        Tips for a clear assignment
       </h3>
       <ul className="mt-3 space-y-2">
         {TIPS.map((tip) => (
@@ -147,7 +159,7 @@ export function AssignmentTips() {
               aria-hidden="true"
               className="text-accent mt-0.5 h-3.5 w-3.5 shrink-0"
             />
-            {tip}
+            <span>{tip}</span>
           </li>
         ))}
       </ul>
@@ -164,10 +176,10 @@ export function PublicationPermissionCard({
   return (
     <section
       aria-label="Publication permission"
-      className="border-border bg-surface rounded-xl border p-4"
+      className="border-border bg-surface rounded-xl border p-4 sm:p-5"
     >
-      <h3 className="text-foreground text-xs font-semibold tracking-wide uppercase">
-        Publication Permission
+      <h3 className="text-foreground text-sm font-semibold tracking-tight">
+        Publication permission
       </h3>
       <div
         className={`mt-3 flex items-start gap-2.5 rounded-lg p-3 ${

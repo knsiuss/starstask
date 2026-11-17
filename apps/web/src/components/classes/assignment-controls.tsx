@@ -83,7 +83,7 @@ export function AssignmentControls({
   }, [updateParams, value]);
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
       <label className="relative min-w-0 flex-1">
         <span className="sr-only">Search assignments</span>
         <Search
@@ -95,14 +95,14 @@ export function AssignmentControls({
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Search assignments..."
-          className="border-input bg-surface text-foreground placeholder:text-muted-foreground focus-visible:border-accent focus-visible:outline-accent h-10 w-full rounded-full border pr-9 pl-10 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-search-cancel-button]:hidden"
+          className="border-input bg-surface text-foreground placeholder:text-muted-foreground focus-visible:border-accent focus-visible:outline-accent min-h-[44px] w-full rounded-lg border pr-11 pl-10 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-10 sm:min-h-0 sm:pr-9 [&::-webkit-search-cancel-button]:hidden"
         />
         {value ? (
           <button
             type="button"
             aria-label="Clear search"
             onClick={() => setValue("")}
-            className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-3 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline-2"
+            className="text-muted-foreground hover:text-foreground focus-visible:outline-accent absolute top-1/2 right-0.5 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md transition-colors focus-visible:outline-2 sm:right-1.5 sm:h-7 sm:w-7"
           >
             <X
               aria-hidden="true"
@@ -112,21 +112,23 @@ export function AssignmentControls({
         ) : null}
       </label>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label={`Status: ${COURSE_ASSIGNMENT_FILTER_LABELS[filter]}`}
-              className="border-input bg-surface text-foreground hover:bg-muted focus-visible:outline-accent inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="border-input bg-surface text-foreground hover:bg-muted focus-visible:outline-accent inline-flex min-h-[44px] w-full cursor-pointer items-center justify-between gap-1.5 rounded-lg border px-3.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-10 sm:min-h-0 sm:w-auto sm:justify-start"
             >
-              Status:{" "}
-              <span className="font-medium">
-                {COURSE_ASSIGNMENT_FILTER_LABELS[filter]}
+              <span className="truncate">
+                <span className="text-muted-foreground">Status: </span>
+                <span className="font-medium">
+                  {COURSE_ASSIGNMENT_FILTER_LABELS[filter]}
+                </span>
               </span>
               <ChevronDown
                 aria-hidden="true"
-                className="text-muted-foreground h-3.5 w-3.5"
+                className="text-muted-foreground h-3.5 w-3.5 shrink-0"
               />
             </button>
           </DropdownMenuTrigger>
@@ -135,6 +137,7 @@ export function AssignmentControls({
               <DropdownMenuItem
                 key={entry}
                 onSelect={() => updateParams({ filter: entry })}
+                className="min-h-[44px] sm:min-h-0"
               >
                 <span className="flex w-full items-center justify-between gap-6">
                   {COURSE_ASSIGNMENT_FILTER_LABELS[entry]}
@@ -155,15 +158,17 @@ export function AssignmentControls({
             <button
               type="button"
               aria-label={`Sort: ${COURSE_ASSIGNMENT_SORT_LABELS[sort]}`}
-              className="border-input bg-surface text-foreground hover:bg-muted focus-visible:outline-accent inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="border-input bg-surface text-foreground hover:bg-muted focus-visible:outline-accent inline-flex min-h-[44px] w-full cursor-pointer items-center justify-between gap-1.5 rounded-lg border px-3.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-10 sm:min-h-0 sm:w-auto sm:justify-start"
             >
-              Sort:{" "}
-              <span className="font-medium">
-                {COURSE_ASSIGNMENT_SORT_LABELS[sort]}
+              <span className="truncate">
+                <span className="text-muted-foreground">Sort: </span>
+                <span className="font-medium">
+                  {COURSE_ASSIGNMENT_SORT_LABELS[sort]}
+                </span>
               </span>
               <ChevronDown
                 aria-hidden="true"
-                className="text-muted-foreground h-3.5 w-3.5"
+                className="text-muted-foreground h-3.5 w-3.5 shrink-0"
               />
             </button>
           </DropdownMenuTrigger>
@@ -172,6 +177,7 @@ export function AssignmentControls({
               <DropdownMenuItem
                 key={entry}
                 onSelect={() => updateParams({ sort: entry })}
+                className="min-h-[44px] sm:min-h-0"
               >
                 <span className="flex w-full items-center justify-between gap-6">
                   {COURSE_ASSIGNMENT_SORT_LABELS[entry]}

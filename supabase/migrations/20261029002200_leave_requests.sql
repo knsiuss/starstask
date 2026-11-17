@@ -12,17 +12,16 @@
 --   leave_start_date /
 --   leave_end_date       the period the student is asking to be excused from
 -- Nothing here infers one from another.
-
 -- ---------------------------------------------------------------------------
 -- leave_requests
 -- ---------------------------------------------------------------------------
-CREATE TABLE if NOT EXISTS public.leave_requests (
+CREATE TABLE IF NOT EXISTS public.leave_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Stable, human-quotable identifier used in reports, evidence labels, and
   -- forwarding records. Derived from a fresh uuid so it never leaks row order
   -- and cannot be guessed from a neighbour's reference.
   reference text NOT NULL DEFAULT (
-    'LR-' || upper(substr(replace(gen_random_uuid ()::text, '-', ''), 1, 12))
+    'LR-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12))
   ),
   student_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   class_id uuid NOT NULL REFERENCES public.classes (id) ON DELETE CASCADE,
@@ -92,12 +91,13 @@ CREATE TABLE if NOT EXISTS public.leave_requests (
       AND submitted_at IS NOT NULL
     )
   ),
-  CONSTRAINT leave_requests_forwarded_at_consistency CHECK (
-    (status = 'forwarded') = (forwarded_at IS NOT NULL)
-  ),
+  CONSTRAINT leave_requests_forwarded_at_consistency CHECK ((status = 'forwarded') = (forwarded_at IS NOT NULL)),
   CONSTRAINT leave_requests_draft_never_submitted CHECK (
     status <> 'draft'
-    OR (submitted_at IS NULL AND forwarded_at IS NULL)
+    OR (
+      submitted_at IS NULL
+      AND forwarded_at IS NULL
+    )
   ),
   CONSTRAINT leave_requests_revision_count_range CHECK (revision_count BETWEEN 0 AND 100),
   CONSTRAINT leave_requests_field_sources_object CHECK (jsonb_typeof(field_sources) = 'object'),
@@ -108,11 +108,7 @@ CREATE TABLE if NOT EXISTS public.leave_requests (
 );
 
 
-CREATE INDEX if NOT EXISTS leave_requests_class_status_idx ON public.leave_requests (
-  class_id,
-  status,
-  created_at DESC
-);
+CREATE INDEX if NOT EXISTS leave_requests_class_status_idx ON public.leave_requests (class_id, status, created_at DESC);
 
 
 CREATE INDEX if NOT EXISTS leave_requests_student_idx ON public.leave_requests (student_id, created_at DESC);
@@ -129,9 +125,9 @@ WHERE
   status <> 'draft';
 
 
-CREATE TRIGGER leave_requests_set_updated_at BEFORE
-UPDATE ON public.leave_requests FOR each ROW
-EXECUTE function public.set_updated_at ();
+CREATE TRIGGER leave_requests_set_updated_at
+BEFORE UPDATE ON public.leave_requests FOR EACH ROW
+EXECUTE FUNCTION public.set_updated_at ();
 
 
 -- ---------------------------------------------------------------------------
@@ -140,7 +136,7 @@ EXECUTE function public.set_updated_at ();
 -- Removal is soft (`removed_at`) so a replaced or deleted document stays
 -- auditable and the storage object is never silently orphaned. Only rows with
 -- `removed_at IS NULL` count as evidence for submission and export.
-CREATE TABLE if NOT EXISTS public.leave_request_evidence (
+CREATE TABLE IF NOT EXISTS public.leave_request_evidence (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id uuid NOT NULL REFERENCES public.leave_requests (id) ON DELETE CASCADE,
   storage_path text NOT NULL,
@@ -153,20 +149,12 @@ CREATE TABLE if NOT EXISTS public.leave_request_evidence (
   removed_at timestamptz,
   removed_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
   CONSTRAINT leave_request_evidence_path_key UNIQUE (storage_path),
-  CONSTRAINT leave_request_evidence_mime_allowed CHECK (
-    mime_type IN ('application/pdf', 'image/jpeg', 'image/png')
-  ),
+  CONSTRAINT leave_request_evidence_mime_allowed CHECK (mime_type IN ('application/pdf', 'image/jpeg', 'image/png')),
   CONSTRAINT leave_request_evidence_size_range CHECK (file_size BETWEEN 1 AND 10485760),
-  CONSTRAINT leave_request_evidence_filename_length CHECK (
-    char_length(btrim(original_filename)) BETWEEN 1 AND 200
-  ),
-  CONSTRAINT leave_request_evidence_path_length CHECK (
-    char_length(storage_path) BETWEEN 10 AND 500
-  ),
+  CONSTRAINT leave_request_evidence_filename_length CHECK (char_length(btrim(original_filename)) BETWEEN 1 AND 200),
+  CONSTRAINT leave_request_evidence_path_length CHECK (char_length(storage_path) BETWEEN 10 AND 500),
   CONSTRAINT leave_request_evidence_sort_range CHECK (sort_order BETWEEN 0 AND 50),
-  CONSTRAINT leave_request_evidence_removal_pair CHECK (
-    (removed_at IS NULL) = (removed_by IS NULL)
-  )
+  CONSTRAINT leave_request_evidence_removal_pair CHECK ((removed_at IS NULL) = (removed_by IS NULL))
 );
 
 
@@ -180,7 +168,7 @@ WHERE
 -- ---------------------------------------------------------------------------
 -- Append-only. There is no UPDATE or DELETE grant or policy anywhere, so a
 -- revision cannot erase the submission it replaced.
-CREATE TABLE if NOT EXISTS public.leave_request_history (
+CREATE TABLE IF NOT EXISTS public.leave_request_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id uuid NOT NULL REFERENCES public.leave_requests (id) ON DELETE CASCADE,
   actor_id uuid REFERENCES auth.users (id) ON DELETE SET NULL,
@@ -222,10 +210,10 @@ CREATE INDEX if NOT EXISTS leave_request_history_request_idx ON public.leave_req
 --
 -- This table records that a package was generated and handed to a person. It
 -- does not and must not claim the lecturer received, opened, or approved it.
-CREATE TABLE if NOT EXISTS public.leave_request_forwardings (
+CREATE TABLE IF NOT EXISTS public.leave_request_forwardings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   reference text NOT NULL DEFAULT (
-    'LF-' || upper(substr(replace(gen_random_uuid ()::text, '-', ''), 1, 12))
+    'LF-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12))
   ),
   class_id uuid NOT NULL REFERENCES public.classes (id) ON DELETE CASCADE,
   forwarded_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
@@ -245,19 +233,13 @@ CREATE TABLE if NOT EXISTS public.leave_request_forwardings (
   CONSTRAINT leave_request_forwardings_idempotency_key UNIQUE (idempotency_key),
   CONSTRAINT leave_request_forwardings_format_allowed CHECK (report_format IN ('summary', 'complete')),
   CONSTRAINT leave_request_forwardings_count_range CHECK (request_count BETWEEN 1 AND 200),
-  CONSTRAINT leave_request_forwardings_recipient_length CHECK (
-    char_length(btrim(recipient_name)) BETWEEN 1 AND 160
-  ),
+  CONSTRAINT leave_request_forwardings_recipient_length CHECK (char_length(btrim(recipient_name)) BETWEEN 1 AND 160),
   CONSTRAINT leave_request_forwardings_email_length CHECK (
     recipient_email IS NULL
     OR char_length(btrim(recipient_email)) BETWEEN 3 AND 254
   ),
-  CONSTRAINT leave_request_forwardings_report_ref_length CHECK (
-    char_length(btrim(report_reference)) BETWEEN 1 AND 160
-  ),
-  CONSTRAINT leave_request_forwardings_idempotency_length CHECK (
-    char_length(idempotency_key) BETWEEN 8 AND 200
-  )
+  CONSTRAINT leave_request_forwardings_report_ref_length CHECK (char_length(btrim(report_reference)) BETWEEN 1 AND 160),
+  CONSTRAINT leave_request_forwardings_idempotency_length CHECK (char_length(idempotency_key) BETWEEN 8 AND 200)
 );
 
 
@@ -273,7 +255,7 @@ CREATE INDEX if NOT EXISTS leave_request_forwardings_class_idx ON public.leave_r
 --
 -- student_display_name and leave dates are snapshotted so a later nickname or
 -- date edit cannot rewrite what a past report said.
-CREATE TABLE if NOT EXISTS public.leave_request_forwarding_items (
+CREATE TABLE IF NOT EXISTS public.leave_request_forwarding_items (
   forwarding_id uuid NOT NULL REFERENCES public.leave_request_forwardings (id) ON DELETE CASCADE,
   request_id uuid NOT NULL REFERENCES public.leave_requests (id) ON DELETE RESTRICT,
   student_display_name text NOT NULL,
@@ -281,9 +263,7 @@ CREATE TABLE if NOT EXISTS public.leave_request_forwarding_items (
   leave_end_date date NOT NULL,
   PRIMARY KEY (forwarding_id, request_id),
   CONSTRAINT leave_request_forwarding_items_request_key UNIQUE (request_id),
-  CONSTRAINT leave_request_forwarding_items_name_length CHECK (
-    char_length(btrim(student_display_name)) BETWEEN 1 AND 120
-  ),
+  CONSTRAINT leave_request_forwarding_items_name_length CHECK (char_length(btrim(student_display_name)) BETWEEN 1 AND 120),
   CONSTRAINT leave_request_forwarding_items_date_order CHECK (leave_end_date >= leave_start_date)
 );
 

@@ -74,11 +74,11 @@ Store hostname/key **names only** in docs; never commit `.dump`, `.env*`, or pas
 
 ## Final backup status
 
-| Item | Status |
-|---|---|
-| Snapshot `backup_20261104` (data-only) | INCOMPLETE (not a recovery point) |
-| Local disposable dump + restore (2026-11-05) | **VERIFIED** (procedure only) |
-| Full logical dump (production) | **BLOCKED** (owner step above) |
-| SHA-256 / `pg_restore --list` (production) | NOT APPLICABLE |
-| Production restore test | INCOMPLETE |
-| Overall production recovery point | **INCOMPLETE** — do not treat as recoverable |
+| Item                                         | Status                                       |
+| -------------------------------------------- | -------------------------------------------- |
+| Snapshot `backup_20261104` (data-only)       | INCOMPLETE (not a recovery point)            |
+| Local disposable dump + restore (2026-11-05) | **VERIFIED** (procedure only)                |
+| Full logical dump (production)               | **BLOCKED** (owner step above)               |
+| SHA-256 / `pg_restore --list` (production)   | NOT APPLICABLE                               |
+| Production restore test                      | INCOMPLETE                                   |
+| Overall production recovery point            | **INCOMPLETE** — do not treat as recoverable |

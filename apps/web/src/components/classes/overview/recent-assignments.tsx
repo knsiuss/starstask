@@ -1,10 +1,12 @@
 import {
   ArrowRight,
   CalendarDays,
+  CircleCheck,
   ClipboardList,
+  Clock3,
   FileText,
+  TriangleAlert,
 } from "lucide-react";
-import { Clock3, CircleCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +35,7 @@ const STATE_META: Record<
 
 /**
  * Official assignments of the class, newest first. "Completed" only appears
- * when the viewer personally ticked the assignment off — a passed deadline
+ * when the viewer personally ticked the assignment off; a passed deadline
  * alone never counts as completed.
  */
 export function RecentAssignments({ assignments, viewAllHref }: Props) {
@@ -42,20 +44,20 @@ export function RecentAssignments({ assignments, viewAllHref }: Props) {
       aria-labelledby="recent-assignments"
       className="border-border bg-surface overflow-hidden rounded-xl border"
     >
-      <div className="flex items-center justify-between gap-2 px-4 py-3.5 sm:px-5 sm:py-4">
+      <div className="border-border flex items-center justify-between gap-2 border-b px-4 py-3 sm:px-5 sm:py-3.5">
         <h2
           id="recent-assignments"
-          className="text-accent inline-flex items-center gap-2 text-base font-semibold tracking-tight"
+          className="text-foreground inline-flex items-center gap-2 text-base font-semibold tracking-tight"
         >
           <ClipboardList
             aria-hidden="true"
-            className="h-5 w-5"
+            className="text-muted-foreground h-4.5 w-4.5"
           />
           Recent Assignments
         </h2>
         <Link
           href={viewAllHref}
-          className="text-accent hover:text-accent-hover inline-flex items-center gap-1 text-xs font-semibold transition-colors"
+          className="text-accent hover:text-accent-hover focus-visible:outline-accent inline-flex min-h-[44px] items-center gap-1 rounded-md px-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-0"
         >
           View all
           <ArrowRight
@@ -80,32 +82,35 @@ export function RecentAssignments({ assignments, viewAllHref }: Props) {
             return (
               <li
                 key={assignment.id}
-                className="hover:bg-band/50 flex items-start gap-3 px-4 py-3.5 transition-colors sm:px-5 sm:py-4"
+                className="group hover:bg-hover relative flex flex-col gap-2.5 px-4 py-3.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4"
               >
-                <span
-                  aria-hidden="true"
-                  className="bg-accent-soft text-accent mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                >
-                  <FileText className="h-4.5 w-4.5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/assignments/${assignment.id}`}
-                    className="hover:text-accent text-foreground block text-sm font-semibold tracking-tight break-words focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="bg-muted text-muted-foreground mt-0.5 hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex"
                   >
-                    {assignment.title}
-                  </Link>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {assignment.course_code
-                      ? `${assignment.course_code} · `
-                      : ""}
-                    {assignment.course_name} · published{" "}
-                    {formatDate(
-                      assignment.published_at ?? assignment.created_at,
-                    )}
-                  </p>
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/assignments/${assignment.id}`}
+                      className="group-hover:text-accent text-foreground focus-visible:outline-accent block rounded-sm text-sm font-semibold tracking-tight break-words after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      {assignment.title}
+                    </Link>
+                    <p className="text-muted-foreground mt-0.5 text-xs tabular-nums">
+                      {assignment.course_code
+                        ? `${assignment.course_code} · `
+                        : ""}
+                      {assignment.course_name} · published{" "}
+                      {formatDate(
+                        assignment.published_at ?? assignment.created_at,
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
                   <Badge variant={meta.variant}>
                     {state === "completed" ? (
                       <CircleCheck

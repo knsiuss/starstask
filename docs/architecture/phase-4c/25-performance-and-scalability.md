@@ -4,13 +4,13 @@
 
 ## 25.1 Hot paths & N+1 risks (INFERRED from app + RPC patterns)
 
-| Path | Evidence | Risk |
-|------|----------|------|
-| Class roster / member lists | `class_attendance_member_summary`, `class_attendance_roster` | N+1 if UI fetches per-member separately; RPC batch reads preferred |
-| Assignments feed | `assignments` + `search_vector` GIN (VERIFIED) | Full-text OK; verify GIN actually exists in prod (get catalog in Phase 5A) |
-| Attendance check-in | `check_in_*` + verification attempts + roster summaries | Write amplification during open window (per-student row + attempts); batch inserts RECOMMENDED |
-| Notification fan-out | claim/complete outbox + API cron | Polling latency vs throughput; keep batch size bounded |
-| RLS predicates | `is_class_member()` EXISTS per row | EXISTS is index-friendly; ensure `(class_id, user_id)` PK support (VERIFIED composite PK maps to `class_members`) |
+| Path                        | Evidence                                                     | Risk                                                                                                              |
+| --------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Class roster / member lists | `class_attendance_member_summary`, `class_attendance_roster` | N+1 if UI fetches per-member separately; RPC batch reads preferred                                                |
+| Assignments feed            | `assignments` + `search_vector` GIN (VERIFIED)               | Full-text OK; verify GIN actually exists in prod (get catalog in Phase 5A)                                        |
+| Attendance check-in         | `check_in_*` + verification attempts + roster summaries      | Write amplification during open window (per-student row + attempts); batch inserts RECOMMENDED                    |
+| Notification fan-out        | claim/complete outbox + API cron                             | Polling latency vs throughput; keep batch size bounded                                                            |
+| RLS predicates              | `is_class_member()` EXISTS per row                           | EXISTS is index-friendly; ensure `(class_id, user_id)` PK support (VERIFIED composite PK maps to `class_members`) |
 
 ## 25.2 Indexes (VERIFIED from migrations)
 

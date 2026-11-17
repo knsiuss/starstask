@@ -28,6 +28,7 @@ let anon: SupabaseClient;
 let userA: TestUser;
 let userB: TestUser;
 let courseId: string;
+let universityId = "";
 let publishedId: string;
 let pendingId: string;
 
@@ -76,6 +77,48 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
 
     userA = await createTestUser("a");
     userB = await createTestUser("b");
+
+    // Audit triggers require university_id on new audit rows; seeding a
+    // disposable tenant lets class submission audits resolve the class's own
+    // university instead of hard-failing on a tenant-less dataset.
+    const { data: uni, error: uniError } = await admin
+      .from("universities")
+      .insert({
+        slug: `rls-uni-${suffix}`,
+        name: `RLS Uni ${suffix}`,
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    if (uniError || !uni) {
+      throw new Error(`Could not seed university: ${uniError?.message}`);
+    }
+
+    universityId = uni.id as string;
+
+    const { error: memError } = await admin
+      .from("university_memberships")
+      .insert([
+        {
+          user_id: userA.id,
+          university_id: universityId,
+          role: "student",
+          status: "active",
+        },
+        {
+          user_id: userB.id,
+          university_id: universityId,
+          role: "student",
+          status: "active",
+        },
+      ]);
+
+    if (memError) {
+      throw new Error(
+        `Could not seed university memberships: ${memError.message}`,
+      );
+    }
 
     const { data: course, error: courseError } = await userA.client.rpc(
       "create_or_get_course",
@@ -147,6 +190,14 @@ describe.skipIf(!hasEnv)("RLS and ownership boundaries", () => {
 
     if (admin && courseId) {
       await admin.from("courses").delete().eq("id", courseId);
+    }
+
+    if (admin && universityId) {
+      await admin
+        .from("university_memberships")
+        .delete()
+        .eq("university_id", universityId);
+      await admin.from("universities").delete().eq("id", universityId);
     }
   });
 

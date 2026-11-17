@@ -61,7 +61,7 @@ export function AttachmentViewer({
     >
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-5xl flex-col overflow-hidden p-0">
         <>
-          <div className="border-border flex items-start gap-3 border-b px-4 py-3 pr-14">
+          <div className="border-border flex flex-col gap-2.5 border-b px-4 py-3 pr-14 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1">
               <DialogTitle className="truncate text-base">
                 {attachment.originalFilename}
@@ -76,7 +76,7 @@ export function AttachmentViewer({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                 aria-label="Zoom out"
                 disabled={zoom <= MIN_ZOOM}
                 onClick={() =>
@@ -100,7 +100,7 @@ export function AttachmentViewer({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                 aria-label="Zoom in"
                 disabled={zoom >= MAX_ZOOM}
                 onClick={() =>
@@ -121,7 +121,7 @@ export function AttachmentViewer({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                 aria-label="Reset zoom"
                 disabled={zoom === 1}
                 onClick={() => setZoom(1)}
@@ -135,7 +135,7 @@ export function AttachmentViewer({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                 aria-label="View fullscreen"
                 onClick={requestFullscreen}
               >
@@ -158,13 +158,13 @@ export function AttachmentViewer({
                 src={attachment.previewUrl}
                 alt={attachment.originalFilename}
                 style={{ transform: `scale(${zoom})` }}
-                className="max-h-[calc(100dvh-12rem)] max-w-full origin-center object-contain transition-transform duration-150"
+                className="max-h-[calc(100dvh-14rem)] max-w-full origin-center object-contain transition-transform duration-150"
               />
             ) : isPdf && attachment.previewUrl ? (
               <iframe
                 src={`${attachment.previewUrl}#view=FitH&zoom=${Math.round(zoom * 100)}`}
                 title={`Preview of ${attachment.originalFilename}`}
-                className="h-[calc(100dvh-14rem)] min-h-[240px] w-full rounded-md bg-white"
+                className="h-[calc(100dvh-16rem)] min-h-[240px] w-full rounded-md bg-white"
               />
             ) : (
               <p className="text-muted-foreground text-sm">
@@ -174,16 +174,17 @@ export function AttachmentViewer({
             )}
           </div>
 
-          <div className="border-border flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3">
+          <div className="border-border flex flex-col gap-2 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-muted-foreground text-xs">
               Preview links expire after 15 minutes.
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {attachment.previewUrl ? (
                 <Button
                   asChild
                   variant="ghost"
                   size="sm"
+                  className="min-h-[44px] flex-1 sm:min-h-8 sm:flex-none"
                 >
                   <a
                     href={attachment.previewUrl}
@@ -203,6 +204,7 @@ export function AttachmentViewer({
                   asChild
                   variant="secondary"
                   size="sm"
+                  className="min-h-[44px] flex-1 sm:min-h-8 sm:flex-none"
                 >
                   <a
                     href={attachment.downloadUrl}

@@ -43,9 +43,9 @@ export function OnboardingWelcome({
     }
 
     startedRef.current = true;
-    setError(null);
-    setCompleted(false);
-    setStage("initialize");
+    // Boundary so the stage transitions don't run synchronously inside the
+    // mount effect (react-hooks/set-state-in-effect).
+    await Promise.resolve();
 
     try {
       if (!onboardedAt) {
@@ -83,11 +83,19 @@ export function OnboardingWelcome({
 
   const retry = React.useCallback(() => {
     startedRef.current = false;
+    setError(null);
+    setCompleted(false);
+    setStage("initialize");
     void runInitialization();
   }, [runInitialization]);
 
   React.useEffect(() => {
-    void runInitialization();
+    // Fire-and-forget from an effect: the callback already guards against
+    // re-entry, so no setState happens in the effect body itself.
+    const frame = window.requestAnimationFrame(() => {
+      void runInitialization();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [runInitialization]);
 
   React.useEffect(() => {

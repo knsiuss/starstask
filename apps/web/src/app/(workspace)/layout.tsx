@@ -11,6 +11,7 @@ import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
 import { isUnpamMember } from "@/lib/db/plugins";
 import { isBetaTester } from "@/lib/auth/beta";
 import { isDeveloperEmail } from "@/lib/auth/developer";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isPlatformAdmin, isClassAdminAnywhere } from "@/lib/db/classes";
 import { countUnreadNotifications } from "@/lib/db/notifications";
@@ -48,6 +49,7 @@ export default async function WorkspaceLayout({
     myProfile,
     unpamMember,
     betaTester,
+    lecturer,
   ] = context
     ? [
         context.platformAdmin,
@@ -58,6 +60,7 @@ export default async function WorkspaceLayout({
           : (session?.profile ?? null),
         false,
         context.betaTester,
+        context.lecturerAnywhere,
       ]
     : await Promise.all([
         session ? isPlatformAdmin() : Promise.resolve(false),
@@ -72,6 +75,7 @@ export default async function WorkspaceLayout({
         // jadi fallback teks dicek setelah profile ada — registry query tetap paralel via cache.
         Promise.resolve(false),
         session ? isBetaTester() : Promise.resolve(false),
+        session ? isLecturer() : Promise.resolve(false),
       ]);
   // getMyProfile's shape has no university (private, RPC-only); fall back to
   // the typed row and keep the check compiling on both types.
@@ -99,6 +103,7 @@ export default async function WorkspaceLayout({
       <WorkspaceSidebar
         isAuthenticated={isAuthenticated}
         isClassAdmin={classAdmin}
+        isLecturer={lecturer}
         displayName={displayName}
         email={session?.user.email ?? null}
         avatarUrl={session?.profile?.avatar_url ?? null}
@@ -112,6 +117,7 @@ export default async function WorkspaceLayout({
           isPlatformAdmin={platformAdmin}
           isDeveloper={developer}
           isClassAdmin={classAdmin}
+          isLecturer={lecturer}
           displayName={displayName}
           avatarUrl={session?.profile?.avatar_url ?? null}
           unreadNotificationCount={unreadNotificationCount}
@@ -126,7 +132,7 @@ export default async function WorkspaceLayout({
         </main>
       </div>
 
-      {isAuthenticated ? <MobileTabBar /> : null}
+      {isAuthenticated ? <MobileTabBar isLecturer={lecturer} /> : null}
     </div>
   );
 }

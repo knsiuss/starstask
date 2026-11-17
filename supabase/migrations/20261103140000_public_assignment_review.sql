@@ -163,7 +163,8 @@ FROM
   public;
 
 
-GRANT EXECUTE ON FUNCTION public.review_public_assignment (uuid, text, text) TO authenticated;
+GRANT
+EXECUTE ON FUNCTION public.review_public_assignment (uuid, text, text) TO authenticated;
 
 
 -- Ping platform admins when a new request arrives or a rejected one is
@@ -213,7 +214,5 @@ DROP TRIGGER if EXISTS assignments_public_review_notify ON public.assignments;
 
 
 CREATE TRIGGER assignments_public_review_notify
-AFTER INSERT
-OR
-UPDATE OF status ON public.assignments FOR EACH ROW
+AFTER INSERT OR UPDATE OF status ON public.assignments FOR EACH ROW
 EXECUTE FUNCTION public.notify_platform_admins_public_assignment ();

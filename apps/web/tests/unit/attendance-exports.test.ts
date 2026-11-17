@@ -472,9 +472,11 @@ describe("semester recap workbook", () => {
 
     const citra = rowValues(sheet, dataRow + 2, width);
     expect(citra.slice(0, 3)).toEqual([3, "221003", "Citra Dewi"]);
-    // Not recorded is NR and must never be exported as an absence.
+    // Meetings were finalized months ago, so NR counts as absent (no-show)
+    // per the recap policy: NR older than 24h after finalization counts as
+    // absent, matching buildAttendanceRecap. The sheet still shows NR.
     expect(citra.slice(3, 5)).toEqual(["NR", "NR"]);
-    expect(citra.slice(5)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(citra.slice(5)).toEqual([0, 0, 0, 2, 0, 0]);
 
     const percentageCell = sheet.getRow(dataRow).getCell(width);
     expect(percentageCell.numFmt).toBe('0.0"%"');

@@ -48,7 +48,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const incident = await createDeveloperIncident(session.user.id, parsed.data);
+    const incident = await createDeveloperIncident(
+      session.user.id,
+      parsed.data,
+    );
 
     return apiSuccess({ incident }, 201);
   } catch (error) {

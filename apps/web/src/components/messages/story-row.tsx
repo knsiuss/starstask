@@ -16,6 +16,8 @@ type Story = {
 export function StoryRow() {
   const [stories, setStories] = useState<Story[]>([]);
   const [active, setActive] = useState<Story | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -29,23 +31,44 @@ export function StoryRow() {
   }, []);
 
   async function upload(file: File) {
-    const supabase = createSupabaseBrowserClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const me = userData.user?.id;
-    if (!me) return;
-    // Story media NOT E2EE in v1 (public to authenticated, 24h) — caption only metadata
-    const path = `${me}/${crypto.randomUUID()}`;
-    const { error } = await supabase.storage
-      .from("dm-media")
-      .upload(path, file, { contentType: file.type });
-    if (error) return;
-    await supabase.from("dm_stories" as any).insert({
-      user_id: me,
-      mime: file.type,
-      path,
-      caption: null,
-    });
-    window.location.reload();
+    setUploading(true);
+    setError(null);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const me = userData.user?.id;
+      if (!me) {
+        setError("Sign in to post a story.");
+        return;
+      }
+      // Story media NOT E2EE in v1 (public to authenticated, 24h) — caption only metadata
+      const path = `${me}/${crypto.randomUUID()}`;
+      const { error: uploadError } = await supabase.storage
+        .from("dm-media")
+        .upload(path, file, { contentType: file.type });
+      if (uploadError) {
+        setError("Could not upload story.");
+        return;
+      }
+      const { error: insertError } = await supabase
+        .from("dm_stories" as any)
+        .insert({
+          user_id: me,
+          mime: file.type,
+          path,
+          caption: null,
+        });
+      if (insertError) {
+        setError("Could not save story.");
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setError("Could not upload story.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -53,12 +76,15 @@ export function StoryRow() {
       <div className="flex gap-3 overflow-x-auto pb-2">
         <label className="flex flex-col items-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed text-xl">
-            +
+            {uploading ? "…" : "+"}
           </span>
-          <span className="mt-1 text-xs">Your story</span>
+          <span className="mt-1 text-xs">
+            {uploading ? "Uploading…" : "Your story"}
+          </span>
           <input
             type="file"
             accept="image/*,video/*"
+            disabled={uploading}
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -81,6 +107,14 @@ export function StoryRow() {
           </button>
         ))}
       </div>
+      {error ? (
+        <p
+          role="alert"
+          className="mt-1 text-xs text-red-600"
+        >
+          {error}
+        </p>
+      ) : null}
       {active ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
           <div className="max-w-md">

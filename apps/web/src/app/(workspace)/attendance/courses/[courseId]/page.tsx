@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 
 import { AttendanceHistory } from "@/components/attendance/attendance-history";
 import { AttendanceOverviewMetrics } from "@/components/attendance/attendance-overview-metrics";
@@ -22,6 +23,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const uuidSchema = z.string().uuid();
+
 type CourseAttendancePageProps = {
   params: Promise<{ courseId: string }>;
 };
@@ -34,6 +37,10 @@ export default async function CourseAttendancePage({
 
   if (!session) {
     redirect(buildLoginPath(`/attendance/courses/${courseId}`));
+  }
+
+  if (!uuidSchema.safeParse(courseId).success) {
+    notFound();
   }
 
   const classes = await listMyClasses(session.user.id);

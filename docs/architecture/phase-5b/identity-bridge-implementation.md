@@ -13,7 +13,7 @@
   `student_identities` tables (Row/Insert/Update/Relationships).
 - **Regenerated types:**
   `apps/web/src/types/database.generated.ts` — `node
-  scripts/generate-db-types.mjs` (exit 0).
+scripts/generate-db-types.mjs` (exit 0).
 - **No application logic, onboarding, or UI changed.** Legacy NIM behavior
   is byte-identical.
 
@@ -21,14 +21,14 @@
 
 ### 2.1 `academic_units` (lines 24-74 of the migration)
 
-| Aspect | Shape |
-|---|---|
-| Columns | `id uuid PK`, `university_id → universities RESTRICT`, `parent_id uuid NULL`, `code text`, `name NOT NULL`, `unit_type NOT NULL` (free text; seed values faculty/department/program/branch/other), `status CHECK (draft, active, archived) DEFAULT 'draft'`, `created_by → profiles SET NULL`, `created_at`, `updated_at` |
-| Composite uniqueness | `UNIQUE (id, university_id)` for children to reference |
-| Cross-university parent | composite FK `(parent_id, university_id) → academic_units(id, university_id)` — rejects cross-tenant parents; NULL parent skips the check (MATCH SIMPLE) |
-| Self-parent | `CHECK (parent_id IS DISTINCT FROM id)` |
-| No cycles | trigger `check_academic_unit_cycle()` — ancestor walk from `NEW.parent_id`, advisory-lock serialized, 1000-hop guard |
-| Duplicate code | partial unique indexes scoped to `(university_id, parent_id, code)` (parent non-null) and `(university_id, code)` (top-level), case-insensitive via `lower(btrim(code))` |
+| Aspect                  | Shape                                                                                                                                                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Columns                 | `id uuid PK`, `university_id → universities RESTRICT`, `parent_id uuid NULL`, `code text`, `name NOT NULL`, `unit_type NOT NULL` (free text; seed values faculty/department/program/branch/other), `status CHECK (draft, active, archived) DEFAULT 'draft'`, `created_by → profiles SET NULL`, `created_at`, `updated_at` |
+| Composite uniqueness    | `UNIQUE (id, university_id)` for children to reference                                                                                                                                                                                                                                                                    |
+| Cross-university parent | composite FK `(parent_id, university_id) → academic_units(id, university_id)` — rejects cross-tenant parents; NULL parent skips the check (MATCH SIMPLE)                                                                                                                                                                  |
+| Self-parent             | `CHECK (parent_id IS DISTINCT FROM id)`                                                                                                                                                                                                                                                                                   |
+| No cycles               | trigger `check_academic_unit_cycle()` — ancestor walk from `NEW.parent_id`, advisory-lock serialized, 1000-hop guard                                                                                                                                                                                                      |
+| Duplicate code          | partial unique indexes scoped to `(university_id, parent_id, code)` (parent non-null) and `(university_id, code)` (top-level), case-insensitive via `lower(btrim(code))`                                                                                                                                                  |
 
 ### 2.2 `university_memberships` support index
 
@@ -38,15 +38,15 @@ No columns added; `student_id`/`entry_year` stay legacy mirrors (D-05).
 
 ### 2.3 `student_identities` (lines 109-141)
 
-| Aspect | Shape |
-|---|---|
-| Columns | `id uuid PK`, `university_membership_id NOT NULL → memberships CASCADE`, `university_id NOT NULL → universities RESTRICT` (denormalized), `academic_unit_id NULL`, `student_id NOT NULL`, `entry_year NULL`, `status CHECK (pending, active, suspended, graduated) DEFAULT 'pending'`, `started_at`, `graduated_at`, `created_by → profiles SET NULL`, `created_at`, `updated_at` |
-| Identity per membership | `UNIQUE (university_membership_id)` |
-| Same-university unit/membership | composite FKs `(university_membership_id, university_id) → memberships(id, university_id)` [CASCADE] and `(academic_unit_id, university_id) → academic_units(id, university_id)` [RESTRICT] |
-| student_id uniqueness | unique `(university_id, lower(btrim(student_id)))` — per-university; same string allowed at two universities |
-| student_id format | same CHECK as NIM: `^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$` |
-| entry_year | CHECK 1950–2100 when present; independent of academic periods (D-06) |
-| CASCADE semantics | identity dies with its membership (`CASCADE`, mirrors `auth.users` → persona pattern) and is RESTRICT-ed by the university FK (tenant root never deletable under use) |
+| Aspect                          | Shape                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Columns                         | `id uuid PK`, `university_membership_id NOT NULL → memberships CASCADE`, `university_id NOT NULL → universities RESTRICT` (denormalized), `academic_unit_id NULL`, `student_id NOT NULL`, `entry_year NULL`, `status CHECK (pending, active, suspended, graduated) DEFAULT 'pending'`, `started_at`, `graduated_at`, `created_by → profiles SET NULL`, `created_at`, `updated_at` |
+| Identity per membership         | `UNIQUE (university_membership_id)`                                                                                                                                                                                                                                                                                                                                               |
+| Same-university unit/membership | composite FKs `(university_membership_id, university_id) → memberships(id, university_id)` [CASCADE] and `(academic_unit_id, university_id) → academic_units(id, university_id)` [RESTRICT]                                                                                                                                                                                       |
+| student_id uniqueness           | unique `(university_id, lower(btrim(student_id)))` — per-university; same string allowed at two universities                                                                                                                                                                                                                                                                      |
+| student_id format               | same CHECK as NIM: `^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$`                                                                                                                                                                                                                                                                                                                            |
+| entry_year                      | CHECK 1950–2100 when present; independent of academic periods (D-06)                                                                                                                                                                                                                                                                                                              |
+| CASCADE semantics               | identity dies with its membership (`CASCADE`, mirrors `auth.users` → persona pattern) and is RESTRICT-ed by the university FK (tenant root never deletable under use)                                                                                                                                                                                                             |
 
 Lifecycle rules (migration header, D-07, documented): `graduated` may be
 reactivated on the same row via the platform RPC (`graduated_at` cleared,
@@ -68,7 +68,7 @@ RETURNS uuid`:
 - Mirrors membership `status`; writes `audit_logs` via `record_audit`
   (actor/university/status in metadata); returns identity id.
 - **Grants:** `REVOKE ALL … FROM public, anon, authenticated; GRANT EXECUTE
-  TO authenticated`. No self-grant, no self-admin-assignment.
+TO authenticated`. No self-grant, no self-admin-assignment.
 - Cycle guard function grant: revoked from everyone (trigger-only).
 - `is_university_member(uuid)`: `STABLE` definer predicate
   (`search_path = ''`), EXECUTE to authenticated — used by unit RLS.
@@ -123,8 +123,11 @@ Additive migration; **no destructive action taken in this session**
 
 ```sql
 -- local stack only (never remote):
-drop table if exists public.student_identities;  -- child first (FK CASCADE)
+drop table if exists public.student_identities;
+
+-- child first (FK CASCADE)
 drop table if exists public.academic_units;
+
 -- then delete supabase/migrations/20261112000000_identity_bridge.sql
 -- from the working copy; the 2 tables were never pushed remotely.
 ```
@@ -142,7 +145,7 @@ columns remain untouched through any rollback.
 2. **Registry mapping surface (platform-admin tooling):** distinct
    `profiles.university` values list for Platform Admin mapping to registry
    rows (fuzzy review queue, idempotent `INSERT … ON CONFLICT DO
-   NOTHING`), then membership backfill.
+NOTHING`), then membership backfill.
 3. **Academic units API:** read path for the onboarding/class UX (unit
    picker scoped to active memberships); write path through service_role
    only.

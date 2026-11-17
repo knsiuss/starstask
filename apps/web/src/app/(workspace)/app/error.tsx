@@ -1,9 +1,10 @@
 "use client";
 
-import { CircleAlert } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { CircleAlert, RotateCcw } from "lucide-react";
 
+import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardError({
@@ -19,31 +20,47 @@ export default function DashboardError({
   }, [error.digest]);
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-20 text-center sm:px-6">
-      <CircleAlert
-        aria-hidden="true"
-        className="text-warning h-8 w-8"
-      />
-      <h1 className="mt-4 text-xl font-semibold tracking-tight">
-        Your dashboard could not be loaded
-      </h1>
-      <p className="text-muted-foreground mt-2 text-sm">
-        This is usually temporary. Try again in a moment.
-      </p>
-      <div className="mt-6 flex flex-wrap justify-center gap-2">
-        <Button
-          type="button"
-          onClick={reset}
+    <PageShell width="canvas">
+      <div
+        role="alert"
+        className="border-border bg-surface mx-auto my-8 flex max-w-lg flex-col items-center rounded-xl border px-6 py-10 text-center sm:my-14 sm:px-8"
+      >
+        <span
+          aria-hidden="true"
+          className="bg-warning-soft text-warning flex h-11 w-11 items-center justify-center rounded-lg"
         >
-          Try again
-        </Button>
-        <Button
-          asChild
-          variant="secondary"
-        >
-          <Link href="/assignments">Explore assignments</Link>
-        </Button>
+          <CircleAlert className="h-5 w-5" />
+        </span>
+
+        <h1 className="text-foreground mt-4 text-lg font-semibold tracking-tight">
+          Unable to load dashboard
+        </h1>
+
+        <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-relaxed">
+          This is usually temporary. Try again in a moment, or open your
+          assignments directly.
+        </p>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+          <Button
+            type="button"
+            onClick={reset}
+          >
+            <RotateCcw
+              aria-hidden="true"
+              className="h-4 w-4"
+            />
+            Try again
+          </Button>
+
+          <Button
+            asChild
+            variant="secondary"
+          >
+            <Link href="/assignments">Explore assignments</Link>
+          </Button>
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

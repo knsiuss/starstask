@@ -379,10 +379,10 @@ export function AttendanceSheet({
       <div className="border-border bg-surface mt-4 overflow-x-auto overscroll-x-contain rounded-xl border">
         <table className="w-full min-w-[720px] border-separate border-spacing-0 text-sm [&_td]:border-border [&_td]:border-b [&_th]:border-border [&_th]:border-b">
           <thead>
-            <tr className="bg-slate-900 text-white dark:bg-slate-950">
+            <tr className="bg-navy text-navy-foreground">
               <th
                 scope="col"
-                className="sticky left-0 z-10 w-[15rem] max-w-[62vw] bg-slate-900 px-3 py-2 dark:bg-slate-950"
+                className="bg-navy sticky left-0 z-10 w-[15rem] max-w-[62vw] px-3 py-2"
               >
                 <span className="flex items-center gap-3 text-left text-xs font-medium">
                   <span className="w-6 shrink-0">No.</span>
@@ -411,10 +411,10 @@ export function AttendanceSheet({
               <th className="px-2 py-2 text-center text-xs font-medium">T</th>
               <th className="px-2 py-2 text-center text-xs font-medium">%</th>
             </tr>
-            <tr className="bg-slate-900 text-white dark:bg-slate-950">
+            <tr className="bg-navy text-navy-foreground">
               <th
                 scope="col"
-                className="sticky left-0 z-10 bg-slate-900 dark:bg-slate-950"
+                className="bg-navy sticky left-0 z-10"
               />
               {recap.meetings.map((meeting) => (
                 <th
@@ -425,7 +425,7 @@ export function AttendanceSheet({
                   <span className="block whitespace-nowrap">
                     {meeting.meetingNumber}
                   </span>
-                  <span className="text-slate-300 block text-[10px] font-normal whitespace-nowrap">
+                  <span className="text-navy-muted block text-[10px] font-normal whitespace-nowrap">
                     {dateLabel.format(new Date(meeting.startsAt))}
                   </span>
                   <button
@@ -437,7 +437,7 @@ export function AttendanceSheet({
                         meeting.meetingNumber,
                       )
                     }
-                    className="mt-0.5 text-[10px] text-slate-300 underline underline-offset-2 hover:text-white disabled:opacity-50"
+                    className="text-navy-muted hover:text-navy-foreground mt-0.5 text-[10px] underline underline-offset-2 disabled:opacity-50"
                   >
                     All ✓
                   </button>
@@ -451,12 +451,12 @@ export function AttendanceSheet({
                   {component.label}
                 </th>
               ))}
-              <th className="bg-slate-900 dark:bg-slate-950" />
-              <th className="bg-slate-900 dark:bg-slate-950" />
-              <th className="bg-slate-900 dark:bg-slate-950" />
-              <th className="bg-slate-900 dark:bg-slate-950" />
-              <th className="bg-slate-900 dark:bg-slate-950" />
-              <th className="bg-slate-900 dark:bg-slate-950" />
+              <th className="bg-navy" />
+              <th className="bg-navy" />
+              <th className="bg-navy" />
+              <th className="bg-navy" />
+              <th className="bg-navy" />
+              <th className="bg-navy" />
             </tr>
           </thead>
           <tbody>

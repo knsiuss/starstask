@@ -1,41 +1,24 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
 import * as React from "react";
 import { redirect } from "next/navigation";
 
 import { AcademicContextCard } from "@/components/dashboard/academic-context-card";
-import { UnpamWidget } from "@/components/dashboard/unpam-widget";
+import { DashboardRealtime } from "@/components/dashboard/dashboard-realtime";
 import {
   HeaderSection,
   InvitationsSection,
   ScheduleSection,
   WeekAndClassesSection,
 } from "@/components/dashboard/dashboard-sections";
-import { DashboardAttentionBanner } from "@/components/dashboard/dashboard-attention-banner";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { DashboardRealtime } from "@/components/dashboard/dashboard-realtime";
-import { QuickActions } from "@/components/dashboard/quick-actions";
-import { PullToRefresh } from "@/components/ui/pull-to-refresh";
-import { MyClassesSection } from "@/components/dashboard/my-classes-section";
-import { MyWeekSection } from "@/components/dashboard/my-week-section";
-import { NextSchedule } from "@/components/dashboard/next-schedule";
-import { PendingInvitationsSection } from "@/components/dashboard/pending-invitations-section";
-import { StatCards } from "@/components/dashboard/stat-cards";
 import { WhatsNewBanner } from "@/components/dashboard/whats-new-banner";
+import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
+import { TeachingHome } from "@/components/lecturer/teaching-home";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
-import {
-  getDashboardOverview,
-  getMyWeek,
-  getNextSchedule,
-  listStudentPendingInvitations,
-} from "@/lib/db/dashboard";
 import { isSupabaseConfigured } from "@/lib/env/public";
-import { isUnpamPluginEnabled } from "@/features/plugins/unpam/config";
-import { getPersistedUnpamEvents, isUnpamMember } from "@/lib/db/plugins";
-import { getMyProfile } from "@/lib/db/profiles";
 import { buildLoginPath } from "@/lib/security/redirect";
-import { pluralize } from "@starstask/shared";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -58,33 +41,8 @@ function parseWeekOffset(value: string | undefined): number {
   return Math.min(MAX_WEEK_OFFSET, Math.max(-MAX_WEEK_OFFSET, parsed));
 }
 
-function buildHeaderSummary(stats: {
-  dueSoon: number;
-  pastDeadline: number;
-}): string | null {
-  const parts: string[] = [];
-
-  if (stats.dueSoon > 0) {
-    parts.push(
-      `${stats.dueSoon} ${pluralize(stats.dueSoon, "task")} due in the next 7 days`,
-    );
-  }
-
-  if (stats.pastDeadline > 0) {
-    parts.push(
-      `${stats.pastDeadline} past ${stats.pastDeadline === 1 ? "deadline" : "deadlines"}`,
-    );
-  }
-
-  if (parts.length === 0) {
-    return null;
-  }
-
-  return `You have ${parts.join(" and ")}.`;
-}
-
 type DashboardPageProps = {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; view?: string }>;
 };
 
 export default async function DashboardPage({
@@ -110,25 +68,34 @@ export default async function DashboardPage({
   const query = await searchParams;
   const weekOffset = parseWeekOffset(query.week);
 
-  // Streaming: page shell + auth langsung, section berat di-Suspense terpisah.
-  // TTFB turun karena tidak nunggu overview/week/schedule selesai.
-  const [myProfile, unpamMember] = await Promise.all([
-    getMyProfile().catch(() => null),
-    isUnpamPluginEnabled()
-      ? isUnpamMember(session.user.id, null).catch(() => false)
-      : Promise.resolve(false),
-  ]);
-  const showUnpamWidget =
-    unpamMember ||
-    (await isUnpamMember(session.user.id, myProfile?.university));
-  const unpamEvents = showUnpamWidget ? await getPersistedUnpamEvents() : [];
+  // A lecturer opens the app to answer a different question than a student, so
+  // `/app` becomes the teaching console. `?view=student` stays available for
+  // lecturers who are also enrolled somewhere.
+  if (query.view !== "student" && (await isLecturer())) {
+    return (
+      <TeachingHome
+        userId={session.user.id}
+        displayName={session.profile?.display_name ?? "Lecturer"}
+      />
+    );
+  }
 
   return (
     <PullToRefresh>
-      <div className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+      <PageShell width="canvas">
         <DashboardRealtime />
         <React.Suspense
-          fallback={<div className="h-24 animate-pulse rounded bg-muted" />}
+          fallback={
+            <div className="space-y-3">
+              <div className="skeleton h-[76px] rounded-xl" />
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+                <div className="skeleton h-[84px] rounded-xl" />
+                <div className="skeleton h-[84px] rounded-xl" />
+                <div className="skeleton h-[84px] rounded-xl" />
+                <div className="skeleton h-[84px] rounded-xl" />
+              </div>
+            </div>
+          }
         >
           <HeaderSection
             userId={session.user.id}
@@ -138,48 +105,39 @@ export default async function DashboardPage({
 
         <WhatsNewBanner />
 
-        <div className="mt-5">
-          <QuickActions />
-        </div>
+        <div className="mt-5 space-y-5">
+          <React.Suspense fallback={null}>
+            <InvitationsSection
+              userId={session.user.id}
+              email={session.user.email ?? ""}
+            />
+          </React.Suspense>
 
-        <React.Suspense fallback={null}>
-          <InvitationsSection
-            userId={session.user.id}
-            email={session.user.email ?? ""}
-          />
-        </React.Suspense>
-
-        <div className="mt-5">
           <React.Suspense fallback={null}>
             <AcademicContextCard />
           </React.Suspense>
+
+          <React.Suspense
+            fallback={<div className="skeleton h-24 rounded-xl" />}
+          >
+            <ScheduleSection userId={session.user.id} />
+          </React.Suspense>
+
+          <React.Suspense
+            fallback={
+              <div className="space-y-5">
+                <div className="skeleton hidden h-56 rounded-xl sm:block" />
+                <div className="skeleton h-48 rounded-xl" />
+              </div>
+            }
+          >
+            <WeekAndClassesSection
+              userId={session.user.id}
+              weekOffset={weekOffset}
+            />
+          </React.Suspense>
         </div>
-
-        {showUnpamWidget ? (
-          <div className="mt-5">
-            <UnpamWidget events={unpamEvents} />
-          </div>
-        ) : null}
-
-        <React.Suspense
-          fallback={
-            <div className="mt-5 h-20 animate-pulse rounded bg-muted" />
-          }
-        >
-          <ScheduleSection userId={session.user.id} />
-        </React.Suspense>
-
-        <React.Suspense
-          fallback={
-            <div className="mt-5 h-64 animate-pulse rounded bg-muted" />
-          }
-        >
-          <WeekAndClassesSection
-            userId={session.user.id}
-            weekOffset={weekOffset}
-          />
-        </React.Suspense>
-      </div>
+      </PageShell>
     </PullToRefresh>
   );
 }

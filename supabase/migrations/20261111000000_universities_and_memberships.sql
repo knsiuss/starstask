@@ -66,26 +66,41 @@ CREATE TABLE IF NOT EXISTS public.universities (
   CONSTRAINT universities_status_allowed CHECK (
     status IN ('registered', 'pending', 'active', 'suspended', 'inactive')
   ),
-  CONSTRAINT universities_created_by_fk FOREIGN KEY (created_by)
-    REFERENCES public.profiles (id) ON DELETE SET NULL
+  CONSTRAINT universities_created_by_fk FOREIGN KEY (created_by) REFERENCES public.profiles (id) ON DELETE SET NULL
 );
 
 
 COMMENT ON TABLE public.universities IS 'Platform-controlled university registry and tenant root. Rows are created/activated only by platform operators via service_role; clients can read active rows only.';
 
+
 COMMENT ON COLUMN public.universities.slug IS 'Stable URL-safe identifier, unique. One per university, never reused.';
+
+
 COMMENT ON COLUMN public.universities.code IS 'Official institution code when known (e.g. Kemendikbudristek code). Unique when present.';
+
+
 COMMENT ON COLUMN public.universities.name IS 'Official name as registered.';
+
+
 COMMENT ON COLUMN public.universities.status IS 'Lifecycle: registered -> pending -> active -> suspended/inactive.';
+
+
 COMMENT ON COLUMN public.universities.activated_at IS 'When the university was activated by a platform admin.';
+
+
 COMMENT ON COLUMN public.universities.deactivated_at IS 'When the university was last suspended or deactivated.';
+
+
 COMMENT ON COLUMN public.universities.created_by IS 'Platform admin who created the row, if known.';
+
 
 CREATE UNIQUE INDEX IF NOT EXISTS universities_code_unique ON public.universities (lower(btrim(code)))
 WHERE
   code IS NOT NULL;
 
+
 CREATE INDEX IF NOT EXISTS universities_status_idx ON public.universities (status);
+
 
 CREATE TRIGGER universities_set_updated_at
 BEFORE UPDATE ON public.universities FOR EACH ROW
@@ -115,9 +130,7 @@ CREATE TABLE IF NOT EXISTS public.university_memberships (
     entry_year IS NULL
     OR entry_year BETWEEN 1950 AND 2100
   ),
-  CONSTRAINT university_memberships_status_allowed CHECK (
-    status IN ('pending', 'active', 'suspended', 'graduated')
-  )
+  CONSTRAINT university_memberships_status_allowed CHECK (status IN ('pending', 'active', 'suspended', 'graduated'))
 );
 
 
@@ -125,11 +138,22 @@ COMMENT ON TABLE public.university_memberships IS 'Per-university academic perso
 
 
 COMMENT ON COLUMN public.university_memberships.user_id IS 'Global account id (auth.users).';
+
+
 COMMENT ON COLUMN public.university_memberships.university_id IS 'Tenant this persona belongs to. Restrict: a university with memberships cannot be deleted.';
+
+
 COMMENT ON COLUMN public.university_memberships.student_id IS 'Student ID number (NIM) at this university only. Unique within the university.';
+
+
 COMMENT ON COLUMN public.university_memberships.role IS 'Membership role. Values are extensible (open question 4); only student is assigned in 5A.';
+
+
 COMMENT ON COLUMN public.university_memberships.entry_year IS 'Entry cohort year (ADR-004). Immutable post-activation in the target design.';
+
+
 COMMENT ON COLUMN public.university_memberships.status IS 'Persona lifecycle: pending -> active -> suspended/graduated.';
+
 
 -- One student_id number may belong to exactly one persona per university.
 -- Partial index mirrors profiles_nim_unique: rows without a student id are exempt.
@@ -137,9 +161,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS university_memberships_student_id_unique ON pu
 WHERE
   student_id IS NOT NULL;
 
+
 CREATE INDEX IF NOT EXISTS university_memberships_user_idx ON public.university_memberships (user_id);
 
+
 CREATE INDEX IF NOT EXISTS university_memberships_university_status_idx ON public.university_memberships (university_id, status);
+
 
 CREATE TRIGGER university_memberships_set_updated_at
 BEFORE UPDATE ON public.university_memberships FOR EACH ROW
@@ -151,16 +178,20 @@ EXECUTE FUNCTION public.set_updated_at ();
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.universities ENABLE ROW LEVEL SECURITY;
 
+
 REVOKE ALL ON public.universities
 FROM
   anon,
   authenticated;
 
+
 GRANT
 SELECT
   ON public.universities TO authenticated;
 
+
 DROP POLICY IF EXISTS universities_active_read ON public.universities;
+
 
 CREATE POLICY universities_active_read ON public.universities FOR
 SELECT
@@ -169,16 +200,20 @@ SELECT
 
 ALTER TABLE public.university_memberships ENABLE ROW LEVEL SECURITY;
 
+
 REVOKE ALL ON public.university_memberships
 FROM
   anon,
   authenticated;
 
+
 GRANT
 SELECT
   ON public.university_memberships TO authenticated;
 
+
 DROP POLICY IF EXISTS university_memberships_owner_read ON public.university_memberships;
+
 
 CREATE POLICY university_memberships_owner_read ON public.university_memberships FOR
 SELECT

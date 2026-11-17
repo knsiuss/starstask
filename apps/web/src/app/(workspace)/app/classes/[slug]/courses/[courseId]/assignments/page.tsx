@@ -1,21 +1,16 @@
-import {
-  ArrowLeft,
-  CalendarDays,
-  ChevronRight,
-  FileText,
-  Inbox,
-  Paperclip,
-  Plus,
-} from "lucide-react";
+import { ArrowLeft, Inbox, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
 import { AssignmentControls } from "@/components/classes/assignment-controls";
-import { AssignmentRowMenu } from "@/components/classes/assignment-row-menu";
+import {
+  CourseAssignmentEmptyState,
+  CourseAssignmentRow,
+  CourseSubmissionList,
+} from "@/components/classes/course-assignment-list";
 import { CourseWorkspaceHeader } from "@/components/classes/course-workspace-header";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireCourseContext } from "@/features/classes/course-access";
 import {
@@ -27,16 +22,9 @@ import {
   type CourseAssignmentFilter,
 } from "@/features/classes/course-assignment-filters";
 import { loadCompletionIds } from "@/lib/db/assignment-completions";
-import {
-  listMyClassSubmissions,
-  type MyClassSubmission,
-} from "@/lib/db/class-submissions";
-import {
-  listCourseAssignments,
-  type CourseAssignmentSummary,
-} from "@/lib/db/classes";
-import type { AssignmentStatusRow } from "@/types/database";
-import { formatDate, formatTimeRemaining, pluralize } from "@starstask/shared";
+import { listMyClassSubmissions } from "@/lib/db/class-submissions";
+import { listCourseAssignments } from "@/lib/db/classes";
+import { pluralize } from "@starstask/shared";
 
 export const metadata: Metadata = {
   title: "Course assignments",
@@ -44,16 +32,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const SUBMISSION_STATUS_LABELS: Record<AssignmentStatusRow, string> = {
-  draft: "Draft",
-  pending_review: "In review",
-  pending: "In review",
-  published: "Published",
-  rejected: "Needs revision",
-  unpublished: "Unpublished",
-  archived: "Archived",
-};
 
 type CourseAssignmentsPageProps = {
   params: Promise<{ slug: string; courseId: string }>;
@@ -126,10 +104,12 @@ export default async function CourseAssignmentsPage({
   );
 
   const courseBase = `/app/classes/${found.slug}/courses/${course.id}`;
+  const assignmentsBase = `${courseBase}/assignments`;
   const canPost = found.status === "active" && course.status === "active";
+  const isFiltered = query.length > 0 || filter !== "all";
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-5 pb-8 sm:px-6 sm:py-8 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pt-5 pb-24 sm:px-6 sm:pt-8 sm:pb-10 lg:px-8">
       <CourseWorkspaceHeader
         classSlug={found.slug}
         className={found.name}
@@ -160,35 +140,25 @@ export default async function CourseAssignmentsPage({
         </Alert>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="bg-accent-soft text-accent flex h-11 w-11 shrink-0 items-center justify-center rounded-xl">
-            <Inbox
-              aria-hidden="true"
-              className="h-5 w-5"
-            />
-          </span>
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">
-              Assignments
-            </h2>
-            <p className="text-muted-foreground mt-0.5 text-sm">
-              {assignments.length} {pluralize(assignments.length, "assignment")}{" "}
-              in this course
-            </p>
-          </div>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
+            Assignments
+          </h2>
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            {assignments.length} {pluralize(assignments.length, "assignment")}{" "}
+            in this course
+          </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {role.canManage ? (
             <Button
               asChild
-              size="sm"
               variant="secondary"
+              className="min-h-[44px] sm:h-9 sm:min-h-0 sm:px-3.5"
             >
-              <Link
-                href={`/app/classes/${found.slug}/manage?tab=content`}
-              >
+              <Link href={`/app/classes/${found.slug}/manage?tab=content`}>
                 <Inbox
                   aria-hidden="true"
                   className="h-4 w-4"
@@ -200,7 +170,7 @@ export default async function CourseAssignmentsPage({
           {canPost ? (
             <Button
               asChild
-              size="sm"
+              className="min-h-[44px] sm:h-9 sm:min-h-0 sm:px-3.5"
             >
               <Link
                 href={`/app/classes/${found.slug}/submit?course=${course.id}`}
@@ -216,7 +186,7 @@ export default async function CourseAssignmentsPage({
         </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-4 sm:mt-5">
         <Suspense fallback={null}>
           <AssignmentControls
             query={query}
@@ -227,23 +197,25 @@ export default async function CourseAssignmentsPage({
       </div>
 
       {filter === "submitted" ? (
-        <SubmissionList
+        <CourseSubmissionList
           submissions={ownSubmissions}
           courseName={course.name}
         />
       ) : visibleAssignments.length === 0 ? (
-        <EmptyState
+        <CourseAssignmentEmptyState
           title={query ? `No assignments match "${query}"` : emptyTitle(filter)}
           help={
             query
               ? "Try a different keyword, or clear the search to see every assignment in this course."
               : emptyHelp(filter, canPost)
           }
+          actionHref={isFiltered ? assignmentsBase : undefined}
+          actionLabel={isFiltered ? "Reset filters" : undefined}
         />
       ) : (
         <ul className="border-border bg-surface divide-border mt-5 divide-y overflow-hidden rounded-xl border">
           {visibleAssignments.map((assignment) => (
-            <AssignmentRow
+            <CourseAssignmentRow
               key={assignment.id}
               assignment={assignment}
               classSlug={found.slug}
@@ -257,7 +229,7 @@ export default async function CourseAssignmentsPage({
 
       <Link
         href={courseBase}
-        className="text-muted-foreground hover:text-foreground mt-8 inline-flex items-center gap-1.5 text-sm"
+        className="text-muted-foreground hover:text-foreground focus-visible:outline-accent mt-6 inline-flex min-h-[44px] items-center gap-1.5 rounded-md text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:mt-8 sm:min-h-0"
       >
         <ArrowLeft
           aria-hidden="true"
@@ -267,224 +239,6 @@ export default async function CourseAssignmentsPage({
       </Link>
     </div>
   );
-}
-
-function AssignmentRow({
-  assignment,
-  classSlug,
-  completed,
-  now,
-  canManage,
-}: {
-  assignment: CourseAssignmentSummary;
-  classSlug: string;
-  completed: boolean;
-  now: Date;
-  canManage: boolean;
-}) {
-  const isClosed =
-    assignment.deadline !== null &&
-    new Date(assignment.deadline).getTime() < now.getTime();
-  const timeRemaining = formatTimeRemaining(assignment.deadline, now);
-
-  return (
-    <li className="group hover:bg-muted/50 relative transition-colors">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-5">
-        <span className="bg-muted text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-          <FileText
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-        </span>
-
-        <div className="min-w-0 flex-1 basis-56">
-          {/* The title link stretches over the whole row; the "…" menu sits
-              above it with a higher stacking order so it stays clickable. */}
-          <Link
-            href={`/assignments/${assignment.id}`}
-            className="focus-visible:outline-accent text-[15px] font-semibold tracking-tight underline-offset-4 after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 hover:underline"
-          >
-            {assignment.title}
-          </Link>
-
-          {assignment.description ? (
-            <p className="text-muted-foreground mt-0.5 line-clamp-1 text-sm">
-              {assignment.description}
-            </p>
-          ) : null}
-
-          <p className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
-              Published{" "}
-              {formatDate(assignment.published_at ?? assignment.created_at)}
-            </span>
-            {assignment.source_label ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{assignment.source_label}</span>
-              </>
-            ) : null}
-            {assignment.attachment_count > 0 ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Paperclip
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                  />
-                  {assignment.attachment_count}{" "}
-                  {assignment.attachment_count === 1 ? "file" : "files"}
-                </span>
-              </>
-            ) : null}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
-          {isClosed ? (
-            <Badge variant="neutral">Closed</Badge>
-          ) : completed ? (
-            <Badge variant="success">Done</Badge>
-          ) : (
-            <Badge variant="accent">Open</Badge>
-          )}
-
-          <div className="border-border hidden border-l pl-4 sm:block">
-            {assignment.deadline ? (
-              <>
-                <p className="flex items-center gap-1.5 text-sm font-medium">
-                  <CalendarDays
-                    aria-hidden="true"
-                    className="text-muted-foreground h-4 w-4"
-                  />
-                  Due {formatDate(assignment.deadline)}
-                </p>
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  {timeRemaining || "Overdue"}
-                </p>
-              </>
-            ) : (
-              <p className="text-muted-foreground text-sm">No deadline</p>
-            )}
-          </div>
-
-          {canManage ? (
-            <AssignmentRowMenu
-              assignmentId={assignment.id}
-              assignmentTitle={assignment.title}
-              classSlug={classSlug}
-            />
-          ) : (
-            <ChevronRight
-              aria-hidden="true"
-              className="text-muted-foreground h-4 w-4 transition-transform group-hover:translate-x-0.5"
-            />
-          )}
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function SubmissionList({
-  submissions,
-  courseName,
-}: {
-  submissions: MyClassSubmission[];
-  courseName: string;
-}) {
-  if (submissions.length === 0) {
-    return (
-      <EmptyState
-        title="Nothing submitted in this course"
-        help={`Your own submissions in ${courseName} appear here with their review status.`}
-      />
-    );
-  }
-
-  return (
-    <ul className="border-border bg-surface divide-border mt-6 divide-y overflow-hidden rounded-xl border">
-      {submissions.map((submission) => (
-        <li
-          key={submission.id}
-          className="hover:bg-muted/50 px-4 py-4 transition-colors sm:px-5"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/assignments/${submission.id}`}
-                  className="focus-visible:outline-accent text-sm font-semibold underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 hover:underline"
-                >
-                  {submission.title}
-                </Link>
-                <Badge variant={submissionStatusVariant(submission.status)}>
-                  {SUBMISSION_STATUS_LABELS[submission.status]}
-                </Badge>
-              </div>
-              {submission.rejection_reason ? (
-                <p className="text-danger mt-1 text-xs">
-                  {submission.rejection_reason}
-                </p>
-              ) : null}
-              <p className="text-muted-foreground mt-1.5 text-xs">
-                Submitted {formatDate(submission.created_at)}
-                {submission.deadline
-                  ? ` · Due ${formatDate(submission.deadline)}`
-                  : ""}
-                {submission.revision > 1
-                  ? ` · Revision ${submission.revision}`
-                  : ""}
-              </p>
-            </div>
-            <ChevronRight
-              aria-hidden="true"
-              className="text-muted-foreground mt-1 h-4 w-4 shrink-0"
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function EmptyState({ title, help }: { title: string; help: string }) {
-  return (
-    <div className="border-border bg-surface mt-6 flex flex-col items-center rounded-xl border border-dashed px-5 py-12 text-center">
-      <span className="bg-muted text-muted-foreground flex h-10 w-10 items-center justify-center rounded-full">
-        <FileText
-          aria-hidden="true"
-          className="h-4 w-4"
-        />
-      </span>
-      <p className="mt-3 text-sm font-medium">{title}</p>
-      <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
-        {help}
-      </p>
-    </div>
-  );
-}
-
-function submissionStatusVariant(
-  status: AssignmentStatusRow,
-): "neutral" | "accent" | "success" | "warning" | "danger" {
-  if (status === "published") {
-    return "success";
-  }
-
-  if (status === "rejected") {
-    return "danger";
-  }
-
-  if (status === "pending_review" || status === "pending") {
-    return "warning";
-  }
-
-  return "neutral";
 }
 
 function emptyTitle(filter: CourseAssignmentFilter): string {

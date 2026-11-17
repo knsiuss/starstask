@@ -120,7 +120,9 @@ event.
 
 No new global role was introduced. The existing `class_admins` table already
 represents "the people who run this class" — the student class admin, or ketua
-kelas. There is no lecturer account, so session management reuses that role.
+kelas. The lecturer persona (added later, see CLASSES.md) scopes access to classes its
+holder administers on StarsTask; session management does not treat it as a separate
+authority, so this table reuses `class_admins`.
 
 | Actor                     | Read                                           | Create / edit / change status | RSVP     |
 | ------------------------- | ---------------------------------------------- | ----------------------------- | -------- |

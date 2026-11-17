@@ -150,12 +150,13 @@ export function AttachmentRenameDialog({
             ) : null}
           </div>
 
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="secondary"
               onClick={onClose}
               disabled={isSaving}
+              className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
             >
               Cancel
             </Button>
@@ -163,6 +164,7 @@ export function AttachmentRenameDialog({
               type="submit"
               disabled={isSaving || name.trim().length === 0}
               aria-busy={isSaving}
+              className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
             >
               {isSaving ? (
                 <>

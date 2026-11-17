@@ -49,17 +49,18 @@ shows all 93 as local+remote matched. No remote command was issued.
 `supabase/tests/staging-synthetic-cleanup.sql` (child-first, `syn-` scoped).
 
 **Inventory (verified by `SELECT count(*)`, no PII):**
-| Table | Count |
-|---|---|
-| universities (`syn-uni-a/b`) | 2 |
-| university_memberships | 4 (student+admin per uni) |
-| student_identities | 4 |
-| classes (`syn-class-a1/a2/b1/b2`) | 4 |
-| class_members | 6 (3 per uni incl. admin — FK requires admins be members) |
-| class_admins | 2 |
-| course_offerings | 2 |
-| attendance_meetings | 4 |
-| attendance_records | 8 |
+
+| Table                             | Count                                                     |
+| --------------------------------- | --------------------------------------------------------- |
+| universities (`syn-uni-a/b`)      | 2                                                         |
+| university_memberships            | 4 (student+admin per uni)                                 |
+| student_identities                | 4                                                         |
+| classes (`syn-class-a1/a2/b1/b2`) | 4                                                         |
+| class_members                     | 6 (3 per uni incl. admin — FK requires admins be members) |
+| class_admins                      | 2                                                         |
+| course_offerings                  | 2                                                         |
+| attendance_meetings               | 4                                                         |
+| attendance_records                | 8                                                         |
 
 All emails `@synth.local`, all slugs `syn-`. Two real errors were caught and
 fixed during seeding (FK `class_admins→class_members`; `status='held'` not in
@@ -101,12 +102,12 @@ cross-user `createSignedUrl` IS denied — 11/11 reflects this correction.
 25 iterations/flow, `service_role`, pagination `range(0,9)`; no cross-user
 auth caching — per-call headers, results discarded).
 
-| Flow | Queries/call | p50 | p95 | min | max |
-|---|---|---|---|---|---|
-| dashboard list (`classes`) | 1 | 13.64ms | 69.41ms | 3.41ms | 128.36ms |
-| class members (paginated) | 1 | 11.18ms | 23.38ms | 3.63ms | 31.75ms |
-| attendance roster | 2 | 50.65ms | 98.85ms | 12.33ms | 119.32ms |
-| notification inbox | — | — | — | — | — |
+| Flow                       | Queries/call | p50     | p95     | min     | max      |
+| -------------------------- | ------------ | ------- | ------- | ------- | -------- |
+| dashboard list (`classes`) | 1            | 13.64ms | 69.41ms | 3.41ms  | 128.36ms |
+| class members (paginated)  | 1            | 11.18ms | 23.38ms | 3.63ms  | 31.75ms  |
+| attendance roster          | 2            | 50.65ms | 98.85ms | 12.33ms | 119.32ms |
+| notification inbox         | —            | —       | —       | —       | —        |
 
 **N+1 guard: PASS** — every flow ≤ 3 queries per request by construction.
 Harness exits 1 if any flow exceeds the bound.
@@ -156,11 +157,11 @@ realistic row counts.
 
 ## 7. Regression — COMPLETE
 
-| Check | Result |
-|---|---|
-| `npx vitest run` (full unit suite) | **101 files, 1135 tests PASS** (10.6s) |
-| `npx tsc --noEmit` | **exit 0** |
-| `eslint` on 4 changed/new TS files | **exit 0** |
+| Check                                              | Result                                       |
+| -------------------------------------------------- | -------------------------------------------- |
+| `npx vitest run` (full unit suite)                 | **101 files, 1135 tests PASS** (10.6s)       |
+| `npx tsc --noEmit`                                 | **exit 0**                                   |
+| `eslint` on 4 changed/new TS files                 | **exit 0**                                   |
 | `supabase/tests/phase5c-5g-validation.sql` (local) | **PHASE5C-5G PASS · RLS PASS · LEGACY PASS** |
 
 WIP preservation: `git status` at start and end shows the same unrelated WIP

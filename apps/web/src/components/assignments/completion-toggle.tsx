@@ -68,10 +68,10 @@ export function CompletionToggle({
       aria-pressed={completed}
       aria-label={label}
       title={
-        completed ? "Done — click to clear" : "Mark as done (only you see this)"
+        completed ? "Done. Click to clear" : "Mark as done (only you see this)"
       }
       className={cn(
-        "focus-visible:outline-accent inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60",
+        "focus-visible:outline-accent relative inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
         completed
           ? "border-success/40 bg-success-soft text-success"
           : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",

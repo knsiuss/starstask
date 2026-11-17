@@ -106,13 +106,13 @@ export function ExploreAssignmentRow({
   const isAnnouncement = assignment.content_type === "class_announcement";
 
   return (
-    <li className="flex items-center gap-2 pr-3 sm:pr-4">
+    <li className="flex min-w-0 items-center gap-2 pr-3 sm:pr-4">
       <Link
         href={`/assignments/${assignment.id}`}
-        className="group hover:bg-hover focus-visible:outline-accent flex min-w-0 flex-1 items-center gap-3 px-4 py-3 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:gap-4 sm:px-5"
+        className="group hover:bg-hover focus-visible:outline-accent flex min-h-[56px] min-w-0 flex-1 items-center gap-3 px-4 py-3 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:gap-4 sm:px-5"
       >
         <div className="min-w-0 flex-1">
-          <p className="text-foreground group-hover:text-accent line-clamp-2 text-[15px] leading-snug font-medium">
+          <p className="text-foreground group-hover:text-accent line-clamp-2 text-[15px] leading-snug font-medium break-words">
             {assignment.title}
           </p>
           <div className="text-muted-foreground mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -120,7 +120,7 @@ export function ExploreAssignmentRow({
             {isAnnouncement ? (
               <>
                 <MetaDivider />
-                <span className="text-foreground/80 whitespace-nowrap font-medium">
+                <span className="text-foreground/80 font-medium whitespace-nowrap">
                   Announcement
                 </span>
               </>
@@ -164,9 +164,17 @@ export function ExploreAssignmentRow({
               </>
             ) : null}
           </div>
-          <p className="text-muted-foreground mt-1 text-xs sm:hidden">
-            {dateText}
-          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:hidden">
+            <Badge
+              variant={status.variant}
+              className="whitespace-nowrap"
+            >
+              {status.label}
+            </Badge>
+            <span className="text-muted-foreground truncate text-xs">
+              {dateText}
+            </span>
+          </div>
         </div>
 
         <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
@@ -175,13 +183,6 @@ export function ExploreAssignmentRow({
           </span>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
-
-        <Badge
-          variant={status.variant}
-          className="shrink-0 whitespace-nowrap sm:hidden"
-        >
-          {status.label}
-        </Badge>
 
         <ChevronRight
           aria-hidden="true"

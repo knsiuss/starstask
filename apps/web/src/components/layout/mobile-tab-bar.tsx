@@ -4,7 +4,9 @@ import {
   CalendarDays,
   ClipboardList,
   Compass,
+  GraduationCap,
   LayoutDashboard,
+  ListChecks,
   Loader2,
   UserCheck,
   type LucideIcon,
@@ -13,6 +15,7 @@ import { useLinkStatus } from "next/link";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { getActiveNavHref } from "@/components/layout/workspace-nav-items";
 import { cn } from "@/lib/utils/cn";
 
 type TabItem = {
@@ -31,6 +34,15 @@ const TABS: TabItem[] = [
   { href: "/leave-requests", label: "Absence", icon: ClipboardList },
 ];
 
+/** A lecturer's five daily destinations: the work waiting on them comes first. */
+const TEACHING_TABS: TabItem[] = [
+  { href: "/app", label: "Teaching", icon: LayoutDashboard },
+  { href: "/app/actions", label: "Review", icon: ListChecks },
+  { href: "/attendance", label: "Attendance", icon: UserCheck },
+  { href: "/classes", label: "Classes", icon: GraduationCap },
+  { href: "/leave-requests", label: "Absence", icon: ClipboardList },
+];
+
 /**
  * One-tap destinations on small screens.
  *
@@ -38,8 +50,13 @@ const TABS: TabItem[] = [
  * leaves room for Attendance in the five daily destinations. Hidden at `lg`,
  * where the sidebar takes over.
  */
-export function MobileTabBar() {
+export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
   const pathname = usePathname();
+  const tabs = isLecturer ? TEACHING_TABS : TABS;
+  const activeHref = getActiveNavHref(
+    pathname,
+    tabs.map((tab) => tab.href),
+  );
 
   return (
     <nav
@@ -47,9 +64,8 @@ export function MobileTabBar() {
       className="border-border bg-surface sticky bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="grid grid-cols-5 gap-1 px-2 pt-2">
-        {TABS.map((tab) => {
-          const isActive =
-            pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        {tabs.map((tab) => {
+          const isActive = tab.href === activeHref;
 
           return (
             <li key={tab.href}>

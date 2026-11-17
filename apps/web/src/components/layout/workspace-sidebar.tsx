@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils/cn";
 type WorkspaceSidebarProps = {
   isAuthenticated: boolean;
   isClassAdmin: boolean;
+  isLecturer?: boolean;
   displayName: string;
   email: string | null;
   avatarUrl: string | null;
@@ -22,6 +23,7 @@ const COLLAPSE_STORAGE_KEY = "starstask:sidebar-collapsed";
 export function WorkspaceSidebar({
   isAuthenticated,
   isClassAdmin,
+  isLecturer = false,
   displayName,
   email,
   avatarUrl,
@@ -98,6 +100,7 @@ export function WorkspaceSidebar({
         <WorkspaceNav
           isAuthenticated={isAuthenticated}
           isClassAdmin={isClassAdmin}
+          isLecturer={isLecturer}
           compact={isCollapsed}
           showUniversityInfo={showUniversityInfo}
         />

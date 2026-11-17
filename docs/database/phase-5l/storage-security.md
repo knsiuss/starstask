@@ -5,6 +5,7 @@ Buckets (verified live): `assignment-attachments` (private),
 `avatars` (public), `class-media` (public).
 
 ## Findings
+
 - No change made. `avatars` and `class-media` public reads are
   intentional: class identity / avatar images are shown on pages
   any reader can open (`class-media` header in `20261102100000`).
@@ -24,6 +25,7 @@ Buckets (verified live): `assignment-attachments` (private),
   bucket + ownership / class-admin predicates.
 
 ## Classification
+
 - `class-media` / `avatars` public read: INFORMATIONAL (by design).
 - File-ownership / tenant association by class path: verified live
   (S1–S4 PASS, 2026-11-05); Storage API DELETE / UPDATE overwrite

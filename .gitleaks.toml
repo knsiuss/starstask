@@ -1,0 +1,17 @@
+# Gitleaks config for this repo.
+#
+# The default ruleset flags any high-entropy string shaped like an API key.
+# Supabase publishable keys (`sb_publishable_*`) are client identifiers by
+# design: they are compiled into the mobile APK through BuildConfig and ship
+# in the web bundle as NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. The Google OAuth
+# web client ID is hardcoded the same way in apps/mobile/android/app/
+# build.gradle.kts, for the same reason.
+#
+# Only that prefix is allowed. Service-role keys, provider API keys, and
+# everything else stay blocked.
+title = "gitleaks config for starstask"
+
+[allowlist]
+regexes = [
+  '''sb_publishable_[A-Za-z0-9_-]{20,}''',
+]

@@ -95,8 +95,21 @@ describe("onboarding schema", () => {
     }
   });
 
-  it("requires the four mandatory fields", () => {
-    for (const key of ["fullName", "nickname", "nim", "university"] as const) {
+  it("accepts a lecturer payload with no NIM, enforced server-side", () => {
+    const parsed = profileOnboardingSchema.safeParse({
+      ...validProfile,
+      nim: "",
+    });
+
+    expect(parsed.success).toBe(true);
+
+    if (parsed.success) {
+      expect(parsed.data.nim).toBeUndefined();
+    }
+  });
+
+  it("requires full name, nickname, and university", () => {
+    for (const key of ["fullName", "nickname", "university"] as const) {
       const parsed = profileOnboardingSchema.safeParse({
         ...validProfile,
         [key]: "",

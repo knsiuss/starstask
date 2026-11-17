@@ -3,10 +3,7 @@
 -- clients. Selecting them directly fails with 42501 for every signed-in user,
 -- so this SECURITY DEFINER helper exposes only the derived values and
 -- re-checks visibility. No column grant is widened.
-CREATE OR REPLACE FUNCTION public.session_checkin_summary (p_session_id uuid) returns table (
-  has_location boolean,
-  radius_m integer
-) language sql stable security definer
+CREATE OR REPLACE FUNCTION public.session_checkin_summary (p_session_id uuid) returns TABLE (has_location boolean, radius_m integer) language sql stable security definer
 SET
   search_path = '' AS $$
 select

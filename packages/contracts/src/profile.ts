@@ -73,10 +73,27 @@ const requiredText = (label: string, min: number, max: number) =>
     .max(max, `${label} must be ${max} characters or fewer`);
 
 /**
+ * Onboarding personas.
+ *
+ * The persona is derived in the database from the caller's confirmed email
+ * domain and membership, never from client input. Students fill in a NIM;
+ * lecturers may leave it blank. The client's NIM-optional path exists so the
+ * form can render for both, but the server enforces it per persona — see
+ * update_my_profile (20270119000000_lecturer_auto_active.sql).
+ */
+export const PROFILE_ONBOARDING_PERSONAS = ["student", "lecturer"] as const;
+
+export type ProfileOnboardingPersona =
+  (typeof PROFILE_ONBOARDING_PERSONAS)[number];
+
+/**
  * The onboarding form payload.
  *
- * The class name is optional: a profile is complete without a class, and an
- * unmatched name is stored as the student typed it rather than dropped.
+ * `nim` is optional so institutional-email accounts (auto-activated lecturers)
+ * are not forced to invent one. The server rejects a missing/invalid NIM for
+ * accounts that are not lecturers, and the form marks it required when the
+ * persona is student. The class name remains optional: an unmatched name is
+ * stored as typed rather than dropped.
  */
 export const profileOnboardingSchema = z.object({
   fullName: requiredText(
@@ -92,11 +109,14 @@ export const profileOnboardingSchema = z.object({
   nim: z
     .string()
     .trim()
-    .min(PROFILE_NIM_MIN, "Enter your NIM")
     .max(PROFILE_NIM_MAX, `NIM must be ${PROFILE_NIM_MAX} characters or fewer`)
-    .regex(
-      PROFILE_NIM_PATTERN,
+    .refine(
+      (value) => value === "" || PROFILE_NIM_PATTERN.test(value),
       "Use letters, digits, dot, underscore, or hyphen",
+    )
+    .optional()
+    .transform((value) =>
+      value === undefined || value === "" ? undefined : value,
     ),
   university: requiredText(
     "University",
@@ -236,3 +256,134 @@ export const classJoinByNameSchema = z.object({
 });
 
 export type ClassJoinByNameInput = z.infer<typeof classJoinByNameSchema>;
+
+export const classJoinOrCreateSchema = z.object({
+  classCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[A-Z0-9]{2,20}$/,
+      "Use 2 to 20 letters or numbers (for example TPLM002)",
+    ),
+  semesterNumber: z.coerce
+    .number()
+    .int("Semester must be a whole number")
+    .min(1, "Semester must be between 1 and 14")
+    .max(14, "Semester must be between 1 and 14"),
+  academicYear: z
+    .string()
+    .trim()
+    .regex(/^\d{4}\/\d{4}$/, "Use the format 2024/2025"),
+});
+
+export type ClassJoinOrCreateInput = z.infer<typeof classJoinOrCreateSchema>;
+
+export type CanonicalClassIdentity = {
+  classCode: string;
+  semesterNumber: number;
+  semesterLabel: string;
+  academicYear: string;
+  name: string;
+  slug: string;
+};
+
+/**
+ * Builds the deterministic class name and slug from `(semester, classCode, academicYear)`.
+ *
+ * Example: `(5, "tplm002", "2024/2025")` -> name `05TPLM002-24/25`, slug `05tplm002-24-25`.
+ */
+export function buildCanonicalClassIdentity(input: {
+  classCode: string;
+  semesterNumber: number;
+  academicYear: string;
+}): CanonicalClassIdentity {
+  const classCode = input.classCode.trim().toUpperCase();
+  const paddedSemester = String(input.semesterNumber).padStart(2, "0");
+  const [startYear = "", endYear = ""] = input.academicYear.trim().split("/");
+  const shortYear = `${startYear.slice(-2)}/${endYear.slice(-2)}`;
+  const name = `${paddedSemester}${classCode}-${shortYear}`;
+  const slug = `${paddedSemester}${classCode.toLowerCase()}-${startYear.slice(-2)}-${endYear.slice(-2)}`;
+
+  return {
+    classCode,
+    semesterNumber: input.semesterNumber,
+    semesterLabel: `Semester ${input.semesterNumber}`,
+    academicYear: input.academicYear.trim(),
+    name,
+    slug,
+  };
+}
+
+/**
+ * Parses a canonical class label like `05TPLM002-24/25` back into its
+ * structured identity, or returns `null` for free-form strings.
+ */
+export function parseCanonicalClassName(
+  value: string,
+): CanonicalClassIdentity | null {
+  const match = value
+    .trim()
+    .match(/^(\d{2})([A-Za-z0-9]{2,20})-(\d{2})\/(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, rawSem = "", rawCode = "", rawStart = "", rawEnd = ""] = match;
+  const semesterNumber = Number.parseInt(rawSem, 10);
+
+  if (
+    !Number.isInteger(semesterNumber) ||
+    semesterNumber < 1 ||
+    semesterNumber > 14
+  ) {
+    return null;
+  }
+
+  return buildCanonicalClassIdentity({
+    classCode: rawCode,
+    semesterNumber,
+    academicYear: `20${rawStart}/20${rawEnd}`,
+  });
+}
+
+/**
+ * Student self-created class payload for `create_class_as_student`.
+ *
+ * The server derives canonical `name` (`05TPLM002-24/25`) and `slug`
+ * (`05tplm002-24-25`) from `(semesterNumber, classCode, academicYear)` so
+ * duplicate classes for the same cohort cannot be created twice.
+ */
+export const studentCreateClassSchema = z.object({
+  classCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[A-Z0-9]{2,20}$/,
+      "Use 2 to 20 letters or numbers (for example TPLM002)",
+    ),
+  semesterNumber: z.coerce
+    .number()
+    .int("Semester must be a whole number")
+    .min(1, "Semester must be between 1 and 14")
+    .max(14, "Semester must be between 1 and 14"),
+  academicYear: z
+    .string()
+    .trim()
+    .regex(/^\d{4}\/\d{4}$/, "Use the format 2024/2025"),
+  courseName: z
+    .string()
+    .trim()
+    .min(2, "Course name must be at least 2 characters")
+    .max(120, "Course name must be 120 characters or fewer"),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Description must be at least 10 characters")
+    .max(5000, "Description must be 5000 characters or fewer"),
+  joinPolicy: z.enum(["invitation", "open"]).default("invitation"),
+});
+
+export type StudentCreateClassInput = z.infer<typeof studentCreateClassSchema>;

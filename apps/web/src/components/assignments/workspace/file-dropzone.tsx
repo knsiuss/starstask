@@ -66,10 +66,10 @@ export function FileDropzone({ files, onChange }: Props) {
           setIsDragActive(false);
           addFiles([...event.dataTransfer.files]);
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-6 text-center transition-colors focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2 ${
+        className={`focus-visible:outline-accent flex min-h-[132px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 py-6 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
           isDragActive
             ? "border-accent bg-accent-soft"
-            : "border-border bg-surface hover:border-accent/40 hover:bg-band"
+            : "border-border bg-surface hover:border-accent/50 hover:bg-subtle"
         }`}
       >
         <input
@@ -90,18 +90,19 @@ export function FileDropzone({ files, onChange }: Props) {
             className="h-5 w-5"
           />
         </span>
-        <p className="text-foreground mt-2 text-sm font-medium">
+        <p className="text-foreground mt-2.5 text-sm font-medium">
           Click to upload or drag and drop files
         </p>
-        <p className="text-muted-foreground mt-0.5 text-xs">
-          PDF, DOCX, PNG, JPG, CSV, IPYNB, PY · Max 10MB per file
+        <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+          PDF, DOCX, PPTX, XLSX, PNG, JPG. Max 10 MB per file (up to{" "}
+          {ASSIGNMENT_ATTACHMENTS_MAX}).
         </p>
       </div>
 
       {error ? (
         <p
           role="alert"
-          className="text-danger mt-1.5 text-xs"
+          className="text-danger mt-2 text-xs font-medium"
         >
           {error}
         </p>
@@ -110,7 +111,7 @@ export function FileDropzone({ files, onChange }: Props) {
       {files.length > 0 ? (
         <ul
           aria-label="Selected files"
-          className="mt-2 space-y-1.5"
+          className="mt-2.5 space-y-2"
         >
           {files.map((file, index) => (
             <li
@@ -131,11 +132,11 @@ export function FileDropzone({ files, onChange }: Props) {
                 type="button"
                 aria-label={`Remove ${file.name}`}
                 onClick={() => onChange(files.filter((_, i) => i !== index))}
-                className="text-muted-foreground hover:text-danger shrink-0 rounded p-1"
+                className="text-muted-foreground hover:text-danger focus-visible:outline-accent flex min-h-[44px] min-w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-8 sm:min-w-8"
               >
                 <X
                   aria-hidden="true"
-                  className="h-3.5 w-3.5"
+                  className="h-4 w-4"
                 />
               </button>
             </li>

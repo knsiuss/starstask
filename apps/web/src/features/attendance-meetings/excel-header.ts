@@ -14,7 +14,7 @@ const MUTED_TEXT = "FF64748B";
 const LOGO_SIZE_PX = 44;
 const IMAGE_FETCH_TIMEOUT_MS = 5_000;
 
-type ImageExtension = "png" | "jpg" | "gif";
+type ImageExtension = "png" | "jpeg" | "gif";
 
 /**
  * Renders the campus printout header: a 3-part block (left: university logo +
@@ -39,24 +39,26 @@ export async function addBrandingHeader(
   const leftIndent = branding.universityLogoUrl.trim() !== "" ? 6 : 1;
   const leftTop = sheet.getRow(1).getCell(1);
   sheet.mergeCells(1, 1, 2, Math.min(3, midColumn));
-  leftTop.value = [branding.universityName, branding.universityTagline]
-    .filter(Boolean)
-    .join("\n") || "Universitas";
+  leftTop.value =
+    [branding.universityName, branding.universityTagline]
+      .filter(Boolean)
+      .join("\n") || "Universitas";
   leftTop.font = { size: 14, bold: true };
-  leftTop.alignment = { indent: leftIndent, vertical: "middle", wrapText: true };
+  leftTop.alignment = {
+    indent: leftIndent,
+    vertical: "middle",
+    wrapText: true,
+  };
   sheet.getRow(1).height = 30;
 
   // Center block: institution, faculty, study program.
   const centerColumn = 4;
   const centerTop = sheet.getRow(1).getCell(centerColumn);
   sheet.mergeCells(1, centerColumn, 2, midColumn);
-  centerTop.value = [
-    branding.universityName,
-    branding.faculty,
-    branding.studyProgram,
-  ]
-    .filter(Boolean)
-    .join("\n") || "Fakultas / Program Studi";
+  centerTop.value =
+    [branding.universityName, branding.faculty, branding.studyProgram]
+      .filter(Boolean)
+      .join("\n") || "Fakultas / Program Studi";
   centerTop.font = { size: 12, bold: true };
   centerTop.alignment = {
     horizontal: "center",
@@ -141,10 +143,7 @@ export function addBrandingFooterNote(
 ): void {
   sheet.mergeCells(rowNumber, 1, rowNumber, totalColumns);
   const cell = sheet.getRow(rowNumber).getCell(1);
-  const parts = [
-    resolveFooterText(branding),
-    `Dicetak pada ${printedAt}`,
-  ];
+  const parts = [resolveFooterText(branding), `Dicetak pada ${printedAt}`];
   if (branding.productFooter) {
     parts.push(branding.productFooter);
   }
@@ -163,9 +162,17 @@ async function addLogoImage(
   }
 
   try {
-    const image = await loadImage(imageUrl);
-    const imageId = sheet.workbook.addImage(image);
-    sheet.addImage(imageId, { tl: { col, row }, ext: { width: LOGO_SIZE_PX, height: LOGO_SIZE_PX } });
+    const { buffer, extension } = await loadImage(imageUrl);
+    // ExcelJS types `buffer` as an ArrayBuffer while the runtime wants raw
+    // bytes, so the same payload goes through the typed `base64` field.
+    const imageId = sheet.workbook.addImage({
+      base64: buffer.toString("base64"),
+      extension,
+    });
+    sheet.addImage(imageId, {
+      tl: { col, row },
+      ext: { width: LOGO_SIZE_PX, height: LOGO_SIZE_PX },
+    });
   } catch {
     // Best-effort: a logo that cannot be fetched never fails the export.
   }
@@ -211,8 +218,9 @@ function extensionFor(imageUrl: string): ImageExtension {
   const pathname = imageUrl.split("?")[0] ?? "";
   const extension = pathname.split(".").pop()?.toLowerCase();
 
+  // ExcelJS only accepts "jpeg", never the "jpg" alias.
   if (extension === "jpg" || extension === "jpeg") {
-    return "jpg";
+    return "jpeg";
   }
 
   if (extension === "gif") {

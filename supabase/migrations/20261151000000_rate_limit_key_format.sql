@@ -4,7 +4,6 @@
 -- is either a caller mistake or an attempt to exhaust another bucket.
 -- Anon keeps EXECUTE for pre-auth endpoints (which still use hashed keys).
 -- Body otherwise unchanged from 20261029000200.
-
 CREATE OR REPLACE FUNCTION public.consume_rate_limit (p_key text, p_limit integer, p_window_seconds integer) returns boolean language plpgsql security definer
 SET
   search_path = public,

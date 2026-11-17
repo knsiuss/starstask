@@ -17,17 +17,23 @@ describe("extractInvitationToken", () => {
   });
 
   it("accepts a site-relative invite link", () => {
-    expect(extractInvitationToken(`/invite/${INVITE_SEGMENT}`)).toBe(INVITE_SEGMENT);
+    expect(extractInvitationToken(`/invite/${INVITE_SEGMENT}`)).toBe(
+      INVITE_SEGMENT,
+    );
   });
 
   it("accepts a protocol-relative link and ignores query strings", () => {
     expect(
-      extractInvitationToken(`//starstask.app/invite/${INVITE_SEGMENT}?from=email`),
+      extractInvitationToken(
+        `//starstask.app/invite/${INVITE_SEGMENT}?from=email`,
+      ),
     ).toBe(INVITE_SEGMENT);
   });
 
   it("trims surrounding whitespace", () => {
-    expect(extractInvitationToken(`  ${INVITE_SEGMENT}\n`)).toBe(INVITE_SEGMENT);
+    expect(extractInvitationToken(`  ${INVITE_SEGMENT}\n`)).toBe(
+      INVITE_SEGMENT,
+    );
   });
 
   it("returns null for blank input", () => {

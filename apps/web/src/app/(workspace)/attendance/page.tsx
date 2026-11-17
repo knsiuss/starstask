@@ -7,6 +7,9 @@ import { ActiveAttendanceSection } from "@/components/attendance/active-attendan
 import { AttendanceHistorySection } from "@/components/attendance/attendance-history-section";
 import { AttendanceOverviewMetrics } from "@/components/attendance/attendance-overview-metrics";
 import { CourseAttendanceTable } from "@/components/attendance/course-attendance-table";
+import { CreatePresenceButton } from "@/components/attendance/create-presence-button";
+import { PageHeader } from "@/components/layout/page-header";
+import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +35,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const pageContainer =
-  "mx-auto w-full max-w-6xl px-3 py-5 sm:px-8 sm:py-8 lg:px-10";
 
 type AttendancePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -70,7 +70,7 @@ export default async function AttendancePage({
 
   if (!parsed.success) {
     return (
-      <div className={pageContainer}>
+      <PageShell width="wide">
         <Alert variant="error">
           <p className="font-medium">Those filters are not valid.</p>
           <p className="mt-1">
@@ -83,18 +83,21 @@ export default async function AttendancePage({
             and try again.
           </p>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
   if (!isSupabaseConfigured()) {
     return (
-      <div className={pageContainer}>
-        <AttendanceHeader />
+      <PageShell width="wide">
+        <PageHeader
+          title="Attendance"
+          description="Track your attendance across your enrolled courses."
+        />
         <div className="mt-6">
           <SetupNotice />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -126,54 +129,72 @@ export default async function AttendancePage({
     academicYears: historyView.options.academicYears,
   });
 
-  return (
-    <div className={pageContainer}>
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-        <AttendanceHeader period={period} />
-
-        {managedClasses.length > 0 ? (
-          <nav
-            aria-labelledby="admin-attendance-tools"
-            className="flex shrink-0 flex-wrap items-center gap-1.5"
+  const adminActions =
+    managedClasses.length > 0 ? (
+      <nav
+        aria-labelledby="admin-attendance-tools"
+        className="flex flex-wrap items-center gap-2"
+      >
+        <h2
+          id="admin-attendance-tools"
+          className="sr-only"
+        >
+          Class admin tools
+        </h2>
+        <CreatePresenceButton classes={managedClasses} />
+        {managedClasses.slice(0, 3).map((classItem) => (
+          <Button
+            asChild
+            key={classItem.id}
+            size="sm"
+            variant="secondary"
           >
-            <h2
-              id="admin-attendance-tools"
-              className="sr-only"
-            >
-              Class admin tools
-            </h2>
-            {managedClasses.slice(0, 3).map((classItem) => (
-              <Button
-                asChild
-                key={classItem.id}
-                size="sm"
-                variant="secondary"
-                className="rounded-full"
-              >
-                <Link href={`/app/classes/${classItem.slug}/attendance`}>
-                  <Settings
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                  />
-                  Manage {classItem.name}
-                </Link>
-              </Button>
-            ))}
-            {managedClasses.length > 3 ? (
-              <Button
-                asChild
-                size="sm"
-                variant="ghost"
-                className="rounded-full"
-              >
-                <Link href="/classes">All classes</Link>
-              </Button>
-            ) : null}
-          </nav>
+            <Link href={`/app/classes/${classItem.slug}/attendance`}>
+              <Settings
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+              Manage {classItem.name}
+            </Link>
+          </Button>
+        ))}
+        {managedClasses.length > 3 ? (
+          <Button
+            asChild
+            size="sm"
+            variant="ghost"
+          >
+            <Link href="/classes">All classes</Link>
+          </Button>
         ) : null}
-      </div>
+      </nav>
+    ) : null;
 
-      <div className="mt-5">
+  return (
+    <PageShell width="wide">
+      <PageHeader
+        title="Attendance"
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            <span>Track your attendance across your enrolled courses.</span>
+            {period ? (
+              <Badge
+                variant="neutral"
+                className="gap-1.5"
+              >
+                <GraduationCap
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+                {period}
+              </Badge>
+            ) : null}
+          </span>
+        }
+        actions={adminActions}
+      />
+
+      <div className="mt-6">
         <AttendanceOverviewMetrics
           totalSessions={summary.eligible}
           present={summary.present}
@@ -197,64 +218,39 @@ export default async function AttendancePage({
           </Link>
         </div>
       ) : (
-        <>
-          <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <section aria-labelledby="course-attendance">
-              <h2
-                id="course-attendance"
-                className="text-base font-semibold tracking-tight sm:text-lg"
-              >
-                Course Attendance
-              </h2>
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                Attendance summary for your enrolled courses.
-              </p>
-              <div className="mt-3 sm:mt-4">
-                <CourseAttendanceTable rows={courseRows} />
-              </div>
-            </section>
-
-            <ActiveAttendanceSection
-              meetings={meetingView.meetings}
-              identity={meetingView.identity}
-              legacySessions={checkInView.activeSessions}
-            />
-          </div>
-
-          <div className="mt-6 sm:mt-10">
-            <AttendanceHistorySection
-              view={historyView}
-              query={query}
-              page={parsePage(flat.page)}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function AttendanceHeader({ period }: { period?: string | null }) {
-  return (
-    <header className="min-w-0">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
-        Attendance
-      </h1>
-      <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-        Track your attendance across your enrolled courses.
-      </p>
-      {period ? (
-        <Badge
-          variant="neutral"
-          className="mt-3 gap-1.5 rounded-full px-3 py-1"
-        >
-          <GraduationCap
-            aria-hidden="true"
-            className="h-3.5 w-3.5"
+        <div className="mt-8 space-y-8">
+          <ActiveAttendanceSection
+            meetings={meetingView.meetings}
+            identity={meetingView.identity}
+            legacySessions={checkInView.activeSessions}
           />
-          {period}
-        </Badge>
-      ) : null}
-    </header>
+
+          <section aria-labelledby="course-attendance">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h2
+                  id="course-attendance"
+                  className="text-base font-semibold tracking-tight sm:text-lg"
+                >
+                  Course Attendance
+                </h2>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Attendance summary for your enrolled courses.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <CourseAttendanceTable rows={courseRows} />
+            </div>
+          </section>
+
+          <AttendanceHistorySection
+            view={historyView}
+            query={query}
+            page={parsePage(flat.page)}
+          />
+        </div>
+      )}
+    </PageShell>
   );
 }

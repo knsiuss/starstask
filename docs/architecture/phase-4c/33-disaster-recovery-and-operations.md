@@ -9,13 +9,13 @@
 
 ## 33.2 Retention per data class (RECOMMENDED)
 
-| Class | Retention (RECOMMENDED) | Mechanism |
-|-------|-------------------------|-----------|
-| `attendance_verification_attempts` (geo attempts) | 90 days then anonymize | API cron `attendance-retention` (VERIFIED route) |
-| `notification_deliveries` completed | 180 days | API cron `notification-retention` (VERIFIED) |
-| `audit_logs` | 3 years hot, then cold archive | exports + purge RPC |
-| Evidence/source files | while cited, + 1 year | storage lifecycle |
-| Monitoring `*_events` | 12 months | app cron |
+| Class                                             | Retention (RECOMMENDED)        | Mechanism                                        |
+| ------------------------------------------------- | ------------------------------ | ------------------------------------------------ |
+| `attendance_verification_attempts` (geo attempts) | 90 days then anonymize         | API cron `attendance-retention` (VERIFIED route) |
+| `notification_deliveries` completed               | 180 days                       | API cron `notification-retention` (VERIFIED)     |
+| `audit_logs`                                      | 3 years hot, then cold archive | exports + purge RPC                              |
+| Evidence/source files                             | while cited, + 1 year          | storage lifecycle                                |
+| Monitoring `*_events`                             | 12 months                      | app cron                                         |
 
 ## 33.3 Monitoring
 

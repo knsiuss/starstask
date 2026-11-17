@@ -9,7 +9,7 @@ import type {
 import { ApiError } from "@/lib/api/errors";
 import { DataAccessError } from "@/lib/db/assignments";
 import {
-  joinClassByName,
+  joinOrCreateClass,
   setMyAvatarUrl,
   updateMyProfile,
 } from "@/lib/db/profiles";
@@ -157,7 +157,7 @@ export async function saveOnboardingProfile(
   try {
     const profile = await updateMyProfile(input);
     const classJoin = input.className
-      ? await joinClassByName(input.className)
+      ? await joinOrCreateClass(input.className)
       : null;
 
     return { profile, classJoin };

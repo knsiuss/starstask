@@ -118,7 +118,7 @@ export function AttendanceMeetingDashboard({
     setIsExporting(true);
 
     try {
-      const response = await fetch(`${exportHref}&async=1`);
+      const response = await fetch(`${exportHref}?async=1`);
 
       if (response.ok && response.status === 202) {
         const body = (await response.json()) as { data?: { jobId?: string } };

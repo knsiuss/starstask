@@ -43,6 +43,7 @@ export function ConversationListPanel({
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "archived">("all");
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -60,12 +61,27 @@ export function ConversationListPanel({
     body: Record<string, unknown>,
   ): Promise<void> {
     setMenuFor(null);
-    await fetch(`/api/dm/conversations/${conversation.id}/prefs`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }).catch(() => {});
-    window.location.reload();
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/dm/conversations/${conversation.id}/prefs`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (!response.ok) {
+        setError("Could not update conversation preferences.");
+        return;
+      }
+
+      window.location.reload();
+    } catch {
+      setError("Could not update conversation preferences.");
+    }
   }
 
   const stories = useMemo(
@@ -206,6 +222,14 @@ export function ConversationListPanel({
         role="listbox"
         aria-label="Conversations"
       >
+        {error ? (
+          <p
+            role="alert"
+            className="text-destructive px-3 pb-2 text-xs"
+          >
+            {error}
+          </p>
+        ) : null}
         {total === 0 ? (
           <p className="text-muted-foreground px-2 py-10 text-center text-sm">
             {query
@@ -218,12 +242,8 @@ export function ConversationListPanel({
               const rowIndex = startIndex + index;
               const active = conversation.id === selectedId;
               return (
-                <button
+                <div
                   key={conversation.id}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => onSelect(conversation)}
                   style={{
                     transform: `translateY(${rowIndex * ROW_HEIGHT}px)`,
                     position: "absolute",
@@ -233,177 +253,168 @@ export function ConversationListPanel({
                     height: ROW_HEIGHT,
                   }}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                    "relative flex w-full items-center gap-2 rounded-xl px-3 transition-colors",
                     active
                       ? "bg-accent-soft dark:bg-accent-soft/40"
                       : "hover:bg-muted/60",
                   )}
                 >
-                  <span className="relative shrink-0">
-                    {conversation.otherAvatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- user avatar URL
-                      <img
-                        src={conversation.otherAvatarUrl}
-                        alt=""
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="from-accent to-accent-hover flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
-                        {initials(conversation.otherName)}
-                      </span>
-                    )}
-                    <PresenceDot
-                      online={onlineIds.has(conversation.otherUserId)}
-                    />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold">
-                          {conversation.otherName}
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => onSelect(conversation)}
+                    className="flex h-full min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    <span className="relative shrink-0">
+                      {conversation.otherAvatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- user avatar URL
+                        <img
+                          src={conversation.otherAvatarUrl}
+                          alt=""
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="from-accent to-accent-hover flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+                          {initials(conversation.otherName)}
                         </span>
-                        {conversation.isPinned ? (
-                          <Pin
-                            aria-label="Pinned"
-                            className="text-muted-foreground h-3.5 w-3.5 shrink-0"
-                          />
-                        ) : null}
-                        {conversation.isMuted ? (
-                          <BellOff
-                            aria-label="Muted"
-                            className="text-muted-foreground h-3.5 w-3.5 shrink-0"
-                          />
-                        ) : null}
-                      </span>
-                      <span
-                        className={cn(
-                          "shrink-0 text-[11px]",
-                          active
-                            ? "text-accent dark:text-accent"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        {formatRowTime(conversation.lastAt)}
-                      </span>
+                      )}
+                      <PresenceDot
+                        online={onlineIds.has(conversation.otherUserId)}
+                      />
                     </span>
-                    <span className="mt-0.5 flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground truncate text-xs">
-                        {conversation.lastMessage ?? "Encrypted"}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="truncate text-sm font-semibold">
+                            {conversation.otherName}
+                          </span>
+                          {conversation.isPinned ? (
+                            <Pin
+                              aria-label="Pinned"
+                              className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+                            />
+                          ) : null}
+                          {conversation.isMuted ? (
+                            <BellOff
+                              aria-label="Muted"
+                              className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+                            />
+                          ) : null}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 text-[11px]",
+                            active
+                              ? "text-accent dark:text-accent"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {formatRowTime(conversation.lastAt)}
+                        </span>
                       </span>
-                      <span className="flex shrink-0 items-center gap-1">
+                      <span className="mt-0.5 flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground truncate text-xs">
+                          {conversation.lastMessage ?? "Encrypted"}
+                        </span>
                         {conversation.unreadCount > 0 ? (
-                          <span className="bg-accent flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+                          <span className="bg-accent flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
                             {conversation.unreadCount > 99
                               ? "99+"
                               : conversation.unreadCount}
                           </span>
                         ) : null}
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label="Conversation actions"
-                          aria-haspopup="menu"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setMenuFor(
-                              menuFor === conversation.id
-                                ? null
-                                : conversation.id,
-                            );
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              setMenuFor(
-                                menuFor === conversation.id
-                                  ? null
-                                  : conversation.id,
-                              );
-                            }
-                          }}
-                          className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-full transition-colors"
-                        >
-                          <Ellipsis
-                            aria-hidden="true"
-                            className="h-4 w-4"
-                          />
-                        </span>
                       </span>
                     </span>
-                    {menuFor === conversation.id ? (
-                      <span
-                        role="menu"
-                        aria-label="Conversation actions"
-                        className="bg-surface border-border relative z-10 mt-1 flex flex-col rounded-xl border p-1 shadow-lg"
-                        onClick={(event) => event.stopPropagation()}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Conversation actions"
+                    aria-haspopup="menu"
+                    aria-expanded={menuFor === conversation.id}
+                    onClick={() =>
+                      setMenuFor(
+                        menuFor === conversation.id ? null : conversation.id,
+                      )
+                    }
+                    className="text-muted-foreground hover:text-foreground flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    <Ellipsis
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                    />
+                  </button>
+                  {menuFor === conversation.id ? (
+                    <div
+                      role="menu"
+                      aria-label="Conversation actions"
+                      className="bg-surface border-border absolute top-full right-3 z-20 mt-1 flex flex-col rounded-xl border p-1 shadow-lg"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                        onClick={() =>
+                          void setPref(conversation, {
+                            pinned: !conversation.isPinned,
+                          })
+                        }
                       >
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
-                          onClick={() =>
-                            void setPref(conversation, {
-                              pinned: !conversation.isPinned,
-                            })
-                          }
-                        >
-                          {conversation.isPinned ? (
-                            <PinOff className="h-4 w-4" />
-                          ) : (
-                            <Pin className="h-4 w-4" />
-                          )}
-                          {conversation.isPinned ? "Unpin" : "Pin"}
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
-                          onClick={() =>
-                            void setPref(conversation, {
-                              muted: !conversation.isMuted,
-                            })
-                          }
-                        >
-                          {conversation.isMuted ? (
-                            <BellRing className="h-4 w-4" />
-                          ) : (
-                            <BellOff className="h-4 w-4" />
-                          )}
-                          {conversation.isMuted ? "Unmute" : "Mute"}
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
-                          onClick={() =>
-                            void setPref(conversation, {
-                              archived: !conversation.isArchived,
-                            })
-                          }
-                        >
-                          {conversation.isArchived ? (
-                            <ArchiveRestore className="h-4 w-4" />
-                          ) : (
-                            <Archive className="h-4 w-4" />
-                          )}
-                          {conversation.isArchived ? "Unarchive" : "Archive"}
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
-                          onClick={() =>
-                            void setPref(conversation, { unread: true })
-                          }
-                        >
-                          <MailOpen className="h-4 w-4" />
-                          Mark as unread
-                        </button>
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
+                        {conversation.isPinned ? (
+                          <PinOff className="h-4 w-4" />
+                        ) : (
+                          <Pin className="h-4 w-4" />
+                        )}
+                        {conversation.isPinned ? "Unpin" : "Pin"}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                        onClick={() =>
+                          void setPref(conversation, {
+                            muted: !conversation.isMuted,
+                          })
+                        }
+                      >
+                        {conversation.isMuted ? (
+                          <BellRing className="h-4 w-4" />
+                        ) : (
+                          <BellOff className="h-4 w-4" />
+                        )}
+                        {conversation.isMuted ? "Unmute" : "Mute"}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                        onClick={() =>
+                          void setPref(conversation, {
+                            archived: !conversation.isArchived,
+                          })
+                        }
+                      >
+                        {conversation.isArchived ? (
+                          <ArchiveRestore className="h-4 w-4" />
+                        ) : (
+                          <Archive className="h-4 w-4" />
+                        )}
+                        {conversation.isArchived ? "Unarchive" : "Archive"}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="hover:bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs"
+                        onClick={() =>
+                          void setPref(conversation, { unread: true })
+                        }
+                      >
+                        <MailOpen className="h-4 w-4" />
+                        Mark as unread
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </div>

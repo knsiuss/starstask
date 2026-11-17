@@ -92,12 +92,13 @@ export function AttachmentDeleteDialog({
           </Alert>
         ) : null}
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
             disabled={isDeleting}
+            className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
           >
             Cancel
           </Button>
@@ -107,6 +108,7 @@ export function AttachmentDeleteDialog({
             onClick={() => void remove()}
             disabled={isDeleting}
             aria-busy={isDeleting}
+            className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
           >
             {isDeleting ? (
               <>

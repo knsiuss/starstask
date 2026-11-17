@@ -7,6 +7,12 @@ import type {
 
 import { ApiError } from "@/lib/api/errors";
 import {
+  ASSIGNMENT_DETAIL_CACHE_TAG,
+  DASHBOARD_CACHE_TAG,
+  LISTING_CACHE_TAG,
+  invalidateCacheTag,
+} from "@/lib/cache/redis-cache";
+import {
   createSupabaseAdminClient,
   isServiceRoleConfigured,
 } from "@/lib/supabase/admin";
@@ -37,6 +43,10 @@ export async function reviewSubmission(
     throw toClassApiError(error, "Could not record the review.");
   }
 
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+  await invalidateCacheTag(LISTING_CACHE_TAG);
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
+
   return { status: data };
 }
 
@@ -55,6 +65,10 @@ export async function moderateAssignment(
   if (error || !data) {
     throw toClassApiError(error, "Could not apply the moderation action.");
   }
+
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+  await invalidateCacheTag(LISTING_CACHE_TAG);
+  await invalidateCacheTag(DASHBOARD_CACHE_TAG);
 
   return { status: data };
 }
@@ -80,6 +94,9 @@ export async function removeSensitiveAttachment(
   if (error || !storagePath) {
     throw toClassApiError(error, "Could not remove the attachment.");
   }
+
+  await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
+  await invalidateCacheTag(LISTING_CACHE_TAG);
 
   if (!isServiceRoleConfigured()) {
     throw new ApiError(

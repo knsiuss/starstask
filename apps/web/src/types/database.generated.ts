@@ -309,6 +309,13 @@ export type Database = {
             referencedRelation: "classes";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "app_activity_events_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
         ];
       };
       app_error_events: {
@@ -379,6 +386,13 @@ export type Database = {
             referencedRelation: "assignments";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "assignment_attachments_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
         ];
       };
       assignment_completions: {
@@ -404,6 +418,13 @@ export type Database = {
             columns: ["assignment_id"];
             isOneToOne: false;
             referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignment_completions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
             referencedColumns: ["id"];
           },
         ];
@@ -461,10 +482,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "assignment_reports_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "assignment_reports_class_id_fkey";
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignment_reports_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
         ];
@@ -501,6 +536,13 @@ export type Database = {
             columns: ["assignment_id"];
             isOneToOne: false;
             referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignment_reviews_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
             referencedColumns: ["id"];
           },
         ];
@@ -549,10 +591,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "assignment_revisions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "assignment_revisions_class_id_fkey";
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignment_revisions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
         ];
@@ -661,6 +717,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "assignments_course_id_fkey";
             columns: ["course_id"];
             isOneToOne: false;
@@ -746,10 +809,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "attendance_correction_audits_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "attendance_correction_audits_session_id_fkey";
             columns: ["session_id"];
             isOneToOne: false;
             referencedRelation: "discussion_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "attendance_correction_audits_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions_domain_view";
             referencedColumns: ["id"];
           },
           {
@@ -976,6 +1053,13 @@ export type Database = {
             referencedRelation: "discussion_sessions";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "attendance_verification_attempts_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions_domain_view";
+            referencedColumns: ["id"];
+          },
         ];
       };
       audit_logs: {
@@ -1028,6 +1112,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "audit_logs_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "audit_logs_university_id_fkey";
             columns: ["university_id"];
             isOneToOne: false;
@@ -1061,6 +1152,28 @@ export type Database = {
           provider?: string | null;
           reason?: string | null;
           user_id?: string | null;
+        };
+        Relationships: [];
+      };
+      beta_testers: {
+        Row: {
+          granted_at: string;
+          granted_by: string | null;
+          note: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          granted_at?: string;
+          granted_by?: string | null;
+          note?: string | null;
+          user_id: string;
+        };
+        Update: {
+          granted_at?: string;
+          granted_by?: string | null;
+          note?: string | null;
+          user_id?: string;
         };
         Relationships: [];
       };
@@ -1306,6 +1419,13 @@ export type Database = {
             referencedRelation: "classes";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "class_applications_created_class_id_fkey";
+            columns: ["created_class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
         ];
       };
       class_calendar_events: {
@@ -1367,6 +1487,13 @@ export type Database = {
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_calendar_events_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
           {
@@ -1437,10 +1564,111 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "class_course_schedules_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "class_course_schedules_subject_id_fkey";
             columns: ["subject_id"];
             isOneToOne: false;
             referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_export_branding: {
+        Row: {
+          address: string | null;
+          branding_enabled: boolean;
+          city: string | null;
+          class_id: string;
+          contact_number: string | null;
+          created_at: string;
+          department: string | null;
+          document_title: string;
+          faculty: string | null;
+          footer_text: string | null;
+          official_email: string | null;
+          official_website: string | null;
+          passing_threshold: number;
+          product_footer: string | null;
+          product_logo_url: string;
+          product_name: string;
+          product_tagline: string;
+          study_program: string | null;
+          university_logo_url: string | null;
+          university_name: string;
+          university_short_name: string | null;
+          university_tagline: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          address?: string | null;
+          branding_enabled?: boolean;
+          city?: string | null;
+          class_id: string;
+          contact_number?: string | null;
+          created_at?: string;
+          department?: string | null;
+          document_title?: string;
+          faculty?: string | null;
+          footer_text?: string | null;
+          official_email?: string | null;
+          official_website?: string | null;
+          passing_threshold?: number;
+          product_footer?: string | null;
+          product_logo_url?: string;
+          product_name?: string;
+          product_tagline?: string;
+          study_program?: string | null;
+          university_logo_url?: string | null;
+          university_name?: string;
+          university_short_name?: string | null;
+          university_tagline?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string | null;
+          branding_enabled?: boolean;
+          city?: string | null;
+          class_id?: string;
+          contact_number?: string | null;
+          created_at?: string;
+          department?: string | null;
+          document_title?: string;
+          faculty?: string | null;
+          footer_text?: string | null;
+          official_email?: string | null;
+          official_website?: string | null;
+          passing_threshold?: number;
+          product_footer?: string | null;
+          product_logo_url?: string;
+          product_name?: string;
+          product_tagline?: string;
+          study_program?: string | null;
+          university_logo_url?: string | null;
+          university_name?: string;
+          university_short_name?: string | null;
+          university_tagline?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_export_branding_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: true;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_export_branding_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: true;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
         ];
@@ -1554,6 +1782,132 @@ export type Database = {
             referencedRelation: "classes";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "class_invitations_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_ketua_assignments: {
+        Row: {
+          assigned_at: string;
+          class_id: string;
+          id: string;
+          removed_reason: string | null;
+          revoked_at: string | null;
+          source: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          assigned_at?: string;
+          class_id: string;
+          id?: string;
+          removed_reason?: string | null;
+          revoked_at?: string | null;
+          source: string;
+          user_id: string;
+        };
+        Update: {
+          assigned_at?: string;
+          class_id?: string;
+          id?: string;
+          removed_reason?: string | null;
+          revoked_at?: string | null;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_ketua_assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_ketua_assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_ketua_recall_votes: {
+        Row: {
+          created_at: string;
+          recall_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          recall_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          recall_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_ketua_recall_votes_recall_id_fkey";
+            columns: ["recall_id"];
+            isOneToOne: false;
+            referencedRelation: "class_ketua_recalls";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_ketua_recalls: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          decided_at: string | null;
+          id: string;
+          opened_by: string;
+          reason: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          decided_at?: string | null;
+          id?: string;
+          opened_by: string;
+          reason?: string | null;
+          status?: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          id?: string;
+          opened_by?: string;
+          reason?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_ketua_recalls_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_ketua_recalls_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
         ];
       };
       class_members: {
@@ -1582,6 +1936,13 @@ export type Database = {
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
         ];
@@ -1651,6 +2012,60 @@ export type Database = {
           },
         ];
       };
+      class_subject_members: {
+        Row: {
+          class_id: string;
+          enrolled_at: string;
+          enrolled_via: string;
+          subject_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          enrolled_at?: string;
+          enrolled_via?: string;
+          subject_id: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          enrolled_at?: string;
+          enrolled_via?: string;
+          subject_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_subject_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_subject_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_subject_members_class_id_user_id_fkey";
+            columns: ["class_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "class_members";
+            referencedColumns: ["class_id", "user_id"];
+          },
+          {
+            foreignKeyName: "class_subject_members_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       class_subjects: {
         Row: {
           class_id: string;
@@ -1698,6 +2113,13 @@ export type Database = {
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_subjects_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
           {
@@ -1810,6 +2232,13 @@ export type Database = {
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_verification_requests_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
         ];
@@ -1986,6 +2415,65 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "academic_years";
             referencedColumns: ["id", "university_id"];
+          },
+        ];
+      };
+      course_component_grades: {
+        Row: {
+          class_id: string;
+          component: string;
+          created_at: string;
+          id: string;
+          score: number;
+          student_id: string;
+          subject_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          component: string;
+          created_at?: string;
+          id?: string;
+          score: number;
+          student_id: string;
+          subject_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          class_id?: string;
+          component?: string;
+          created_at?: string;
+          id?: string;
+          score?: number;
+          student_id?: string;
+          subject_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_component_grades_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_component_grades_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_component_grades_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -2174,6 +2662,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "course_materials_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "course_materials_offering_same_university";
             columns: ["offering_id", "university_id"];
             isOneToOne: false;
@@ -2279,6 +2774,56 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "academic_years";
             referencedColumns: ["id", "university_id"];
+          },
+        ];
+      };
+      course_retake_enrollments: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          created_by: string | null;
+          enrolled_via: string;
+          subject_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          enrolled_via?: string;
+          subject_id: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          enrolled_via?: string;
+          subject_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_retake_enrollments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_retake_enrollments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_retake_enrollments_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -2464,6 +3009,13 @@ export type Database = {
             referencedRelation: "discussion_sessions";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "discussion_session_checkins_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions_domain_view";
+            referencedColumns: ["id"];
+          },
         ];
       };
       discussion_session_reminders: {
@@ -2521,6 +3073,13 @@ export type Database = {
             referencedRelation: "discussion_sessions";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "discussion_session_reminders_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions_domain_view";
+            referencedColumns: ["id"];
+          },
         ];
       };
       discussion_session_rsvps: {
@@ -2555,6 +3114,13 @@ export type Database = {
             columns: ["session_id"];
             isOneToOne: false;
             referencedRelation: "discussion_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_session_rsvps_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions_domain_view";
             referencedColumns: ["id"];
           },
         ];
@@ -2675,10 +3241,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "discussion_sessions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "discussion_sessions_class_id_fkey";
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
             referencedColumns: ["id"];
           },
           {
@@ -2756,6 +3336,525 @@ export type Database = {
           },
         ];
       };
+      dm_blocks: {
+        Row: {
+          blocked_id: string;
+          blocker_id: string;
+          created_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          blocked_id: string;
+          blocker_id: string;
+          created_at?: string;
+        };
+        Update: {
+          blocked_id?: string;
+          blocker_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_blocks_blocked_id_fkey";
+            columns: ["blocked_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_blocks_blocker_id_fkey";
+            columns: ["blocker_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_calls: {
+        Row: {
+          caller_id: string;
+          conversation_id: string;
+          created_at: string;
+          ended_at: string | null;
+          id: string;
+          kind: string;
+          signal: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          caller_id: string;
+          conversation_id: string;
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          kind?: string;
+          signal?: string | null;
+          status?: string;
+        };
+        Update: {
+          caller_id?: string;
+          conversation_id?: string;
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          kind?: string;
+          signal?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_calls_caller_id_fkey";
+            columns: ["caller_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_calls_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_conversations: {
+        Row: {
+          created_at: string;
+          group_key: string | null;
+          group_name: string | null;
+          id: string;
+          is_group: boolean;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          group_key?: string | null;
+          group_name?: string | null;
+          id?: string;
+          is_group?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          group_key?: string | null;
+          group_name?: string | null;
+          id?: string;
+          is_group?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      dm_group_keys: {
+        Row: {
+          conversation_id: string;
+          user_id: string;
+          wrapped_key: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          conversation_id: string;
+          user_id: string;
+          wrapped_key: string;
+        };
+        Update: {
+          conversation_id?: string;
+          user_id?: string;
+          wrapped_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_group_keys_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_group_keys_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_key_backup: {
+        Row: {
+          updated_at: string;
+          user_id: string;
+          wrapped_private_key: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          updated_at?: string;
+          user_id: string;
+          wrapped_private_key: string;
+        };
+        Update: {
+          updated_at?: string;
+          user_id?: string;
+          wrapped_private_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_key_backup_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_key_history: {
+        Row: {
+          created_at: string;
+          id: string;
+          public_key: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          public_key: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          public_key?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_key_history_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_keys: {
+        Row: {
+          created_at: string;
+          public_key: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          public_key: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          public_key?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_keys_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_messages: {
+        Row: {
+          attachment_mime: string | null;
+          attachment_name: string | null;
+          attachment_path: string | null;
+          attachment_size: number | null;
+          body: string;
+          conversation_id: string;
+          created_at: string;
+          deleted_at: string | null;
+          edited_at: string | null;
+          group_wraps: Json | null;
+          id: string;
+          is_pinned: boolean;
+          key_epoch: number;
+          reactions: NonNullable<Json>;
+          reply_to_id: string | null;
+          sender_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          attachment_mime?: string | null;
+          attachment_name?: string | null;
+          attachment_path?: string | null;
+          attachment_size?: number | null;
+          body: string;
+          conversation_id: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          edited_at?: string | null;
+          group_wraps?: Json | null;
+          id?: string;
+          is_pinned?: boolean;
+          key_epoch?: number;
+          reactions?: NonNullable<Json>;
+          reply_to_id?: string | null;
+          sender_id: string;
+        };
+        Update: {
+          attachment_mime?: string | null;
+          attachment_name?: string | null;
+          attachment_path?: string | null;
+          attachment_size?: number | null;
+          body?: string;
+          conversation_id?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          edited_at?: string | null;
+          group_wraps?: Json | null;
+          id?: string;
+          is_pinned?: boolean;
+          key_epoch?: number;
+          reactions?: NonNullable<Json>;
+          reply_to_id?: string | null;
+          sender_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_messages_reply_to_id_fkey";
+            columns: ["reply_to_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_messages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_participants: {
+        Row: {
+          archived_at: string | null;
+          conversation_id: string;
+          is_archived: boolean;
+          is_muted: boolean;
+          is_pinned: boolean;
+          last_read_at: string | null;
+          last_seen_at: string | null;
+          left_at: string | null;
+          pinned_at: string | null;
+          theme: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          archived_at?: string | null;
+          conversation_id: string;
+          is_archived?: boolean;
+          is_muted?: boolean;
+          is_pinned?: boolean;
+          last_read_at?: string | null;
+          last_seen_at?: string | null;
+          left_at?: string | null;
+          pinned_at?: string | null;
+          theme?: string | null;
+          user_id: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          conversation_id?: string;
+          is_archived?: boolean;
+          is_muted?: boolean;
+          is_pinned?: boolean;
+          last_read_at?: string | null;
+          last_seen_at?: string | null;
+          left_at?: string | null;
+          pinned_at?: string | null;
+          theme?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_participants_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_participants_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_stories: {
+        Row: {
+          caption: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          mime: string;
+          path: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          caption?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          mime: string;
+          path: string;
+          user_id: string;
+        };
+        Update: {
+          caption?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          mime?: string;
+          path?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_stories_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dm_typing: {
+        Row: {
+          conversation_id: string;
+          is_typing: boolean;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          conversation_id: string;
+          is_typing?: boolean;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          conversation_id?: string;
+          is_typing?: boolean;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dm_typing_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "dm_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dm_typing_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      drive_submissions: {
+        Row: {
+          assignment_id: string;
+          created_at: string;
+          drive_file_id: string | null;
+          drive_file_name: string;
+          file_size: number;
+          id: string;
+          mime_type: string;
+          share_expires_at: string | null;
+          share_revoked_at: string | null;
+          share_token: string;
+          share_token_hash: string | null;
+          source: string;
+          storage_path: string;
+          storage_provider: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          assignment_id: string;
+          created_at?: string;
+          drive_file_id?: string | null;
+          drive_file_name: string;
+          file_size: number;
+          id?: string;
+          mime_type: string;
+          share_expires_at?: string | null;
+          share_revoked_at?: string | null;
+          share_token?: string;
+          share_token_hash?: string | null;
+          source?: string;
+          storage_path: string;
+          storage_provider: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          assignment_id?: string;
+          created_at?: string;
+          drive_file_id?: string | null;
+          drive_file_name?: string;
+          file_size?: number;
+          id?: string;
+          mime_type?: string;
+          share_expires_at?: string | null;
+          share_revoked_at?: string | null;
+          share_token?: string;
+          share_token_hash?: string | null;
+          source?: string;
+          storage_path?: string;
+          storage_provider?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "drive_submissions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "drive_submissions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       enrollments: {
         Row: {
           created_at: string;
@@ -2824,6 +3923,51 @@ export type Database = {
             columns: ["university_id"];
             isOneToOne: false;
             referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      export_jobs: {
+        Row: {
+          created_at: string;
+          error_category: string | null;
+          id: string;
+          kind: string;
+          params: NonNullable<Json>;
+          result_path: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          error_category?: string | null;
+          id?: string;
+          kind: string;
+          params?: NonNullable<Json>;
+          result_path?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          error_category?: string | null;
+          id?: string;
+          kind?: string;
+          params?: NonNullable<Json>;
+          result_path?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -2957,7 +4101,57 @@ export type Database = {
             referencedRelation: "discussion_sessions";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "google_calendar_event_mappings_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "discussion_sessions_domain_view";
+            referencedColumns: ["id"];
+          },
         ];
+      };
+      google_drive_connections: {
+        Row: {
+          access_token_ciphertext: string;
+          connected_at: string;
+          drive_email: string | null;
+          last_error_category: string | null;
+          last_refreshed_at: string | null;
+          refresh_token_ciphertext: string | null;
+          scope: string;
+          status: string;
+          token_expires_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_token_ciphertext: string;
+          connected_at?: string;
+          drive_email?: string | null;
+          last_error_category?: string | null;
+          last_refreshed_at?: string | null;
+          refresh_token_ciphertext?: string | null;
+          scope: string;
+          status?: string;
+          token_expires_at: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          access_token_ciphertext?: string;
+          connected_at?: string;
+          drive_email?: string | null;
+          last_error_category?: string | null;
+          last_refreshed_at?: string | null;
+          refresh_token_ciphertext?: string | null;
+          scope?: string;
+          status?: string;
+          token_expires_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       grade_batches: {
         Row: {
@@ -3306,6 +4500,13 @@ export type Database = {
             referencedRelation: "classes";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "leave_request_forwardings_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
         ];
       };
       leave_request_history: {
@@ -3441,7 +4642,51 @@ export type Database = {
             referencedRelation: "classes";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "leave_requests_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
         ];
+      };
+      native_push_tokens: {
+        Row: {
+          created_at: string;
+          device_label: string | null;
+          disabled_at: string | null;
+          id: string;
+          last_success_at: string | null;
+          platform: string;
+          token: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          device_label?: string | null;
+          disabled_at?: string | null;
+          id?: string;
+          last_success_at?: string | null;
+          platform: string;
+          token: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          device_label?: string | null;
+          disabled_at?: string | null;
+          id?: string;
+          last_success_at?: string | null;
+          platform?: string;
+          token?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       notification_deliveries: {
         Row: {
@@ -3499,6 +4744,13 @@ export type Database = {
             columns: ["assignment_id"];
             isOneToOne: false;
             referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notification_deliveries_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
             referencedColumns: ["id"];
           },
           {
@@ -3607,6 +4859,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      offline_checkin_queue: {
+        Row: {
+          captured_at: string;
+          created_at: string;
+          id: string;
+          payload: NonNullable<Json>;
+          session_id: string;
+          synced_at: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          captured_at?: string;
+          created_at?: string;
+          id?: string;
+          payload: NonNullable<Json>;
+          session_id: string;
+          synced_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          captured_at?: string;
+          created_at?: string;
+          id?: string;
+          payload?: NonNullable<Json>;
+          session_id?: string;
+          synced_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "offline_checkin_queue_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       personal_calendar_events: {
         Row: {
           created_at: string;
@@ -3668,6 +4959,102 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [];
+      };
+      plugin_events: {
+        Row: {
+          content_hash: string;
+          description: string | null;
+          ends_at: string | null;
+          first_seen_at: string;
+          id: string;
+          kind: string;
+          last_seen_at: string;
+          location: string | null;
+          plugin_id: string;
+          program_id: string;
+          source_url: string | null;
+          starts_at: string;
+          title: string;
+          university_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          content_hash: string;
+          description?: string | null;
+          ends_at?: string | null;
+          first_seen_at?: string;
+          id?: string;
+          kind: string;
+          last_seen_at?: string;
+          location?: string | null;
+          plugin_id: string;
+          program_id?: string;
+          source_url?: string | null;
+          starts_at: string;
+          title: string;
+          university_id: string;
+        };
+        Update: {
+          content_hash?: string;
+          description?: string | null;
+          ends_at?: string | null;
+          first_seen_at?: string;
+          id?: string;
+          kind?: string;
+          last_seen_at?: string;
+          location?: string | null;
+          plugin_id?: string;
+          program_id?: string;
+          source_url?: string | null;
+          starts_at?: string;
+          title?: string;
+          university_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plugin_events_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      plugin_sync_status: {
+        Row: {
+          event_count: number;
+          last_attempt_at: string | null;
+          last_error: string | null;
+          last_success_at: string | null;
+          plugin_id: string;
+          university_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          event_count?: number;
+          last_attempt_at?: string | null;
+          last_error?: string | null;
+          last_success_at?: string | null;
+          plugin_id: string;
+          university_id: string;
+        };
+        Update: {
+          event_count?: number;
+          last_attempt_at?: string | null;
+          last_error?: string | null;
+          last_success_at?: string | null;
+          plugin_id?: string;
+          university_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plugin_sync_status_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       profiles: {
         Row: {
@@ -3755,42 +5142,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      native_push_tokens: {
-        Row: {
-          created_at: string;
-          device_label: string | null;
-          disabled_at: string | null;
-          id: string;
-          last_success_at: string | null;
-          platform: string;
-          token: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          device_label?: string | null;
-          disabled_at?: string | null;
-          id?: string;
-          last_success_at?: string | null;
-          platform: string;
-          token: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string;
-          device_label?: string | null;
-          disabled_at?: string | null;
-          id?: string;
-          last_success_at?: string | null;
-          platform?: string;
-          token?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
       rate_limits: {
         Row: {
           hits: number;
@@ -3836,6 +5187,13 @@ export type Database = {
             columns: ["assignment_id"];
             isOneToOne: false;
             referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saved_assignments_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
             referencedColumns: ["id"];
           },
         ];
@@ -4176,9 +5534,11 @@ export type Database = {
           created_by: string | null;
           deactivated_at: string | null;
           id: string;
+          institutional_domains: string[];
           locale: string | null;
           logo_url: string | null;
           name: string;
+          nim_prefix: string | null;
           province: string | null;
           short_name: string | null;
           slug: string;
@@ -4198,9 +5558,11 @@ export type Database = {
           created_by?: string | null;
           deactivated_at?: string | null;
           id?: string;
+          institutional_domains?: string[];
           locale?: string | null;
           logo_url?: string | null;
           name: string;
+          nim_prefix?: string | null;
           province?: string | null;
           short_name?: string | null;
           slug: string;
@@ -4219,9 +5581,11 @@ export type Database = {
           created_by?: string | null;
           deactivated_at?: string | null;
           id?: string;
+          institutional_domains?: string[];
           locale?: string | null;
           logo_url?: string | null;
           name?: string;
+          nim_prefix?: string | null;
           province?: string | null;
           short_name?: string | null;
           slug?: string;
@@ -4286,111 +5650,305 @@ export type Database = {
           },
         ];
       };
-      dm_conversations: {
-        Row: { id: string; created_at: string; updated_at: string };
-        Insert: { id?: string; created_at?: string; updated_at?: string };
-        Update: { id?: string; created_at?: string; updated_at?: string };
-        Relationships: [];
-      };
-      dm_participants: {
+      university_plugins: {
         Row: {
-          conversation_id: string;
-          user_id: string;
-          last_read_at: string | null;
-          left_at: string | null;
-        };
-        Insert: {
-          conversation_id: string;
-          user_id: string;
-          last_read_at?: string | null;
-          left_at?: string | null;
-        };
-        Update: {
-          conversation_id?: string;
-          user_id?: string;
-          last_read_at?: string | null;
-          left_at?: string | null;
-        };
-        Relationships: [];
-      };
-      dm_messages: {
-        Row: {
-          id: string;
-          conversation_id: string;
-          sender_id: string;
-          body: string;
-          created_at: string;
-          edited_at: string | null;
-          deleted_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          conversation_id: string;
-          sender_id: string;
-          body: string;
-          created_at?: string;
-          edited_at?: string | null;
-          deleted_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          conversation_id?: string;
-          sender_id?: string;
-          body?: string;
-          created_at?: string;
-          edited_at?: string | null;
-          deleted_at?: string | null;
-        };
-        Relationships: [];
-      };
-      dm_blocks: {
-        Row: {
-          blocker_id: string;
-          blocked_id: string;
-          created_at: string;
-        };
-        Insert: {
-          blocker_id: string;
-          blocked_id: string;
-          created_at?: string;
-        };
-        Update: {
-          blocker_id?: string;
-          blocked_id?: string;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      dm_keys: {
-        Row: {
-          user_id: string;
-          public_key: string;
-          created_at: string;
+          enabled: boolean;
+          plugin_id: string;
+          university_id: string;
           updated_at: string;
+          updated_by: string | null;
         };
+        ComputedFields: never;
         Insert: {
-          user_id: string;
-          public_key: string;
-          created_at?: string;
+          enabled?: boolean;
+          plugin_id: string;
+          university_id: string;
           updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
-          user_id?: string;
-          public_key?: string;
-          created_at?: string;
+          enabled?: boolean;
+          plugin_id?: string;
+          university_id?: string;
           updated_at?: string;
+          updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "university_plugins_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "university_plugins_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
-      [_ in never]: never;
+      assignments_owner_reporting: {
+        Row: {
+          class_id: string | null;
+          content_type: string;
+          course_id: string;
+          effective_owner_grain: string | null;
+          id: string;
+          offering_id: string | null;
+          status: string;
+          subject_id: string | null;
+          university_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id?: string | null;
+          content_type?: string | null;
+          course_id?: string | null;
+          effective_owner_grain?: never;
+          id?: string | null;
+          offering_id?: string | null;
+          status?: string | null;
+          subject_id?: string | null;
+          university_id?: string | null;
+        };
+        Update: {
+          class_id?: string | null;
+          content_type?: string | null;
+          course_id?: string | null;
+          effective_owner_grain?: never;
+          id?: string | null;
+          offering_id?: string | null;
+          status?: string | null;
+          subject_id?: string | null;
+          university_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_offering_same_university";
+            columns: ["offering_id", "university_id"];
+            isOneToOne: false;
+            referencedRelation: "course_offerings";
+            referencedColumns: ["id", "university_id"];
+          },
+          {
+            foreignKeyName: "assignments_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      audit_logs_university_gap: {
+        Row: {
+          day: string | null;
+          null_university_rows: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      classes_legacy_vs_fk_gap: {
+        Row: {
+          academic_year: string;
+          id: string;
+          missing_class_code: boolean | null;
+          missing_semester_fk: boolean | null;
+          missing_university_fk: boolean | null;
+          missing_year_fk: boolean | null;
+          semester: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          academic_year?: string | null;
+          id?: string | null;
+          missing_class_code?: never;
+          missing_semester_fk?: never;
+          missing_university_fk?: never;
+          missing_year_fk?: never;
+          semester?: string | null;
+        };
+        Update: {
+          academic_year?: string | null;
+          id?: string | null;
+          missing_class_code?: never;
+          missing_semester_fk?: never;
+          missing_university_fk?: never;
+          missing_year_fk?: never;
+          semester?: string | null;
+        };
+        Relationships: [];
+      };
+      discussion_sessions_domain_view: {
+        Row: {
+          assignment_id: string | null;
+          cancelled_at: string | null;
+          class_id: string;
+          completed_at: string | null;
+          ends_at: string;
+          id: string;
+          is_cancelled: boolean | null;
+          is_completed: boolean | null;
+          is_upcoming: boolean | null;
+          meeting_type: string;
+          organizer_id: string;
+          starts_at: string;
+          status: string;
+          window_length: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          assignment_id?: string | null;
+          cancelled_at?: string | null;
+          class_id?: string | null;
+          completed_at?: string | null;
+          ends_at?: string | null;
+          id?: string | null;
+          is_cancelled?: never;
+          is_completed?: never;
+          is_upcoming?: never;
+          meeting_type?: string | null;
+          organizer_id?: string | null;
+          starts_at?: string | null;
+          status?: string | null;
+          window_length?: never;
+        };
+        Update: {
+          assignment_id?: string | null;
+          cancelled_at?: string | null;
+          class_id?: string | null;
+          completed_at?: string | null;
+          ends_at?: string | null;
+          id?: string | null;
+          is_cancelled?: never;
+          is_completed?: never;
+          is_upcoming?: never;
+          meeting_type?: string | null;
+          organizer_id?: string | null;
+          starts_at?: string | null;
+          status?: string | null;
+          window_length?: never;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discussion_sessions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments_owner_reporting";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discussion_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes_legacy_vs_fk_gap";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dual_write_drift: {
+        Row: {
+          legacy_members: number | null;
+          legacy_without_new: number | null;
+          new_memberships: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      nim_drift: {
+        Row: {
+          identities_total: number | null;
+          prefixed: number | null;
+          unprefixed: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      notification_daily_digest: {
+        Row: {
+          day: string | null;
+          items: Json | null;
+          total: number | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      observability_tenant_gap: {
+        Row: {
+          null_university_rows: number | null;
+          source: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      semester_rollover_candidates: {
+        Row: {
+          old_code: string;
+          old_status: string;
+          old_year_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          old_code?: string | null;
+          old_status?: string | null;
+          old_year_id?: string | null;
+        };
+        Update: {
+          old_code?: string | null;
+          old_status?: string | null;
+          old_year_id?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
-      dm_get_or_create_conversation: {
-        Args: { p_other: string };
-        Returns: string;
-      };
       accept_class_invitation: { Args: { p_token: string }; Returns: string };
       accept_pending_invitation: {
         Args: { p_invitation_id: string };
@@ -4414,6 +5972,10 @@ export type Database = {
           p_request_id: string;
           p_storage_path: string;
         };
+        Returns: string;
+      };
+      add_retake_enrollment: {
+        Args: { p_class_id: string; p_subject_id: string; p_user_id: string };
         Returns: string;
       };
       apply_for_class: {
@@ -4534,6 +6096,7 @@ export type Database = {
         Returns: undefined;
       };
       cancel_session_rsvp: { Args: { p_session_id: string }; Returns: boolean };
+      cast_ketua_recall_vote: { Args: { p_recall_id: string }; Returns: Json };
       check_in_attendance_meeting:
         | {
             Args: {
@@ -4578,6 +6141,10 @@ export type Database = {
             };
             Returns: Json;
           };
+      claim_lecturer_persona: {
+        Args: { p_nidn?: string; p_university_id?: string };
+        Returns: string;
+      };
       claim_notification_deliveries: {
         Args: { p_limit?: number; p_now: string };
         Returns: {
@@ -4717,6 +6284,7 @@ export type Database = {
           unrecorded_count: number;
         }[];
       };
+      class_university: { Args: { p_class_id: string }; Returns: string };
       clear_discussion_session_checkin_location: {
         Args: { p_session_id: string };
         Returns: boolean;
@@ -4792,6 +6360,34 @@ export type Database = {
           p_starts_at: string;
           p_subject_id: string;
           p_title?: string;
+        };
+        Returns: string;
+      };
+      create_class_as_lecturer: {
+        Args: {
+          p_academic_year: string;
+          p_course_name: string;
+          p_description: string;
+          p_institution?: string;
+          p_lecturer_name?: string;
+          p_proposed_class_code?: string;
+          p_proposed_name: string;
+          p_proposed_slug: string;
+          p_semester: string;
+          p_university_id?: string;
+        };
+        Returns: string;
+      };
+      create_class_as_student: {
+        Args: {
+          p_academic_year: string;
+          p_course_name: string;
+          p_description: string;
+          p_join_policy?: string;
+          p_proposed_name: string;
+          p_proposed_slug: string;
+          p_semester: string;
+          p_university_id?: string;
         };
         Returns: string;
       };
@@ -4890,12 +6486,9 @@ export type Database = {
         Args: { p_subject_id: string };
         Returns: boolean;
       };
+      delete_native_push_token: { Args: { p_token: string }; Returns: boolean };
       delete_push_subscription: {
         Args: { p_endpoint: string };
-        Returns: boolean;
-      };
-      delete_native_push_token: {
-        Args: { p_token: string };
         Returns: boolean;
       };
       developer_applied_migrations: {
@@ -4941,17 +6534,17 @@ export type Database = {
       };
       developer_list_users: {
         Args: {
-          p_search?: string | null;
-          p_sort?: string;
           p_direction?: string;
           p_page?: number;
           p_page_size?: number;
+          p_search?: string;
+          p_sort?: string;
         };
         Returns: {
           created_at: string;
-          display_name: string | null;
+          display_name: string;
           id: string;
-          last_sign_in_at: string | null;
+          last_sign_in_at: string;
           total_count: number;
         }[];
       };
@@ -4967,6 +6560,21 @@ export type Database = {
           p_lon2: number;
         };
         Returns: number;
+      };
+      dm_get_or_create_conversation: {
+        Args: { p_other: string };
+        Returns: string;
+      };
+      dm_mark_read: { Args: { p_conversation: string }; Returns: undefined };
+      dm_mark_unread: { Args: { p_conversation: string }; Returns: undefined };
+      dm_set_conversation_pref: {
+        Args: {
+          p_archived?: boolean;
+          p_conversation: string;
+          p_muted?: boolean;
+          p_pinned?: boolean;
+        };
+        Returns: undefined;
       };
       enqueue_notification_event: {
         Args: {
@@ -4999,6 +6607,16 @@ export type Database = {
           status: string;
         }[];
       };
+      get_class_action_counts: {
+        Args: { p_class_ids: string[]; p_from: string; p_to: string };
+        Returns: {
+          class_id: string;
+          open_reports: number;
+          pending_leave: number;
+          pending_submissions: number;
+          todays_sessions: number;
+        }[];
+      };
       get_class_dependencies: {
         Args: { p_class_id: string };
         Returns: {
@@ -5017,26 +6635,13 @@ export type Database = {
           submission_count: number;
         }[];
       };
+      get_dashboard_overview: { Args: { p_user_id: string }; Returns: Json };
       get_invitation_preview: { Args: { p_token: string }; Returns: Json };
       get_my_declared_position: {
         Args: Record<PropertyKey, never>;
         Returns: string;
       };
       get_my_profile: { Args: Record<PropertyKey, never>; Returns: Json };
-      list_course_component_grades: {
-        Args: { p_class_id: string; p_subject_id: string };
-        Returns: Json;
-      };
-      set_course_component_grade: {
-        Args: {
-          p_class_id: string;
-          p_subject_id: string;
-          p_student_id: string;
-          p_component: string;
-          p_score: number;
-        };
-        Returns: number;
-      };
       get_platform_admin_overview: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -5054,10 +6659,27 @@ export type Database = {
           unpublished_assignments: number;
         }[];
       };
+      get_workspace_context: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      grant_ketua_kelas: {
+        Args: { p_class_id: string; p_source: string; p_user_id: string };
+        Returns: boolean;
+      };
+      grant_lecturer_membership_if_eligible: {
+        Args: {
+          p_email: string;
+          p_user_id: string;
+          p_verification_method?: string;
+        };
+        Returns: string;
+      };
       has_class_permission: {
         Args: { p_class_id: string; p_permission: string };
         Returns: boolean;
       };
+      is_beta_tester: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_class_admin: { Args: { p_class_id: string }; Returns: boolean };
       is_class_member: { Args: { p_class_id: string }; Returns: boolean };
       is_class_verification_owner: {
@@ -5068,13 +6690,26 @@ export type Database = {
         Args: { p_request_id: string };
         Returns: boolean;
       };
+      is_lecturer: { Args: { p_university_id?: string }; Returns: boolean };
       is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
-      is_beta_tester: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_retake_enrolled: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: boolean;
+      };
+      is_subject_member: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: boolean;
+      };
+      is_university_admin: {
+        Args: { p_university_id: string };
+        Returns: boolean;
+      };
       is_university_member: {
         Args: { p_university_id: string };
         Returns: boolean;
       };
       join_class_by_name: { Args: { p_class_name: string }; Returns: Json };
+      ketua_recall_threshold: { Args: { p_class_id: string }; Returns: number };
       leave_request_class_id: {
         Args: { p_request_id: string };
         Returns: string;
@@ -5150,6 +6785,10 @@ export type Database = {
           total_count: number;
         }[];
       };
+      list_course_component_grades: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: Json;
+      };
       list_discussion_sessions: {
         Args: {
           p_class_id?: string;
@@ -5190,6 +6829,24 @@ export type Database = {
           updated_at: string;
           viewer_status: string;
           visibility: string;
+        }[];
+      };
+      list_dm_conversations: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          is_archived: boolean;
+          is_group: boolean;
+          is_muted: boolean;
+          is_pinned: boolean;
+          last_at: string;
+          last_message: string;
+          other_avatar_url: string;
+          other_name: string;
+          other_user_id: string;
+          participant_names: string[];
+          unread: boolean;
+          unread_count: number;
         }[];
       };
       list_platform_classes: {
@@ -5242,6 +6899,12 @@ export type Database = {
           total_count: number;
         }[];
       };
+      list_published_semesters: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          semester: string;
+        }[];
+      };
       list_reminder_audience: {
         Args: { p_assignment_ids: string[] };
         Returns: {
@@ -5259,6 +6922,26 @@ export type Database = {
           reminder_24h: boolean;
           reminder_3h: boolean;
           session_id: string;
+          user_id: string;
+        }[];
+      };
+      list_university_members: {
+        Args: {
+          p_limit?: number;
+          p_offset?: number;
+          p_role?: string;
+          p_search?: string;
+          p_university_id: string;
+        };
+        Returns: {
+          avatar_url: string;
+          created_at: string;
+          display_name: string;
+          membership_id: string;
+          role: string;
+          status: string;
+          student_id: string;
+          total_count: number;
           user_id: string;
         }[];
       };
@@ -5316,6 +6999,10 @@ export type Database = {
         Args: { p_session_id: string };
         Returns: boolean;
       };
+      open_ketua_recall: {
+        Args: { p_class_id: string; p_reason?: string };
+        Returns: string;
+      };
       platform_upsert_student_identity: {
         Args: {
           p_academic_unit_id: string;
@@ -5329,6 +7016,22 @@ export type Database = {
       publish_class_assignment: {
         Args: { p_assignment_id: string };
         Returns: boolean;
+      };
+      purge_app_activity_events: {
+        Args: { p_retention_days?: number };
+        Returns: number;
+      };
+      purge_app_error_events: {
+        Args: { p_retention_days?: number };
+        Returns: number;
+      };
+      purge_attendance_verification_attempts: {
+        Args: { p_retention_days?: number };
+        Returns: number;
+      };
+      purge_audit_logs: {
+        Args: { p_retention_days?: number };
+        Returns: number;
       };
       purge_discussion_checkin_coordinates: {
         Args: { p_retention_days?: number };
@@ -5391,20 +7094,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      register_native_push_token: {
+        Args: { p_device_label?: string; p_platform: string; p_token: string };
+        Returns: string;
+      };
       register_push_subscription: {
         Args: {
           p_auth: string;
           p_device_label?: string;
           p_endpoint: string;
           p_p256dh: string;
-        };
-        Returns: string;
-      };
-      register_native_push_token: {
-        Args: {
-          p_device_label?: string;
-          p_platform: string;
-          p_token: string;
         };
         Returns: string;
       };
@@ -5423,6 +7122,10 @@ export type Database = {
       remove_leave_request_evidence: {
         Args: { p_evidence_id: string };
         Returns: string;
+      };
+      remove_retake_enrollment: {
+        Args: { p_class_id: string; p_subject_id: string; p_user_id: string };
+        Returns: boolean;
       };
       reopen_attendance_meeting: {
         Args: { p_session_id: string };
@@ -5534,9 +7237,9 @@ export type Database = {
       session_checkin_summary_many: {
         Args: { p_session_ids: string[] };
         Returns: {
-          session_id: string;
           has_location: boolean;
           radius_m: number;
+          session_id: string;
         }[];
       };
       session_class_id: { Args: { p_session_id: string }; Returns: string };
@@ -5555,6 +7258,16 @@ export type Database = {
       set_class_status: {
         Args: { p_class_id: string; p_status: string };
         Returns: boolean;
+      };
+      set_course_component_grade: {
+        Args: {
+          p_class_id: string;
+          p_component: string;
+          p_score: number;
+          p_student_id: string;
+          p_subject_id: string;
+        };
+        Returns: number;
       };
       set_discussion_session_checkin_location: {
         Args: {
@@ -5578,10 +7291,21 @@ export type Database = {
         Args: { p_position: string };
         Returns: string;
       };
+      set_university_member_role: {
+        Args: {
+          p_reason?: string;
+          p_role: string;
+          p_university_id: string;
+          p_user_id: string;
+        };
+        Returns: string;
+      };
       settle_session_side_effects: {
         Args: { p_session_id: string; p_starts_at: string };
         Returns: undefined;
       };
+      show_limit: { Args: Record<PropertyKey, never>; Returns: number };
+      show_trgm: { Args: { "": string }; Returns: string[] };
       submit_class_assignment: {
         Args: {
           p_assignment_type?: string;
@@ -5605,6 +7329,20 @@ export type Database = {
       submit_leave_request: {
         Args: { p_request_id: string };
         Returns: undefined;
+      };
+      sync_offline_attendance_meeting: {
+        Args: {
+          p_accuracy_m: number;
+          p_captured_at: string;
+          p_device_clock_auto?: boolean;
+          p_full_name: string;
+          p_latitude: number;
+          p_longitude: number;
+          p_nim: string;
+          p_session_id: string;
+          p_time_from_gnss?: boolean;
+        };
+        Returns: Json;
       };
       update_attendance_meeting_location: {
         Args: {

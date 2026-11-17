@@ -94,6 +94,7 @@ export function SaveAssignmentButton({
       disabled={isBusy}
       aria-busy={isBusy}
       aria-pressed={isSaved}
+      className="min-h-[44px] px-4 sm:min-h-8 sm:px-3"
     >
       {isBusy ? (
         <Loader2

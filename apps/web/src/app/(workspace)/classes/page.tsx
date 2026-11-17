@@ -117,18 +117,29 @@ export default async function MyClassesPage({
         {/* The empty state carries its own primary action, so a header action
             here would be a second competing button. */}
         {classes.length > 0 ? (
-          <Button
-            asChild
-            size="lg"
-          >
-            <Link href="/classes/join">
-              <PlusCircle
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Join a class
-            </Link>
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              asChild
+              variant="secondary"
+              size="lg"
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              <Link href="/classes/create">Create class</Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              <Link href="/classes/join">
+                <PlusCircle
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
+                Join a class
+              </Link>
+            </Button>
+          </div>
         ) : null}
       </header>
 

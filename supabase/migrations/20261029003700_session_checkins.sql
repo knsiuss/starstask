@@ -12,36 +12,41 @@
 -- Session location
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.discussion_sessions
-  ADD COLUMN IF NOT EXISTS checkin_latitude double precision,
-  ADD COLUMN IF NOT EXISTS checkin_longitude double precision,
-  ADD COLUMN IF NOT EXISTS checkin_radius_m integer NOT NULL DEFAULT 150;
-
-
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_checkin_point;
+ADD COLUMN IF NOT EXISTS checkin_latitude double precision,
+ADD COLUMN IF NOT EXISTS checkin_longitude double precision,
+ADD COLUMN IF NOT EXISTS checkin_radius_m integer NOT NULL DEFAULT 150;
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_checkin_point CHECK (
-    (checkin_latitude IS NULL AND checkin_longitude IS NULL)
-    OR (
-      checkin_latitude BETWEEN -90 AND 90
-      AND checkin_longitude BETWEEN -180 AND 180
-    )
-  );
-
-
-ALTER TABLE public.discussion_sessions DROP CONSTRAINT IF EXISTS discussion_sessions_checkin_radius;
+DROP CONSTRAINT IF EXISTS discussion_sessions_checkin_point;
 
 
 ALTER TABLE public.discussion_sessions
-  ADD CONSTRAINT discussion_sessions_checkin_radius CHECK (checkin_radius_m BETWEEN 25 AND 1000);
+ADD CONSTRAINT discussion_sessions_checkin_point CHECK (
+  (
+    checkin_latitude IS NULL
+    AND checkin_longitude IS NULL
+  )
+  OR (
+    checkin_latitude BETWEEN -90 AND 90
+    AND checkin_longitude BETWEEN -180 AND 180
+  )
+);
+
+
+ALTER TABLE public.discussion_sessions
+DROP CONSTRAINT IF EXISTS discussion_sessions_checkin_radius;
+
+
+ALTER TABLE public.discussion_sessions
+ADD CONSTRAINT discussion_sessions_checkin_radius CHECK (checkin_radius_m BETWEEN 25 AND 1000);
 
 
 -- ---------------------------------------------------------------------------
 -- discussion_session_checkins
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.discussion_session_checkins (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id uuid NOT NULL REFERENCES public.discussion_sessions (id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   status text NOT NULL DEFAULT 'present',
@@ -59,12 +64,16 @@ CREATE TABLE IF NOT EXISTS public.discussion_session_checkins (
   reviewed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT discussion_session_checkins_status_allowed CHECK (
-    status IN ('present', 'late', 'excused', 'absent')
-  ),
+  CONSTRAINT discussion_session_checkins_status_allowed CHECK (status IN ('present', 'late', 'excused', 'absent')),
   CONSTRAINT discussion_session_checkins_method_allowed CHECK (method IN ('geo', 'manual')),
-  CONSTRAINT discussion_session_checkins_accuracy CHECK (accuracy_m IS NULL OR accuracy_m >= 0),
-  CONSTRAINT discussion_session_checkins_distance CHECK (distance_m IS NULL OR distance_m >= 0),
+  CONSTRAINT discussion_session_checkins_accuracy CHECK (
+    accuracy_m IS NULL
+    OR accuracy_m >= 0
+  ),
+  CONSTRAINT discussion_session_checkins_distance CHECK (
+    distance_m IS NULL
+    OR distance_m >= 0
+  ),
   -- A geo row without a reading cannot be reviewed or disputed, so it is not a
   -- valid record. A manual row is the only kind allowed to lack coordinates.
   CONSTRAINT discussion_session_checkins_geo_fields CHECK (
@@ -119,7 +128,12 @@ select
 $$;
 
 
-COMMENT ON function public.distance_meters (double precision, double precision, double precision, double precision) IS 'Great-circle distance in metres. Internal helper for check-in; not callable by clients.';
+COMMENT ON function public.distance_meters (
+  double precision,
+  double precision,
+  double precision,
+  double precision
+) IS 'Great-circle distance in metres. Internal helper for check-in; not callable by clients.';
 
 
 -- ---------------------------------------------------------------------------
@@ -679,7 +693,12 @@ SELECT
   ) ON public.discussion_session_checkins TO authenticated;
 
 
-REVOKE ALL ON function public.distance_meters (double precision, double precision, double precision, double precision)
+REVOKE ALL ON function public.distance_meters (
+  double precision,
+  double precision,
+  double precision,
+  double precision
+)
 FROM
   public,
   anon,

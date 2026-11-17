@@ -122,26 +122,45 @@ export async function toggleReaction(
   const me = userData.user?.id;
   if (!me) throw new DataAccessError("Not signed in", "42501");
 
-  const { data: msg, error: readError } = await supabase
-    .from("dm_messages")
-    .select("reactions")
-    .eq("id", messageId)
-    .eq("conversation_id", conversationId)
-    .maybeSingle();
-  if (readError) throw new DataAccessError("reaction failed", readError.code);
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const { data: msg, error: readError } = await supabase
+      .from("dm_messages")
+      .select("reactions")
+      .eq("id", messageId)
+      .eq("conversation_id", conversationId)
+      .maybeSingle();
+    if (readError) throw new DataAccessError("reaction failed", readError.code);
+    if (!msg) throw new DataAccessError("Message not found", "PGRST116");
 
-  const reactions: Record<string, string> = { ...(msg?.reactions ?? {}) };
-  if (reactions[me] === emoji) {
-    delete reactions[me];
-  } else {
-    reactions[me] = emoji;
+    const previousReactions = msg.reactions;
+    const reactions: Record<string, string> = { ...(previousReactions ?? {}) };
+    if (reactions[me] === emoji) {
+      delete reactions[me];
+    } else {
+      reactions[me] = emoji;
+    }
+
+    let updateQuery = supabase
+      .from("dm_messages")
+      .update({ reactions })
+      .eq("id", messageId)
+      .eq("conversation_id", conversationId);
+
+    updateQuery =
+      previousReactions === null || previousReactions === undefined
+        ? updateQuery.is("reactions", null)
+        : updateQuery.eq("reactions", previousReactions);
+
+    const { data: updated, error } = await updateQuery
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw new DataAccessError("reaction failed", error.code);
+    if (updated) return;
   }
 
-  const { error } = await supabase
-    .from("dm_messages")
-    .update({ reactions })
-    .eq("id", messageId);
-  if (error) throw new DataAccessError("reaction failed", error.code);
+  throw new DataAccessError("reaction conflict", "40001");
 }
 
 export async function setTyping(conversationId: string, isTyping: boolean) {

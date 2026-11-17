@@ -49,10 +49,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
         setUsers(data.users ?? []);
         setError(null);
       } catch (searchError) {
-        if (
-          searchError instanceof Error &&
-          searchError.name === "AbortError"
-        ) {
+        if (searchError instanceof Error && searchError.name === "AbortError") {
           return;
         }
         setUsers([]);
@@ -75,6 +72,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
 
   async function openChat(user: User): Promise<void> {
     setBusyId(user.id);
+    setError(null);
 
     try {
       const response = await fetch("/api/dm/conversations", {
@@ -82,6 +80,12 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ otherUserId: user.id }),
       });
+
+      if (!response.ok) {
+        setError("Could not open chat. Try again.");
+        return;
+      }
+
       const data = (await response.json()) as { id?: string };
 
       if (data.id && onSelect) {
@@ -106,7 +110,10 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
       if (data.id) {
         router.push(`/messages/${data.id}`);
         router.refresh();
+        return;
       }
+
+      setError("Could not open chat. Try again.");
     } catch {
       setError("Could not open chat. Try again.");
     } finally {
@@ -176,10 +183,10 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
                 key={index}
                 className="flex items-center gap-3 px-3 py-3"
               >
-                <span className="bg-muted h-11 w-11 shrink-0 animate-pulse rounded-full" />
+                <span className="skeleton h-11 w-11 shrink-0 rounded-full" />
                 <span className="min-w-0 flex-1">
-                  <span className="bg-muted block h-3.5 w-32 animate-pulse rounded" />
-                  <span className="bg-muted mt-2 block h-3 w-20 animate-pulse rounded" />
+                  <span className="skeleton block h-3.5 w-32 rounded-md" />
+                  <span className="skeleton mt-2 block h-3 w-20 rounded-md" />
                 </span>
               </li>
             ))}

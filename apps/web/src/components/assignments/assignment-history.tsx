@@ -95,11 +95,11 @@ export function AssignmentHistory({
   }
 
   return (
-    <Card>
+    <Card className="rounded-xl p-4 sm:p-5">
       <h2 className="flex items-center gap-2 text-sm font-semibold">
         <History
           aria-hidden="true"
-          className="h-4 w-4"
+          className="text-muted-foreground h-4 w-4"
         />
         Revision history
       </h2>
@@ -108,7 +108,7 @@ export function AssignmentHistory({
         {revisions.map((revision, index) => (
           <li
             key={revision.id}
-            className="border-border border-l-2 pl-3 text-xs"
+            className="border-border border-l-2 pl-3 text-xs break-words"
           >
             <p className="text-foreground font-medium">
               {describeChange(revision)}

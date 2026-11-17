@@ -32,12 +32,12 @@ export function AssignmentContentTypeBadge({
       <Badge variant={isAnnouncement ? "neutral" : "accent"}>
         <Icon
           aria-hidden="true"
-          className="h-3 w-3"
+          className="h-3 w-3 shrink-0"
         />
-        {label}
+        <span>{label}</span>
       </Badge>
       {!isAnnouncement && sourceLabel ? (
-        <span className="text-muted-foreground truncate text-xs">
+        <span className="text-muted-foreground max-w-[14rem] truncate text-xs">
           {sourceLabel}
         </span>
       ) : null}

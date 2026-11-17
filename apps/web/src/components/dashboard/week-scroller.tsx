@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 
 type WeekScrollerProps = {
   children: ReactNode;
 };
+
+const KEYBOARD_SCROLL_STEP_PX = 160;
 
 /**
  * Week strip that scrolls sideways instead of squeezing its days.
@@ -26,11 +28,35 @@ export function WeekScroller({ children }: WeekScrollerProps) {
     container.scrollLeft = today.offsetLeft - container.clientLeft;
   }, []);
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      container.scrollBy({ left: -KEYBOARD_SCROLL_STEP_PX, behavior: "auto" });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      container.scrollBy({ left: KEYBOARD_SCROLL_STEP_PX, behavior: "auto" });
+    }
+  };
+
   return (
     <div
       ref={containerRef}
+      role="region"
+      aria-label="Weekly timeline"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       data-week-scroller="true"
-      className="relative mt-3 snap-x snap-proximity overflow-x-auto pb-1"
+      className="no-scrollbar focus-visible:outline-accent relative mt-3 snap-x snap-proximity overflow-x-auto rounded-lg pb-1 focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {children}
     </div>

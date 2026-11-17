@@ -6,15 +6,18 @@
 ALTER TABLE public.notification_events
 ADD COLUMN IF NOT EXISTS read_at timestamptz;
 
+
 CREATE INDEX IF NOT EXISTS notification_events_user_unread_idx ON public.notification_events (user_id, created_at DESC)
 WHERE
   read_at IS NULL;
+
 
 -- Clients only need the read marker. Every other column keeps its existing
 -- grant, so the inbox cannot be used to rewrite event content.
 GRANT
 SELECT
   (read_at) ON public.notification_events TO authenticated;
+
 
 -- Stores every event. Users who disabled push still get an inbox row; the
 -- scheduler marks undeliverable rows skipped without deleting them.
@@ -38,7 +41,9 @@ begin
 end;
 $$;
 
+
 COMMENT ON FUNCTION public.enqueue_notification_event (uuid, text, text, jsonb) IS 'Queues an event for the in-app inbox and, when the user has push enabled, for delivery. Internal only.';
+
 
 -- Marks the caller's own notifications read. A NULL array marks every unread
 -- row; an array marks only the listed ids. Rows belonging to another user are
@@ -72,13 +77,16 @@ begin
 end;
 $$;
 
+
 COMMENT ON FUNCTION public.mark_notification_events_read (UUID[]) IS 'Marks the caller''s unread notifications read. Authenticated only.';
+
 
 REVOKE ALL ON function public.mark_notification_events_read (UUID[])
 FROM
   public,
   anon,
   authenticated;
+
 
 GRANT
 EXECUTE ON function public.mark_notification_events_read (UUID[]) TO authenticated;

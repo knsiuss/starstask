@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { StudentMeetingList } from "@/components/attendance/student-meeting-list";
 import { Alert } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth/session";
 import { getStudentAttendanceMeetingView } from "@/lib/db/attendance-meetings";
+import { buildLoginPath } from "@/lib/security/redirect";
 
 export const metadata: Metadata = {
   title: "Check in",
@@ -29,12 +31,13 @@ export default async function CheckInLinkPage({
 }: CheckInLinkPageProps) {
   const { sessionId } = await params;
   const session = await getSessionUser();
-  const view = session
-    ? await getStudentAttendanceMeetingView(session.user.id)
-    : null;
-  const meeting = (view?.meetings ?? []).find(
-    (item) => item.sessionId === sessionId,
-  );
+
+  if (!session) {
+    redirect(buildLoginPath(`/attendance/checkin/${sessionId}`));
+  }
+
+  const view = await getStudentAttendanceMeetingView(session.user.id);
+  const meeting = view.meetings.find((item) => item.sessionId === sessionId);
 
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-5 pb-8 sm:px-6 sm:py-8">

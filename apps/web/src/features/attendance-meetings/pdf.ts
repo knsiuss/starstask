@@ -68,13 +68,14 @@ function newPage(ctx: Ctx): void {
 }
 
 function drawFooter(ctx: Ctx): void {
-  ctx.font && ctx.page.drawText("StarsTask", {
-    x: MARGIN,
-    y: FOOTER_HEIGHT - 6,
-    size: 8,
-    font: ctx.font,
-    color: MUTED,
-  });
+  ctx.font &&
+    ctx.page.drawText("StarsTask", {
+      x: MARGIN,
+      y: FOOTER_HEIGHT - 6,
+      size: 8,
+      font: ctx.font,
+      color: MUTED,
+    });
 }
 
 function ensureSpace(ctx: Ctx, needed: number): void {
@@ -83,7 +84,12 @@ function ensureSpace(ctx: Ctx, needed: number): void {
   }
 }
 
-function text(ctx: Ctx, value: string, size: number, opts?: { bold?: boolean; muted?: boolean; y?: number }): void {
+function text(
+  ctx: Ctx,
+  value: string,
+  size: number,
+  opts?: { bold?: boolean; muted?: boolean; y?: number },
+): void {
   ctx.page.drawText(value.replace(/[^\x20-\x7E]/g, "?"), {
     x: MARGIN,
     y: opts?.y ?? ctx.y,
@@ -142,15 +148,27 @@ export async function buildAttendanceReportPdf(
   // Header
   text(ctx, "StarsTask — Attendance Report", 18, { bold: true });
   ctx.y -= 22;
-  text(ctx, `Generated ${fmtDateTime(context.generatedAt.toISOString())}`, 9, { muted: true });
+  text(ctx, `Generated ${fmtDateTime(context.generatedAt.toISOString())}`, 9, {
+    muted: true,
+  });
   ctx.y -= 8;
   line(ctx);
 
   // Academic info
   kv(ctx, "Class", context.classInfo.name);
   kv(ctx, "Class code", context.classInfo.class_code ?? "—");
-  kv(ctx, `Subject`, context.subject.code ? `${context.subject.name} (${context.subject.code})` : context.subject.name);
-  kv(ctx, "Lecturer", context.subject.lecturerName ?? context.classInfo.lecturer_name ?? "—");
+  kv(
+    ctx,
+    `Subject`,
+    context.subject.code
+      ? `${context.subject.name} (${context.subject.code})`
+      : context.subject.name,
+  );
+  kv(
+    ctx,
+    "Lecturer",
+    context.subject.lecturerName ?? context.classInfo.lecturer_name ?? "—",
+  );
   kv(ctx, "Semester", context.subject.semester);
   kv(ctx, "Academic year", context.subject.academicYear);
   if (preparedBy) kv(ctx, "Prepared by", preparedBy);
@@ -181,12 +199,36 @@ export async function buildAttendanceReportPdf(
   ctx.y -= 16;
   line(ctx);
 
-  const headers = ["No.", "Student ID", "Student name", "P", "L", "E", "A", "%"];
-  const colX = [MARGIN, MARGIN + 40, MARGIN + 140, MARGIN + 380, MARGIN + 420, MARGIN + 460, MARGIN + 500, MARGIN + 540];
+  const headers = [
+    "No.",
+    "Student ID",
+    "Student name",
+    "P",
+    "L",
+    "E",
+    "A",
+    "%",
+  ];
+  const colX = [
+    MARGIN,
+    MARGIN + 40,
+    MARGIN + 140,
+    MARGIN + 380,
+    MARGIN + 420,
+    MARGIN + 460,
+    MARGIN + 500,
+    MARGIN + 540,
+  ];
   const drawHeader = (): void => {
     ensureSpace(ctx, ROW_HEIGHT * 2);
     headers.forEach((h, i) => {
-      ctx.page.drawText(h, { x: colX[i] ?? MARGIN, y: ctx.y, size: 8, font: ctx.fontBold, color: INK });
+      ctx.page.drawText(h, {
+        x: colX[i] ?? MARGIN,
+        y: ctx.y,
+        size: 8,
+        font: ctx.fontBold,
+        color: INK,
+      });
     });
     ctx.y -= ROW_HEIGHT;
   };
@@ -201,8 +243,20 @@ export async function buildAttendanceReportPdf(
     const l = String(student.totals.late);
     const e = String(student.totals.excused);
     const a = String(student.totals.absent);
-    const perc = student.totals.percentage === null ? "—" : String(student.totals.percentage);
-    const row = [String(index + 1), student.nim ?? "—", student.fullName, p, l, e, a, perc];
+    const perc =
+      student.totals.percentage === null
+        ? "—"
+        : String(student.totals.percentage);
+    const row = [
+      String(index + 1),
+      student.nim ?? "—",
+      student.fullName,
+      p,
+      l,
+      e,
+      a,
+      perc,
+    ];
     row.forEach((cell, i) => {
       ctx.page.drawText(cell.replace(/[^\x20-\x7E]/g, "?"), {
         x: colX[i] ?? MARGIN,
@@ -227,11 +281,26 @@ export async function buildAttendanceReportPdf(
   line(ctx);
 
   const mHeaders = ["#", "Date", "Meeting", "P", "L", "E", "A", "%"];
-  const mX = [MARGIN, MARGIN + 40, MARGIN + 140, MARGIN + 380, MARGIN + 420, MARGIN + 460, MARGIN + 500, MARGIN + 540];
+  const mX = [
+    MARGIN,
+    MARGIN + 40,
+    MARGIN + 140,
+    MARGIN + 380,
+    MARGIN + 420,
+    MARGIN + 460,
+    MARGIN + 500,
+    MARGIN + 540,
+  ];
   const drawMHeader = (): void => {
     ensureSpace(ctx, ROW_HEIGHT * 2);
     mHeaders.forEach((h, i) => {
-      ctx.page.drawText(h, { x: mX[i] ?? MARGIN, y: ctx.y, size: 8, font: ctx.fontBold, color: INK });
+      ctx.page.drawText(h, {
+        x: mX[i] ?? MARGIN,
+        y: ctx.y,
+        size: 8,
+        font: ctx.fontBold,
+        color: INK,
+      });
     });
     ctx.y -= ROW_HEIGHT;
   };
@@ -242,7 +311,11 @@ export async function buildAttendanceReportPdf(
       newPage(ctx);
       drawMHeader();
     }
-    let mp = 0, ml = 0, me = 0, ma = 0, elig = 0;
+    let mp = 0,
+      ml = 0,
+      me = 0,
+      ma = 0,
+      elig = 0;
     for (const student of recap.students) {
       const cell = student.cells[meeting.sessionId] ?? "not_applicable";
       if (cell === "not_applicable") continue;
@@ -292,7 +365,15 @@ export async function buildAttendanceReportPdf(
       const label = `${entry.studentName}${entry.studentNim ? ` (${entry.studentNim})` : ""} — ${entry.previousStatus} → ${entry.newStatus} by ${entry.adminName}`;
       text(ctx, label.slice(0, 110), 8);
       ctx.y -= ROW_HEIGHT;
-      text(ctx, `${entry.reason}${entry.physicallyVerified ? " [physically verified]" : ""}`.slice(0, 130), 8, { muted: true });
+      text(
+        ctx,
+        `${entry.reason}${entry.physicallyVerified ? " [physically verified]" : ""}`.slice(
+          0,
+          130,
+        ),
+        8,
+        { muted: true },
+      );
       ctx.y -= ROW_HEIGHT;
     }
   }
@@ -302,5 +383,9 @@ export async function buildAttendanceReportPdf(
 }
 
 export function attendanceStatusLabel(status: string): string {
-  return ATTENDANCE_MEETING_CELL_LABELS[status as keyof typeof ATTENDANCE_MEETING_CELL_LABELS] ?? status;
+  return (
+    ATTENDANCE_MEETING_CELL_LABELS[
+      status as keyof typeof ATTENDANCE_MEETING_CELL_LABELS
+    ] ?? status
+  );
 }

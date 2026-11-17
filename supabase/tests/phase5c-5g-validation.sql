@@ -51,6 +51,8 @@ BEGIN
   DELETE FROM auth.users WHERE id='11111111-1111-1111-1111-111111111111';
   RAISE NOTICE 'PHASE5C-5G VALIDATION PASS';
 END $$;
+
+
 -- RLS enabled + anon denied on every new table
 DO $$
 DECLARE t text;
@@ -60,6 +62,8 @@ BEGIN
   END LOOP;
   RAISE NOTICE 'RLS PASS';
 END $$;
+
+
 -- Legacy covenant
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='profiles_nim_unique') THEN RAISE NOTICE 'profiles_nim_unique: NOT FOUND (check name)'; END IF;

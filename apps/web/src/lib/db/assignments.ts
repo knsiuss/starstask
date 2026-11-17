@@ -166,11 +166,17 @@ export async function listAssignments(
     Database["public"]["Functions"]["list_assignments"]["Returns"][number]
   >
 > {
-  // Public listing: same filters should hit the same key so repeat views read
-  // from Redis instead of the RPC. Short TTL — listings change a few times a
-  // day, not per-second.
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // `list_assignments` is SECURITY INVOKER with class-only RLS, so authenticated
+  // callers must never share a Redis cache entry with another user.
+  const viewerScope = user ? `user:${user.id}` : "anon";
   const key = [
     "assignments",
+    viewerScope,
     query.search ?? "",
     query.course ?? "",
     query.semester ?? "",
@@ -653,7 +659,6 @@ export async function insertAssignment(
   userId: string,
   input: AssignmentCreateInput,
   courseId: string,
-  forceDraft = false,
 ): Promise<string> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -670,16 +675,10 @@ export async function insertAssignment(
       deadline: input.deadline ?? null,
       tags: input.tags,
       reference_urls: input.referenceUrls,
-      // Draft fallback: kalau file out/nggak allowed atau publish gagal,
-      // simpan sebagai draft biar user tidak kehilangan data.
       // A member's submission is a request a platform admin reviews before
       // `list_assignments` returns it. Anyone who administers a class already
       // publishes to that class, so their public brief goes live at once.
-      status: forceDraft
-        ? "draft"
-        : (await canPublishPublicAssignment())
-          ? "published"
-          : "pending",
+      status: (await canPublishPublicAssignment()) ? "published" : "pending",
     })
     .select("id")
     .single();
@@ -733,6 +732,35 @@ export async function updateAssignmentRecord(
 
   if (!existing) {
     return false;
+  }
+
+  // Rejected class assignments must be revised via `revise_class_assignment`.
+  if (existing.class_id !== null && existing.status === "rejected") {
+    return false;
+  }
+
+  // Non-admin authors cannot silently alter already-published assignments:
+  // public assignments return to `pending` review, and class assignments
+  // require class/platform admin privileges to edit directly.
+  if (existing.status === "published") {
+    if (existing.class_id === null) {
+      if (!(await canPublishPublicAssignment())) {
+        patch.status = "pending";
+        patch.rejection_reason = null;
+        patch.reviewed_by = null;
+        patch.reviewed_at = null;
+      }
+    } else {
+      const [{ data: isClassAdmin }, { data: isPlatformAdmin }] =
+        await Promise.all([
+          supabase.rpc("is_class_admin", { p_class_id: existing.class_id }),
+          supabase.rpc("is_platform_admin"),
+        ]);
+
+      if (isClassAdmin !== true && isPlatformAdmin !== true) {
+        return false;
+      }
+    }
   }
 
   // Editing a rejected public request sends it back for review; the previous

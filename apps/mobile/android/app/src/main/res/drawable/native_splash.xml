@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gradient base — high contrast so the native window is visibly
+         branded (distinct from the plain-white window it replaces).
+         Top stays near-white, mid is accent-soft, bottom is a darker
+         accent wash so the gradient is obvious even on bright screens. -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#F7F8FA"
+                android:centerColor="#C7D4F2"
+                android:endColor="#45639E"
+                android:angle="270" />
+        </shape>
+    </item>
+
+    <!-- Logo mark — centered via gravity, kept clear of the status bar area
+         by the top inset. The PNG is the same asset Compose uses. -->
+    <item
+        android:width="200dp"
+        android:height="200dp"
+        android:gravity="center"
+        android:top="32dp">
+        <bitmap
+            android:src="@drawable/logo_mark"
+            android:gravity="center" />
+    </item>
+</layer-list>

@@ -180,9 +180,11 @@ export async function listCalendarEvents(
   }
 
   const subjectRows = subjectsResult.data ?? [];
+  const scopedClassSet = new Set(scopedClassIds);
   const subjectCourseIds = [
     ...new Set(
       subjectRows
+        .filter((row) => scopedClassSet.has(row.class_id))
         .map((row) => row.course_id)
         .filter((id): id is string => Boolean(id)),
     ),

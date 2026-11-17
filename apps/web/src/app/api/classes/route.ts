@@ -1,7 +1,4 @@
-import {
-  classDiscoveryQuerySchema,
-  toFieldErrors,
-} from "@starstask/contracts";
+import { classDiscoveryQuerySchema, toFieldErrors } from "@starstask/contracts";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { handleRouteError, publicJson } from "@/lib/api/responses";

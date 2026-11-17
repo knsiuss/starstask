@@ -43,9 +43,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { classId } = await acceptPendingInvitation(
-      parsed.data.invitationId,
-    );
+    const { classId } = await acceptPendingInvitation(parsed.data.invitationId);
     const joinedClass = await getClassById(classId);
 
     return apiSuccess({

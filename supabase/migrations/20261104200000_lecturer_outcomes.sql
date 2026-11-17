@@ -10,7 +10,6 @@
 -- This migration also adds previous/next status columns to the append-only
 -- history (historical rows stay NULL) and scopes the existing review
 -- function's attendance side effect to the courses the request covers.
-
 -- ---------------------------------------------------------------------------
 -- leave_lecturer_outcomes
 -- ---------------------------------------------------------------------------
@@ -22,13 +21,15 @@ CREATE TABLE IF NOT EXISTS public.leave_lecturer_outcomes (
   request_id uuid NOT NULL REFERENCES public.leave_requests (id) ON DELETE CASCADE,
   outcome text NOT NULL CHECK (outcome IN ('approved', 'rejected', 'awaiting')),
   recorded_by uuid NOT NULL REFERENCES auth.users (id) ON DELETE SET NULL,
-  note text CHECK (note IS NULL OR char_length (btrim(note)) BETWEEN 1 AND 2000),
+  note text CHECK (
+    note IS NULL
+    OR char_length(btrim(note)) BETWEEN 1 AND 2000
+  ),
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 
-CREATE INDEX IF NOT EXISTS leave_lecturer_outcomes_request_idx
-  ON public.leave_lecturer_outcomes (request_id, created_at);
+CREATE INDEX IF NOT EXISTS leave_lecturer_outcomes_request_idx ON public.leave_lecturer_outcomes (request_id, created_at);
 
 
 ALTER TABLE public.leave_lecturer_outcomes ENABLE ROW LEVEL SECURITY;
@@ -36,27 +37,25 @@ ALTER TABLE public.leave_lecturer_outcomes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS leave_lecturer_outcomes_select ON public.leave_lecturer_outcomes;
 
+
 CREATE POLICY leave_lecturer_outcomes_select ON public.leave_lecturer_outcomes FOR
 SELECT
   TO authenticated USING (public.can_view_leave_request (request_id));
 
--- No INSERT/UPDATE/DELETE grants: recording goes through the function below.
 
+-- No INSERT/UPDATE/DELETE grants: recording goes through the function below.
 -- ---------------------------------------------------------------------------
 -- History: previous/next status (audit trail)
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.leave_request_history
-  ADD COLUMN IF NOT EXISTS previous_status text,
-  ADD COLUMN IF NOT EXISTS next_status text;
+ADD COLUMN IF NOT EXISTS previous_status text,
+ADD COLUMN IF NOT EXISTS next_status text;
+
 
 -- ---------------------------------------------------------------------------
 -- record_leave_lecturer_outcome
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.record_leave_lecturer_outcome (
-  p_request_id uuid,
-  p_outcome text,
-  p_note text DEFAULT NULL
-) returns text language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.record_leave_lecturer_outcome (p_request_id uuid, p_outcome text, p_note text DEFAULT NULL) returns text language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -268,8 +267,13 @@ END;
 $$;
 
 
-REVOKE ALL ON FUNCTION public.record_leave_lecturer_outcome (uuid, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.record_leave_lecturer_outcome (uuid, text, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.record_leave_lecturer_outcome (uuid, text, text)
+FROM
+  PUBLIC;
+
+
+GRANT
+EXECUTE ON FUNCTION public.record_leave_lecturer_outcome (uuid, text, text) TO authenticated;
 
 
 COMMENT ON FUNCTION public.record_leave_lecturer_outcome (uuid, text, text) IS 'Records the lecturer decision for a forwarded absence, confirmed outside StarsTask. Approved also excuses covered sessions; awaiting changes nothing. Class managers only.';

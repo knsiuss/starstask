@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 data class Conversation(val id: String, val otherName: String, val unread: Boolean)
 
@@ -54,10 +55,23 @@ suspend fun loadConversations(userId: String): List<Conversation> {
 
 data class Assignment(val id: String, val title: String, val status: String, val deadline: String?, val className: String?)
 
-data class ClassDetail(val id: String, val name: String, val slug: String, val semester: String, val academicYear: String, val memberCount: Int)
+data class ClassDetail(
+    val id: String,
+    val name: String,
+    val slug: String,
+    val semester: String,
+    val academicYear: String,
+    val memberCount: Int,
+    val classCode: String = "",
+    val isAdmin: Boolean = false,
+    val status: String = "active",
+    val courseName: String = "",
+    val lecturerName: String = "",
+)
 
 data class SessionRow(val id: String, val title: String, val startsAt: String, val endsAt: String, val status: String, val className: String?)
 
+@Serializable
 data class NotificationRow(val id: String, val title: String, val body: String, val url: String?, val createdAt: String, val readAt: String?)
 
 data class Profile(val displayName: String?, val avatarUrl: String?)
@@ -194,6 +208,13 @@ suspend fun markNotificationRead(id: String) {
         kotlinx.serialization.json.buildJsonObject {
             put("p_ids", kotlinx.serialization.json.JsonArray(listOf(kotlinx.serialization.json.JsonPrimitive(id))))
         },
+    )
+}
+
+suspend fun markAllNotificationsRead() {
+    SupabaseProvider.client.postgrest.rpc(
+        "mark_notification_events_read",
+        kotlinx.serialization.json.buildJsonObject {},
     )
 }
 

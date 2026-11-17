@@ -22,6 +22,7 @@
 --   notifications          0 (no notifications table in local schema; documented gap)
 BEGIN;
 
+
 DO $$
 DECLARE
   ua uuid; ub uuid;
@@ -189,5 +190,6 @@ BEGIN
   RAISE NOTICE 'STAGING SYNTHETIC SEED PASS: syn classes=% (expected 4), unis=% ',
     fa, (SELECT count(*) FROM public.universities WHERE slug LIKE 'syn-%');
 END $$;
+
 
 COMMIT;

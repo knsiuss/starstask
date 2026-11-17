@@ -1,9 +1,15 @@
 "use client";
 
-import { Check, FolderOpen, Link2, Loader2, PlugZap } from "lucide-react";
+import { FolderOpen, Loader2, PlugZap } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { CopyLinkButton } from "@/components/assignments/copy-link-button";
+import { DriveLecturerLinkCard } from "@/components/assignments/detail/drive-lecturer-link-card";
+import {
+  googleGlobals,
+  loadScript,
+  openDrivePicker,
+  type PickerDoc,
+} from "@/components/assignments/detail/drive-picker";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { getSiteUrl } from "@/lib/env/public";
@@ -12,58 +18,6 @@ const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const DRIVE_DOWNLOAD_BASE = "https://www.googleapis.com/drive/v3/files";
 const GIS_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 const PICKER_SCRIPT_SRC = "https://docs.google.com/picker";
-
-type PickerDoc = {
-  id: string;
-  name: string;
-  mimeType: string;
-};
-
-type PickerBuilder = {
-  addView: (view: unknown) => PickerBuilder;
-  setOAuthToken: (token: string) => PickerBuilder;
-  setCallback: (callback: (data: unknown) => void) => PickerBuilder;
-  build: () => { setVisible: (visible: boolean) => void };
-};
-
-type GoogleGlobals = {
-  accounts: {
-    oauth2: {
-      initTokenClient: (config: unknown) => {
-        requestAccessToken: () => void;
-      };
-    };
-  };
-  picker: {
-    PickerBuilder: new () => PickerBuilder;
-    DocsView: new (viewId: string) => unknown;
-    DocsUploadView: new () => unknown;
-    Action: { PICKED: string };
-  };
-};
-
-function googleGlobals(): GoogleGlobals | null {
-  const candidate = (window as unknown as { google?: GoogleGlobals }).google;
-  return candidate ?? null;
-}
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${src}"]`,
-    );
-    if (existing) {
-      resolve();
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Could not load Google scripts."));
-    document.head.appendChild(script);
-  });
-}
 
 export function DriveSubmit({
   assignmentId,
@@ -81,19 +35,29 @@ export function DriveSubmit({
   const [connected, setConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     fetch("/api/integrations/google-drive/status")
       .then((response) => (response.ok ? response.json() : null))
       .then((body: { data?: { connected?: boolean } } | null) => {
-        if (body?.data) setConnected(Boolean(body.data.connected));
+        if (cancelled) return;
+        setConnected(Boolean(body?.data?.connected));
       })
-      .catch(() => setConnected(false));
+      .catch(() => {
+        if (!cancelled) {
+          setConnected(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const configured = clientId.length > 0;
   const isConnected = connected === true;
 
   async function getPickerToken(): Promise<string> {
-    // Persistent connection: short-lived token from the server.
     if (isConnected) {
       const response = await fetch(
         "/api/integrations/google-drive/access-token",
@@ -101,21 +65,27 @@ export function DriveSubmit({
       const body = (await response.json()) as {
         data?: { accessToken?: string };
       };
+
       if (response.ok && body.data?.accessToken) {
         return body.data.accessToken;
       }
+
       throw new Error("Drive connection expired. Reconnect in Settings.");
     }
 
-    // One-time fallback: client-side consent (not stored).
     if (!configured) {
       throw new Error(
         "Google Drive is not connected. Connect it in Settings first.",
       );
     }
+
     await loadScript(GIS_SCRIPT_SRC);
     const google = googleGlobals();
-    if (!google) throw new Error("Google scripts did not load.");
+
+    if (!google) {
+      throw new Error("Google scripts did not load.");
+    }
+
     return new Promise<string | null>((resolve) => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
@@ -126,39 +96,15 @@ export function DriveSubmit({
       });
       tokenClient.requestAccessToken();
     }).then((token) => {
-      if (!token) throw new Error("Google sign-in was cancelled.");
+      if (!token) {
+        throw new Error("Google sign-in was cancelled.");
+      }
+
       return token;
     });
   }
 
-  async function handleSubmit() {
-    setBusy(true);
-    try {
-      await loadScript(PICKER_SCRIPT_SRC);
-      const google = googleGlobals();
-      if (!google) throw new Error("Google scripts did not load.");
-
-      const token = await getPickerToken();
-      const picked = await openPicker(google, token);
-      if (!picked) return;
-
-      setPickedName(picked.name);
-      await submitPickedFile(picked, token);
-    } catch (error) {
-      toast({
-        variant: "error",
-        title: "Drive submission failed.",
-        description:
-          error instanceof Error ? error.message : "Please try again.",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function submitPickedFile(picked: PickerDoc, token: string) {
-    // Preferred: server downloads via stored token (no browser token needed).
-    // Fallback: browser downloads and uploads bytes.
     let file: File | null = null;
 
     try {
@@ -166,7 +112,11 @@ export function DriveSubmit({
         `${DRIVE_DOWNLOAD_BASE}/${encodeURIComponent(picked.id)}?alt=media`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      if (!response.ok) throw new Error("Could not download from Drive.");
+
+      if (!response.ok) {
+        throw new Error("Could not download from Drive.");
+      }
+
       const blob = await response.blob();
       file = new File([blob], picked.name, {
         type: picked.mimeType || blob.type,
@@ -191,6 +141,7 @@ export function DriveSubmit({
       data?: { lecturerPath?: string; submissionId?: string };
       error?: { message?: string };
     };
+
     if (!submitResponse.ok || !body.data?.lecturerPath) {
       throw new Error(body.error?.message ?? "Server rejected the submission.");
     }
@@ -205,8 +156,42 @@ export function DriveSubmit({
     });
   }
 
+  async function handleSubmit() {
+    setBusy(true);
+
+    try {
+      await loadScript(PICKER_SCRIPT_SRC);
+      const google = googleGlobals();
+
+      if (!google) {
+        throw new Error("Google scripts did not load.");
+      }
+
+      const token = await getPickerToken();
+      const picked = await openDrivePicker(google, token);
+
+      if (!picked) {
+        return;
+      }
+
+      setPickedName(picked.name);
+      await submitPickedFile(picked, token);
+    } catch (error) {
+      toast({
+        variant: "error",
+        title: "Drive submission failed.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function revokeLink() {
-    if (!submissionId || revoking) return;
+    if (!submissionId || revoking) {
+      return;
+    }
 
     setRevoking(true);
 
@@ -239,7 +224,7 @@ export function DriveSubmit({
         <Button
           asChild
           variant="secondary"
-          className="w-full"
+          className="min-h-[44px] w-full"
         >
           <a href="/api/integrations/google-drive/start">
             <PlugZap
@@ -255,7 +240,7 @@ export function DriveSubmit({
         type="button"
         onClick={() => void handleSubmit()}
         disabled={busy || connected === null}
-        className="w-full"
+        className="min-h-[44px] w-full"
       >
         {busy ? (
           <Loader2
@@ -280,86 +265,25 @@ export function DriveSubmit({
           Checking Drive status...
         </p>
       ) : isConnected ? (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-xs leading-relaxed">
           Drive connected. Only the file you pick is shared. Your other Drive
           files stay private.
         </p>
       ) : (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-xs leading-relaxed">
           Connect once in Settings, or sign in with Google here for a one-time
           pick. Only the file you pick is shared.
         </p>
       )}
 
       {lecturerUrl ? (
-        <div className="border-border bg-muted/50 rounded-md border p-3">
-          <p className="flex items-center gap-1.5 text-sm font-medium">
-            <Check
-              aria-hidden="true"
-              className="h-4 w-4 text-green-600"
-            />
-            Ready for your lecturer
-          </p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Forward this link. Your lecturer does not need a StarsTask account.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <CopyLinkButton url={lecturerUrl} />
-            <a
-              href={lecturerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium underline underline-offset-4"
-            >
-              <Link2
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
-              Open lecturer view
-            </a>
-            {submissionId ? (
-              <button
-                type="button"
-                onClick={() => void revokeLink()}
-                disabled={revoking}
-                aria-busy={revoking}
-                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
-              >
-                {revoking ? (
-                  <Loader2
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5 animate-spin"
-                  />
-                ) : null}
-                Revoke link
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <DriveLecturerLinkCard
+          lecturerUrl={lecturerUrl}
+          submissionId={submissionId}
+          revoking={revoking}
+          onRevoke={() => void revokeLink()}
+        />
       ) : null}
     </div>
   );
-}
-
-function openPicker(
-  google: GoogleGlobals,
-  token: string,
-): Promise<PickerDoc | null> {
-  return new Promise((resolve) => {
-    const builder = new google.picker.PickerBuilder();
-    const view = new google.picker.DocsView("all");
-    builder
-      .addView(view)
-      .setOAuthToken(token)
-      .setCallback((data: unknown) => {
-        const action = (data as { action?: string } | null)?.action;
-        if (action === google.picker.Action.PICKED) {
-          const docs = (data as { docs?: PickerDoc[] } | null)?.docs;
-          resolve(docs?.[0] ?? null);
-        } else {
-          resolve(null);
-        }
-      });
-    builder.build().setVisible(true);
-  });
 }

@@ -12,26 +12,22 @@
 -- - audit_logs: 365 days (accountability/dispute window)
 -- - attendance_verification_attempts: 180 days (one semester + margin)
 -- - app_activity_events / app_error_events: 90 days (operational only)
+CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON public.audit_logs (created_at);
 
-CREATE INDEX IF NOT EXISTS audit_logs_created_idx
-  ON public.audit_logs (created_at);
 
-CREATE INDEX IF NOT EXISTS app_activity_events_created_idx
-  ON public.app_activity_events (created_at);
+CREATE INDEX IF NOT EXISTS app_activity_events_created_idx ON public.app_activity_events (created_at);
 
-CREATE INDEX IF NOT EXISTS app_error_events_created_idx
-  ON public.app_error_events (created_at);
 
-CREATE INDEX IF NOT EXISTS attendance_verification_attempts_created_idx
-  ON public.attendance_verification_attempts (created_at);
+CREATE INDEX IF NOT EXISTS app_error_events_created_idx ON public.app_error_events (created_at);
 
-CREATE OR REPLACE FUNCTION public.purge_audit_logs (
-  p_retention_days integer DEFAULT 365
-) returns integer
-language plpgsql
-security definer
-SET search_path = public, pg_temp
-AS $$
+
+CREATE INDEX IF NOT EXISTS attendance_verification_attempts_created_idx ON public.attendance_verification_attempts (created_at);
+
+
+CREATE OR REPLACE FUNCTION public.purge_audit_logs (p_retention_days integer DEFAULT 365) returns integer language plpgsql security definer
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_retention_days integer := coalesce(p_retention_days, 365);
   v_count integer;
@@ -58,13 +54,11 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.purge_app_activity_events (
-  p_retention_days integer DEFAULT 90
-) returns integer
-language plpgsql
-security definer
-SET search_path = public, pg_temp
-AS $$
+
+CREATE OR REPLACE FUNCTION public.purge_app_activity_events (p_retention_days integer DEFAULT 90) returns integer language plpgsql security definer
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_retention_days integer := coalesce(p_retention_days, 90);
   v_count integer;
@@ -91,13 +85,11 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.purge_app_error_events (
-  p_retention_days integer DEFAULT 90
-) returns integer
-language plpgsql
-security definer
-SET search_path = public, pg_temp
-AS $$
+
+CREATE OR REPLACE FUNCTION public.purge_app_error_events (p_retention_days integer DEFAULT 90) returns integer language plpgsql security definer
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_retention_days integer := coalesce(p_retention_days, 90);
   v_count integer;
@@ -124,13 +116,11 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.purge_attendance_verification_attempts (
-  p_retention_days integer DEFAULT 180
-) returns integer
-language plpgsql
-security definer
-SET search_path = public, pg_temp
-AS $$
+
+CREATE OR REPLACE FUNCTION public.purge_attendance_verification_attempts (p_retention_days integer DEFAULT 180) returns integer language plpgsql security definer
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_retention_days integer := coalesce(p_retention_days, 180);
   v_count integer;
@@ -157,34 +147,58 @@ BEGIN
 END;
 $$;
 
+
 COMMENT ON FUNCTION public.purge_audit_logs (integer) IS 'Deletes audit log rows older than the retention window. Service role only.';
+
 
 COMMENT ON FUNCTION public.purge_app_activity_events (integer) IS 'Deletes activity event rows older than the retention window. Service role only.';
 
+
 COMMENT ON FUNCTION public.purge_app_error_events (integer) IS 'Deletes error event rows older than the retention window. Service role only.';
+
 
 COMMENT ON FUNCTION public.purge_attendance_verification_attempts (integer) IS 'Deletes verification attempt rows older than the retention window. Service role only.';
 
-REVOKE ALL ON FUNCTION public.purge_audit_logs (integer)
-FROM public, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION public.purge_audit_logs (integer)
-TO service_role;
+REVOKE ALL ON FUNCTION public.purge_audit_logs (integer)
+FROM
+  public,
+  anon,
+  authenticated;
+
+
+GRANT
+EXECUTE ON FUNCTION public.purge_audit_logs (integer) TO service_role;
+
 
 REVOKE ALL ON FUNCTION public.purge_app_activity_events (integer)
-FROM public, anon, authenticated;
+FROM
+  public,
+  anon,
+  authenticated;
 
-GRANT EXECUTE ON FUNCTION public.purge_app_activity_events (integer)
-TO service_role;
+
+GRANT
+EXECUTE ON FUNCTION public.purge_app_activity_events (integer) TO service_role;
+
 
 REVOKE ALL ON FUNCTION public.purge_app_error_events (integer)
-FROM public, anon, authenticated;
+FROM
+  public,
+  anon,
+  authenticated;
 
-GRANT EXECUTE ON FUNCTION public.purge_app_error_events (integer)
-TO service_role;
+
+GRANT
+EXECUTE ON FUNCTION public.purge_app_error_events (integer) TO service_role;
+
 
 REVOKE ALL ON FUNCTION public.purge_attendance_verification_attempts (integer)
-FROM public, anon, authenticated;
+FROM
+  public,
+  anon,
+  authenticated;
 
-GRANT EXECUTE ON FUNCTION public.purge_attendance_verification_attempts (integer)
-TO service_role;
+
+GRANT
+EXECUTE ON FUNCTION public.purge_attendance_verification_attempts (integer) TO service_role;

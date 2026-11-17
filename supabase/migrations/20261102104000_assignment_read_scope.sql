@@ -11,14 +11,16 @@
 -- Consequence, accepted deliberately: the public class page
 -- (`/classes/[slug]`) reads through `list_assignments`, which is SECURITY
 -- INVOKER, so visitors who are not members now see an empty assignment list.
-
 DROP POLICY IF EXISTS assignments_public_read ON public.assignments;
 
 
 CREATE POLICY assignments_public_read ON public.assignments FOR
 SELECT
   TO anon,
-  authenticated USING (status = 'published' AND class_id IS NULL);
+  authenticated USING (
+    status = 'published'
+    AND class_id IS NULL
+  );
 
 
 DROP POLICY IF EXISTS assignments_class_member_read ON public.assignments;

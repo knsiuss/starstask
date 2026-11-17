@@ -29,38 +29,42 @@
 -- Their lookups are PK/index-backed (verified via pg_indexes), so the
 -- remaining cost is bounded. Rewriting them as inline EXISTS would drift
 -- from the function body over time, so they are kept as calls.
-
 -- ---------------------------------------------------------------------
 -- 1. class_members: wrap is_platform_admin() in an initplan.
 -- ---------------------------------------------------------------------
-DROP POLICY IF EXISTS class_members_read
-  ON public.class_members;
+DROP POLICY IF EXISTS class_members_read ON public.class_members;
 
-CREATE POLICY class_members_read
-  ON public.class_members
-  FOR SELECT
-  TO authenticated
-  USING (
-    (SELECT is_class_member(class_id))
-    OR (SELECT is_platform_admin())
+
+CREATE POLICY class_members_read ON public.class_members FOR
+SELECT
+  TO authenticated USING (
+    (
+      SELECT
+        is_class_member (class_id)
+    )
+    OR (
+      SELECT
+        is_platform_admin ()
+    )
   );
+
 
 -- ---------------------------------------------------------------------
 -- 2. assignments: merge 4 authenticated SELECT policies into 1.
 --    Kept separate: assignments_public_read (anon + authenticated).
 --    Untouched: owner insert/update/delete policies.
 -- ---------------------------------------------------------------------
-DROP POLICY IF EXISTS assignments_class_member_read
-  ON public.assignments;
+DROP POLICY IF EXISTS assignments_class_member_read ON public.assignments;
 
-DROP POLICY IF EXISTS assignments_class_reviewer_read
-  ON public.assignments;
 
-DROP POLICY IF EXISTS assignments_owner_read
-  ON public.assignments;
+DROP POLICY IF EXISTS assignments_class_reviewer_read ON public.assignments;
 
-DROP POLICY IF EXISTS assignments_platform_review_read
-  ON public.assignments;
+
+DROP POLICY IF EXISTS assignments_owner_read ON public.assignments;
+
+
+DROP POLICY IF EXISTS assignments_platform_review_read ON public.assignments;
+
 
 DO $$
 BEGIN
@@ -95,22 +99,25 @@ BEGIN
 END
 $$;
 
+
 -- ---------------------------------------------------------------------
 -- 3. Drop duplicate indexes (identical definitions, verified in prod).
 -- ---------------------------------------------------------------------
 DROP INDEX IF EXISTS public.attendance_meetings_offering_time_idx;
 
+
 DROP INDEX IF EXISTS public.enrollments_offering_status_idx;
+
 
 -- ---------------------------------------------------------------------
 -- 4. Hot-path FK indexes.
 -- ---------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS discussion_sessions_subject_idx
-  ON public.discussion_sessions (subject_id)
-  WHERE subject_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS discussion_sessions_subject_idx ON public.discussion_sessions (subject_id)
+WHERE
+  subject_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS course_component_grades_student_idx
-  ON public.course_component_grades (student_id);
 
-CREATE INDEX IF NOT EXISTS course_component_grades_subject_idx
-  ON public.course_component_grades (subject_id);
+CREATE INDEX IF NOT EXISTS course_component_grades_student_idx ON public.course_component_grades (student_id);
+
+
+CREATE INDEX IF NOT EXISTS course_component_grades_subject_idx ON public.course_component_grades (subject_id);

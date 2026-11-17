@@ -39,13 +39,16 @@ begin
 end;
 $$;
 
+
 COMMENT ON FUNCTION public.set_class_join_policy (uuid, text) IS 'Sets invitation or open-by-name joining for a class. Class manager only.';
+
 
 REVOKE ALL ON function public.set_class_join_policy (uuid, text)
 FROM
   public,
   anon,
   authenticated;
+
 
 GRANT
 EXECUTE ON function public.set_class_join_policy (uuid, text) TO authenticated;

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { cache } from "react";
 
 import { createClient } from "@supabase/supabase-js";
@@ -22,29 +23,30 @@ export function isPluginGloballyEnabled(): boolean {
  * Falls back to legacy free-text check for backwards compat during transition.
  * Pass userId + profileUniversity text.
  */
-export const isUnpamMember = cache(async (
-  userId: string | null,
-  profileUniversity: string | null | undefined,
-): Promise<boolean> => {
-  const { isUnpamUniversity } = await import(
-    "@/features/plugins/unpam/config"
-  );
-  if (!userId || !isSupabaseConfigured()) {
+export const isUnpamMember = cache(
+  async (
+    userId: string | null,
+    profileUniversity: string | null | undefined,
+  ): Promise<boolean> => {
+    const { isUnpamUniversity } =
+      await import("@/features/plugins/unpam/config");
+    if (!userId || !isSupabaseConfigured()) {
+      return isUnpamUniversity(profileUniversity);
+    }
+    const client = adminClient();
+    if (!client) return isUnpamUniversity(profileUniversity);
+    const { data } = await client
+      .from("university_memberships")
+      .select("university_id, universities!inner(slug)")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .eq("universities.slug", "universitas-pamulang")
+      .limit(1);
+    if (data && data.length > 0) return true;
+    // Fallback during transition: legacy text still honored until all users migrated
     return isUnpamUniversity(profileUniversity);
-  }
-  const client = adminClient();
-  if (!client) return isUnpamUniversity(profileUniversity);
-  const { data } = await client
-    .from("university_memberships")
-    .select("university_id, universities!inner(slug)")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .eq("universities.slug", "universitas-pamulang")
-    .limit(1);
-  if (data && data.length > 0) return true;
-  // Fallback during transition: legacy text still honored until all users migrated
-  return isUnpamUniversity(profileUniversity);
-});
+  },
+);
 
 export type PluginEventRow = {
   title: string;
@@ -58,11 +60,16 @@ export type PluginEventRow = {
 };
 
 /** Search persisted plugin events (text + date range). */
-export async function searchPersistedUnpamEvents(query: string, from?: string, to?: string): Promise<PluginEventRow[]> {
+export async function searchPersistedUnpamEvents(
+  query: string,
+  from?: string,
+  to?: string,
+): Promise<PluginEventRow[]> {
   const all = await getPersistedUnpamEvents();
   const q = query.trim().toLowerCase();
   return all.filter((e) => {
-    if (q && !`${e.title} ${e.description ?? ""}`.toLowerCase().includes(q)) return false;
+    if (q && !`${e.title} ${e.description ?? ""}`.toLowerCase().includes(q))
+      return false;
     if (from && e.startsAt < from) return false;
     if (to && e.startsAt > to) return false;
     return true;
@@ -101,6 +108,11 @@ export async function getPersistedUnpamEvents(): Promise<PluginEventRow[]> {
   }));
 }
 
+/** Computes a collision-resistant SHA-256 hex digest for plugin event deduplication. */
+export function hashPluginEventContent(input: string): string {
+  return createHash("sha256").update(input).digest("hex");
+}
+
 /** Persist fetched plugin events (upsert by content hash) + sync status. Service-role only (cron). */
 export async function persistUnpamEvents(
   events: PluginEventRow[],
@@ -114,8 +126,6 @@ export async function persistUnpamEvents(
     .eq("slug", "universitas-pamulang")
     .maybeSingle();
   if (!uni) return { count: 0 };
-  const hash = (s: string) =>
-    Buffer.from(s).toString("base64").replace(/[^A-Za-z0-9]/g, "").slice(0, 32);
   const now = new Date().toISOString();
   if (events.length > 0) {
     const rows = events.map((e) => ({
@@ -129,7 +139,9 @@ export async function persistUnpamEvents(
       description: e.description,
       source_url: e.sourceUrl,
       program_id: e.programId,
-      content_hash: hash(`${e.kind}|${e.title}|${e.startsAt}`),
+      content_hash: hashPluginEventContent(
+        `${e.kind}|${e.title}|${e.startsAt}`,
+      ),
       last_seen_at: now,
     }));
     const { error: upsertError } = await client
@@ -156,8 +168,14 @@ export async function getObservabilityViews() {
   const client = adminClient();
   if (!client) return { drift: null, nim: null, gap: [] as never[] };
   const [drift, nim, gap] = await Promise.all([
-    client.from("dual_write_drift" as never).select("*").maybeSingle(),
-    client.from("nim_drift" as never).select("*").maybeSingle(),
+    client
+      .from("dual_write_drift" as never)
+      .select("*")
+      .maybeSingle(),
+    client
+      .from("nim_drift" as never)
+      .select("*")
+      .maybeSingle(),
     client.from("observability_tenant_gap" as never).select("*"),
   ]);
   return {

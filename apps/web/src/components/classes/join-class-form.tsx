@@ -1,22 +1,27 @@
 "use client";
 
-import { CheckCircle2, Link2, Loader2, Search } from "lucide-react";
-import Link from "next/link";
+import { Link2, Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import {
-  classJoinByNameSchema,
-  type ClassJoinResult,
+  buildCanonicalClassIdentity,
+  classJoinOrCreateSchema,
+  toFieldErrors,
 } from "@starstask/contracts";
 
+import {
+  JoinResultPanel,
+  type JoinOutcome,
+} from "@/components/classes/join-result-panel";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils/cn";
 
-type JoinMode = "name" | "link";
+type JoinMode = "code" | "link";
 
 type JoinClassFormProps = {
   /** Value echoed back after a failed invitation-link submit. */
@@ -25,22 +30,29 @@ type JoinClassFormProps = {
 };
 
 type JoinResponse = {
-  data?: { result?: ClassJoinResult };
+  data?: { result?: JoinOutcome };
   error?: { message?: string; fields?: Record<string, string> };
 };
 
+const SEMESTERS = Array.from({ length: 14 }, (_, index) => index + 1);
+
 const TABS: Array<{ mode: JoinMode; label: string }> = [
-  { mode: "name", label: "Class name" },
+  { mode: "code", label: "Class code" },
   { mode: "link", label: "Invitation link" },
 ];
+
+function currentAcademicYear(): string {
+  const now = new Date();
+  const start = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${start}/${start + 1}`;
+}
 
 /**
  * Two ways in, one rule: membership only.
  *
- * "Class name" calls `join_class_by_name`, which refuses classes that require
- * an invitation. "Invitation link" stays a plain GET form so the server keeps
- * owning token extraction and the `/invite/[token]` hand-off — there is no
- * second invitation path to keep in sync.
+ * "Class code" joins an existing canonical class (`05TPLM002-24/25`) or
+ * auto-creates it if nobody has created it yet, preventing duplicate collisions.
+ * "Invitation link" stays a plain GET form so the server owns `/invite/[token]`.
  */
 export function JoinClassForm({
   submittedLink,
@@ -48,44 +60,77 @@ export function JoinClassForm({
 }: JoinClassFormProps) {
   const router = useRouter();
 
-  const [mode, setMode] = React.useState<JoinMode>("name");
-  const [className, setClassName] = React.useState("");
+  const [mode, setMode] = React.useState<JoinMode>("code");
+  const [classCode, setClassCode] = React.useState("");
+  const [semesterNumber, setSemesterNumber] = React.useState(5);
+  const [academicYear, setAcademicYear] = React.useState(currentAcademicYear);
   const [isBusy, setIsBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [fieldError, setFieldError] = React.useState<string | null>(null);
-  const [result, setResult] = React.useState<ClassJoinResult | null>(null);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
+    {},
+  );
+  const [result, setResult] = React.useState<JoinOutcome | null>(null);
 
-  const join = async (value: string) => {
+  const preview = React.useMemo(() => {
+    const code = classCode.trim().toUpperCase();
+    const yearValid = /^\d{4}\/\d{4}$/.test(academicYear.trim());
+
+    if (!/^[A-Z0-9]{2,20}$/.test(code) || !yearValid) {
+      return null;
+    }
+
+    return buildCanonicalClassIdentity({
+      classCode: code,
+      semesterNumber,
+      academicYear,
+    });
+  }, [academicYear, classCode, semesterNumber]);
+
+  const submitStructured = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
     if (isBusy) {
       return;
     }
 
     setError(null);
-    setFieldError(null);
+    setFieldErrors({});
     setResult(null);
 
-    const parsed = classJoinByNameSchema.safeParse({ className: value });
+    const parsed = classJoinOrCreateSchema.safeParse({
+      classCode,
+      semesterNumber,
+      academicYear,
+    });
 
     if (!parsed.success) {
-      setFieldError(parsed.error.issues[0]?.message ?? "Enter a class name.");
+      setFieldErrors(toFieldErrors(parsed.error));
       return;
     }
 
+    await postJoin(parsed.data);
+  };
+
+  const postJoin = async (
+    payload:
+      | { classCode: string; semesterNumber: number; academicYear: string }
+      | { className: string },
+  ) => {
     setIsBusy(true);
 
     try {
       const response = await fetch("/api/classes/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify(payload),
       });
       const body = (await response
         .json()
         .catch(() => null)) as JoinResponse | null;
 
       if (!response.ok) {
-        setFieldError(body?.error?.fields?.className ?? null);
-        setError(body?.error?.message ?? "Could not check that class name.");
+        setFieldErrors(body?.error?.fields ?? {});
+        setError(body?.error?.message ?? "Could not check that class.");
         return;
       }
 
@@ -122,11 +167,11 @@ export function JoinClassForm({
               onClick={() => {
                 setMode(tab.mode);
                 setError(null);
-                setFieldError(null);
+                setFieldErrors({});
                 setResult(null);
               }}
               className={cn(
-                "focus-visible:outline-accent flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                "focus-visible:outline-accent min-h-[40px] flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2",
                 isActive
                   ? "bg-surface text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -138,62 +183,115 @@ export function JoinClassForm({
         })}
       </div>
 
-      {mode === "name" ? (
+      {mode === "code" ? (
         <form
-          className="mt-5 space-y-2"
+          className="mt-5 space-y-4"
           onSubmit={(event) => {
-            event.preventDefault();
-            void join(className);
+            void submitStructured(event);
           }}
         >
-          <Label htmlFor="class-name">Class name or code</Label>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              id="class-name"
-              name="className"
-              value={className}
-              onChange={(event) => {
-                setClassName(event.target.value);
-                setFieldError(null);
-                setResult(null);
-              }}
-              placeholder="TPLM002"
-              maxLength={60}
-              autoComplete="off"
-              aria-invalid={Boolean(fieldError)}
-              aria-describedby="class-name-help"
-              className="h-11 flex-1"
-            />
-            <Button
-              type="submit"
-              disabled={isBusy}
-              className="h-11 shrink-0"
-            >
-              {isBusy ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="h-4 w-4 animate-spin"
-                />
-              ) : (
-                <Search
-                  aria-hidden="true"
-                  className="h-4 w-4"
-                />
-              )}
-              {isBusy ? "Checking..." : "Continue"}
-            </Button>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="join-code">Class code</Label>
+              <Input
+                id="join-code"
+                value={classCode}
+                onChange={(event) => {
+                  setClassCode(event.target.value.toUpperCase());
+                  setFieldErrors({});
+                  setResult(null);
+                }}
+                placeholder="TPLM002"
+                maxLength={20}
+                autoCapitalize="characters"
+                autoComplete="off"
+                aria-invalid={Boolean(fieldErrors.classCode)}
+                className="h-11 uppercase"
+              />
+              {fieldErrors.classCode ? (
+                <p className="text-danger text-xs">{fieldErrors.classCode}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="join-semester">Semester</Label>
+              <Select
+                id="join-semester"
+                value={String(semesterNumber)}
+                onChange={(event) => {
+                  setSemesterNumber(Number(event.target.value));
+                  setResult(null);
+                }}
+                className="h-11"
+              >
+                {SEMESTERS.map((semester) => (
+                  <option
+                    key={semester}
+                    value={semester}
+                  >
+                    Semester {semester}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="join-year">Academic year</Label>
+              <Input
+                id="join-year"
+                value={academicYear}
+                onChange={(event) => {
+                  setAcademicYear(event.target.value);
+                  setFieldErrors({});
+                  setResult(null);
+                }}
+                placeholder="2024/2025"
+                maxLength={9}
+                inputMode="numeric"
+                aria-invalid={Boolean(fieldErrors.academicYear)}
+                className="h-11"
+              />
+              {fieldErrors.academicYear ? (
+                <p className="text-danger text-xs">
+                  {fieldErrors.academicYear}
+                </p>
+              ) : null}
+            </div>
           </div>
-          {fieldError ? (
-            <p className="text-danger text-xs">{fieldError}</p>
-          ) : (
-            <p
-              id="class-name-help"
-              className="text-muted-foreground text-xs"
-            >
-              Works for classes that accept open joining. Classes that require
-              an invitation will ask you for the link instead.
+
+          <div className="border-border bg-subtle rounded-lg border px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-muted-foreground text-xs font-medium">
+                Class ID
+              </span>
+              <span className="text-foreground font-mono text-sm font-semibold">
+                {preview ? preview.name : "05TPLM002-24/25"}
+              </span>
+            </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Joins this class if it already exists, or creates it automatically
+              for your cohort if nobody has set it up yet.
             </p>
-          )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isBusy}
+            className="h-11 w-full"
+          >
+            {isBusy ? (
+              <Loader2
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin"
+              />
+            ) : (
+              <Search
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            )}
+            {isBusy ? "Checking..." : "Join or create class"}
+          </Button>
         </form>
       ) : (
         <form
@@ -218,7 +316,7 @@ export function JoinClassForm({
           </p>
           <Button
             type="submit"
-            className="h-11"
+            className="h-11 w-full sm:w-auto"
           >
             <Link2
               aria-hidden="true"
@@ -232,7 +330,7 @@ export function JoinClassForm({
       {error ? (
         <Alert
           variant="error"
-          className="mt-4"
+          className="message-in mt-4"
         >
           {error}
         </Alert>
@@ -242,8 +340,7 @@ export function JoinClassForm({
         <JoinResultPanel
           result={result}
           onPickCandidate={(slug) => {
-            setClassName(slug);
-            void join(slug);
+            void postJoin({ className: slug });
           }}
           onUseLink={() => {
             setMode("link");
@@ -251,101 +348,6 @@ export function JoinClassForm({
           }}
         />
       ) : null}
-    </div>
-  );
-}
-
-function JoinResultPanel({
-  result,
-  onPickCandidate,
-  onUseLink,
-}: {
-  result: ClassJoinResult;
-  onPickCandidate: (slug: string) => void;
-  onUseLink: () => void;
-}) {
-  if (result.status === "joined" || result.status === "already_member") {
-    const joined = result.status === "joined";
-
-    return (
-      <div className="mt-4">
-        <Alert variant="success">
-          <p className="inline-flex items-center gap-1.5 font-medium">
-            <CheckCircle2
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-            {joined
-              ? `You joined ${result.name}`
-              : `You are already in ${result.name}`}
-          </p>
-          <p className="mt-1">
-            <Link
-              href={`/app/classes/${result.slug}`}
-              className="text-accent font-medium hover:underline"
-            >
-              Open the class
-            </Link>
-          </p>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (result.status === "blocked_by_policy") {
-    return (
-      <div className="mt-4">
-        <Alert variant="warning">
-          <p className="font-medium">{result.name} requires an invitation</p>
-          <p className="mt-1">
-            This class does not accept joining by name. Ask a class admin for an
-            invitation link, then paste it in the{" "}
-            <button
-              type="button"
-              onClick={onUseLink}
-              className="font-medium underline underline-offset-4"
-            >
-              Invitation link
-            </button>{" "}
-            tab.
-          </p>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (result.status === "ambiguous") {
-    return (
-      <div className="mt-4">
-        <Alert variant="info">
-          <p className="font-medium">More than one class matches</p>
-          <p className="mt-1">Pick the one you are enrolled in.</p>
-          <ul className="mt-2 space-y-1">
-            {result.candidates.map((candidate) => (
-              <li key={candidate.id}>
-                <button
-                  type="button"
-                  onClick={() => onPickCandidate(candidate.slug)}
-                  className="text-accent text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  {candidate.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Alert>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4">
-      <Alert variant="error">
-        <p className="font-medium">No class found</p>
-        <p className="mt-1">
-          Check the spelling, or ask a class admin for an invitation link.
-        </p>
-      </Alert>
     </div>
   );
 }

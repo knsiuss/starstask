@@ -12,7 +12,7 @@
 -- assignment_reports
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.assignment_reports (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   assignment_id uuid NOT NULL REFERENCES public.assignments (id) ON DELETE CASCADE,
   reporter_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   -- Denormalised for the review queue and RLS; kept in sync by report_assignment().
@@ -34,9 +34,7 @@ CREATE TABLE IF NOT EXISTS public.assignment_reports (
       'other'
     )
   ),
-  CONSTRAINT assignment_reports_status_allowed CHECK (
-    status IN ('open', 'resolved', 'dismissed')
-  ),
+  CONSTRAINT assignment_reports_status_allowed CHECK (status IN ('open', 'resolved', 'dismissed')),
   CONSTRAINT assignment_reports_note_length CHECK (
     note IS NULL
     OR char_length(btrim(note)) BETWEEN 5 AND 2000
@@ -68,7 +66,7 @@ WHERE
 -- assignment_revisions
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.assignment_revisions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   assignment_id uuid NOT NULL REFERENCES public.assignments (id) ON DELETE CASCADE,
   class_id uuid REFERENCES public.classes (id) ON DELETE SET NULL,
   editor_id uuid REFERENCES auth.users (id) ON DELETE SET NULL,
@@ -77,11 +75,9 @@ CREATE TABLE IF NOT EXISTS public.assignment_revisions (
   -- Only the fields a reader can see, so a revision never becomes a shadow
   -- copy of unrelated columns.
   snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
-  changed_fields text[] NOT NULL DEFAULT ARRAY[]::text[],
+  changed_fields TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT assignment_revisions_kind_allowed CHECK (
-    change_kind IN ('created', 'updated', 'moderated')
-  )
+  CONSTRAINT assignment_revisions_kind_allowed CHECK (change_kind IN ('created', 'updated', 'moderated'))
 );
 
 
@@ -179,8 +175,12 @@ DROP TRIGGER IF EXISTS assignments_record_revision ON public.assignments;
 
 
 CREATE TRIGGER assignments_record_revision
-AFTER INSERT
-OR UPDATE OF title, description, deadline, status, course_id, class_id ON public.assignments FOR EACH ROW
+AFTER INSERT OR UPDATE OF title,
+description,
+deadline,
+status,
+course_id,
+class_id ON public.assignments FOR EACH ROW
 EXECUTE FUNCTION public.record_assignment_revision ();
 
 
@@ -211,7 +211,8 @@ SELECT
 
 -- Revision history is for people who can already act on the assignment: its
 -- author, the class reviewers, and platform admins. It is not exposed to anon.
-DROP POLICY if exists assignment_revisions_select ON public.assignment_revisions;
+DROP POLICY if EXISTS assignment_revisions_select ON public.assignment_revisions;
+
 
 CREATE POLICY assignment_revisions_select ON public.assignment_revisions FOR
 SELECT
@@ -304,11 +305,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- review_assignment_report
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.review_assignment_report (
-  p_report_id uuid,
-  p_status text,
-  p_note text DEFAULT NULL
-) returns void language plpgsql security definer
+CREATE OR REPLACE FUNCTION public.review_assignment_report (p_report_id uuid, p_status text, p_note text DEFAULT NULL) returns void language plpgsql security definer
 SET
   search_path = public,
   pg_temp AS $$
@@ -374,21 +371,33 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Privileges
 -- ---------------------------------------------------------------------------
-REVOKE ALL ON function public.record_assignment_revision () FROM public;
+REVOKE ALL ON function public.record_assignment_revision ()
+FROM
+  public;
 
-REVOKE ALL ON function public.report_assignment (uuid, text, text) FROM public;
 
-REVOKE ALL ON function public.review_assignment_report (uuid, text, text) FROM public;
+REVOKE ALL ON function public.report_assignment (uuid, text, text)
+FROM
+  public;
+
+
+REVOKE ALL ON function public.review_assignment_report (uuid, text, text)
+FROM
+  public;
+
 
 GRANT
 EXECUTE ON function public.report_assignment (uuid, text, text) TO authenticated;
 
+
 GRANT
 EXECUTE ON function public.review_assignment_report (uuid, text, text) TO authenticated;
+
 
 GRANT
 SELECT
   ON public.assignment_reports TO authenticated;
+
 
 GRANT
 SELECT

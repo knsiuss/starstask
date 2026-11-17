@@ -115,12 +115,13 @@ export function ReviewRequestDialog({ assignmentId, classSlug, title }: Props) {
         <Button
           variant="secondary"
           size="sm"
+          className="min-h-[44px] px-4 sm:min-h-8 sm:px-3"
         >
           Review
         </Button>
       </DialogTrigger>
-      <DialogContent>
-        <DialogTitle>Review request</DialogTitle>
+      <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl p-5 sm:p-6">
+        <DialogTitle className="pr-8">Review request</DialogTitle>
         <DialogDescription>
           {title}. Approving publishes it to every member of the class.
         </DialogDescription>
@@ -134,6 +135,7 @@ export function ReviewRequestDialog({ assignmentId, classSlug, title }: Props) {
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
+            aria-invalid={Boolean(error)}
             placeholder="Required for reject and revision requests"
           />
         </div>
@@ -148,12 +150,13 @@ export function ReviewRequestDialog({ assignmentId, classSlug, title }: Props) {
           </Alert>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap justify-end gap-2">
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <Button
             variant="danger"
             size="sm"
             disabled={isSaving !== null}
             onClick={() => decide("rejected")}
+            className="min-h-[44px] w-full sm:min-h-9 sm:w-auto"
           >
             {isSaving === "rejected" ? (
               <Loader2
@@ -168,6 +171,7 @@ export function ReviewRequestDialog({ assignmentId, classSlug, title }: Props) {
             size="sm"
             disabled={isSaving !== null}
             onClick={() => decide("revision")}
+            className="min-h-[44px] w-full sm:min-h-9 sm:w-auto"
           >
             {isSaving === "revision" ? (
               <Loader2
@@ -181,6 +185,7 @@ export function ReviewRequestDialog({ assignmentId, classSlug, title }: Props) {
             size="sm"
             disabled={isSaving !== null}
             onClick={() => decide("approved")}
+            className="min-h-[44px] w-full sm:min-h-9 sm:w-auto"
           >
             {isSaving === "approved" ? (
               <Loader2

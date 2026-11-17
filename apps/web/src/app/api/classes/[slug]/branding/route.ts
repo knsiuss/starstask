@@ -38,9 +38,12 @@ export async function PUT(
     const parsed = exportBrandingSchema.safeParse(body);
 
     if (!parsed.success) {
-      throw new ApiError(400, "invalid_input", "Fix the highlighted fields.", {
-        fieldErrors: toFieldErrors(parsed.error),
-      });
+      throw new ApiError(
+        400,
+        "invalid_input",
+        "Fix the highlighted fields.",
+        toFieldErrors(parsed.error),
+      );
     }
 
     const saved = await saveBranding(found.id, parsed.data);

@@ -9,6 +9,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: no job needs more than read access to the repo.
+permissions:
+  contents: read
+
 jobs:
   secrets:
     name: Secret scan
@@ -50,6 +54,19 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # npmjs registry is used because the mirror configured locally lacks the
+      # advisories endpoint; fail on high-severity only (moderates are
+      # transitive noise). Kept as its own gate before typecheck.
+      - name: Audit dependencies
+        run: pnpm audit --prod --audit-level=high --registry=https://registry.npmjs.org
+
+      - name: Assert env files are not tracked
+        run: |
+          if git ls-files --error-unmatch .env .env.local apps/web/.env.local >/dev/null 2>&1; then
+            echo "::error::A real .env file is tracked in this repository."
+            exit 1
+          fi
 
       - name: Typecheck
         run: pnpm -r --if-present typecheck

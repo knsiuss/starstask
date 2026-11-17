@@ -13,6 +13,7 @@ import { AttendanceSessionPanel } from "@/components/attendance/attendance-sessi
 import { ClassAttendanceCourses } from "@/components/attendance/class-attendance-courses";
 import { ClassAttendanceMembers } from "@/components/attendance/class-attendance-members";
 import { ClassAttendanceSessions } from "@/components/attendance/class-attendance-sessions";
+import { Button } from "@/components/ui/button";
 import {
   popWorkspacePanel,
   pushWorkspacePanel,
@@ -108,7 +109,10 @@ export function ClassAttendanceWorkspace({
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:overflow-hidden lg:p-6">
         <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
-          <section className="border-border bg-surface rounded-2xl border p-4 sm:p-5">
+          <section
+            id="create-attendance"
+            className="border-border bg-surface scroll-mt-16 rounded-2xl border p-4 sm:p-5"
+          >
             <header className="flex items-center gap-2.5">
               <span className="bg-accent-soft text-accent flex h-9 w-9 items-center justify-center rounded-lg">
                 <CalendarDays
@@ -140,12 +144,35 @@ export function ClassAttendanceWorkspace({
             meetings={meetings}
             onOpenSession={openSession}
           />
+
+          {/* The desktop rail holds the quick actions; on mobile the detail
+              panel needs its own entry point. */}
+          <div className="lg:hidden">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() =>
+                openPanel({
+                  kind: "classAttendance",
+                  title: "Attendance detail",
+                })
+              }
+            >
+              <History
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Attendance detail
+            </Button>
+          </div>
         </div>
 
         <aside className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto">
-          {/* Overview and export stay on desktop; on mobile the creation
-              workflow takes the full column (both remain reachable through
-              the Action Center). */}
+          {/* Overview, quick actions, and export stay on desktop; on mobile the
+              creation workflow takes the full column (the remaining ones are
+              reachable through the Action Center, the detail panel through the
+              button below it). */}
           <div className="hidden lg:block">
             <AttendanceProgressCard
               summary={summary}
@@ -155,29 +182,31 @@ export function ClassAttendanceWorkspace({
             />
           </div>
 
-          <AttendanceQuickActions
-            actions={[
-              {
-                label: "Attendance detail",
-                icon: History,
-                onSelect: () =>
-                  openPanel({
-                    kind: "classAttendance",
-                    title: "Attendance detail",
-                  }),
-              },
-              {
-                label: "Manage sessions",
-                icon: CalendarDays,
-                href: `${base}/sessions`,
-              },
-              {
-                label: "Absence requests",
-                icon: ClipboardList,
-                href: `${base}/leave-requests`,
-              },
-            ]}
-          />
+          <div className="hidden lg:block">
+            <AttendanceQuickActions
+              actions={[
+                {
+                  label: "Attendance detail",
+                  icon: History,
+                  onSelect: () =>
+                    openPanel({
+                      kind: "classAttendance",
+                      title: "Attendance detail",
+                    }),
+                },
+                {
+                  label: "Manage sessions",
+                  icon: CalendarDays,
+                  href: `${base}/sessions`,
+                },
+                {
+                  label: "Absence requests",
+                  icon: ClipboardList,
+                  href: `${base}/leave-requests`,
+                },
+              ]}
+            />
+          </div>
 
           <div className="hidden lg:block">
             <AttendanceExportCard

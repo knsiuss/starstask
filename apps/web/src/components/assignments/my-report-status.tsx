@@ -9,9 +9,9 @@ import type { MyAssignmentReport } from "@/lib/db/assignment-trust";
 import { cn } from "@/lib/utils/cn";
 
 const TONES: Record<AssignmentReportStatus, string> = {
-  open: "bg-warning-soft text-warning",
-  resolved: "bg-success-soft text-success",
-  dismissed: "bg-subtle text-muted-foreground",
+  open: "border-warning/30 bg-warning-soft text-warning",
+  resolved: "border-success/30 bg-success-soft text-success",
+  dismissed: "border-border bg-subtle text-muted-foreground",
 };
 
 function describeReport(report: MyAssignmentReport): string {
@@ -38,7 +38,7 @@ export function MyReportStatus({ report }: { report: MyAssignmentReport }) {
   return (
     <div
       className={cn(
-        "rounded-lg px-3 py-2 text-xs leading-relaxed",
+        "rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed",
         TONES[report.status],
       )}
     >

@@ -1,8 +1,8 @@
 "use client";
 
+import { AlertCircle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Badge, type BadgeProps } from "@/components/ui/badge";
 import {
   formatCount,
   getDeadlineBucket,
@@ -10,6 +10,8 @@ import {
   pluralize,
   type DeadlineBucket,
 } from "@starstask/shared";
+
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 
 type LiveDeadlineBadgeProps = {
   deadline: string | null;
@@ -66,7 +68,6 @@ export function LiveDeadlineBadge({
   }, [deadline]);
 
   const bucket = getDeadlineBucket(deadline, now);
-
   let label = BUCKET_LABELS[bucket];
 
   if (bucket === "due_soon" && deadline) {
@@ -78,8 +79,20 @@ export function LiveDeadlineBadge({
   return (
     <Badge
       variant={BUCKET_VARIANTS[bucket]}
-      className="shrink-0 whitespace-nowrap"
+      className="shrink-0 whitespace-nowrap tabular-nums"
     >
+      {bucket === "overdue" ? (
+        <AlertCircle
+          aria-hidden="true"
+          className="h-3 w-3"
+        />
+      ) : null}
+      {bucket === "due_today" ? (
+        <Clock
+          aria-hidden="true"
+          className="h-3 w-3"
+        />
+      ) : null}
       {label}
     </Badge>
   );

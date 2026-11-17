@@ -3,7 +3,6 @@
 -- Both are public object URLs in the `class-media` bucket. They are readable by
 -- anyone who can read the class, and writable only through set_class_media(),
 -- which checks class admin rights for the target class.
-
 ALTER TABLE public.classes
 ADD COLUMN IF NOT EXISTS avatar_url text;
 

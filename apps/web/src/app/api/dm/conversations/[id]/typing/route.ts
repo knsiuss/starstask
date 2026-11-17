@@ -60,6 +60,12 @@ export async function POST(
   } catch (error) {
     const limited = limitResponse(error);
     if (limited) return limited;
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { error: "Could not save typing" },
       { status: 500 },

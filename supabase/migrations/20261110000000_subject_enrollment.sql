@@ -296,6 +296,8 @@ $$;
 
 -- Return type changed since this WIP was written (2026-11-04): current prod returns 12 cols, this returns 18. Drop first.
 DROP FUNCTION IF EXISTS public.class_attendance_recap (uuid, uuid);
+
+
 CREATE OR REPLACE FUNCTION public.class_attendance_recap (p_class_id uuid, p_subject_id uuid) RETURNS TABLE (
   session_id uuid,
   meeting_number integer,
@@ -423,8 +425,25 @@ COMMENT ON TABLE public.class_subject_members IS 'Per-subject enrollment scoping
 
 COMMENT ON FUNCTION public.is_subject_member (uuid, uuid) IS 'True when the caller is enrolled in the subject. Attendance RPCs use this so repeat students are scoped per course.';
 
+
 -- Restore grants dropped with class_attendance_recap (2026-11-05 fix: return type changed).
-REVOKE ALL ON FUNCTION public.class_attendance_recap (uuid, uuid) FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.class_attendance_recap (uuid, uuid) TO authenticated;
-REVOKE ALL ON FUNCTION public.attendance_meeting_roster (uuid) FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.attendance_meeting_roster (uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.class_attendance_recap (uuid, uuid)
+FROM
+  public,
+  anon,
+  authenticated;
+
+
+GRANT
+EXECUTE ON FUNCTION public.class_attendance_recap (uuid, uuid) TO authenticated;
+
+
+REVOKE ALL ON FUNCTION public.attendance_meeting_roster (uuid)
+FROM
+  public,
+  anon,
+  authenticated;
+
+
+GRANT
+EXECUTE ON FUNCTION public.attendance_meeting_roster (uuid) TO authenticated;

@@ -30,11 +30,13 @@ export function DeadlineBadge({
   return (
     <Badge
       variant={variant}
-      className="max-w-full"
+      className="max-w-full min-w-0"
     >
-      <span>{deadlineStateLabel(state)}</span>
+      <span className="shrink-0">{deadlineStateLabel(state)}</span>
       {showDate ? (
-        <span className="opacity-80">· {formatDeadline(deadline)}</span>
+        <span className="truncate opacity-80">
+          · {formatDeadline(deadline)}
+        </span>
       ) : null}
     </Badge>
   );

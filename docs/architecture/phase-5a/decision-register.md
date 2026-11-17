@@ -38,4 +38,4 @@
   deferred; `audit_logs` already exists for platform actions (REPORTED).
 - **Consequences:** Current state is always derivable; history relies on
   `audit_logs` once platform-adm
-...[truncated 2700 chars]
+  ...[truncated 2700 chars]

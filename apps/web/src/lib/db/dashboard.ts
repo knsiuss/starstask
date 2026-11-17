@@ -237,19 +237,11 @@ async function loadDashboardOverview(
       .in("course_id", ids);
   };
 
-  const countAllTasks = (ids: string[]) =>
-    supabase
-      .from("assignments")
-      .select("id", { count: "exact", head: true })
-      .in("class_id", ids);
-
-  /** Tasks the caller can actually see in a class: admins see drafts too. */
+  /** Tasks the caller can actually see in a class (published only). */
   const countVisibleTasks = async (
     classItem: (typeof activeClasses)[number],
   ): Promise<{ count: number | null; error: { code?: string } | null }> => {
-    const scoped = await (classItem.is_admin
-      ? countAllTasks([classItem.id])
-      : countPublishedTasks([classItem.id]));
+    const scoped = await countPublishedTasks([classItem.id]);
 
     if (scoped.error) {
       return { count: null, error: scoped.error };
@@ -323,6 +315,8 @@ async function loadDashboardOverview(
   const noneRows = Promise.resolve({ data: [], error: null });
 
   const [
+    totalScoped,
+    totalPublic,
     dueSoonScoped,
     dueSoonPublic,
     pastScoped,
@@ -332,6 +326,8 @@ async function loadDashboardOverview(
     recentScopedResult,
     recentPublicResult,
   ] = await Promise.all([
+    countPublishedTasks(),
+    hasPublic ? countPublicTasks() : noneCount,
     // The half-open WIB window is shared with the deadline badges: today
     // through the next seven calendar days.
     countPublishedTasks()
@@ -358,6 +354,10 @@ async function loadDashboardOverview(
     hasPublic ? recentPublic() : noneRows,
   ]);
 
+  const totalTasksResult = {
+    count: (totalScoped.count ?? 0) + (totalPublic.count ?? 0),
+    error: totalScoped.error ?? totalPublic.error,
+  };
   const dueSoonResult = {
     count: (dueSoonScoped.count ?? 0) + (dueSoonPublic.count ?? 0),
     error: dueSoonScoped.error ?? dueSoonPublic.error,
@@ -382,6 +382,7 @@ async function loadDashboardOverview(
   };
 
   const failures = [
+    { result: totalTasksResult, message: "Could not count tasks" },
     { result: dueSoonResult, message: "Could not count due tasks" },
     { result: pastDeadlineResult, message: "Could not count past deadlines" },
     { result: newTasksResult, message: "Could not count new tasks" },
@@ -425,10 +426,7 @@ async function loadDashboardOverview(
     };
   });
 
-  const totalTasks = classes.reduce(
-    (total, classItem) => total + classItem.task_count,
-    0,
-  );
+  const totalTasks = totalTasksResult.count ?? 0;
 
   // Past-deadline tasks the student already ticked as done are not "needs
   // attention", so the raw count is reduced by their completion marks.

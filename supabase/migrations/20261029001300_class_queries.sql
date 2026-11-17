@@ -10,21 +10,21 @@
 --    It runs as the definer because the member count must include rows the
 --    anonymous caller cannot read directly; it only ever returns active
 --    classes, so nothing private can leak through it.
-drop policy if exists assignments_class_reviewer_read ON public.assignments;
+DROP POLICY if EXISTS assignments_class_reviewer_read ON public.assignments;
 
 
-create policy assignments_class_reviewer_read ON public.assignments FOR
-select
+CREATE POLICY assignments_class_reviewer_read ON public.assignments FOR
+SELECT
   TO authenticated USING (
-    class_id is not null
-    and (
+    class_id IS NOT NULL
+    AND (
       public.is_class_admin (class_id)
-      or public.is_platform_admin ()
+      OR public.is_platform_admin ()
     )
   );
 
 
-create or replace function public.list_classes (
+CREATE OR REPLACE FUNCTION public.list_classes (
   p_search text DEFAULT NULL,
   p_semester text DEFAULT NULL,
   p_limit integer DEFAULT 12,
@@ -93,19 +93,19 @@ offset greatest(coalesce(p_offset, 0), 0);
 $$;
 
 
-comment on function public.list_classes (text, text, integer, integer) IS 'Public class discovery: active classes only, bounded page, total count.';
+COMMENT ON function public.list_classes (text, text, integer, integer) IS 'Public class discovery: active classes only, bounded page, total count.';
 
 
-revoke all on function public.list_classes (text, text, integer, integer)
-from
+REVOKE ALL ON function public.list_classes (text, text, integer, integer)
+FROM
   public;
 
 
-grant
-execute on function public.list_classes (text, text, integer, integer) to anon,
+GRANT
+EXECUTE ON function public.list_classes (text, text, integer, integer) TO anon,
 authenticated;
 
 
-create index if not exists classes_semester_idx ON public.classes (semester)
-where
+CREATE INDEX if NOT EXISTS classes_semester_idx ON public.classes (semester)
+WHERE
   status = 'active';

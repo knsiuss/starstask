@@ -32,7 +32,7 @@ export function AssignmentRowMenu({
         <button
           type="button"
           aria-label={`Actions for ${assignmentTitle}`}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent relative z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent relative z-10 flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-9 sm:min-h-0 sm:w-9 sm:min-w-0"
         >
           <MoreHorizontal
             aria-hidden="true"
@@ -44,7 +44,7 @@ export function AssignmentRowMenu({
         <DropdownMenuItem asChild>
           <Link
             href={`/assignments/${assignmentId}`}
-            className="flex items-center gap-2"
+            className="flex min-h-[44px] items-center gap-2 sm:min-h-0"
           >
             <Eye
               aria-hidden="true"
@@ -56,7 +56,7 @@ export function AssignmentRowMenu({
         <DropdownMenuItem asChild>
           <Link
             href={`/assignments/${assignmentId}/edit`}
-            className="flex items-center gap-2"
+            className="flex min-h-[44px] items-center gap-2 sm:min-h-0"
           >
             <Pencil
               aria-hidden="true"
@@ -68,7 +68,7 @@ export function AssignmentRowMenu({
         <DropdownMenuItem asChild>
           <Link
             href={`/app/classes/${classSlug}/review/${assignmentId}`}
-            className="flex items-center gap-2"
+            className="flex min-h-[44px] items-center gap-2 sm:min-h-0"
           >
             <ClipboardCheck
               aria-hidden="true"

@@ -1,12 +1,15 @@
 "use client";
 
-import { Command, Search, X } from "lucide-react";
+import { Command, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 
 type Item = { id: string; label: string; href: string };
+
+const OPEN_COMMAND_PALETTE_EVENT = "starstask:open-command-palette";
 
 const ITEMS: Item[] = [
   { id: "dashboard", label: "Go to Dashboard", href: "/app" },
@@ -14,10 +17,32 @@ const ITEMS: Item[] = [
   { id: "classes", label: "My Classes", href: "/classes" },
   { id: "attendance", label: "Attendance", href: "/attendance" },
   { id: "schedule", label: "Schedule", href: "/schedule" },
+  { id: "leave-requests", label: "Absence Requests", href: "/leave-requests" },
   { id: "messages", label: "Messages", href: "/messages" },
   { id: "notifications", label: "Notifications", href: "/notifications" },
-  { id: "settings", label: "Settings", href: "/settings" },
+  { id: "settings", label: "Settings", href: "/settings/profile" },
 ];
+
+export function CommandPaletteTrigger({ className }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      aria-label="Open command palette"
+      onClick={() =>
+        window.dispatchEvent(new CustomEvent(OPEN_COMMAND_PALETTE_EVENT))
+      }
+      className={cn(
+        "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent flex h-9 w-9 items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+        className,
+      )}
+    >
+      <Search
+        aria-hidden="true"
+        className="h-4 w-4"
+      />
+    </button>
+  );
+}
 
 export function CommandPalette() {
   const router = useRouter();
@@ -31,10 +56,16 @@ export function CommandPalette() {
         event.preventDefault();
         setOpen((value) => !value);
       }
-      if (event.key === "Escape") setOpen(false);
     };
+    const onOpen = () => setOpen(true);
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener(OPEN_COMMAND_PALETTE_EVENT, onOpen);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_COMMAND_PALETTE_EVENT, onOpen);
+    };
   }, []);
 
   const filtered = useMemo(
@@ -45,30 +76,31 @@ export function CommandPalette() {
     [query],
   );
 
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setQuery("");
+      setIndex(0);
+    }
+  }, []);
+
   const go = useCallback(
     (href: string) => {
-      setOpen(false);
-      setQuery("");
+      handleOpenChange(false);
       router.push(href);
     },
-    [router],
+    [handleOpenChange, router],
   );
 
-  if (!open) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Command palette"
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24"
-      onClick={() => setOpen(false)}
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
     >
-      <div
-        className="border-border bg-surface w-full max-w-lg overflow-hidden rounded-2xl border shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <label className="border-border flex items-center gap-2 border-b px-4">
+      <DialogContent className="top-[16%] max-w-lg translate-y-0 overflow-hidden rounded-xl p-0">
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
+
+        <label className="border-border flex items-center gap-2 border-b py-1 pr-12 pl-4">
           <Search
             aria-hidden="true"
             className="text-muted-foreground h-4 w-4 shrink-0"
@@ -93,21 +125,16 @@ export function CommandPalette() {
                 go(filtered[index].href);
               }
             }}
-            placeholder="Type a command or search..."
+            placeholder="Jump to a page..."
             aria-label="Command palette search"
-            className="w-full bg-transparent py-3.5 text-sm focus-visible:outline-none"
+            className="text-foreground placeholder:text-muted-foreground w-full bg-transparent py-3 text-sm focus-visible:outline-none"
           />
-          <button
-            type="button"
-            aria-label="Close command palette"
-            onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X aria-hidden="true" className="h-4 w-4" />
-          </button>
         </label>
 
-        <ul className="max-h-80 overflow-y-auto p-2" role="listbox">
+        <ul
+          className="max-h-80 overflow-y-auto p-2"
+          role="listbox"
+        >
           {filtered.map((item, i) => (
             <li key={item.id}>
               <button
@@ -117,13 +144,16 @@ export function CommandPalette() {
                 onMouseEnter={() => setIndex(i)}
                 onClick={() => go(item.href)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                  "flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                   i === index
-                    ? "bg-accent-soft text-accent"
-                    : "hover:bg-muted/60",
+                    ? "bg-accent-soft text-accent font-medium"
+                    : "text-foreground hover:bg-muted/60",
                 )}
               >
-                <Command aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <Command
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0"
+                />
                 {item.label}
               </button>
             </li>
@@ -135,12 +165,12 @@ export function CommandPalette() {
           ) : null}
         </ul>
 
-        <p className="text-muted-foreground border-t px-4 py-2 text-xs">
+        <p className="border-border text-muted-foreground hidden border-t px-4 py-2 text-xs sm:block">
           <kbd className="font-sans">↑↓</kbd> navigate ·{" "}
           <kbd className="font-sans">Enter</kbd> open ·{" "}
           <kbd className="font-sans">Esc</kbd> close
         </p>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -6,7 +6,6 @@
 --
 -- Columns added:
 --   assignments.subject_id        links an assignment to a specific subject inside a class
-
 -- ---------------------------------------------------------------------------
 -- class_subjects
 -- ---------------------------------------------------------------------------
@@ -38,15 +37,20 @@ CREATE TABLE IF NOT EXISTS public.class_subjects (
   CONSTRAINT class_subjects_status_allowed CHECK (status IN ('active', 'archived'))
 );
 
+
 COMMENT ON TABLE public.class_subjects IS 'Subjects/courses created within a main class group. Inherits membership from the parent class.';
+
 
 CREATE INDEX IF NOT EXISTS class_subjects_class_idx ON public.class_subjects (class_id, created_at ASC);
 
+
 CREATE INDEX IF NOT EXISTS class_subjects_course_idx ON public.class_subjects (course_id);
+
 
 CREATE TRIGGER class_subjects_set_updated_at
 BEFORE UPDATE ON public.class_subjects FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at ();
+
 
 -- ---------------------------------------------------------------------------
 -- assignments.subject_id
@@ -54,14 +58,25 @@ EXECUTE FUNCTION public.set_updated_at ();
 ALTER TABLE public.assignments
 ADD COLUMN IF NOT EXISTS subject_id uuid REFERENCES public.class_subjects (id) ON DELETE SET NULL;
 
+
 CREATE INDEX IF NOT EXISTS assignments_subject_idx ON public.assignments (subject_id)
 WHERE
   subject_id IS NOT NULL;
 
+
 -- ---------------------------------------------------------------------------
 -- Seed initial subject for existing classes
 -- ---------------------------------------------------------------------------
-INSERT INTO public.class_subjects (class_id, course_id, name, lecturer_name, status, created_at, updated_at)
+INSERT INTO
+  public.class_subjects (
+    class_id,
+    course_id,
+    name,
+    lecturer_name,
+    status,
+    created_at,
+    updated_at
+  )
 SELECT
   c.id,
   c.course_id,
@@ -82,6 +97,7 @@ WHERE
       cs.class_id = c.id
   );
 
+
 UPDATE public.assignments a
 SET
   subject_id = cs.id
@@ -91,6 +107,7 @@ WHERE
   a.class_id = cs.class_id
   AND a.course_id = cs.course_id
   AND a.subject_id IS NULL;
+
 
 -- ---------------------------------------------------------------------------
 -- class_invitation_declines
@@ -103,26 +120,56 @@ CREATE TABLE IF NOT EXISTS public.class_invitation_declines (
   CONSTRAINT class_invitation_declines_key UNIQUE (invitation_id, user_id)
 );
 
+
 COMMENT ON TABLE public.class_invitation_declines IS 'Records when a user declines a pending invitation so it is removed from their dashboard.';
 
+
 CREATE INDEX IF NOT EXISTS class_invitation_declines_user_idx ON public.class_invitation_declines (user_id);
+
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.class_subjects ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE public.class_invitation_declines ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.class_subjects FROM anon, authenticated;
-REVOKE ALL ON public.class_invitation_declines FROM anon, authenticated;
 
-GRANT SELECT ON public.class_subjects TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.class_subjects TO authenticated;
+REVOKE ALL ON public.class_subjects
+FROM
+  anon,
+  authenticated;
 
-GRANT SELECT, INSERT ON public.class_invitation_declines TO authenticated;
+
+REVOKE ALL ON public.class_invitation_declines
+FROM
+  anon,
+  authenticated;
+
+
+GRANT
+SELECT
+  ON public.class_subjects TO anon;
+
+
+GRANT
+SELECT
+,
+  INSERT,
+UPDATE ON public.class_subjects TO authenticated;
+
+
+GRANT
+SELECT
+,
+  INSERT ON public.class_invitation_declines TO authenticated;
+
 
 -- class_subjects policies
 DROP POLICY IF EXISTS class_subjects_public_read ON public.class_subjects;
+
+
 CREATE POLICY class_subjects_public_read ON public.class_subjects FOR
 SELECT
   TO anon USING (
@@ -138,7 +185,10 @@ SELECT
     )
   );
 
+
 DROP POLICY IF EXISTS class_subjects_authenticated_read ON public.class_subjects;
+
+
 CREATE POLICY class_subjects_authenticated_read ON public.class_subjects FOR
 SELECT
   TO authenticated USING (
@@ -158,26 +208,41 @@ SELECT
     )
   );
 
+
 DROP POLICY IF EXISTS class_subjects_manage_insert ON public.class_subjects;
-CREATE POLICY class_subjects_manage_insert ON public.class_subjects FOR
-INSERT
-  TO authenticated WITH CHECK (public.can_manage_class (class_id));
+
+
+CREATE POLICY class_subjects_manage_insert ON public.class_subjects FOR INSERT TO authenticated
+WITH
+  CHECK (public.can_manage_class (class_id));
+
 
 DROP POLICY IF EXISTS class_subjects_manage_update ON public.class_subjects;
-CREATE POLICY class_subjects_manage_update ON public.class_subjects FOR
-UPDATE TO authenticated USING (public.can_manage_class (class_id))
-WITH CHECK (public.can_manage_class (class_id));
+
+
+CREATE POLICY class_subjects_manage_update ON public.class_subjects
+FOR UPDATE
+  TO authenticated USING (public.can_manage_class (class_id))
+WITH
+  CHECK (public.can_manage_class (class_id));
+
 
 -- class_invitation_declines policies
 DROP POLICY IF EXISTS class_invitation_declines_user_read ON public.class_invitation_declines;
+
+
 CREATE POLICY class_invitation_declines_user_read ON public.class_invitation_declines FOR
 SELECT
   TO authenticated USING (user_id = auth.uid ());
 
+
 DROP POLICY IF EXISTS class_invitation_declines_user_insert ON public.class_invitation_declines;
-CREATE POLICY class_invitation_declines_user_insert ON public.class_invitation_declines FOR
-INSERT
-  TO authenticated WITH CHECK (user_id = auth.uid ());
+
+
+CREATE POLICY class_invitation_declines_user_insert ON public.class_invitation_declines FOR INSERT TO authenticated
+WITH
+  CHECK (user_id = auth.uid ());
+
 
 -- ---------------------------------------------------------------------------
 -- Subject Management Functions
@@ -251,6 +316,7 @@ BEGIN
 END;
 $$;
 
+
 CREATE OR REPLACE FUNCTION public.update_class_subject (
   p_subject_id uuid,
   p_name text,
@@ -310,11 +376,11 @@ BEGIN
 END;
 $$;
 
+
 -- ---------------------------------------------------------------------------
 -- Invitation Preview Function
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.get_invitation_preview (p_token text)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.get_invitation_preview (p_token text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$
@@ -387,16 +453,27 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.create_class_subject (uuid, text, text, text, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.update_class_subject (uuid, text, text, text, text, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_invitation_preview (text) TO anon, authenticated;
+
+GRANT
+EXECUTE ON FUNCTION public.create_class_subject (uuid, text, text, text, text) TO authenticated;
+
+
+GRANT
+EXECUTE ON FUNCTION public.update_class_subject (uuid, text, text, text, text, text) TO authenticated;
+
+
+GRANT
+EXECUTE ON FUNCTION public.get_invitation_preview (text) TO anon,
+authenticated;
+
 
 -- ---------------------------------------------------------------------------
 -- Accept and Decline Pending Invitations
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.accept_pending_invitation (p_invitation_id uuid)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public, pg_temp AS $$
+CREATE OR REPLACE FUNCTION public.accept_pending_invitation (p_invitation_id uuid) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_user uuid := (SELECT auth.uid ());
   v_inv public.class_invitations;
@@ -466,9 +543,11 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.decline_class_invitation (p_invitation_id uuid)
-RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public, pg_temp AS $$
+
+CREATE OR REPLACE FUNCTION public.decline_class_invitation (p_invitation_id uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = public,
+  pg_temp AS $$
 DECLARE
   v_user uuid := (SELECT auth.uid ());
 BEGIN
@@ -484,6 +563,10 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.accept_pending_invitation (uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.decline_class_invitation (uuid) TO authenticated;
 
+GRANT
+EXECUTE ON FUNCTION public.accept_pending_invitation (uuid) TO authenticated;
+
+
+GRANT
+EXECUTE ON FUNCTION public.decline_class_invitation (uuid) TO authenticated;

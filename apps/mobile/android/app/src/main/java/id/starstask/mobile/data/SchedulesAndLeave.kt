@@ -8,11 +8,15 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 
-data class ScheduleEntry(val id: String, val title: String, val startsAt: String, val endsAt: String, val className: String?)
+@Serializable
+data class ScheduleEntry(val id: String, val title: String, val startsAt: String, val endsAt: String, val className: String?, val classCode: String? = null)
 
-data class LeaveRequest(val id: String, val status: String, val leaveStart: String?, val leaveEnd: String?, val reason: String?)
+// LeaveRequest canonical model lives in LeaveRequests.kt (full web mirror).
+// Alias kept for schedule/leave parity; canonical leave code lives in LeaveRequests.kt.
+// data class for new code.
 
 data class OnboardingProfile(val fullName: String?, val nim: String?, val onboardedAt: String?)
 
@@ -45,6 +49,14 @@ suspend fun loadSchedule(userId: String): List<ScheduleEntry> {
             { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull() },
         )
     }
+    val codes = if (classIds.isEmpty()) emptyMap() else {
+        db.from("classes").select {
+            filter { isIn("id", classIds.toList()) }
+        }.decodeJsonArray().associateBy(
+            { it.jsonObject["id"]!!.jsonPrimitive.content },
+            { it.jsonObject["class_code"]?.jsonPrimitive?.contentOrNull() },
+        )
+    }
 
     return rows.mapNotNull {
         val obj = it.jsonObject
@@ -54,29 +66,13 @@ suspend fun loadSchedule(userId: String): List<ScheduleEntry> {
             startsAt = obj["starts_at"]?.jsonPrimitive?.contentOrNull() ?: "",
             endsAt = obj["ends_at"]?.jsonPrimitive?.contentOrNull() ?: "",
             className = obj["class_id"]?.jsonPrimitive?.contentOrNull()?.let(names::get),
+            classCode = obj["class_id"]?.jsonPrimitive?.contentOrNull()?.let(codes::get),
         )
     }
 }
 
-suspend fun loadLeaveRequests(userId: String): List<LeaveRequest> {
-    val db = SupabaseProvider.client.postgrest
-    val rows = db.from("leave_requests").select {
-        filter { eq("student_id", userId) }
-        order("submitted_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
-        limit(30)
-    }.decodeJsonArray()
-
-    return rows.mapNotNull {
-        val obj = it.jsonObject
-        LeaveRequest(
-            id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
-            status = obj["status"]?.jsonPrimitive?.contentOrNull() ?: "",
-            leaveStart = obj["leave_start_date"]?.jsonPrimitive?.contentOrNull(),
-            leaveEnd = obj["leave_end_date"]?.jsonPrimitive?.contentOrNull(),
-            reason = obj["reason_category"]?.jsonPrimitive?.contentOrNull(),
-        )
-    }
-}
+// loadLeaveRequests now lives in LeaveRequests.kt (web mirror with enrich).
+// This duplicate was causing a redeclaration — removed.
 
 suspend fun loadOnboardingProfile(userId: String): OnboardingProfile? {
     val db = SupabaseProvider.client.postgrest
@@ -92,21 +88,4 @@ suspend fun loadOnboardingProfile(userId: String): OnboardingProfile? {
     )
 }
 
-suspend fun submitLeaveRequest(
-    classId: String,
-    leaveStart: String,
-    leaveEnd: String,
-    reason: String,
-) {
-    val db = SupabaseProvider.client.postgrest
-    db.from("leave_requests").insert(
-        kotlinx.serialization.json.buildJsonObject {
-            put("class_id", kotlinx.serialization.json.JsonPrimitive(classId))
-            put("leave_start_date", kotlinx.serialization.json.JsonPrimitive(leaveStart))
-            put("leave_end_date", kotlinx.serialization.json.JsonPrimitive(leaveEnd))
-            put("reason_category", kotlinx.serialization.json.JsonPrimitive(reason))
-            put("status", kotlinx.serialization.json.JsonPrimitive("submitted"))
-        },
-    )
-}
 

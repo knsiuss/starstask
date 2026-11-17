@@ -19,7 +19,10 @@ for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
   const i = t.indexOf("=");
   if (i < 1) continue;
   let value = t.slice(i + 1).trim();
-  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
     value = value.slice(1, -1);
   }
   env[t.slice(0, i).trim()] = value;

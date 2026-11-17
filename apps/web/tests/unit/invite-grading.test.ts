@@ -23,7 +23,9 @@ describe("parseGradeCsv", () => {
   it("rejects >1000 rows", () => {
     const big =
       "student_id,course_code,score,grade_letter,semester_code,academic_year_code\n" +
-      Array.from({ length: 1001 }, () => "UNPAM-1,TI1,80,A,1,2024/2025").join("\n");
+      Array.from({ length: 1001 }, () => "UNPAM-1,TI1,80,A,1,2024/2025").join(
+        "\n",
+      );
     expect(() => parseGradeCsv(big)).toThrow();
   });
 });

@@ -8,7 +8,6 @@
 -- Existing records are never reassigned. Assignments created before the course
 -- requirement stay readable without a course and are not moved to an arbitrary
 -- one.
-
 -- ---------------------------------------------------------------------------
 -- course_materials
 -- ---------------------------------------------------------------------------
@@ -39,23 +38,29 @@ CREATE TABLE IF NOT EXISTS public.course_materials (
   )
 );
 
+
 CREATE INDEX IF NOT EXISTS course_materials_subject_idx ON public.course_materials (subject_id, created_at DESC);
 
+
 COMMENT ON TABLE public.course_materials IS 'Learning materials attached to one course inside a class group.';
+
 
 CREATE TRIGGER course_materials_set_updated_at
 BEFORE UPDATE ON public.course_materials FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at ();
+
 
 -- ---------------------------------------------------------------------------
 -- A material must belong to a course of the same class
 -- ---------------------------------------------------------------------------
 DROP TRIGGER IF EXISTS course_materials_subject_in_class ON public.course_materials;
 
-CREATE TRIGGER course_materials_subject_in_class BEFORE INSERT
-OR UPDATE OF subject_id,
+
+CREATE TRIGGER course_materials_subject_in_class
+BEFORE INSERT OR UPDATE OF subject_id,
 class_id ON public.course_materials FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_in_class ();
+
 
 -- ---------------------------------------------------------------------------
 -- New academic content cannot target an archived course
@@ -92,47 +97,58 @@ COMMENT ON FUNCTION public.ensure_subject_active () IS 'Rejects new content atta
 
 DROP TRIGGER IF EXISTS assignments_subject_active ON public.assignments;
 
-CREATE TRIGGER assignments_subject_active BEFORE INSERT
-OR UPDATE OF subject_id ON public.assignments FOR EACH ROW
+
+CREATE TRIGGER assignments_subject_active
+BEFORE INSERT OR UPDATE OF subject_id ON public.assignments FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_active ();
 
 
 DROP TRIGGER IF EXISTS discussion_sessions_subject_active ON public.discussion_sessions;
 
-CREATE TRIGGER discussion_sessions_subject_active BEFORE INSERT
-OR UPDATE OF subject_id ON public.discussion_sessions FOR EACH ROW
+
+CREATE TRIGGER discussion_sessions_subject_active
+BEFORE INSERT OR UPDATE OF subject_id ON public.discussion_sessions FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_active ();
 
 
 DROP TRIGGER IF EXISTS class_course_schedules_subject_active ON public.class_course_schedules;
 
-CREATE TRIGGER class_course_schedules_subject_active BEFORE INSERT
-OR UPDATE OF subject_id ON public.class_course_schedules FOR EACH ROW
+
+CREATE TRIGGER class_course_schedules_subject_active
+BEFORE INSERT OR UPDATE OF subject_id ON public.class_course_schedules FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_active ();
 
 
 DROP TRIGGER IF EXISTS course_materials_subject_active ON public.course_materials;
 
-CREATE TRIGGER course_materials_subject_active BEFORE INSERT
-OR UPDATE OF subject_id ON public.course_materials FOR EACH ROW
+
+CREATE TRIGGER course_materials_subject_active
+BEFORE INSERT OR UPDATE OF subject_id ON public.course_materials FOR EACH ROW
 EXECUTE FUNCTION public.ensure_subject_active ();
+
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.course_materials enable ROW level security;
 
+
 REVOKE ALL ON public.course_materials
 FROM
   anon,
   authenticated;
 
-GRANT SELECT,
-INSERT,
+
+GRANT
+SELECT
+,
+  INSERT,
 UPDATE,
 DELETE ON public.course_materials TO authenticated;
 
+
 DROP POLICY IF EXISTS course_materials_member_read ON public.course_materials;
+
 
 CREATE POLICY course_materials_member_read ON public.course_materials FOR
 SELECT
@@ -141,13 +157,17 @@ SELECT
     OR public.is_platform_admin ()
   );
 
+
 DROP POLICY IF EXISTS course_materials_manager_insert ON public.course_materials;
+
 
 CREATE POLICY course_materials_manager_insert ON public.course_materials FOR insert TO authenticated
 WITH
   CHECK (public.can_manage_class (class_id));
 
+
 DROP POLICY IF EXISTS course_materials_manager_update ON public.course_materials;
+
 
 CREATE POLICY course_materials_manager_update ON public.course_materials
 FOR UPDATE
@@ -155,9 +175,12 @@ FOR UPDATE
 WITH
   CHECK (public.can_manage_class (class_id));
 
+
 DROP POLICY IF EXISTS course_materials_manager_delete ON public.course_materials;
 
+
 CREATE POLICY course_materials_manager_delete ON public.course_materials FOR delete TO authenticated USING (public.can_manage_class (class_id));
+
 
 -- ---------------------------------------------------------------------------
 -- submit_class_assignment: a course is required
@@ -292,7 +315,20 @@ end;
 $$;
 
 
-COMMENT ON FUNCTION public.submit_class_assignment (uuid, text, text, timestamptz, text, TEXT[], jsonb, text, text, text, uuid) IS 'Creates class content that must belong to a course of the same class.';
+COMMENT ON FUNCTION public.submit_class_assignment (
+  uuid,
+  text,
+  text,
+  timestamptz,
+  text,
+  TEXT[],
+  jsonb,
+  text,
+  text,
+  text,
+  uuid
+) IS 'Creates class content that must belong to a course of the same class.';
+
 
 -- ---------------------------------------------------------------------------
 -- delete_class_subject: refuse to detach academic history
@@ -301,8 +337,7 @@ COMMENT ON FUNCTION public.submit_class_assignment (uuid, text, text, timestampt
 -- schedule rows, which silently moved academic work to the class level. A
 -- course with recorded content must be archived instead; only an empty course
 -- can be removed.
-CREATE OR REPLACE FUNCTION public.delete_class_subject (p_subject_id uuid)
-RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.delete_class_subject (p_subject_id uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$

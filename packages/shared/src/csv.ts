@@ -51,7 +51,9 @@ export function escapeCsvFormula(value: string): string {
  * Always quotes after formula escaping if the value would otherwise be
  * ambiguous; a bare `'` prefix is safe without quotes.
  */
-export function escapeCsvCell(value: string | number | null | undefined): string {
+export function escapeCsvCell(
+  value: string | number | null | undefined,
+): string {
   const raw = value === null || value === undefined ? "" : String(value);
   const guarded = escapeCsvFormula(raw);
 

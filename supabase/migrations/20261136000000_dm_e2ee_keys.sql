@@ -59,7 +59,12 @@ COMMENT ON TABLE public.dm_keys IS 'E2EE public keys. Private keys live only in 
 
 COMMENT ON COLUMN public.dm_messages.body IS 'E2EE ciphertext base64 (iv:ciphertext), NOT plaintext. Server cannot read.';
 
+
 -- Ciphertext is larger than plaintext (base64 + IV + GCM tag).
 -- 2000 chars plaintext ~= 2750 chars ciphertext; allow up to 8000.
-ALTER TABLE public.dm_messages DROP CONSTRAINT IF EXISTS dm_messages_body_length;
-ALTER TABLE public.dm_messages ADD CONSTRAINT dm_messages_body_length CHECK (char_length(btrim(body)) BETWEEN 1 AND 8000);
+ALTER TABLE public.dm_messages
+DROP CONSTRAINT IF EXISTS dm_messages_body_length;
+
+
+ALTER TABLE public.dm_messages
+ADD CONSTRAINT dm_messages_body_length CHECK (char_length(btrim(body)) BETWEEN 1 AND 8000);

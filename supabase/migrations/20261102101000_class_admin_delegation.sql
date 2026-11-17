@@ -9,7 +9,6 @@
 -- the class being changed, so an admin of class A still cannot touch class B,
 -- and a member cannot promote themselves. The last-admin rule and the audit
 -- trail are unchanged.
-
 CREATE OR REPLACE FUNCTION public.assign_class_admin (p_class_id uuid, p_user_id uuid) returns boolean language plpgsql security definer
 SET
   search_path = public,

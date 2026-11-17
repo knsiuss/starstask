@@ -130,6 +130,7 @@ export function AttachmentAddDialog({
         variant="secondary"
         size="sm"
         disabled
+        className="min-h-[44px] sm:min-h-8"
         title={`This assignment already has ${ASSIGNMENT_ATTACHMENTS_MAX} attachments.`}
       >
         <Paperclip
@@ -151,6 +152,7 @@ export function AttachmentAddDialog({
           type="button"
           variant="secondary"
           size="sm"
+          className="min-h-[44px] sm:min-h-8"
         >
           <Plus
             aria-hidden="true"
@@ -194,12 +196,13 @@ export function AttachmentAddDialog({
           {error ? <Alert variant="error">{error}</Alert> : null}
         </div>
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="secondary"
             onClick={() => handleOpenChange(false)}
             disabled={isUploading}
+            className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
           >
             Cancel
           </Button>
@@ -208,6 +211,7 @@ export function AttachmentAddDialog({
             onClick={() => void upload()}
             disabled={!file || isUploading || Boolean(error)}
             aria-busy={isUploading}
+            className="min-h-[44px] w-full sm:min-h-10 sm:w-auto"
           >
             {isUploading ? (
               <>

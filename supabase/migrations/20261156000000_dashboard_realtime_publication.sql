@@ -11,8 +11,7 @@
 --
 -- Rollback: ALTER PUBLICATION supabase_realtime DROP TABLE
 -- assignments, discussion_sessions, class_memberships;
-
-ALTER PUBLICATION supabase_realtime ADD TABLE
-  public.assignments,
-  public.discussion_sessions,
-  public.class_memberships;
+ALTER PUBLICATION supabase_realtime
+ADD TABLE public.assignments,
+public.discussion_sessions,
+public.class_memberships;
