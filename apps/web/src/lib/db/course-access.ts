@@ -16,25 +16,43 @@ export async function getMemberCourseAccess(
   userId: string,
 ): Promise<MemberCourseAccess> {
   const supabase = await createSupabaseServerClient();
-  const { data: member } = await supabase
+  const { data: member, error: memberError } = await supabase
     .from("class_members")
     .select("course_scope")
     .eq("class_id", classId)
     .eq("user_id", userId)
     .maybeSingle();
 
+  if (memberError) {
+    throw new DataAccessError(
+      "Could not load member course scope",
+      memberError.code,
+    );
+  }
+
+  if (!member) {
+    throw new DataAccessError("Member not found in this class", "P0002");
+  }
+
   const scope: CourseScope =
-    member?.course_scope === "selected" ? "selected" : "all";
+    member.course_scope === "selected" ? "selected" : "all";
 
   if (scope === "all") {
     return { scope: "all", allowedSubjectIds: new Set() };
   }
 
-  const { data: rows } = await supabase
+  const { data: rows, error: rowsError } = await supabase
     .from("class_member_courses")
     .select("subject_id")
     .eq("class_id", classId)
     .eq("user_id", userId);
+
+  if (rowsError) {
+    throw new DataAccessError(
+      "Could not load member course enrollments",
+      rowsError.code,
+    );
+  }
 
   return {
     scope: "selected",
@@ -124,41 +142,51 @@ export async function listUserCourseAccessMap(
     return map;
   }
 
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data: members } = await supabase
-      .from("class_members")
-      .select("class_id, course_scope")
-      .eq("user_id", userId)
-      .in("class_id", classIds);
+  const supabase = await createSupabaseServerClient();
+  const { data: members, error: membersError } = await supabase
+    .from("class_members")
+    .select("class_id, course_scope")
+    .eq("user_id", userId)
+    .in("class_id", classIds);
 
-    const selectedClassIds: string[] = [];
+  if (membersError) {
+    throw new DataAccessError(
+      "Could not load member course scope",
+      membersError.code,
+    );
+  }
 
-    for (const row of members ?? []) {
-      if (row.course_scope === "selected") {
-        selectedClassIds.push(row.class_id);
-        map.set(row.class_id, {
-          scope: "selected",
-          allowedSubjectIds: new Set(),
-        });
-      }
+  const selectedClassIds: string[] = [];
+
+  for (const row of members ?? []) {
+    if (row.course_scope === "selected") {
+      selectedClassIds.push(row.class_id);
+      map.set(row.class_id, {
+        scope: "selected",
+        allowedSubjectIds: new Set(),
+      });
     }
+  }
 
-    if (selectedClassIds.length === 0) {
-      return map;
-    }
-
-    const { data: courses } = await supabase
-      .from("class_member_courses")
-      .select("class_id, subject_id")
-      .eq("user_id", userId)
-      .in("class_id", selectedClassIds);
-
-    for (const row of courses ?? []) {
-      map.get(row.class_id)?.allowedSubjectIds.add(row.subject_id);
-    }
-  } catch {
+  if (selectedClassIds.length === 0) {
     return map;
+  }
+
+  const { data: courses, error: coursesError } = await supabase
+    .from("class_member_courses")
+    .select("class_id, subject_id")
+    .eq("user_id", userId)
+    .in("class_id", selectedClassIds);
+
+  if (coursesError) {
+    throw new DataAccessError(
+      "Could not load member course enrollments",
+      coursesError.code,
+    );
+  }
+
+  for (const row of courses ?? []) {
+    map.get(row.class_id)?.allowedSubjectIds.add(row.subject_id);
   }
 
   return map;

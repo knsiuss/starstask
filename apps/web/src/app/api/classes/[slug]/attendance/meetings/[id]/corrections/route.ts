@@ -84,7 +84,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
     const entries = await listCorrectionAudit(found.id);
 
-    return apiSuccess(entries);
+    return apiSuccess(entries.filter((entry) => entry.sessionId === id));
   } catch (error) {
     return handleRouteError(error);
   }

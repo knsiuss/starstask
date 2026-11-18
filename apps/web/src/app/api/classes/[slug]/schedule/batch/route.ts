@@ -3,9 +3,10 @@ import {
   toFieldErrors,
 } from "@starstask/contracts";
 
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import { ApiError, forbidden, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { createClassScheduleEntries } from "@/lib/db/class-schedule";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { isFeatureEnabled } from "@/lib/config/features";
@@ -35,7 +36,7 @@ export async function POST(
     }
 
     const { slug } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     await enforceRateLimit({
       action: "classes:schedule:batch",
@@ -55,6 +56,20 @@ export async function POST(
         "Check the imported schedule rows.",
         toFieldErrors(parsed.error),
       );
+    }
+
+    const access = role.canManage
+      ? null
+      : await getMemberCourseAccess(found.id, session.user.id);
+
+    if (
+      access?.scope === "selected" &&
+      parsed.data.some(
+        (entry) =>
+          !entry.subjectId || !access.allowedSubjectIds.has(entry.subjectId),
+      )
+    ) {
+      throw forbidden();
     }
 
     const entries = await createClassScheduleEntries(

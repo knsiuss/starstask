@@ -1,3 +1,4 @@
+import { toFieldErrors } from "@starstask/contracts";
 import { z } from "zod";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
@@ -17,6 +18,7 @@ const claimSchema = z.object({
     .regex(/^[0-9]{10}$/, "NIDN must be exactly 10 digits")
     .optional()
     .or(z.literal("").transform(() => undefined)),
+  universityId: z.string().uuid("Invalid university id").optional(),
 });
 
 /**
@@ -52,14 +54,17 @@ export async function POST(request: Request) {
         422,
         "validation_error",
         "Check the highlighted fields.",
-        { nidn: parsed.error.issues[0]?.message ?? "Invalid NIDN." },
+        toFieldErrors(parsed.error),
       );
     }
 
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.rpc(
       "claim_lecturer_persona" as never,
-      { p_nidn: parsed.data.nidn ?? null } as never,
+      {
+        p_nidn: parsed.data.nidn ?? null,
+        p_university_id: parsed.data.universityId ?? null,
+      } as never,
     );
 
     if (error) {

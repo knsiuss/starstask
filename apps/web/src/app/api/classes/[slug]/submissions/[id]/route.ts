@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/assignment-payload";
 import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { getSubmissionDetail } from "@/lib/db/class-submissions";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
@@ -59,6 +60,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     ) {
       throw notFound();
     }
+
+    assertUploadContentLength(request);
 
     const form = await request.formData();
     const parsed = classSubmissionReviseSchema.safeParse(

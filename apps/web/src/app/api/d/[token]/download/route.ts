@@ -1,5 +1,4 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createHash } from "node:crypto";
 
 import { fileDownload, handleRouteError } from "@/lib/api/responses";
 import { ApiError } from "@/lib/api/errors";
@@ -8,9 +7,40 @@ import {
   enforceRateLimit,
   getClientIdentifier,
 } from "@/lib/security/rate-limit";
+import { isB2Configured, signStorageUrl } from "@/lib/storage/b2";
+import { isR2Configured } from "@/lib/storage/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+
+const MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024;
+
+function isValidSubmissionStoragePath(submission: {
+  storage_path: string;
+  user_id: string;
+}): boolean {
+  const storagePath = submission.storage_path;
+
+  if (
+    !storagePath ||
+    storagePath.includes("..") ||
+    storagePath.includes("\\") ||
+    storagePath.startsWith("/") ||
+    storagePath.startsWith("avatars/") ||
+    storagePath.startsWith("class-media/")
+  ) {
+    return false;
+  }
+
+  if (
+    storagePath.includes("/") &&
+    !storagePath.startsWith(`${submission.user_id}/`)
+  ) {
+    return false;
+  }
+
+  return true;
+}
 
 /** Streams the copied file to the lecturer. Token in URL is the credential. */
 export async function GET(
@@ -18,18 +48,24 @@ export async function GET(
   context: { params: Promise<{ token: string }> },
 ) {
   try {
+    const { token } = await context.params;
+    const clientIdentifier = getClientIdentifier(request);
+    const rateLimitIdentifier =
+      clientIdentifier === "unknown"
+        ? createHash("sha256").update(token, "utf8").digest("hex").slice(0, 24)
+        : clientIdentifier;
+
     await enforceRateLimit({
       action: "d:download",
-      identifier: getClientIdentifier(request),
+      identifier: rateLimitIdentifier,
       limit: 30,
       windowSeconds: 60,
       onBackendFailure: "closed",
     });
 
-    const { token } = await context.params;
     const submission = await getDriveSubmissionByToken(token);
 
-    if (!submission) {
+    if (!submission || !isValidSubmissionStoragePath(submission)) {
       throw new ApiError(404, "not_found", "Submission not found.");
     }
 
@@ -58,42 +94,47 @@ async function readStoredBytes(submission: {
       throw new ApiError(404, "missing_file", "Stored file not found.");
     }
     const bytes = await data.arrayBuffer();
-    if (bytes.byteLength > 10 * 1024 * 1024) {
+    if (bytes.byteLength > MAX_DOWNLOAD_BYTES) {
       throw new ApiError(413, "too_large", "The stored file is too large.");
     }
     return new Uint8Array(bytes);
   }
 
-  // B2 and R2 buckets are private: sign a short-lived GET instead of building
-  // a public URL, so the bytes never leave through an unauthenticated link.
-  const bucket = process.env.B2_BUCKET_NAME?.trim();
-  const region = process.env.B2_REGION?.trim();
-  const keyId = process.env.B2_APPLICATION_KEY_ID?.trim();
-  const applicationKey = process.env.B2_APPLICATION_KEY?.trim();
-  if (!bucket || !region || !keyId || !applicationKey) {
+  if (
+    submission.storage_provider !== "b2" &&
+    submission.storage_provider !== "r2"
+  ) {
+    throw new ApiError(404, "missing_file", "Stored file not found.");
+  }
+
+  const configured =
+    submission.storage_provider === "r2" ? isR2Configured() : isB2Configured();
+
+  if (!configured) {
     throw new ApiError(503, "not_configured", "Storage not configured.");
   }
 
-  const client = new S3Client({
-    region,
-    endpoint: `https://s3.${region}.backblazeb2.com`,
-    credentials: { accessKeyId: keyId, secretAccessKey: applicationKey },
-  });
-  const url = await getSignedUrl(
-    client,
-    new GetObjectCommand({ Bucket: bucket, Key: submission.storage_path }),
-    { expiresIn: 300 },
+  const url = await signStorageUrl(
+    submission.storage_provider,
+    submission.storage_path,
   );
   const response = await fetch(url, {
+    redirect: "error",
     signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {
     throw new ApiError(404, "missing_file", "Stored file not found.");
   }
 
+  const declaredLength = Number(response.headers.get("content-length") ?? "0");
+
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_DOWNLOAD_BYTES) {
+    throw new ApiError(413, "too_large", "The stored file is too large.");
+  }
+
   const body = await response.arrayBuffer();
 
-  if (body.byteLength > 10 * 1024 * 1024) {
+  if (body.byteLength > MAX_DOWNLOAD_BYTES) {
     throw new ApiError(413, "too_large", "The stored file is too large.");
   }
 

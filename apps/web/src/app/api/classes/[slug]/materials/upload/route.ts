@@ -1,6 +1,7 @@
 import { requireClassManager } from "@/features/classes/class-access";
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { getClassSubject } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const SAFE_MATERIAL_UPLOAD_MESSAGES = new Set([
   "File must be between 1 byte and 10 MB.",
-  "Supported files: PDF, HTML, Markdown, TXT, PNG, JPG, or WebP.",
+  "Supported files: PDF, Markdown, TXT, PNG, JPG, or WebP.",
   "File contents do not match its file extension.",
   "Could not upload the file right now.",
 ]);
@@ -33,6 +34,8 @@ export async function POST(
       limit: 60,
       windowSeconds: 3600,
     });
+
+    assertUploadContentLength(request);
 
     const formData = await request.formData();
     const subjectId = String(formData.get("subjectId") ?? "");

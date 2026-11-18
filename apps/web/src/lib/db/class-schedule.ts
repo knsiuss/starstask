@@ -9,6 +9,7 @@ import {
 import { ApiError } from "@/lib/api/errors";
 import { DataAccessError } from "@/lib/db/assignments";
 import { listMyClasses } from "@/lib/db/classes";
+import { listUserCourseAccessMap } from "@/lib/db/course-access";
 import {
   findScheduleCollisions,
   formatScheduleCollisionMessage,
@@ -294,14 +295,17 @@ export async function listMyWeeklySchedule(
 
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
-    .from("class_course_schedules")
-    .select(
-      "id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, period, start_date, end_date, classes!class_course_schedules_class_id_fkey ( name, slug ), class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
-    )
-    .in("class_id", classIds)
-    .order("day_of_week", { ascending: true })
-    .order("start_time", { ascending: true });
+  const [accessMap, { data, error }] = await Promise.all([
+    listUserCourseAccessMap(userId, classIds),
+    supabase
+      .from("class_course_schedules")
+      .select(
+        "id, class_id, subject_id, day_of_week, start_time, end_time, room, lecturer_name, period, start_date, end_date, classes!class_course_schedules_class_id_fkey ( name, slug ), class_subjects!class_course_schedules_subject_id_fkey ( name, lecturer_name )",
+      )
+      .in("class_id", classIds)
+      .order("day_of_week", { ascending: true })
+      .order("start_time", { ascending: true }),
+  ]);
 
   if (error) {
     throw new DataAccessError(
@@ -311,6 +315,15 @@ export async function listMyWeeklySchedule(
   }
 
   return (data ?? []).flatMap((row) => {
+    const access = accessMap.get(row.class_id);
+
+    if (
+      access?.scope === "selected" &&
+      !access.allowedSubjectIds.has(row.subject_id)
+    ) {
+      return [];
+    }
+
     const subject = row.class_subjects;
     const klass = row.classes;
 

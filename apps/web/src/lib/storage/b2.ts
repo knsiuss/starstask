@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 import {
   DeleteObjectCommand,
@@ -136,6 +136,47 @@ function createB2Client(config: B2Config): S3Client {
   });
 }
 
+const MEDIA_PROXY_KEY_PATTERN =
+  /^(?:avatars\/[A-Za-z0-9-]+\/[A-Za-z0-9-]+|class-media\/[A-Za-z0-9-]+(?:\/branding)?\/[A-Za-z0-9-]+)\.(png|jpe?g)$/;
+
+/** Validates public-proxy media keys (3-segment avatars, 3/4-segment class-media). */
+export function isValidMediaProxyKey(key: string): boolean {
+  return MEDIA_PROXY_KEY_PATTERN.test(key);
+}
+
+/** Reads a B2 object directly on the server, enforcing an upper byte limit. */
+export async function readB2ObjectBytes(
+  key: string,
+  maxBytes = 2 * 1024 * 1024,
+): Promise<Uint8Array> {
+  const config = getB2Config();
+
+  if (!config) {
+    throw new Error("B2 not configured");
+  }
+
+  const client = createB2Client(config);
+  const { Body, ContentLength } = await client.send(
+    new GetObjectCommand({ Bucket: config.bucketName, Key: key }),
+  );
+
+  if (typeof ContentLength === "number" && ContentLength > maxBytes) {
+    throw new Error("Stored object exceeds size limit");
+  }
+
+  if (!Body) {
+    throw new Error("Stored object not found");
+  }
+
+  const bytes = new Uint8Array(await Body.transformToByteArray());
+
+  if (bytes.byteLength > maxBytes) {
+    throw new Error("Stored object exceeds size limit");
+  }
+
+  return bytes;
+}
+
 /**
  * Signs a short-lived read URL for a stored object, on whichever backend
  * holds it. `download: true` adds a Content-Disposition so the browser
@@ -146,6 +187,10 @@ export async function signStorageUrl(
   path: string,
   options?: { download?: string },
 ): Promise<string> {
+  const safeDownload = options?.download
+    ? options.download.replace(/["\r\n\\]/g, "_")
+    : undefined;
+
   if (provider === "supabase") {
     const { createSupabaseServerClient } =
       await import("@/lib/supabase/server");
@@ -153,7 +198,7 @@ export async function signStorageUrl(
     const { data, error } = await supabase.storage
       .from(ATTACHMENT_BUCKET)
       .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, {
-        download: options?.download ?? undefined,
+        download: safeDownload,
       });
     if (error || !data) {
       throw error ?? new Error("Could not sign stored file");
@@ -165,9 +210,9 @@ export async function signStorageUrl(
   const command = new GetObjectCommand({
     Bucket: bucketFor(provider),
     Key: path,
-    ...(options?.download
+    ...(safeDownload
       ? {
-          ResponseContentDisposition: `attachment; filename="${options.download}"`,
+          ResponseContentDisposition: `attachment; filename="${safeDownload}"`,
         }
       : {}),
   });

@@ -14,6 +14,7 @@ import {
   getClassRole,
 } from "@/lib/db/classes";
 import { createClassAsStudent } from "@/lib/db/profiles";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type KrsImportResult = {
@@ -311,7 +312,14 @@ export async function importKrsClass(
   } catch (error) {
     if (createdNew) {
       const supabase = await createSupabaseServerClient();
-      await supabase.from("classes").delete().eq("id", classId);
+      const { error: rollbackError } = await supabase.rpc("delete_class", {
+        p_class_id: classId,
+      });
+
+      if (rollbackError) {
+        const admin = createSupabaseAdminClient();
+        await admin.from("classes").delete().eq("id", classId);
+      }
     }
 
     throw error;

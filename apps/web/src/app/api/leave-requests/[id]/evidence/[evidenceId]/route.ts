@@ -3,10 +3,11 @@ import {
   leaveRequestIdSchema,
 } from "@starstask/contracts";
 
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/features/classes/class-access";
 import { removeEvidence } from "@/features/leave/evidence-service";
 
@@ -44,6 +45,23 @@ export async function DELETE(_request: Request, context: RouteContext) {
       windowSeconds: 60,
       onBackendFailure: "closed",
     });
+
+    const supabase = await createSupabaseServerClient();
+    const { data: evidenceRow, error: lookupError } = await supabase
+      .from("leave_request_evidence")
+      .select("id")
+      .eq("id", evidenceId)
+      .eq("request_id", id)
+      .is("removed_at", null)
+      .maybeSingle();
+
+    if (lookupError) {
+      throw new ApiError(500, "internal_error", "Could not verify evidence.");
+    }
+
+    if (!evidenceRow) {
+      throw notFound();
+    }
 
     await removeEvidence(evidenceId);
 
