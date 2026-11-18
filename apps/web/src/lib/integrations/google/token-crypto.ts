@@ -10,17 +10,29 @@ import {
 /**
  * AES-256-GCM envelope for OAuth credentials.
  *
- * Stored format: `v1:<iv base64>:<auth tag base64>:<ciphertext base64>`.
- * The version prefix allows a future key rotation to recognise old rows instead
- * of failing to decrypt them.
+ * Stored format: `v1:<iv base64>:<auth tag base64>:<ciphertext base64>` plus a
+ * domain-separated AAD per integration (`:drive:`, `:calendar:`). Decryption
+ * falls back to the pre-separation AAD so rows written before separation keep
+ * working until they rotate naturally. The version prefix allows a future key
+ * rotation to recognise old rows instead of failing to decrypt them.
  */
 const VERSION = "v1";
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 
+export type TokenDomain = "drive" | "calendar";
+
 /** Additional authenticated data: binds a ciphertext to this purpose. */
-const AAD = Buffer.from("starstask:google-calendar-credentials:v1", "utf8");
+const AAD_BY_DOMAIN: Record<TokenDomain, Buffer> = {
+  drive: Buffer.from("starstask:google-drive-credentials:v1", "utf8"),
+  calendar: Buffer.from("starstask:google-calendar-credentials:v1", "utf8"),
+};
+
+const LEGACY_AAD = Buffer.from(
+  "starstask:google-calendar-credentials:v1",
+  "utf8",
+);
 
 export class TokenCryptoError extends Error {
   constructor(message: string) {
@@ -29,14 +41,18 @@ export class TokenCryptoError extends Error {
   }
 }
 
-export function encryptToken(plaintext: string, key: Buffer): string {
+export function encryptToken(
+  plaintext: string,
+  key: Buffer,
+  domain: TokenDomain,
+): string {
   if (key.length !== 32) {
     throw new TokenCryptoError("Encryption key must be 32 bytes");
   }
 
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
-  cipher.setAAD(AAD);
+  cipher.setAAD(AAD_BY_DOMAIN[domain]);
 
   const ciphertext = Buffer.concat([
     cipher.update(plaintext, "utf8"),
@@ -59,7 +75,11 @@ export function encryptToken(plaintext: string, key: Buffer): string {
  * unknown, or the authentication tag does not match — a tampered ciphertext is
  * rejected rather than decrypted into garbage.
  */
-export function decryptToken(payload: string, key: Buffer): string {
+export function decryptToken(
+  payload: string,
+  key: Buffer,
+  domain: TokenDomain,
+): string {
   if (key.length !== 32) {
     throw new TokenCryptoError("Encryption key must be 32 bytes");
   }
@@ -84,18 +104,22 @@ export function decryptToken(payload: string, key: Buffer): string {
     throw new TokenCryptoError("Invalid credential envelope");
   }
 
-  try {
-    const decipher = createDecipheriv(ALGORITHM, key, iv);
-    decipher.setAAD(AAD);
-    decipher.setAuthTag(tag);
+  for (const aad of [AAD_BY_DOMAIN[domain], LEGACY_AAD]) {
+    try {
+      const decipher = createDecipheriv(ALGORITHM, key, iv);
+      decipher.setAAD(aad);
+      decipher.setAuthTag(tag);
 
-    return Buffer.concat([
-      decipher.update(ciphertext),
-      decipher.final(),
-    ]).toString("utf8");
-  } catch {
-    throw new TokenCryptoError("Could not decrypt credentials");
+      return Buffer.concat([
+        decipher.update(ciphertext),
+        decipher.final(),
+      ]).toString("utf8");
+    } catch {
+      // Try the next AAD; a legacy row decrypts with LEGACY_AAD.
+    }
   }
+
+  throw new TokenCryptoError("Could not decrypt credentials");
 }
 
 /** Constant-time string comparison for short secrets such as OAuth state. */

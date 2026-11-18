@@ -8,6 +8,7 @@ import {
   unauthorized,
 } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { recordAppActivity } from "@/lib/observability/events";
@@ -51,6 +52,9 @@ export async function POST(request: Request, context: RouteContext) {
     if (!parsedId.success) {
       throw new ApiError(400, "invalid_id", "The assignment id is invalid.");
     }
+
+    // Bounded upload: refuse oversized/unlength'd bodies before buffering.
+    assertUploadContentLength(request);
 
     let form: FormData;
 

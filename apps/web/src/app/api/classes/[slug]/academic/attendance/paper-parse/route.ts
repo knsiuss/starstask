@@ -1,5 +1,6 @@
 import { ApiError } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { isFeatureEnabled } from "@/lib/config/features";
 import { getOfferingRoster } from "@/lib/db/academic-attendance";
 import { requireClassPermission } from "@/lib/authz/class-permission";
@@ -58,6 +59,10 @@ export async function POST(
       limit: 20,
       windowSeconds: 3600,
     });
+
+    // Refuse oversized bodies (or bodies with no declared length) before the
+    // framework buffers the multipart payload into memory.
+    assertUploadContentLength(request);
 
     const formData = await request.formData();
     const file = formData.get("file");

@@ -35,6 +35,11 @@ const CLEAN_ENV: Record<string, string | undefined> = {
   GOOGLE_TOKEN_ENCRYPTION_KEY: undefined,
   CRON_SECRET: undefined,
   NEXT_PUBLIC_SITE_URL: undefined,
+  SENTRY_API_TOKEN: undefined,
+  SENTRY_ORG: undefined,
+  SENTRY_PROJECT: undefined,
+  POSTHOG_PERSONAL_API_KEY: undefined,
+  POSTHOG_PROJECT_ID: undefined,
 };
 
 afterEach(() => {
@@ -68,6 +73,11 @@ describe("getDeveloperIntegrationStatus", () => {
       GOOGLE_TOKEN_ENCRYPTION_KEY: "encryption-key",
       CRON_SECRET: "cron-secret",
       NEXT_PUBLIC_SITE_URL: "https://example.com",
+      SENTRY_API_TOKEN: "sentry-token",
+      SENTRY_ORG: "aphelionlabs",
+      SENTRY_PROJECT: "startask",
+      POSTHOG_PERSONAL_API_KEY: "personal-key",
+      POSTHOG_PROJECT_ID: "714105",
     });
     probeStorageMock.mockResolvedValue({ ok: true, latencyMs: 12 });
 

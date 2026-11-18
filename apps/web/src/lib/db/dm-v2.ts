@@ -13,8 +13,37 @@ export async function markConversationRead(conversationId: string) {
   if (error) throw new DataAccessError("mark read failed", error.code);
 }
 
-export async function editMessage(messageId: string, ciphertext: string) {
+async function requireOwnedMessage(messageId: string, conversationId: string) {
   const supabase = (await createSupabaseServerClient()) as any;
+  const { data: userData } = await supabase.auth.getUser();
+  const me = userData.user?.id;
+  if (!me) throw new DataAccessError("Not signed in", "42501");
+
+  const { data: msg, error } = await supabase
+    .from("dm_messages")
+    .select("sender_id")
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  if (error) throw new DataAccessError("edit failed", error.code);
+  if (!msg) throw new DataAccessError("Message not found", "PGRST116");
+  if (msg.sender_id !== me) {
+    throw new DataAccessError("Only the sender can edit this", "42501");
+  }
+
+  return supabase;
+}
+
+export async function editMessage(
+  messageId: string,
+  conversationId: string,
+  ciphertext: string,
+) {
+  const { isCiphertextWireFormat } = await import("@/lib/db/direct-messages");
+  if (!isCiphertextWireFormat(ciphertext) || ciphertext.length > 8000) {
+    throw new DataAccessError("Message must be encrypted", "22023");
+  }
+  const supabase = await requireOwnedMessage(messageId, conversationId);
   const { error } = await supabase
     .from("dm_messages")
     .update({ body: ciphertext, edited_at: new Date().toISOString() })
@@ -22,13 +51,64 @@ export async function editMessage(messageId: string, ciphertext: string) {
   if (error) throw new DataAccessError("edit failed", error.code);
 }
 
-export async function deleteMessage(messageId: string) {
-  const supabase = (await createSupabaseServerClient()) as any;
+export async function deleteMessage(messageId: string, conversationId: string) {
+  const supabase = await requireOwnedMessage(messageId, conversationId);
+  // Soft delete only: blanking body would violate the length check and
+  // listMessages already filters deleted_at IS NULL.
   const { error } = await supabase
     .from("dm_messages")
-    .update({ deleted_at: new Date().toISOString(), body: "" })
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", messageId);
   if (error) throw new DataAccessError("delete failed", error.code);
+}
+
+export async function setConversationPrefs(
+  conversationId: string,
+  prefs: { pinned?: boolean; muted?: boolean; archived?: boolean },
+) {
+  const supabase = (await createSupabaseServerClient()) as any;
+  const { error } = await supabase.rpc("dm_set_conversation_pref", {
+    p_conversation: conversationId,
+    p_pinned: prefs.pinned ?? null,
+    p_muted: prefs.muted ?? null,
+    p_archived: prefs.archived ?? null,
+  });
+  if (error) throw new DataAccessError("pref failed", error.code);
+}
+
+export async function markConversationUnread(conversationId: string) {
+  const supabase = (await createSupabaseServerClient()) as any;
+  const { error } = await supabase.rpc("dm_mark_unread", {
+    p_conversation: conversationId,
+  });
+  if (error) throw new DataAccessError("mark unread failed", error.code);
+}
+
+export async function setMessagePinned(
+  messageId: string,
+  conversationId: string,
+  pinned: boolean,
+) {
+  const supabase = (await createSupabaseServerClient()) as any;
+  const { data: userData } = await supabase.auth.getUser();
+  const me = userData.user?.id;
+  if (!me) throw new DataAccessError("Not signed in", "42501");
+
+  const { data: part } = await supabase
+    .from("dm_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", me)
+    .is("left_at", null)
+    .maybeSingle();
+  if (!part) throw new DataAccessError("Not a participant", "42501");
+
+  const { error } = await supabase
+    .from("dm_messages")
+    .update({ is_pinned: pinned })
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId);
+  if (error) throw new DataAccessError("pin failed", error.code);
 }
 
 /** Toggle (set/remove) the caller's emoji reaction on one message. */

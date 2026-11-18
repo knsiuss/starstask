@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
         {
           headers: { Authorization: `Bearer ${tokens.accessToken}` },
           cache: "no-store",
+          signal: AbortSignal.timeout(10_000),
         },
       );
       if (response.ok) {

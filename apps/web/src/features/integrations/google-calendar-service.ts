@@ -164,7 +164,7 @@ export async function saveCalendarConnection(
     .maybeSingle();
 
   const refreshCiphertext = tokens.refreshToken
-    ? encryptToken(tokens.refreshToken, config.encryptionKey)
+    ? encryptToken(tokens.refreshToken, config.encryptionKey, "calendar")
     : (existing?.refresh_token_ciphertext ?? null);
 
   const { error } = await supabase.from("google_calendar_connections").upsert(
@@ -175,6 +175,7 @@ export async function saveCalendarConnection(
       access_token_ciphertext: encryptToken(
         tokens.accessToken,
         config.encryptionKey,
+        "calendar",
       ),
       refresh_token_ciphertext: refreshCiphertext,
       token_expires_at: tokens.expiresAt,
@@ -289,6 +290,7 @@ async function getValidAccessToken(
       accessToken: decryptToken(
         connection.access_token_ciphertext,
         config.encryptionKey,
+        "calendar",
       ),
       calendarId: connection.calendar_id,
     };
@@ -303,7 +305,11 @@ async function getValidAccessToken(
   try {
     const refreshed = await refreshAccessToken(
       config,
-      decryptToken(connection.refresh_token_ciphertext, config.encryptionKey),
+      decryptToken(
+        connection.refresh_token_ciphertext,
+        config.encryptionKey,
+        "calendar",
+      ),
     );
 
     const { error } = await supabase
@@ -312,6 +318,7 @@ async function getValidAccessToken(
         access_token_ciphertext: encryptToken(
           refreshed.accessToken,
           config.encryptionKey,
+          "calendar",
         ),
         token_expires_at: refreshed.expiresAt,
         last_refreshed_at: new Date().toISOString(),
@@ -639,7 +646,7 @@ export async function processDueCalendarSyncs(
 
 function safeDecrypt(payload: string, key: Buffer): string | null {
   try {
-    return decryptToken(payload, key);
+    return decryptToken(payload, key, "calendar");
   } catch {
     return null;
   }

@@ -57,7 +57,11 @@ async function readStoredBytes(submission: {
     if (error || !data) {
       throw new ApiError(404, "missing_file", "Stored file not found.");
     }
-    return new Uint8Array(await data.arrayBuffer());
+    const bytes = await data.arrayBuffer();
+    if (bytes.byteLength > 10 * 1024 * 1024) {
+      throw new ApiError(413, "too_large", "The stored file is too large.");
+    }
+    return new Uint8Array(bytes);
   }
 
   // B2 and R2 buckets are private: sign a short-lived GET instead of building
@@ -80,10 +84,18 @@ async function readStoredBytes(submission: {
     new GetObjectCommand({ Bucket: bucket, Key: submission.storage_path }),
     { expiresIn: 300 },
   );
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(30_000),
+  });
   if (!response.ok) {
     throw new ApiError(404, "missing_file", "Stored file not found.");
   }
 
-  return new Uint8Array(await response.arrayBuffer());
+  const body = await response.arrayBuffer();
+
+  if (body.byteLength > 10 * 1024 * 1024) {
+    throw new ApiError(413, "too_large", "The stored file is too large.");
+  }
+
+  return new Uint8Array(body);
 }

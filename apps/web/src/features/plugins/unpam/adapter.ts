@@ -231,17 +231,29 @@ export function parsePengumuman(html: string): PluginEvent[] {
   return events;
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+const MAX_HTML_BYTES = 2 * 1024 * 1024;
+
 async function fetchHtml(url: string): Promise<string> {
   const response = await fetch(url, {
     headers: HEADERS,
     next: { revalidate: UNPAM_CACHE_SECONDS, tags: [`unpam:${url}`] },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    throw new Error(`Fetch gagal (${url}): ${response.status}`);
+    // Sanitized category only: the URL is internal config, and this error is
+    // persisted into plugin status visible to class members (QA-10).
+    throw new Error(`UPSTREAM_FETCH_FAILED:${response.status}`);
   }
 
-  return response.text();
+  const body = await response.text();
+
+  if (body.length > MAX_HTML_BYTES) {
+    throw new Error("UPSTREAM_FETCH_TOO_LARGE");
+  }
+
+  return body;
 }
 
 /** Gabungan kalender + MENTARI info + pengumuman. Per-sumber gagal = skip. */

@@ -1,5 +1,15 @@
 import { notFound, serviceUnavailable } from "@/lib/api/errors";
-import { fileDownload, handleRouteError } from "@/lib/api/responses";
+import {
+  apiSuccess,
+  fileDownload,
+  handleRouteError,
+} from "@/lib/api/responses";
+import { createExportJob } from "@/lib/db/export-jobs";
+import { EXPORT_KIND_ATTENDANCE_MEETING } from "@/lib/queue/export-runner";
+import {
+  enqueueExport,
+  isAsyncExportConfigured,
+} from "@/lib/queue/export-queue";
 import {
   getAttendanceMeetingDetail,
   getClassAttendanceSubject,
@@ -53,6 +63,20 @@ export async function GET(
 
     if (!subject) {
       throw notFound();
+    }
+
+    const wantsAsync = new URL(_request.url).searchParams.get("async") === "1";
+
+    if (wantsAsync && isAsyncExportConfigured()) {
+      const job = await createExportJob({
+        userId: session.user.id,
+        kind: EXPORT_KIND_ATTENDANCE_MEETING,
+        params: { classId: found.id, meetingId: id },
+      });
+
+      await enqueueExport(job.id);
+
+      return apiSuccess({ jobId: job.id, status: "pending" }, 202);
     }
 
     const audits = await listCorrectionAudit(found.id, subject.id);

@@ -60,7 +60,7 @@ export default async function LecturerSubmissionPage({
           asChild
           className="mt-5 w-full"
         >
-          <a href={`/api/d/${submission.share_token}/download`}>
+          <a href={`/api/d/${token}/download`}>
             <Download
               aria-hidden="true"
               className="h-4 w-4"

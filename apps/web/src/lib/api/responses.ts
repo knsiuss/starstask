@@ -100,9 +100,10 @@ export async function handleRouteError(error: unknown): Promise<Response> {
     return apiError(400, "invalid_json", "The request body could not be read.");
   }
 
+  // Log the error kind + digest only: raw messages can embed SQL fragments,
+  // paths, or personal data, and they outlive their usefulness in logs.
   console.error("[api] unhandled error", {
     name: error instanceof Error ? error.name : typeof error,
-    message: error instanceof Error ? error.message : "unknown",
   });
 
   await recordErrorActivity({

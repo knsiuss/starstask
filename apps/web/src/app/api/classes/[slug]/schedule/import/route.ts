@@ -1,5 +1,6 @@
 import { ApiError, forbidden, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { isFeatureEnabled } from "@/lib/config/features";
 import { listClassSubjects } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -43,15 +44,9 @@ export async function POST(
       windowSeconds: 3600,
     });
 
-    const declaredLength = Number(request.headers.get("content-length") ?? "0");
-
-    if (declaredLength > MAX_UPLOAD_BYTES + 1024) {
-      throw new ApiError(
-        413,
-        "file_too_large",
-        "Each file must be 10 MB or smaller.",
-      );
-    }
+    // Refuse oversized bodies (or bodies with no declared length) before the
+    // framework buffers the multipart payload into memory.
+    assertUploadContentLength(request);
 
     const formData = await request.formData();
     const file = formData.get("file");

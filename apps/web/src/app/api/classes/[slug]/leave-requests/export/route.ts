@@ -2,7 +2,11 @@ import { isoDateSchema } from "@starstask/contracts";
 import { CSV_MIME_TYPE } from "@starstask/shared";
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
-import { fileDownload, handleRouteError } from "@/lib/api/responses";
+import {
+  apiSuccess,
+  fileDownload,
+  handleRouteError,
+} from "@/lib/api/responses";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireClassManager } from "@/features/classes/class-access";
@@ -16,6 +20,12 @@ import {
   type ReportClassInfo,
   type ReportInput,
 } from "@/features/leave/reports/pdf";
+import { createExportJob } from "@/lib/db/export-jobs";
+import { EXPORT_KIND_LEAVE } from "@/lib/queue/export-runner";
+import {
+  enqueueExport,
+  isAsyncExportConfigured,
+} from "@/lib/queue/export-queue";
 import { buildLeaveZip } from "@/features/leave/reports/zip";
 import { downloadEvidenceBytes } from "@/features/leave/evidence-service";
 
@@ -80,6 +90,20 @@ export async function GET(request: Request, context: RouteContext) {
         "invalid_input",
         "Choose csv, summary, complete, or zip.",
       );
+    }
+
+    const wantsAsync = url.searchParams.get("async") === "1";
+
+    if (wantsAsync && isAsyncExportConfigured()) {
+      const job = await createExportJob({
+        userId: session.user.id,
+        kind: EXPORT_KIND_LEAVE,
+        params: { classId: classRecord.id, format, from, to },
+      });
+
+      await enqueueExport(job.id);
+
+      return apiSuccess({ jobId: job.id, status: "pending" }, 202);
     }
 
     const rows = await listLeaveReportRows({

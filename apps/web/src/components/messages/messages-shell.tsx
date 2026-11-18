@@ -2,7 +2,8 @@
 
 import { MessageCircleHeart, PencilLine } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { ConversationListPanel } from "@/components/messages/conversation-list-panel";
 import type { ConversationRow } from "@/lib/db/direct-messages";
@@ -46,9 +47,18 @@ type Props = {
 };
 
 export function MessagesShell({ conversations, myUserId, className }: Props) {
+  const router = useRouter();
   const [selected, setSelected] = useState<ConversationRow | null>(null);
   const [composing, setComposing] = useState(false);
   const [onlineIds, setOnlineIds] = useState<Set<string>>(() => new Set());
+
+  // Sidebar preview/unread counts refresh from the server (source of truth)
+  // so new messages appear without opening the chat. ChatPane's realtime
+  // subscription already calls router.refresh() while a chat is open.
+  useEffect(() => {
+    const timer = window.setInterval(() => router.refresh(), 30000);
+    return () => window.clearInterval(timer);
+  }, [router]);
 
   const handleSelect = useCallback((conversation: ConversationRow) => {
     setComposing(false);

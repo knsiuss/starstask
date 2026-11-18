@@ -30,7 +30,12 @@ export async function GET(request: Request) {
     events = await fetchUnpamEvents();
     await persistUnpamEvents(events);
   } catch (error) {
-    syncError = error instanceof Error ? error.message : "fetch failed";
+    // Only the sanitized category is persisted: raw errors can carry
+    // internal URLs or upstream detail into member-visible status rows.
+    syncError = error instanceof Error ? error.message : "fetch_failed";
+    if (!/^[A-Z_]+(:[0-9]+)?$/.test(syncError)) {
+      syncError = "fetch_failed";
+    }
     await persistUnpamEvents([], syncError);
   }
   const byKind = events.reduce<Record<string, number>>((acc, event) => {
