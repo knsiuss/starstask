@@ -12,3 +12,7 @@ yarn.lock
 
 *.min.js
 *.min.css
+
+# Agent-generated swarm reports: prose that Prettier would reflow on every
+# run, with no effect on the shipped app.
+swarms/
