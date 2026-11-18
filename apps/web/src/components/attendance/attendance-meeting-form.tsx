@@ -573,7 +573,7 @@ export function AttendanceMeetingForm({
 
         <section
           aria-labelledby="location-details"
-          className="border-border bg-subtle/60 col-span-2 rounded-xl border p-3 sm:p-4"
+          className="border-border bg-subtle/60 rounded-xl border p-3 sm:col-span-2 sm:p-4"
         >
           <button
             type="button"
@@ -751,7 +751,7 @@ export function AttendanceMeetingForm({
           ) : null}
         </section>
 
-        <div className="col-span-2 space-y-1.5">
+        <div className="min-w-0 space-y-1.5 sm:col-span-2">
           <Label htmlFor="attendance-title">Title (optional)</Label>
           <Input
             id="attendance-title"
