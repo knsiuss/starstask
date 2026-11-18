@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/api/errors";
+import { getSessionUser } from "@/lib/auth/session";
 import {
   getConversationMemberKeys,
   getConversationParticipants,
@@ -9,10 +10,7 @@ import {
   listMessages,
   sendCiphertext,
 } from "@/lib/db/direct-messages";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +18,15 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: Params) {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:messages:list",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 120,
       windowSeconds: 60,
       onBackendFailure: "closed",
@@ -31,12 +35,18 @@ export async function GET(request: Request, { params }: Params) {
     const { id } = await params;
     const url = new URL(request.url);
     const before = url.searchParams.get("before") ?? undefined;
-    const limitParam = Number(url.searchParams.get("limit") ?? 50);
+    const limitQuery = url.searchParams.get("limit");
+    const rawLimit =
+      limitQuery !== null && limitQuery.trim() !== "" ? Number(limitQuery) : 50;
+    const effectiveLimit = Math.min(
+      Math.max(Number.isFinite(rawLimit) ? Math.trunc(rawLimit) : 50, 1),
+      100,
+    );
     const peerId = await getConversationPeerId(id);
     const [messages, peerPublicKey, participants, memberKeys] =
       await Promise.all([
-        listMessages(id, { before, limit: limitParam }),
-        getPeerPublicKey(peerId),
+        listMessages(id, { before, limit: effectiveLimit }),
+        peerId ? getPeerPublicKey(peerId) : Promise.resolve(null),
         getConversationParticipants(id),
         getConversationMemberKeys(id),
       ]);
@@ -47,8 +57,7 @@ export async function GET(request: Request, { params }: Params) {
       peerId,
       participants,
       memberKeys,
-      hasMore:
-        messages.length >= (Number.isFinite(limitParam) ? limitParam : 50),
+      hasMore: messages.length >= effectiveLimit,
     });
   } catch (error) {
     if (error instanceof ApiError) {
@@ -64,7 +73,7 @@ export async function GET(request: Request, { params }: Params) {
         : "50000";
 
     if (code === "42501") {
-      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (code === "PGRST116") {
@@ -80,9 +89,15 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:messages:send",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 60,
       windowSeconds: 60,
       onBackendFailure: "closed",
@@ -105,21 +120,27 @@ export async function POST(request: Request, { params }: Params) {
       { name: string; mime: string; size: number; path: string } | undefined;
 
     // Client-supplied attachment metadata is untrusted: the object must live
-    // under this conversation's folder, the MIME must be a media type, and the
-    // size must stay inside the client-side cap.
+    // under this conversation's folder, the MIME must be a safe media type, and
+    // the size must stay inside the client-side cap.
     if (attachment !== undefined) {
       const pathValid =
         typeof attachment.path === "string" &&
         attachment.path.startsWith(`${id}/`) &&
         !attachment.path.includes("..");
+      const normalizedMime =
+        typeof attachment.mime === "string"
+          ? (attachment.mime.trim().toLowerCase().split(";")[0]?.trim() ?? "")
+          : "";
+      const forbiddenMime =
+        normalizedMime === "text/html" || normalizedMime === "image/svg+xml";
       const mimeValid =
-        typeof attachment.mime === "string" &&
-        (attachment.mime.startsWith("image/") ||
-          attachment.mime.startsWith("video/") ||
-          attachment.mime.startsWith("audio/") ||
-          attachment.mime === "application/pdf" ||
-          attachment.mime.startsWith("text/") ||
-          attachment.mime === "application/zip");
+        !forbiddenMime &&
+        (normalizedMime.startsWith("image/") ||
+          normalizedMime.startsWith("video/") ||
+          normalizedMime.startsWith("audio/") ||
+          normalizedMime === "application/pdf" ||
+          normalizedMime.startsWith("text/") ||
+          normalizedMime === "application/zip");
       const sizeValid =
         Number.isFinite(attachment.size) &&
         attachment.size > 0 &&
@@ -162,7 +183,7 @@ export async function POST(request: Request, { params }: Params) {
         : "50000";
 
     if (code === "42501") {
-      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (code === "42901") {
@@ -172,7 +193,7 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
-    if (code === "22023" || code === "42501") {
+    if (code === "22023") {
       return NextResponse.json(
         { error: "Could not send message" },
         { status: 400 },

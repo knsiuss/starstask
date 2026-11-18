@@ -6,13 +6,11 @@ import { getSessionUser } from "@/lib/auth/session";
 import { DataAccessError } from "@/lib/db/assignments";
 import {
   getConversationDeviceKeys,
+  isValidP256PublicKey,
   listOwnDevices,
   upsertOwnDevice,
 } from "@/lib/db/dm-devices";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -63,19 +61,19 @@ function handleRouteFailure(error: unknown, fallbackMessage: string) {
 
 export async function GET(request: Request) {
   try {
-    await enforceRateLimit({
-      action: "dm:devices:get",
-      identifier: getClientIdentifier(request),
-      limit: 120,
-      windowSeconds: 60,
-      onBackendFailure: "closed",
-    });
-
     const session = await getSessionUser();
 
     if (!session) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
+
+    await enforceRateLimit({
+      action: "dm:devices:get",
+      identifier: session.user.id,
+      limit: 120,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     const url = new URL(request.url);
     const conversationIdParam = url.searchParams.get("conversationId");
@@ -108,19 +106,19 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await enforceRateLimit({
-      action: "dm:devices:post",
-      identifier: getClientIdentifier(request),
-      limit: 30,
-      windowSeconds: 60,
-      onBackendFailure: "closed",
-    });
-
     const session = await getSessionUser();
 
     if (!session) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
+
+    await enforceRateLimit({
+      action: "dm:devices:post",
+      identifier: session.user.id,
+      limit: 30,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     const body: unknown = await request.json();
     const parsed = registerDeviceSchema.safeParse(body);
@@ -128,6 +126,22 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid device payload" },
+        { status: 400 },
+      );
+    }
+
+    const keysToValidate = [
+      parsed.data.identityPublicKey,
+      parsed.data.signedPrekeyPublic,
+      ...(parsed.data.oneTimePrekeys ?? []),
+    ];
+    const keyChecks = await Promise.all(
+      keysToValidate.map((key) => isValidP256PublicKey(key)),
+    );
+
+    if (keyChecks.some((valid) => !valid)) {
+      return NextResponse.json(
+        { error: "Invalid device public key" },
         { status: 400 },
       );
     }

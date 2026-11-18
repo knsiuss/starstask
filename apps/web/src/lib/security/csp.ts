@@ -1,11 +1,17 @@
 const FALLBACK_SUPABASE_ORIGIN = "https://*.supabase.co";
+const STORAGE_PREVIEW_ORIGINS =
+  "https://*.backblazeb2.com https://*.r2.cloudflarestorage.com";
 
 export function createCspNonce(): string {
   return btoa(crypto.randomUUID());
 }
 
 function supabaseOrigin(url: string | undefined): string {
-  return url && url.startsWith("https://") ? url : FALLBACK_SUPABASE_ORIGIN;
+  const origin = envOrigin(url);
+
+  return origin && origin.startsWith("https://")
+    ? origin
+    : FALLBACK_SUPABASE_ORIGIN;
 }
 
 function supabaseOrigins(): { http: string; socket: string } {
@@ -66,8 +72,8 @@ export function buildContentSecurityPolicy(nonce: string): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isProduction ? "" : " 'unsafe-eval'"}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${supabaseOrigin} https://*.googleusercontent.com`,
-    `frame-src 'self' ${supabaseOrigin}`,
+    `img-src 'self' data: blob: ${supabaseOrigin} https://*.googleusercontent.com ${STORAGE_PREVIEW_ORIGINS}`,
+    `frame-src 'self' ${supabaseOrigin} ${STORAGE_PREVIEW_ORIGINS}`,
     "font-src 'self' data:",
     `connect-src 'self' ${supabaseOrigin} ${supabaseSocket}${thirdPartyOrigins()
       .map((origin) => ` ${origin}`)

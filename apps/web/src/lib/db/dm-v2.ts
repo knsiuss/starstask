@@ -1,22 +1,33 @@
 import "server-only";
 
 import { DataAccessError } from "@/lib/db/assignments";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  createDmClient,
+  isCiphertextWireFormat,
+  MAX_CIPHERTEXT_LENGTH,
+  toggleMessageReaction,
+  type DmSupabaseClient,
+} from "@/lib/db/direct-messages";
 
 /** DM v2 helpers: read receipts, edit/delete, reply, reactions, typing, group, safety. */
 
 export async function markConversationRead(conversationId: string) {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { error } = await supabase.rpc("dm_mark_read", {
     p_conversation: conversationId,
   });
+
   if (error) throw new DataAccessError("mark read failed", error.code);
 }
 
-async function requireOwnedMessage(messageId: string, conversationId: string) {
-  const supabase = (await createSupabaseServerClient()) as any;
+async function requireOwnedMessage(
+  messageId: string,
+  conversationId: string,
+): Promise<DmSupabaseClient> {
+  const supabase = await createDmClient();
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id;
+
   if (!me) throw new DataAccessError("Not signed in", "42501");
 
   const { data: msg, error } = await supabase
@@ -24,7 +35,8 @@ async function requireOwnedMessage(messageId: string, conversationId: string) {
     .select("sender_id")
     .eq("id", messageId)
     .eq("conversation_id", conversationId)
-    .maybeSingle();
+    .maybeSingle<{ sender_id: string }>();
+
   if (error) throw new DataAccessError("edit failed", error.code);
   if (!msg) throw new DataAccessError("Message not found", "PGRST116");
   if (msg.sender_id !== me) {
@@ -39,15 +51,19 @@ export async function editMessage(
   conversationId: string,
   ciphertext: string,
 ) {
-  const { isCiphertextWireFormat } = await import("@/lib/db/direct-messages");
-  if (!isCiphertextWireFormat(ciphertext) || ciphertext.length > 8000) {
+  if (
+    !isCiphertextWireFormat(ciphertext) ||
+    ciphertext.length > MAX_CIPHERTEXT_LENGTH
+  ) {
     throw new DataAccessError("Message must be encrypted", "22023");
   }
+
   const supabase = await requireOwnedMessage(messageId, conversationId);
   const { error } = await supabase
     .from("dm_messages")
     .update({ body: ciphertext, edited_at: new Date().toISOString() })
     .eq("id", messageId);
+
   if (error) throw new DataAccessError("edit failed", error.code);
 }
 
@@ -59,6 +75,7 @@ export async function deleteMessage(messageId: string, conversationId: string) {
     .from("dm_messages")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", messageId);
+
   if (error) throw new DataAccessError("delete failed", error.code);
 }
 
@@ -66,21 +83,23 @@ export async function setConversationPrefs(
   conversationId: string,
   prefs: { pinned?: boolean; muted?: boolean; archived?: boolean },
 ) {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { error } = await supabase.rpc("dm_set_conversation_pref", {
     p_conversation: conversationId,
     p_pinned: prefs.pinned ?? null,
     p_muted: prefs.muted ?? null,
     p_archived: prefs.archived ?? null,
   });
+
   if (error) throw new DataAccessError("pref failed", error.code);
 }
 
 export async function markConversationUnread(conversationId: string) {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { error } = await supabase.rpc("dm_mark_unread", {
     p_conversation: conversationId,
   });
+
   if (error) throw new DataAccessError("mark unread failed", error.code);
 }
 
@@ -89,9 +108,10 @@ export async function setMessagePinned(
   conversationId: string,
   pinned: boolean,
 ) {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id;
+
   if (!me) throw new DataAccessError("Not signed in", "42501");
 
   const { data: part } = await supabase
@@ -100,7 +120,8 @@ export async function setMessagePinned(
     .eq("conversation_id", conversationId)
     .eq("user_id", me)
     .is("left_at", null)
-    .maybeSingle();
+    .maybeSingle<{ user_id: string }>();
+
   if (!part) throw new DataAccessError("Not a participant", "42501");
 
   const { error } = await supabase
@@ -108,67 +129,29 @@ export async function setMessagePinned(
     .update({ is_pinned: pinned })
     .eq("id", messageId)
     .eq("conversation_id", conversationId);
+
   if (error) throw new DataAccessError("pin failed", error.code);
 }
 
-/** Toggle (set/remove) the caller's emoji reaction on one message. */
+/** Toggle (set/remove) the caller's emoji reaction on one message via RPC. */
 export async function toggleReaction(
   messageId: string,
-  conversationId: string,
+  _conversationId: string,
   emoji: string,
-): Promise<void> {
-  const supabase = (await createSupabaseServerClient()) as any;
-  const { data: userData } = await supabase.auth.getUser();
-  const me = userData.user?.id;
-  if (!me) throw new DataAccessError("Not signed in", "42501");
-
-  const MAX_ATTEMPTS = 3;
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const { data: msg, error: readError } = await supabase
-      .from("dm_messages")
-      .select("reactions")
-      .eq("id", messageId)
-      .eq("conversation_id", conversationId)
-      .maybeSingle();
-    if (readError) throw new DataAccessError("reaction failed", readError.code);
-    if (!msg) throw new DataAccessError("Message not found", "PGRST116");
-
-    const previousReactions = msg.reactions;
-    const reactions: Record<string, string> = { ...(previousReactions ?? {}) };
-    if (reactions[me] === emoji) {
-      delete reactions[me];
-    } else {
-      reactions[me] = emoji;
-    }
-
-    let updateQuery = supabase
-      .from("dm_messages")
-      .update({ reactions })
-      .eq("id", messageId)
-      .eq("conversation_id", conversationId);
-
-    updateQuery =
-      previousReactions === null || previousReactions === undefined
-        ? updateQuery.is("reactions", null)
-        : updateQuery.eq("reactions", previousReactions);
-
-    const { data: updated, error } = await updateQuery
-      .select("id")
-      .maybeSingle();
-
-    if (error) throw new DataAccessError("reaction failed", error.code);
-    if (updated) return;
-  }
-
-  throw new DataAccessError("reaction conflict", "40001");
+): Promise<Record<string, string>> {
+  return toggleMessageReaction(messageId, emoji);
 }
 
 export async function setTyping(conversationId: string, isTyping: boolean) {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id;
-  if (!me) return;
-  await supabase.from("dm_typing").upsert(
+
+  if (!me) {
+    throw new DataAccessError("Not signed in", "42501");
+  }
+
+  const { error } = await supabase.from("dm_typing").upsert(
     {
       conversation_id: conversationId,
       user_id: me,
@@ -177,20 +160,30 @@ export async function setTyping(conversationId: string, isTyping: boolean) {
     },
     { onConflict: "conversation_id,user_id" },
   );
+
+  if (error) throw new DataAccessError("typing failed", error.code);
 }
 
 export async function getTyping(conversationId: string): Promise<boolean> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id;
+
+  if (!me) {
+    throw new DataAccessError("Not signed in", "42501");
+  }
+
   const since = new Date(Date.now() - 10000).toISOString();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("dm_typing")
     .select("user_id")
     .eq("conversation_id", conversationId)
     .eq("is_typing", true)
     .gte("updated_at", since)
-    .neq("user_id", me ?? "");
+    .neq("user_id", me);
+
+  if (error) throw new DataAccessError("typing failed", error.code);
+
   return (data?.length ?? 0) > 0;
 }
 
@@ -202,6 +195,7 @@ export async function getSafetyFingerprint(
     new TextEncoder().encode(peerPublicKey),
   );
   const hex = Buffer.from(hash).toString("hex").toUpperCase();
+
   return (
     hex
       .match(/.{1,4}/g)
@@ -214,22 +208,26 @@ export async function createGroupConversation(
   name: string,
   otherUserIds: string[],
 ): Promise<string> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id;
+
   if (!me) throw new DataAccessError("Not signed in", "42501");
-  if (otherUserIds.length < 1)
+  if (otherUserIds.length < 1) {
     throw new DataAccessError("Need at least 1 other member", "22023");
-  const { data: conv, error } = await supabase
-    .from("dm_conversations")
-    .insert({ is_group: true, group_name: name })
-    .select("id")
-    .single();
-  if (error) throw new DataAccessError("create group failed", error.code);
-  const members = [me, ...otherUserIds];
-  const { error: pErr } = await supabase
-    .from("dm_participants")
-    .insert(members.map((user_id) => ({ conversation_id: conv.id, user_id })));
-  if (pErr) throw new DataAccessError("add members failed", pErr.code);
-  return conv.id as string;
+  }
+
+  const { data, error } = await supabase.rpc<string>(
+    "create_group_dm_conversation",
+    {
+      p_title: name,
+      p_member_ids: otherUserIds,
+    },
+  );
+
+  if (error || !data) {
+    throw new DataAccessError("create group failed", error?.code);
+  }
+
+  return data;
 }

@@ -34,18 +34,37 @@ describe("parseGoogleMapsUrl", () => {
       parseGoogleMapsUrl("https://www.google.com/maps/search/cafe"),
     ).toBeNull();
   });
+
+  it("handles malformed percent-encoding without throwing URIError", () => {
+    expect(
+      parseGoogleMapsUrl(
+        "https://www.google.com/maps/place/%ZZ/@-6.3608,106.8272,15z",
+      ),
+    ).toEqual({ latitude: -6.3608, longitude: 106.8272 });
+    expect(
+      parseGoogleMapsUrl("https://www.google.com/maps/search/%E0%A4%A"),
+    ).toBeNull();
+  });
 });
 
 describe("isAllowedGoogleMapsHost", () => {
   it("allows google.com and short links", () => {
     expect(isAllowedGoogleMapsHost("https://maps.app.goo.gl/abc")).toBe(true);
+    expect(isAllowedGoogleMapsHost("https://goo.gl/maps/abc")).toBe(true);
     expect(isAllowedGoogleMapsHost("https://www.google.com/maps")).toBe(true);
     expect(isAllowedGoogleMapsHost("https://maps.google.co.id/maps")).toBe(
       true,
     );
   });
 
-  it("rejects other hosts and non-https", () => {
+  it("rejects non-maps Google subdomains, other hosts, and non-https", () => {
+    expect(isAllowedGoogleMapsHost("https://sites.google.com/view/x")).toBe(
+      false,
+    );
+    expect(
+      isAllowedGoogleMapsHost("https://script.google.com/macros/s/x/exec"),
+    ).toBe(false);
+    expect(isAllowedGoogleMapsHost("https://accounts.google.com/")).toBe(false);
     expect(isAllowedGoogleMapsHost("https://evil.example/maps")).toBe(false);
     expect(isAllowedGoogleMapsHost("http://maps.app.goo.gl/abc")).toBe(false);
   });

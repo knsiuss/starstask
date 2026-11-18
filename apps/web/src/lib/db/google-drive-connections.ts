@@ -1,5 +1,6 @@
-"server-only";
+import "server-only";
 
+import { ApiError } from "@/lib/api/errors";
 import {
   getGoogleDriveConfig,
   isGoogleDriveConfigured,
@@ -8,7 +9,11 @@ import {
   decryptToken,
   encryptToken,
 } from "@/lib/integrations/google/token-crypto";
-import { refreshAccessToken } from "@/lib/integrations/google/oauth";
+import {
+  GoogleOAuthError,
+  refreshAccessToken,
+  type GoogleTokenSet,
+} from "@/lib/integrations/google/oauth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type DriveConnectionStatus = "connected" | "revoked" | "error";
@@ -143,7 +148,11 @@ export async function getValidDriveAccessToken(
   userId: string,
 ): Promise<string> {
   if (!isGoogleDriveConfigured()) {
-    throw new Error("Google Drive is not configured.");
+    throw new ApiError(
+      503,
+      "not_configured",
+      "Google Drive is not configured.",
+    );
   }
 
   const config = getGoogleDriveConfig();
@@ -156,10 +165,11 @@ export async function getValidDriveAccessToken(
     .single();
 
   if (!data || data.status !== "connected") {
-    throw new Error("Google Drive is not connected.");
+    throw new ApiError(404, "not_connected", "Google Drive is not connected.");
   }
 
   const expiresAt = new Date(data.token_expires_at).getTime();
+
   if (Number.isFinite(expiresAt) && expiresAt - Date.now() > EXPIRY_SKEW_MS) {
     return decryptToken(
       data.access_token_ciphertext,
@@ -169,7 +179,11 @@ export async function getValidDriveAccessToken(
   }
 
   if (!data.refresh_token_ciphertext) {
-    throw new Error("Google Drive needs to be reconnected.");
+    throw new ApiError(
+      401,
+      "reconnect_required",
+      "Google Drive needs to be reconnected.",
+    );
   }
 
   const refreshToken = decryptToken(
@@ -177,7 +191,41 @@ export async function getValidDriveAccessToken(
     config.encryptionKey,
     "drive",
   );
-  const refreshed = await refreshAccessToken(config, refreshToken);
+
+  let refreshed: GoogleTokenSet;
+
+  try {
+    refreshed = await refreshAccessToken(config, refreshToken);
+  } catch (error) {
+    if (error instanceof GoogleOAuthError) {
+      if (error.category === "invalid_grant") {
+        await admin()
+          .from("google_drive_connections")
+          .update({
+            status: "revoked",
+            last_error_category: "invalid_grant",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
+
+        throw new ApiError(
+          401,
+          "reconnect_required",
+          "Google Drive needs to be reconnected.",
+        );
+      }
+
+      if (error.category === "transient") {
+        throw new ApiError(
+          503,
+          "google_unavailable",
+          "Google Drive is temporarily unavailable. Please try again.",
+        );
+      }
+    }
+
+    throw error;
+  }
 
   await admin()
     .from("google_drive_connections")

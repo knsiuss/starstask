@@ -37,9 +37,13 @@ describe("safeRedirectPath", () => {
     expect(safeRedirectPath(`/${"a".repeat(600)}`)).toBe("/assignments");
   });
 
-  it("never redirects back into the auth flow", () => {
+  it("never redirects back into the auth flow, onboarding, or API routes", () => {
     expect(safeRedirectPath("/login")).toBe("/assignments");
     expect(safeRedirectPath("/auth/callback")).toBe("/assignments");
+    expect(safeRedirectPath("/onboarding")).toBe("/assignments");
+    expect(safeRedirectPath("/onboarding/profile?step=2")).toBe("/assignments");
+    expect(safeRedirectPath("/api")).toBe("/assignments");
+    expect(safeRedirectPath("/api/auth/signout")).toBe("/assignments");
   });
 
   it("honours a custom fallback", () => {

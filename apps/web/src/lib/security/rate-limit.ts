@@ -220,39 +220,76 @@ function consumeMemory(
   return bucket.hits <= limit;
 }
 
+function trustsCloudflareHeaders(): boolean {
+  return (
+    process.env.CF_PAGES === "1" ||
+    process.env.CF_PAGES === "true" ||
+    process.env.CLOUDFLARE === "1" ||
+    process.env.CLOUDFLARE === "true" ||
+    process.env.TRUST_PROXY_HEADERS === "true"
+  );
+}
+
+function trustsVercelHeaders(): boolean {
+  return process.env.VERCEL === "1";
+}
+
 function trustsForwardedHeaders(): boolean {
   return (
-    process.env.VERCEL === "1" || process.env.TRUST_X_FORWARDED_FOR === "true"
+    process.env.VERCEL === "1" ||
+    process.env.TRUST_X_FORWARDED_FOR === "true" ||
+    process.env.TRUST_PROXY_HEADERS === "true"
   );
+}
+
+function validIpCandidate(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+
+  return trimmed && trimmed !== UNKNOWN_IDENTIFIER ? trimmed : null;
 }
 
 /**
  * Best-effort client IP for rate limiting only; never used for authorization.
  *
- * Forwarded headers are spoofable unless a trusted proxy overwrites them, so
- * they are ignored unless `TRUST_X_FORWARDED_FOR=true` (or the app runs on
- * Vercel). Callers without a trustworthy identifier share the "unknown" value,
- * which `enforceRateLimit` skips instead of giving every client one bucket.
+ * Platform-overwritten single-IP headers (`cf-connecting-ip` on Cloudflare,
+ * `x-vercel-forwarded-for` on Vercel) take priority when their platform is
+ * active so a spoofed `x-forwarded-for` cannot override them.
  */
 export function getClientIdentifier(request: Request): string {
+  if (trustsCloudflareHeaders()) {
+    const cfIp = validIpCandidate(request.headers.get("cf-connecting-ip"));
+
+    if (cfIp) {
+      return cfIp;
+    }
+  }
+
+  if (trustsVercelHeaders()) {
+    const vercelIp = validIpCandidate(
+      request.headers.get("x-vercel-forwarded-for")?.split(",")[0],
+    );
+
+    if (vercelIp) {
+      return vercelIp;
+    }
+  }
+
   if (!trustsForwardedHeaders()) {
     return UNKNOWN_IDENTIFIER;
   }
 
-  const forwarded = request.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
+  const realIp = validIpCandidate(request.headers.get("x-real-ip"));
 
-  if (first && first !== UNKNOWN_IDENTIFIER) {
-    return first;
+  if (realIp) {
+    return realIp;
   }
 
-  const direct = request.headers.get("cf-connecting-ip")?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
+  const forwardedFirst = validIpCandidate(
+    request.headers.get("x-forwarded-for")?.split(",")[0],
+  );
 
-  for (const candidate of [direct, realIp]) {
-    if (candidate && candidate !== UNKNOWN_IDENTIFIER) {
-      return candidate;
-    }
+  if (forwardedFirst) {
+    return forwardedFirst;
   }
 
   return UNKNOWN_IDENTIFIER;

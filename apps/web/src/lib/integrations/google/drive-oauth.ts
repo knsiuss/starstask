@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 import {
   GOOGLE_DRIVE_SCOPE,
@@ -17,7 +17,7 @@ export function buildDriveAuthorizationUrl(options: {
     response_type: "code",
     scope: GOOGLE_DRIVE_SCOPE,
     access_type: "offline",
-    include_granted_scopes: "true",
+    include_granted_scopes: "false",
     prompt: "consent",
     state: options.state,
   });

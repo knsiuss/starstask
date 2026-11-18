@@ -75,6 +75,9 @@ beforeEach(() => {
   vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
   vi.stubEnv("VERCEL", "");
   vi.stubEnv("TRUST_X_FORWARDED_FOR", "");
+  vi.stubEnv("TRUST_PROXY_HEADERS", "");
+  vi.stubEnv("CF_PAGES", "");
+  vi.stubEnv("CLOUDFLARE", "");
 
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -252,5 +255,35 @@ describe("getClientIdentifier", () => {
     expect(getClientIdentifier(request({ "x-forwarded-for": "unknown" }))).toBe(
       "unknown",
     );
+  });
+
+  it("prefers cf-connecting-ip over spoofed x-forwarded-for behind Cloudflare", async () => {
+    vi.stubEnv("CLOUDFLARE", "1");
+
+    const { getClientIdentifier } = await loadModule();
+
+    expect(
+      getClientIdentifier(
+        request({
+          "x-forwarded-for": "1.2.3.4",
+          "cf-connecting-ip": "198.51.100.7",
+        }),
+      ),
+    ).toBe("198.51.100.7");
+  });
+
+  it("prefers x-vercel-forwarded-for over spoofed x-forwarded-for on Vercel", async () => {
+    vi.stubEnv("VERCEL", "1");
+
+    const { getClientIdentifier } = await loadModule();
+
+    expect(
+      getClientIdentifier(
+        request({
+          "x-forwarded-for": "1.2.3.4",
+          "x-vercel-forwarded-for": "198.51.100.8",
+        }),
+      ),
+    ).toBe("198.51.100.8");
   });
 });

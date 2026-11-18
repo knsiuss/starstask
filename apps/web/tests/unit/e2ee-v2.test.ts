@@ -252,4 +252,66 @@ describe("e2ee-v2 crypto engine", () => {
     await store.deleteSenderKey("conv-1:dev-1");
     expect(await store.getSenderKey("conv-1:dev-1")).toBeNull();
   });
+
+  it("derives identical X3DH shared secrets when sender uses an ephemeral prekey", async () => {
+    const aliceId = await generateEcdhKeyPair();
+    const aliceEph = await generateEcdhKeyPair();
+    const bobId = await generateEcdhKeyPair();
+    const bobSpk = await generateEcdhKeyPair();
+
+    const ssAlice = await deriveInitialSharedSecret(
+      aliceId.privateKey,
+      bobId.publicKey,
+      bobSpk.publicKey,
+      aliceEph.privateKey,
+    );
+    const ssBob = await deriveResponderSharedSecret(
+      bobId.privateKey,
+      bobSpk.privateKey,
+      aliceId.publicKey,
+      aliceEph.publicKey,
+    );
+
+    expect(ssAlice).toEqual(ssBob);
+
+    const bobRatchetKey = await generateEcdhKeyPair();
+    const aliceState = await ratchetInitSender(
+      ssAlice,
+      await exportRawPublicKey(bobRatchetKey.publicKey),
+    );
+    const bobState = await ratchetInitReceiver(ssBob, bobRatchetKey);
+    const encrypted = await ratchetEncrypt(aliceState, "x3dh-ephemeral-ok");
+    const envWire = serializeV2Envelope({
+      v: 2,
+      envelopes: {
+        "dev-bob": {
+          senderDeviceId: "dev-alice",
+          dhPub: encrypted.header.dhPub,
+          n: encrypted.header.n,
+          pn: encrypted.header.pn,
+          iv: encrypted.iv,
+          ct: encrypted.ct,
+          senderEphemeralPublicKey: await exportRawPublicKey(
+            aliceEph.publicKey,
+          ),
+        },
+      },
+    });
+    const parsedEnv = parseV2Envelope(envWire)?.envelopes["dev-bob"];
+
+    expect(parsedEnv?.senderEphemeralPublicKey).toBeTruthy();
+
+    const decrypted = await ratchetDecrypt(
+      bobState,
+      {
+        dhPub: parsedEnv!.dhPub,
+        n: parsedEnv!.n,
+        pn: parsedEnv!.pn,
+      },
+      parsedEnv!.iv,
+      parsedEnv!.ct,
+    );
+
+    expect(decrypted.plaintext).toBe("x3dh-ephemeral-ok");
+  });
 });

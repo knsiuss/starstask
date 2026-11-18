@@ -8,10 +8,7 @@ import {
   listRecipientSenderKeys,
   upsertSenderKeyEnvelopes,
 } from "@/lib/db/dm-sender-keys";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -66,19 +63,19 @@ function handleRouteFailure(error: unknown, fallbackMessage: string) {
 
 export async function GET(request: Request, { params }: Params) {
   try {
-    await enforceRateLimit({
-      action: "dm:sender-keys:get",
-      identifier: getClientIdentifier(request),
-      limit: 120,
-      windowSeconds: 60,
-      onBackendFailure: "closed",
-    });
-
     const session = await getSessionUser();
 
     if (!session) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
+
+    await enforceRateLimit({
+      action: "dm:sender-keys:get",
+      identifier: session.user.id,
+      limit: 120,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     const { id } = await params;
     const parsedId = conversationIdSchema.safeParse(id);
@@ -121,19 +118,19 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   try {
-    await enforceRateLimit({
-      action: "dm:sender-keys:post",
-      identifier: getClientIdentifier(request),
-      limit: 60,
-      windowSeconds: 60,
-      onBackendFailure: "closed",
-    });
-
     const session = await getSessionUser();
 
     if (!session) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
+
+    await enforceRateLimit({
+      action: "dm:sender-keys:post",
+      identifier: session.user.id,
+      limit: 60,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     const { id } = await params;
     const parsedId = conversationIdSchema.safeParse(id);
