@@ -11,7 +11,8 @@ import { loadBrandingImage } from "./excel-header-image";
 
 const HEADER_FILL = "FF0F172A";
 const MUTED_TEXT = "FF64748B";
-const LOGO_SIZE_PX = 40;
+const UNI_LOGO_SIZE = { width: 40, height: 40 } as const;
+const PRODUCT_LOGO_SIZE = { width: 52, height: 35 } as const;
 const FALLBACK_PRODUCT_LOGOS = ["/aphelion-logo.png", "/brand/logo-mark.png"];
 
 /**
@@ -47,22 +48,31 @@ export async function addBrandingHeader(
   sheet.getRow(1).height = 24;
   sheet.getRow(2).height = 24;
 
-  // Left block: university logo + name + tagline.
+  // Left block: university logo + short name / tagline (avoids repeating the
+  // full university name verbatim when center already renders it).
   const hasUniLogo = branding.universityLogoUrl.trim() !== "";
-  const leftTop = sheet.getRow(1).getCell(1);
-  sheet.mergeCells(1, 1, 2, leftEnd);
-  leftTop.value =
-    [branding.universityName, branding.universityTagline]
-      .filter(Boolean)
-      .join("\n") || "Universitas";
-  leftTop.font = { size: 12, bold: true, color: { argb: HEADER_FILL } };
+  const leftTextStart = hasUniLogo && leftEnd >= 2 ? 2 : 1;
+
+  if (hasUniLogo && leftEnd >= 2) {
+    sheet.mergeCells(1, 1, 2, 1);
+  }
+
+  const leftTop = sheet.getRow(1).getCell(leftTextStart);
+  sheet.mergeCells(1, leftTextStart, 2, leftEnd);
+  const leftPrimary = hasCenter
+    ? branding.universityShortName || branding.studyProgram || ""
+    : branding.universityName || "Universitas";
+  leftTop.value = [leftPrimary, branding.universityTagline]
+    .filter(Boolean)
+    .join("\n");
+  leftTop.font = { size: 11, bold: true, color: { argb: HEADER_FILL } };
   leftTop.alignment = {
-    indent: hasUniLogo ? 5 : 1,
+    indent: hasUniLogo && leftTextStart === 1 ? 5 : 1,
     vertical: "middle",
     wrapText: true,
   };
 
-  // Center block: institution, faculty, study program.
+  // Center block: university name, faculty, study program.
   if (hasCenter) {
     const centerColumn = leftEnd + 1;
     const centerTop = sheet.getRow(1).getCell(centerColumn);
@@ -70,8 +80,8 @@ export async function addBrandingHeader(
     centerTop.value =
       [branding.universityName, branding.faculty, branding.studyProgram]
         .filter(Boolean)
-        .join("\n") || "Fakultas / Program Studi";
-    centerTop.font = { size: 11, bold: true, color: { argb: HEADER_FILL } };
+        .join("\n") || "Universitas";
+    centerTop.font = { size: 12, bold: true, color: { argb: HEADER_FILL } };
     centerTop.alignment = {
       horizontal: "center",
       vertical: "middle",
@@ -79,9 +89,17 @@ export async function addBrandingHeader(
     };
   }
 
-  // Right block: product logo + name + tagline.
+  // Right block: product name + tagline in its own cells, with the last column
+  // reserved for the product logo so the image never overlaps the text.
+  const rightTextEnd =
+    rightStart < totalColumns ? totalColumns - 1 : totalColumns;
   const rightTop = sheet.getRow(1).getCell(rightStart);
-  sheet.mergeCells(1, rightStart, 2, totalColumns);
+  sheet.mergeCells(1, rightStart, 2, rightTextEnd);
+
+  if (rightTextEnd < totalColumns) {
+    sheet.mergeCells(1, totalColumns, 2, totalColumns);
+  }
+
   rightTop.value = [
     branding.productName || "Aphelion",
     branding.productTagline || "Academic Productivity",
@@ -91,7 +109,7 @@ export async function addBrandingHeader(
   rightTop.font = { size: 11, bold: true, color: { argb: HEADER_FILL } };
   rightTop.alignment = {
     horizontal: "right",
-    indent: 5,
+    indent: 1,
     vertical: "middle",
     wrapText: true,
   };
@@ -102,7 +120,14 @@ export async function addBrandingHeader(
       : undefined;
 
   if (hasUniLogo) {
-    await addLogoImage(sheet, [branding.universityLogoUrl], 0.1, 0.1, classId);
+    await addLogoImage(
+      sheet,
+      [branding.universityLogoUrl],
+      0.1,
+      0.1,
+      UNI_LOGO_SIZE,
+      classId,
+    );
   }
 
   const productLogoCandidates = [
@@ -112,8 +137,9 @@ export async function addBrandingHeader(
   await addLogoImage(
     sheet,
     productLogoCandidates,
-    Math.max(rightStart - 1, totalColumns - 0.85),
-    0.1,
+    totalColumns - 0.95,
+    0.15,
+    PRODUCT_LOGO_SIZE,
     classId,
   );
 
@@ -197,6 +223,7 @@ async function addLogoImage(
   imageUrls: string[],
   col: number,
   row: number,
+  size: { width: number; height: number },
   classId?: string,
 ): Promise<void> {
   for (const imageUrl of imageUrls) {
@@ -212,7 +239,7 @@ async function addLogoImage(
       });
       sheet.addImage(imageId, {
         tl: { col, row },
-        ext: { width: LOGO_SIZE_PX, height: LOGO_SIZE_PX },
+        ext: size,
       });
       return;
     } catch {
