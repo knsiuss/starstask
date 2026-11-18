@@ -3,6 +3,7 @@ import {
   ATTENDANCE_TARGET_MEETINGS_MAX,
   ATTENDANCE_TARGET_MEETINGS_MIN,
 } from "@starstask/contracts";
+import { pluralize } from "@starstask/shared";
 
 export type BapMeetingInput = {
   status: string;
@@ -43,6 +44,18 @@ export type LecturerBapSummary = {
   totalMissingBap: number;
   belowTargetCount: number;
 };
+
+/** Muted secondary line for an offering that is behind its meeting target. */
+export function formatRemainingToTarget(remainingToTarget: number): string {
+  const remaining = Math.max(0, Math.trunc(remainingToTarget));
+  return `${remaining} ${pluralize(remaining, "meeting")} to target`;
+}
+
+/** Warning line shown when at least one offering is behind pace. */
+export function formatBelowTargetPace(belowTargetCount: number): string {
+  const count = Math.max(0, Math.trunc(belowTargetCount));
+  return `Below target pace: ${count} ${pluralize(count, "course")}`;
+}
 
 function resolveTargetMeetings(meetings: readonly BapMeetingInput[]): number {
   const configured = meetings.reduce((max, meeting) => {

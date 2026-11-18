@@ -148,10 +148,16 @@ export async function saveOnboardingProfile(
   input: ProfileOnboardingInput,
   avatar: File | null,
 ): Promise<SaveOnboardingResult> {
-  const session = await requireSession();
+  // Session and avatar writes also raise DataAccessError; map them here so the
+  // route never leaks an opaque 500 for a database failure.
+  const session = await requireSession().catch((error) => {
+    throw toClassApiError(error, "Could not load your session. Try again.");
+  });
 
   if (avatar) {
-    await storeAvatar(session.user.id, avatar);
+    await storeAvatar(session.user.id, avatar).catch((error) => {
+      throw toClassApiError(error, "Could not save your profile. Try again.");
+    });
   }
 
   let profile: Awaited<ReturnType<typeof updateMyProfile>>;

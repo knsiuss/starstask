@@ -9,6 +9,7 @@ import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireSession } from "@/features/classes/class-access";
+import { toClassApiError } from "@/features/classes/errors";
 import { saveOnboardingProfile } from "@/features/profile/profile-service";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
       throw serviceUnavailable();
     }
 
-    const session = await requireSession();
+    const session = await requireSession().catch((error) => {
+      throw toClassApiError(error, "Could not load your session. Try again.");
+    });
 
     await enforceRateLimit({
       action: "profile:onboarding",

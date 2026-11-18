@@ -39,6 +39,8 @@ const KIND_LABELS: Record<NotificationEventKindRow, string> = {
   assignment_report_reviewed: "Report",
   assignment_created: "New assignment",
   dm_message: "Message",
+  attendance_at_risk: "Attendance",
+  teaching_behind_pace: "Teaching pace",
 };
 
 const KIND_VARIANTS: Record<NotificationEventKindRow, BadgeProps["variant"]> = {
@@ -68,6 +70,8 @@ const KIND_VARIANTS: Record<NotificationEventKindRow, BadgeProps["variant"]> = {
   assignment_report_reviewed: "accent",
   assignment_created: "accent",
   dm_message: "accent",
+  attendance_at_risk: "warning",
+  teaching_behind_pace: "warning",
 };
 
 type NotificationInboxListProps = {

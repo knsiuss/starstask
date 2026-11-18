@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { type ActionCenterRow } from "@/lib/classes/action-center";
-import { listClassAttendanceMeetings } from "@/lib/db/attendance-meetings";
+import { listAttendanceMeetingCountsForClasses } from "@/lib/db/lecturer-attendance";
 import { getClassActionCenter } from "@/lib/db/class-actions";
 import { getLecturerOverview } from "@/lib/db/lecturer";
 import { pluralize } from "@starstask/shared";
@@ -60,50 +60,25 @@ export async function LecturerAttendanceView({
     );
   }
 
-  const sessionEntries = await Promise.all(
-    overview.classes.map(async (classItem) => {
-      try {
-        const meetings = await listClassAttendanceMeetings(classItem.id);
-        const openMeetings = meetings.filter((m) => m.phase === "open").length;
+  let meetingCounts: Map<string, ClassSessionSummary> | null = null;
 
-        return [
-          classItem.id,
-          {
-            totalMeetings: meetings.length,
-            openMeetings,
-            failed: false,
-          },
-        ] as const;
-      } catch {
-        return [
-          classItem.id,
-          {
-            totalMeetings: 0,
-            openMeetings: 0,
-            failed: true,
-          },
-        ] as const;
-      }
-    }),
-  );
+  try {
+    meetingCounts = await listAttendanceMeetingCountsForClasses(
+      overview.classes.map((classItem) => classItem.id),
+    );
+  } catch {
+    meetingCounts = null;
+  }
 
-  const sessionByClassId = new Map<string, ClassSessionSummary>(
-    sessionEntries.map(([id, summary]) => [
-      id,
-      {
-        totalMeetings: summary.totalMeetings,
-        openMeetings: summary.openMeetings,
-      },
-    ]),
-  );
+  const sessionByClassId = meetingCounts ?? new Map<string, ClassSessionSummary>();
   const actionByClassId = new Map<string, ActionCenterRow>(
     (actionCenter?.rows ?? []).map((row) => [row.classId, row]),
   );
-  const partialFailure =
-    actionCenter === null || sessionEntries.some(([, s]) => s.failed);
+  const partialFailure = actionCenter === null || meetingCounts === null;
 
-  const totalMeetings = sessionEntries.reduce(
-    (sum, [, summary]) => sum + summary.totalMeetings,
+  const totalMeetings = overview.classes.reduce(
+    (sum, classItem) =>
+      sum + (sessionByClassId.get(classItem.id)?.totalMeetings ?? 0),
     0,
   );
   const todaysSessions = actionCenter?.totals.todaysSessions ?? 0;

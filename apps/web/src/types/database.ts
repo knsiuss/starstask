@@ -85,7 +85,9 @@ export type NotificationEventKindRow =
   | "class_assignment_published"
   | "assignment_report_reviewed"
   | "assignment_created"
-  | "dm_message";
+  | "dm_message"
+  | "attendance_at_risk"
+  | "teaching_behind_pace";
 
 export type VerificationStatusRow =
   "pending" | "needs_revision" | "verified" | "rejected";
@@ -315,6 +317,11 @@ export interface Database {
           declared_class_name: string | null;
           bio: string | null;
           onboarded_at: string | null;
+          account_status: "active" | "deactivated" | "deleted";
+          deactivated_at: string | null;
+          deactivation_reason: string | null;
+          deleted_at: string | null;
+          deletion_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -328,6 +335,11 @@ export interface Database {
           declared_class_name?: string | null;
           bio?: string | null;
           onboarded_at?: string | null;
+          account_status?: "active" | "deactivated" | "deleted";
+          deactivated_at?: string | null;
+          deactivation_reason?: string | null;
+          deleted_at?: string | null;
+          deletion_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -340,6 +352,11 @@ export interface Database {
           declared_class_name?: string | null;
           bio?: string | null;
           onboarded_at?: string | null;
+          account_status?: "active" | "deactivated" | "deleted";
+          deactivated_at?: string | null;
+          deactivation_reason?: string | null;
+          deleted_at?: string | null;
+          deletion_reason?: string | null;
         };
         Relationships: [];
       };
@@ -5422,6 +5439,9 @@ export interface Database {
       };
     };
     Functions: {
+      deactivate_my_account: { Args: { p_reason?: string }; Returns: Json };
+      reactivate_my_account: { Args: Record<string, never>; Returns: Json };
+      tombstone_my_account: { Args: { p_reason?: string }; Returns: Json };
       dm_get_or_create_conversation: {
         Args: { p_other: string };
         Returns: string;
