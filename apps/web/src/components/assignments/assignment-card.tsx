@@ -1,12 +1,14 @@
 import { ExternalLink, Paperclip } from "lucide-react";
 import Link from "next/link";
 
+import { isSafeHttpUrl } from "@starstask/contracts";
+import { excerpt, formatDate, pluralize } from "@starstask/shared";
+
 import { AssignmentContentTypeBadge } from "@/components/assignments/assignment-content-type-badge";
 import { CompletionToggle } from "@/components/assignments/completion-toggle";
 import { DeadlineBadge } from "@/components/assignments/deadline-badge";
 import { Badge } from "@/components/ui/badge";
 import type { AssignmentListItem } from "@/types/database";
-import { excerpt, formatDate, pluralize } from "@starstask/shared";
 
 type AssignmentCardProps = {
   assignment: AssignmentListItem;
@@ -77,7 +79,7 @@ export function AssignmentCard({ assignment }: AssignmentCardProps) {
           {assignment.author_display_name} · {formatDate(assignment.created_at)}
         </span>
         <span className="flex shrink-0 items-center gap-3">
-          {assignment.drive_url ? (
+          {assignment.drive_url && isSafeHttpUrl(assignment.drive_url) ? (
             <a
               href={assignment.drive_url}
               target="_blank"

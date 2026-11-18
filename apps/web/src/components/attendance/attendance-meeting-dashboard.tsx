@@ -15,6 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { runAttendanceExport } from "@/components/attendance/async-export-download";
 import { AttendanceMeetingLocationForm } from "@/components/attendance/attendance-meeting-location-form";
 import { AttendanceMeetingTable } from "@/components/attendance/attendance-meeting-table";
 import { AttendanceShareLinkButton } from "@/components/attendance/attendance-share-link";
@@ -124,56 +125,11 @@ export function AttendanceMeetingDashboard({
     setIsExporting(true);
 
     try {
-      const response = await fetch(`${exportHref}?async=1`);
-
-      if (response.ok && response.status === 202) {
-        const body = (await response.json()) as { data?: { jobId?: string } };
-        const jobId = body.data?.jobId;
-
-        if (!jobId) {
-          throw new Error("Export queue is not available");
-        }
-
-        toast({ title: "Export queued — preparing your file…" });
-
-        for (let attempt = 0; attempt < 15; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2_000));
-          const status = await fetch(`/api/exports/${jobId}`);
-          if (!status.ok) continue;
-          const job = (await status.json()) as {
-            data?: { status?: string; downloadUrl?: string | null };
-          };
-
-          if (job.data?.status === "done" && job.data.downloadUrl) {
-            window.open(job.data.downloadUrl, "_blank");
-            return;
-          }
-
-          if (job.data?.status === "failed") {
-            throw new Error("Export failed in the background");
-          }
-        }
-
-        throw new Error("Export is taking longer than expected");
-      }
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const disposition = response.headers.get("Content-Disposition") ?? "";
-        const match = /filename="?([^";]+)"?/i.exec(disposition);
-        const filename = match?.[1] ?? `meeting-${detail.meetingNumber}.xlsx`;
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = filename;
-        document.body.append(anchor);
-        anchor.click();
-        anchor.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        return;
-      }
-
-      throw new Error("Export failed");
+      await runAttendanceExport({
+        href: exportHref,
+        fallbackFilename: () => `meeting-${detail.meetingNumber}.xlsx`,
+        toast,
+      });
     } catch (error) {
       toast({
         variant: "error",
