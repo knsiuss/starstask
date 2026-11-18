@@ -56,7 +56,6 @@ export function InstallPrompt() {
     }, SHOW_AFTER_MS);
 
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function dismiss() {

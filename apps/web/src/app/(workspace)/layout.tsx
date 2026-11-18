@@ -53,10 +53,15 @@ export default async function WorkspaceLayout({
     Promise.resolve(false),
     session ? isBetaTester() : Promise.resolve(false),
   ]);
+  // getMyProfile's shape has no university (private, RPC-only); fall back to
+  // the typed row and keep the check compiling on both types.
+  const profileUniversity =
+    (myProfile as { university?: string | null } | null)?.university ?? null;
+
   const showUniversityInfo =
     isUnpamPluginEnabled() &&
     (unpamMember ||
-      (await isUnpamMember(session?.user.id ?? null, myProfile?.university)));
+      (await isUnpamMember(session?.user.id ?? null, profileUniversity)));
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;
