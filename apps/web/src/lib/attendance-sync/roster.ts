@@ -112,6 +112,7 @@ export async function getAttendanceSyncSessionPayload(
         classId,
         session.subject_id,
         rawEligibleIds.map((userId) => ({ userId })),
+        supabase,
       )
     : rawEligibleIds.map((userId) => ({ userId }));
 

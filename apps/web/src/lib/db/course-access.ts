@@ -1,8 +1,11 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { DataAccessError } from "@/lib/db/assignments";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 
 export type CourseScope = "all" | "selected";
 
@@ -78,14 +81,18 @@ export async function filterRosterByCourseAccess<T extends { userId: string }>(
   classId: string,
   subjectId: string,
   roster: T[],
+  client?: SupabaseClient<Database>,
 ): Promise<T[]> {
   if (roster.length === 0) {
     return roster;
   }
 
   try {
-    const admin = createSupabaseAdminClient();
-    const { data: restricted, error: restrictedError } = await admin
+    // Callers with a signed-in manager session (or worker context) use the
+    // request/worker client so the page does not fail if service_role env is
+    // misconfigured; unauthenticated HMAC sync callers pass their admin client.
+    const supabase = client ?? (await createSupabaseServerClient());
+    const { data: restricted, error: restrictedError } = await supabase
       .from("class_members")
       .select("user_id")
       .eq("class_id", classId)
@@ -104,7 +111,7 @@ export async function filterRosterByCourseAccess<T extends { userId: string }>(
       return roster;
     }
 
-    const { data: enrolled, error: enrolledError } = await admin
+    const { data: enrolled, error: enrolledError } = await supabase
       .from("class_member_courses")
       .select("user_id")
       .eq("class_id", classId)
