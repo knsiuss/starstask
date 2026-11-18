@@ -270,7 +270,7 @@ function ManageTabSkeleton() {
       aria-hidden="true"
       className="mt-6 space-y-6"
     >
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton
             key={index}

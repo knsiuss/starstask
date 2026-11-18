@@ -20,7 +20,7 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="dialog-overlay fixed inset-0 z-50 bg-black/40" />
       <DialogPrimitive.Content
         className={cn(
-          "dialog-content border-border bg-surface fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border p-6 shadow-lg",
+          "dialog-content border-border bg-surface fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border p-6 shadow-lg",
           className,
         )}
         {...props}
@@ -28,7 +28,7 @@ export function DialogContent({
         {children}
         <DialogPrimitive.Close
           aria-label="Close dialog"
-          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent absolute top-4 right-4 rounded-sm p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent absolute top-2 right-2 flex h-11 w-11 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:top-3 sm:right-3 sm:h-8 sm:w-8"
         >
           <X
             aria-hidden="true"

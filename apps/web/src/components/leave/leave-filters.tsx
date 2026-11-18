@@ -75,6 +75,67 @@ export function LeaveFilters({
             Apply
           </Button>
         </div>
+        <details
+          open={Boolean(values.from || values.to)}
+          className="pt-0.5"
+        >
+          <summary className="text-muted-foreground hover:text-foreground inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 text-xs font-medium">
+            <SlidersHorizontal
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+            Date range
+          </summary>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="min-w-0">
+              <Label
+                htmlFor="mobile-from"
+                className="text-xs"
+              >
+                Absence from
+              </Label>
+              <Input
+                id="mobile-from"
+                name="from"
+                type="date"
+                defaultValue={values.from ?? ""}
+                className="mt-1 h-11 min-w-0"
+              />
+            </div>
+            <div className="min-w-0">
+              <Label
+                htmlFor="mobile-to"
+                className="text-xs"
+              >
+                Absence to
+              </Label>
+              <Input
+                id="mobile-to"
+                name="to"
+                type="date"
+                defaultValue={values.to ?? ""}
+                className="mt-1 h-11 min-w-0"
+              />
+            </div>
+          </div>
+        </details>
+        {values.q ||
+        (values.status && values.status !== "all") ||
+        values.from ||
+        values.to ? (
+          <div className="flex justify-end">
+            <Link
+              href={action}
+              className="text-accent hover:text-accent-hover inline-flex min-h-9 items-center gap-1.5 px-1 text-xs font-semibold"
+            >
+              <RotateCcw
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+              Reset filters
+            </Link>
+          </div>
+        ) : null}
       </form>
 
       <form

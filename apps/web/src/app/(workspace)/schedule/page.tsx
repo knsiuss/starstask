@@ -295,8 +295,8 @@ export default async function SchedulePage({
         </Alert>
       ) : null}
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-2">
           <nav
             aria-label="Calendar views"
             className="bg-muted inline-flex rounded-lg p-1"
@@ -313,7 +313,7 @@ export default async function SchedulePage({
                     : undefined
                 }
                 className={cn(
-                  "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  "inline-flex min-h-9 items-center rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0 sm:px-3.5 sm:text-sm",
                   view === query.view ||
                     (view === "list" && query.view === "day")
                     ? "bg-surface text-foreground border-border border"
@@ -332,7 +332,7 @@ export default async function SchedulePage({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end sm:gap-1.5">
           <div className="flex items-center gap-1">
             <Link
               href={scheduleHref(
@@ -343,7 +343,7 @@ export default async function SchedulePage({
               )}
               aria-label="Previous period"
               prefetch={false}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-10 w-10 items-center justify-center rounded-md sm:h-8 sm:w-8"
             >
               <ChevronLeft
                 aria-hidden="true"
@@ -352,7 +352,7 @@ export default async function SchedulePage({
             </Link>
             <p
               aria-live="polite"
-              className="min-w-36 text-center text-sm font-medium sm:min-w-44"
+              className="min-w-32 text-center text-sm font-medium sm:min-w-44"
             >
               {rangeLabel}
             </p>
@@ -365,7 +365,7 @@ export default async function SchedulePage({
               )}
               aria-label="Next period"
               prefetch={false}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-10 w-10 items-center justify-center rounded-md sm:h-8 sm:w-8"
             >
               <ChevronRight
                 aria-hidden="true"
@@ -374,11 +374,11 @@ export default async function SchedulePage({
             </Link>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <Link
               href={scheduleHref(query, anchorKey, { date: today }, selected)}
               prefetch={false}
-              className="border-border bg-surface text-foreground hover:bg-muted rounded-md border px-2.5 py-1.5 text-xs font-medium"
+              className="border-border bg-surface text-foreground hover:bg-muted inline-flex min-h-10 items-center rounded-md border px-3 py-1.5 text-xs font-medium sm:min-h-0 sm:px-2.5"
             >
               Today
             </Link>
@@ -392,7 +392,7 @@ export default async function SchedulePage({
               aria-pressed={showHistory}
               prefetch={false}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                "inline-flex min-h-10 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0 sm:px-2.5",
                 showHistory
                   ? "border-accent/40 bg-accent-soft text-accent"
                   : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -739,7 +739,7 @@ function TypeSelect({
         <select
           name="type"
           defaultValue={query.type}
-          className="border-input bg-surface text-foreground focus-visible:outline-accent focus-visible:border-accent mt-1 block h-9 w-full rounded-md border px-2.5 text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="border-input bg-surface text-foreground focus-visible:outline-accent focus-visible:border-accent mt-1 block h-11 w-full rounded-md border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-9 sm:px-2.5 sm:text-xs"
         >
           <option value="all">All events</option>
           {Object.entries(CALENDAR_EVENT_TYPE_LABELS).map(([value, label]) => (
@@ -754,7 +754,7 @@ function TypeSelect({
       </label>
       <button
         type="submit"
-        className="text-accent hover:bg-accent-soft mt-2 w-full rounded-md px-2 py-1.5 text-xs font-medium"
+        className="text-accent hover:bg-accent-soft mt-2 min-h-11 w-full cursor-pointer rounded-md px-3 py-2 text-xs font-medium sm:min-h-0 sm:px-2 sm:py-1.5"
       >
         Apply
       </button>

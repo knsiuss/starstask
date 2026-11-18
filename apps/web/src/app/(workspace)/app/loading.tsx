@@ -39,18 +39,18 @@ export default function DashboardLoading() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
               {KPI_INDICES.map((index) => (
                 <div
                   key={index}
-                  className="border-border bg-surface rounded-xl border p-4"
+                  className="border-border bg-surface rounded-xl border p-2.5 sm:p-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="skeleton h-3.5 w-24 rounded" />
+                  <div className="flex items-center justify-center sm:justify-between">
+                    <div className="skeleton hidden h-3.5 w-24 rounded sm:block" />
                     <div className="skeleton h-6 w-6 rounded-md" />
                   </div>
-                  <div className="skeleton mt-3 h-7 w-14 rounded-md" />
-                  <div className="skeleton mt-2 h-3 w-32 rounded" />
+                  <div className="skeleton mx-auto mt-2 h-6 w-10 rounded-md sm:mx-0 sm:mt-3 sm:h-7 sm:w-14" />
+                  <div className="skeleton mx-auto mt-1.5 h-3 w-12 rounded sm:mx-0 sm:mt-2 sm:w-32" />
                 </div>
               ))}
             </div>

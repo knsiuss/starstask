@@ -59,7 +59,7 @@ export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
   return (
     <nav
       aria-label="Primary"
-      className="border-border bg-surface sticky bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="border-border bg-surface fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="grid grid-cols-5 gap-1 px-2 pt-2">
         {tabs.map((tab) => {

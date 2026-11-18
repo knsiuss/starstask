@@ -147,23 +147,23 @@ export function AttendanceTab({
         </Button>
       </form>
 
-      <dl className="grid grid-cols-2 gap-2.5 lg:gap-3 lg:grid-cols-4">
+      <dl className="grid grid-cols-4 gap-1.5 sm:gap-2.5 lg:gap-3">
         {stats.map((stat) => {
           const Icon = stat.icon;
 
           return (
             <Card
               key={stat.label}
-              className="p-3.5"
+              className="min-w-0 px-2 py-2.5 text-center sm:p-3.5 sm:text-left"
             >
-              <dt className="text-muted-foreground flex items-center gap-2 text-xs">
+              <dt className="text-muted-foreground flex flex-col items-center gap-1 text-[11px] sm:flex-row sm:gap-2 sm:text-xs">
                 <Icon
                   aria-hidden="true"
-                  className="h-3.5 w-3.5"
+                  className="h-3.5 w-3.5 shrink-0"
                 />
-                {stat.label}
+                <span className="max-w-full truncate">{stat.label}</span>
               </dt>
-              <dd className="mt-1 text-2xl font-semibold tabular-nums">
+              <dd className="mt-1 text-lg font-semibold tabular-nums sm:text-2xl">
                 {stat.value}
               </dd>
             </Card>

@@ -12,7 +12,7 @@ export default function ClassDetailLoading() {
       className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8"
     >
       <Skeleton className="h-16" />
-      <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-3">
         {[0, 1, 2, 3].map((index) => (
           <Skeleton
             key={index}

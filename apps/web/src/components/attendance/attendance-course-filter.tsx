@@ -88,7 +88,7 @@ export function AttendanceCourseFilter({
           name="subject"
           defaultValue={selectedCourseId ?? ""}
           onChange={() => formRef.current?.requestSubmit()}
-          className="h-10 pl-9 text-sm"
+          className="h-11 pl-9 text-sm sm:h-10"
         >
           <option value="">All courses</option>
           {subjects.map((subject) => (
@@ -108,7 +108,7 @@ export function AttendanceCourseFilter({
         <button
           type="button"
           onClick={() => router.push(`${basePath}?view=${activeView}`)}
-          className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+          className="text-muted-foreground hover:text-foreground inline-flex min-h-11 cursor-pointer items-center px-1 text-xs underline-offset-4 hover:underline sm:min-h-0 sm:px-0"
         >
           Clear course filter
         </button>

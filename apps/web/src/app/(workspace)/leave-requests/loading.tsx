@@ -18,11 +18,11 @@ export default function LeaveRequestsLoading() {
         <Skeleton className="h-11 w-full sm:w-36" />
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className="mt-5 grid grid-cols-4 gap-1.5 sm:gap-2.5">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton
             key={index}
-            className="h-16 rounded-xl sm:h-20"
+            className="h-20 rounded-xl"
           />
         ))}
       </div>

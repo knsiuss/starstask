@@ -81,23 +81,23 @@ export async function ManageCoursesTab({
         <CreateSubjectForm classSlug={classSlug} />
       </div>
 
-      <ul className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <ul className="mt-5 grid grid-cols-4 gap-1.5 sm:gap-3">
         {stats.map((stat) => (
           <li
             key={stat.label}
-            className="border-border bg-surface flex items-center gap-3.5 rounded-xl border px-4 py-3.5"
+            className="border-border bg-surface flex min-w-0 flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2.5 text-center sm:flex-row sm:gap-3.5 sm:px-4 sm:py-3.5 sm:text-left"
           >
             <span
               aria-hidden="true"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${stat.chip}`}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${stat.chip}`}
             >
-              <stat.icon className="h-5 w-5" />
+              <stat.icon className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
             </span>
-            <span className="min-w-0">
-              <span className="text-foreground block text-xl font-semibold tracking-tight tabular-nums">
+            <span className="min-w-0 max-w-full">
+              <span className="text-foreground block text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
                 {stat.value}
               </span>
-              <span className="text-muted-foreground block truncate text-xs">
+              <span className="text-muted-foreground block truncate text-[11px] sm:text-xs">
                 {stat.label}
               </span>
             </span>

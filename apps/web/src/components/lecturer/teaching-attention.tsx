@@ -64,24 +64,35 @@ export function TeachingAttention({ totals }: { totals: ActionCounts }) {
         </p>
       </div>
 
-      <ul className="border-border bg-surface divide-border mt-3 grid grid-cols-2 divide-x divide-y overflow-hidden rounded-xl border xl:grid-cols-4 xl:divide-y-0">
+      <ul className="border-border bg-surface divide-border mt-3 grid grid-cols-4 divide-x overflow-hidden rounded-xl border">
         {ATTENTION_METRICS.map((metric) => {
           const value = totals[metric.key];
           const hasItems = value > 0;
 
           return (
-            <li key={metric.key}>
+            <li
+              key={metric.key}
+              className="min-w-0"
+            >
               <Link
                 href={metric.href}
-                className="hover:bg-muted/40 focus-visible:outline-accent group flex h-full items-center justify-between gap-3 px-4 py-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+                className="hover:bg-muted/40 focus-visible:outline-accent group flex h-full flex-col items-center justify-center gap-1 px-1.5 py-2.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] sm:flex-row sm:justify-between sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left"
               >
-                <span className="min-w-0">
-                  <span className="text-muted-foreground block truncate text-xs font-medium">
+                <span className="min-w-0 max-w-full">
+                  <span
+                    className={cn(
+                      "block text-lg leading-none font-semibold tracking-tight tabular-nums sm:hidden",
+                      hasItems ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {value}
+                  </span>
+                  <span className="text-muted-foreground mt-1 block truncate text-[11px] font-medium sm:mt-0 sm:text-xs">
                     {metric.label}
                   </span>
                   <span
                     className={cn(
-                      "mt-1 block text-2xl leading-none font-semibold tabular-nums tracking-tight",
+                      "mt-1 hidden text-2xl leading-none font-semibold tracking-tight tabular-nums sm:block",
                       hasItems ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
@@ -92,7 +103,7 @@ export function TeachingAttention({ totals }: { totals: ActionCounts }) {
                 <ArrowRight
                   aria-hidden="true"
                   className={cn(
-                    "h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5",
+                    "hidden h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 sm:block",
                     hasItems
                       ? "text-accent"
                       : "text-muted-foreground/50 group-hover:text-muted-foreground",

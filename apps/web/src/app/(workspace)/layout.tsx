@@ -91,7 +91,7 @@ export default async function WorkspaceLayout({
   const developer = session ? isDeveloperEmail(session.user.email) : false;
 
   return (
-    <div className="bg-background lg:flex lg:min-h-dvh">
+    <div className="bg-background flex min-h-dvh flex-col lg:flex-row">
       <PostHogIdentify
         userId={session?.user.id ?? null}
         betaTester={betaTester}
@@ -126,7 +126,11 @@ export default async function WorkspaceLayout({
           id="main-content"
           // Bottom padding keeps the last row clear of the fixed mobile tabs,
           // including the device safe area on notched phones.
-          className="flex-1 pb-[env(safe-area-inset-bottom)] lg:pb-0"
+          className={
+            isAuthenticated
+              ? "flex-1 pb-[calc(4.75rem+env(safe-area-inset-bottom))] lg:pb-0"
+              : "flex-1 pb-[env(safe-area-inset-bottom)] lg:pb-0"
+          }
         >
           {children}
         </main>

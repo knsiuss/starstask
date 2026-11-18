@@ -82,7 +82,7 @@ export function InstallPrompt() {
     <div
       role="region"
       aria-label="Install StarsTask"
-      className="border-border bg-surface fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border p-4 shadow-xl"
+      className="border-border bg-surface fixed inset-x-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border p-4 shadow-xl lg:bottom-4"
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">Install StarsTask</p>
@@ -109,7 +109,7 @@ export function InstallPrompt() {
         type="button"
         aria-label="Dismiss install prompt"
         onClick={dismiss}
-        className="text-muted-foreground hover:text-foreground shrink-0 rounded-full p-1"
+        className="text-muted-foreground hover:text-foreground flex h-11 w-11 shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8"
       >
         <X
           aria-hidden="true"

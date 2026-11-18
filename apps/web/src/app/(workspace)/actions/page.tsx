@@ -747,21 +747,25 @@ function OverviewTab({
   const cards = [
     {
       label: "Pending Requests",
+      shortLabel: "Pending",
       value: totalPending,
       icon: ListChecks,
     },
     {
       label: "Assignment Requests",
+      shortLabel: "Tasks",
       value: pendingAssignments,
       icon: ClipboardCheck,
     },
     {
       label: "Absence Requests",
+      shortLabel: "Absence",
       value: pendingAbsences,
       icon: ClipboardList,
     },
     {
       label: "Requires Revision",
+      shortLabel: "Revision",
       value: revisionTotal,
       icon: FileWarning,
     },
@@ -795,23 +799,27 @@ function OverviewTab({
 
   return (
     <>
-      <dl className="mt-5 grid grid-cols-2 gap-2.5 lg:mt-6 lg:gap-3 lg:grid-cols-4">
+      <dl className="mt-5 grid grid-cols-4 gap-1.5 sm:gap-2.5 lg:mt-6 lg:gap-3">
         {cards.map((item) => {
           const Icon = item.icon;
 
           return (
             <Card
               key={item.label}
-              className="p-4"
+              className="min-w-0 px-1.5 py-2.5 text-center sm:p-4 sm:text-left"
             >
-              <dt className="text-muted-foreground flex items-center gap-2 text-xs">
+              <dd className="text-lg leading-none font-semibold tabular-nums sm:hidden">
+                {item.value}
+              </dd>
+              <dt className="text-muted-foreground mt-1 flex items-center justify-center gap-1.5 text-[11px] sm:mt-0 sm:justify-start sm:gap-2 sm:text-xs">
                 <Icon
                   aria-hidden="true"
-                  className="h-3.5 w-3.5"
+                  className="hidden h-3.5 w-3.5 shrink-0 sm:inline"
                 />
-                {item.label}
+                <span className="truncate sm:hidden">{item.shortLabel}</span>
+                <span className="hidden truncate sm:inline">{item.label}</span>
               </dt>
-              <dd className="mt-1 text-2xl font-semibold tabular-nums">
+              <dd className="mt-1 hidden text-2xl font-semibold tabular-nums sm:block">
                 {item.value}
               </dd>
             </Card>

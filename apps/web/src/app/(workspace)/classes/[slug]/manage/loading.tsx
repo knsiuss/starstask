@@ -13,20 +13,20 @@ export default function ManageClassLoading() {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-2 border-b pb-2">
+      <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto border-b pb-2">
         {Array.from({ length: 5 }).map((_, index) => (
           <Skeleton
             key={index}
-            className="h-8 w-24 rounded-md"
+            className="h-8 w-24 shrink-0 rounded-md"
           />
         ))}
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6 grid grid-cols-4 gap-1.5 sm:gap-3">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton
             key={index}
-            className="h-[76px] w-full rounded-2xl"
+            className="h-[72px] w-full rounded-2xl sm:h-[76px]"
           />
         ))}
       </div>

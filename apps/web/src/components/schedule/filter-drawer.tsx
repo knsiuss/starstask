@@ -33,6 +33,7 @@ export function FilterDrawer({
         size="sm"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
+        className="min-h-11 px-3.5 sm:min-h-0 sm:px-3"
       >
         <SlidersHorizontal
           aria-hidden="true"

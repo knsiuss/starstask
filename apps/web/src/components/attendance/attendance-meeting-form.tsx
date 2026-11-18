@@ -408,8 +408,8 @@ export function AttendanceMeetingForm({
           : "border-border bg-subtle mt-4 space-y-5 rounded-2xl border p-5"
       }
     >
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <div className="col-span-2 space-y-1.5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="min-w-0 space-y-1.5 sm:col-span-2">
           <FieldLabel
             htmlFor="attendance-subject"
             icon={BookOpen}
@@ -687,8 +687,8 @@ export function AttendanceMeetingForm({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0 space-y-1.5">
                   <FieldLabel
                     htmlFor="attendance-latitude"
                     icon={Crosshair}

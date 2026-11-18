@@ -55,6 +55,7 @@ export function ClassWorkspaceActions({
             asChild
             variant="secondary"
             size="sm"
+            className="min-h-11 sm:min-h-0"
           >
             <Link href={`${base}/manage`}>
               <Settings
@@ -85,6 +86,7 @@ export function ClassWorkspaceActions({
             asChild
             variant="secondary"
             size="sm"
+            className="min-h-11 sm:min-h-0"
           >
             <Link href={`${base}?tab=info`}>
               <Info

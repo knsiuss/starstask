@@ -78,22 +78,25 @@ export function CourseInviteCard({
       aria-labelledby="course-invite-heading"
       className="border-border bg-surface mb-6 rounded-xl border p-4 sm:p-5"
     >
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
+          <span className="bg-accent-soft text-accent inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium">
+            Course-only invite
+          </span>
           <h2
             id="course-invite-heading"
-            className="text-sm font-semibold tracking-tight"
+            className="mt-1.5 text-sm font-semibold tracking-tight"
           >
-            Invite to {courseName}
+            Share {courseName}
           </h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            Students joining with this QR or link only get access to this
-            course.
+          <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+            For retake or guest students. Members joining with this link or QR
+            only get access to this course.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-2">
-          <div>
+        <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+          <div className="min-w-0">
             <Label
               htmlFor="course-invite-uses"
               className="text-xs"
@@ -104,17 +107,17 @@ export function CourseInviteCard({
               id="course-invite-uses"
               value={maxUses}
               onChange={(event) => setMaxUses(event.target.value)}
-              className="mt-1 h-9 w-24 text-xs"
+              className="mt-1 h-11 w-full text-sm sm:h-9 sm:w-28 sm:text-xs"
             >
-              <option value="1">1</option>
-              <option value="10">10</option>
-              <option value="30">30</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
+              <option value="1">1 student</option>
+              <option value="10">10 students</option>
+              <option value="30">30 students</option>
+              <option value="50">50 students</option>
+              <option value="100">100 students</option>
             </Select>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Label
               htmlFor="course-invite-days"
               className="text-xs"
@@ -125,7 +128,7 @@ export function CourseInviteCard({
               id="course-invite-days"
               value={expiresInDays}
               onChange={(event) => setExpiresInDays(event.target.value)}
-              className="mt-1 h-9 w-28 text-xs"
+              className="mt-1 h-11 w-full text-sm sm:h-9 sm:w-28 sm:text-xs"
             >
               <option value="1">1 day</option>
               <option value="7">7 days</option>
@@ -139,7 +142,7 @@ export function CourseInviteCard({
             size="sm"
             disabled={isBusy}
             onClick={() => void generateInvite()}
-            className="h-9"
+            className="col-span-2 h-11 sm:col-span-1 sm:h-9"
           >
             {isBusy ? (
               <Loader2

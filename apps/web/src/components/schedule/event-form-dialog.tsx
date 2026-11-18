@@ -78,7 +78,7 @@ export function EventFormDialog({
           {triggerLabel}
         </button>
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100vh-3rem)] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[calc(100dvh-3rem)] max-w-lg overflow-y-auto">
         <DialogTitle>{event ? "Edit event" : "New event"}</DialogTitle>
         <DialogDescription>
           {scope === "personal"

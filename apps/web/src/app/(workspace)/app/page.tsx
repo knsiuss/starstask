@@ -82,11 +82,11 @@ export default async function DashboardPage({
           fallback={
             <div className="space-y-3">
               <div className="skeleton h-[76px] rounded-xl" />
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-                <div className="skeleton h-[84px] rounded-xl" />
-                <div className="skeleton h-[84px] rounded-xl" />
-                <div className="skeleton h-[84px] rounded-xl" />
-                <div className="skeleton h-[84px] rounded-xl" />
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
+                <div className="skeleton h-[76px] rounded-xl sm:h-[84px]" />
+                <div className="skeleton h-[76px] rounded-xl sm:h-[84px]" />
+                <div className="skeleton h-[76px] rounded-xl sm:h-[84px]" />
+                <div className="skeleton h-[76px] rounded-xl sm:h-[84px]" />
               </div>
             </div>
           }

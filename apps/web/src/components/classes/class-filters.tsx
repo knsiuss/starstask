@@ -20,7 +20,7 @@ export function ClassFilters({ query, semesters, action }: ClassFiltersProps) {
       action={action}
       role="search"
       aria-label="Filter classes"
-      className="border-border bg-surface hidden rounded-xl border p-4 sm:p-5 lg:block"
+      className="border-border bg-surface rounded-xl border p-3.5 sm:p-5"
     >
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">

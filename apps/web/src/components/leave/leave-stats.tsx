@@ -30,7 +30,7 @@ export function LeaveStats({ counts }: { counts: LeaveRequestStatusCounts }) {
   return (
     <div
       aria-label="Request statistics"
-      className="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+      className="grid grid-cols-4 gap-1.5 sm:gap-2.5"
     >
       {STATS.map((stat) => {
         const Icon = stat.icon;
@@ -38,19 +38,22 @@ export function LeaveStats({ counts }: { counts: LeaveRequestStatusCounts }) {
         return (
           <div
             key={stat.status}
-            className="bg-surface border-border flex items-center gap-2.5 rounded-xl border p-2.5 sm:gap-3 sm:p-3.5"
+            className="bg-surface border-border flex min-w-0 flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2.5 text-center sm:flex-row sm:gap-3 sm:p-3.5 sm:text-left"
           >
             <span
               aria-hidden="true"
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 ${stat.iconClassName}`}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 ${stat.iconClassName}`}
             >
-              <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+              <Icon className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />
             </span>
             <span className="min-w-0">
-              <span className="text-muted-foreground block truncate text-xs">
+              <span className="block text-lg leading-tight font-semibold tabular-nums sm:hidden">
+                {counts[stat.status]}
+              </span>
+              <span className="text-muted-foreground block truncate text-[11px] sm:text-xs">
                 {LEAVE_STATUS_LABELS[stat.status]}
               </span>
-              <span className="block text-lg leading-tight font-semibold tabular-nums sm:text-[22px]">
+              <span className="hidden text-[22px] leading-tight font-semibold tabular-nums sm:block">
                 {counts[stat.status]}
               </span>
             </span>

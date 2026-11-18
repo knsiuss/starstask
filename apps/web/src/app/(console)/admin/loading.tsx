@@ -9,7 +9,7 @@ export default function AdminLoading() {
         <Skeleton className="mt-2 h-4 w-full max-w-xl" />
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6 grid grid-cols-4 gap-1.5 sm:gap-3">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton
             key={index}
