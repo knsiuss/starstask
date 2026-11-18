@@ -1,390 +1,241 @@
 # StarsTask
 
-**One place for every class task, session, and attendance record, so nothing lives in a paper stack or a buried WhatsApp chat again.**
+**One academic workspace for class assignments, course materials, attendance, schedules, leave requests, and encrypted class messaging — built for Indonesian campuses.**
 
-StarsTask is a collaborative academic platform for Indonesian campuses. Students and class admins share assignments, schedule class sessions, and record attendance, with explicit roles instead of group-chat chaos. Deadlines, sessions, and reminders follow Asia/Jakarta time.
+[![CI](https://github.com/knsiuss/starstask/actions/workflows/ci.yml/badge.svg)](https://github.com/knsiuss/starstask/actions/workflows/ci.yml)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4.6-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
-> **Status: pre-pilot.** Every feature listed below is implemented in code and covered by unit tests, type checks, and a production build. The database, Google sign-in, push delivery, and cron scheduling have **not yet been verified end to end** against a live project. See [Project Status](#project-status).
+StarsTask replaces scattered WhatsApp threads and paper attendance sheets with structured, role-scoped class and course workspaces. Deadlines, meetings, schedules, and reminders follow `Asia/Jakarta` time.
+
+---
 
 ## Table of Contents
 
-- [The Problem](#the-problem)
-- [What StarsTask Does Differently](#what-starstask-does-differently)
-- [How It Works](#how-it-works)
-- [Roles at a Glance](#roles-at-a-glance)
+- [Why StarsTask](#why-starstask)
+- [Core Workflows](#core-workflows)
+- [Roles and Permissions](#roles-and-permissions)
 - [Features](#features)
+- [Monorepo Structure](#monorepo-structure)
 - [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
+- [Environment Variables](#environment-variables)
 - [Available Scripts](#available-scripts)
-- [Authentication Setup](#authentication-setup)
-- [Push Notifications and PWA](#push-notifications-and-pwa)
-- [Discussion Sessions, Check-in, and Google Calendar](#discussion-sessions-check-in-and-google-calendar)
-- [Security](#security)
+- [Security Architecture](#security-architecture)
 - [Documentation](#documentation)
-- [Deployment](#deployment)
-- [Project Status](#project-status)
-- [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
 
-## The Problem
+---
 
-Most university classes still run on tools that were never built for the job.
+## Why StarsTask
 
-**Attendance is still a paper ritual.** Every meeting, one sheet of paper travels the room, signatures get smudged, and by the end of the semester nobody trusts the numbers. Lose the sheet, or the one person who kept it, and the record is gone.
+| Everyday friction on campus                             | How StarsTask handles it                                                                                                                                                                           |
+| :------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paper attendance sheets get lost or forged              | **GPS-verified & audited attendance.** Students check in within the session radius; organizers can manually correct records with physical-verification attestation and an append-only audit trail. |
+| Tasks and materials drown in WhatsApp chat              | **Course-scoped workspaces.** Assignments, Pertemuan 1–16 materials, schedules, comments, and grades live inside each course.                                                                      |
+| "Wait, when was the deadline?"                          | **Unified calendar & alerts.** Personal week view, `/schedule` timeline, and opt-in Web Push alerts on publish and 24h / 3h before deadlines.                                                      |
+| Retake (_mengulang_) students clutter unrelated courses | **Per-course access scope.** Course-scoped invitations (`course_scope = 'selected'`) restrict retake students to only their enrolled courses across UI, exports, and RLS.                          |
+| Absence letters sent informally                         | **Structured absence requests.** Students attach evidence (`pdf`/`image`) and dates; class admins forward packages to lecturers (approvals remain with the lecturer).                              |
+| Re-typing attendance into campus portals                | **SIAKAD browser extension sync.** Short-lived HMAC sync codes let `apps/extension` transfer meeting rosters directly without exposing user credentials.                                           |
 
-**Tasks live in WhatsApp, and drown there.** The class group is also where memes, food photos, and hundreds of unread messages live. A lecturer posts "Tugas 3, deadline Jumat" at 9 PM; by morning it is 40 messages deep. Students scroll through screenshots to find which file, which format, which deadline.
+---
 
-**Finding out about a new task depends on luck.** There is no notification that a task exists, only whoever happened to open the group that day. The result is familiar to every student: the deadline you learned about two days late.
-
-## What StarsTask Does Differently
-
-| The old way                                | The StarsTask way                                                                                                                                                                                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Attendance sheets passed around the room   | **Digital check-in per session.** Students check in from their phone, verified by GPS within a class-defined radius. The organizer can also mark attendance manually, and every override is audited.                                 |
-| Task details scattered across chat threads | **One structured assignment per class.** Title, description, files, deadline, and review status in one place, searchable and filterable.                                                                                             |
-| "Wait, there was a task?"                  | **Push notification to every class member who opted in** when a task is published, plus optional reminders 24 hours and 3 hours before the deadline.                                                                                 |
-| Deadline tracked by memory                 | **Live deadline badges and a personal week view.** The dashboard shows what is due today, this week, and what already slipped.                                                                                                       |
-| WhatsApp groups with no roles              | **Explicit roles.** Class admins review and publish submissions, students contribute, platform admins moderate. Every sensitive action is written to an audit log.                                                                   |
-| A wrong brief stays wrong                  | **Reader reports and revision history.** Readers flag a wrong deadline or a broken file; reviewers fix it through the normal edit path, and every change to a published brief is recorded automatically.                             |
-| Absence letters handed over informally     | **Absence requests with evidence.** Students record dates and a supporting document; the class admin checks it and downloads a package for the lecturer. StarsTask never approves an absence, that decision stays with the lecturer. |
-
-## How It Works
+## Core Workflows
 
 ```mermaid
 flowchart LR
-  A[Student submits a task] --> B{Class admin reviews}
-  B -- approve --> C[Published to signed-in users]
-  B -- reject with reason --> A
-  C --> D[Push to class members]
-  C --> E[Reminders 24h and 3h before deadline]
-  C --> F[Readers can report a wrong brief]
+  A[Student / Class Admin] -->|Submit task or KRS| B{Class Admin Review}
+  B -->|Approve or Admin Post| C[Published to Class / Course]
+  C --> D[In-App Inbox & Web Push]
+  C --> E[24h & 3h Deadline Reminders]
+  C --> F[Course Calendar & Exports]
 ```
 
-A class admin's own posts are published directly after their attachments upload, because a reviewer can never review their own work. Content is visible only to signed-in users; anonymous visitors see the landing page and the public class directory.
+- **Database as the final trust boundary:** Privileged state transitions run inside `SECURITY DEFINER` PostgreSQL functions deriving the actor from `auth.uid()`, backed by Row Level Security (RLS).
+- **Private storage & short-lived links:** Attachments, medical/verification evidence, and async exports are stored privately (Supabase Storage, Backblaze B2, or Cloudflare R2) and served through short-lived signed URLs or 256-bit SHA-256 share tokens.
 
-## Roles at a Glance
+---
 
-| Role                        | How it is granted                                                                                                               | What it can do                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Visitor                     | No account                                                                                                                      | Landing page, public class directory                                                            |
-| Member (student)            | Sign in with Google, then join a class                                                                                          | Read published tasks, submit tasks, RSVP, check in, file absence requests                       |
-| Class admin (_ketua kelas_) | Approved class application, or verified representative                                                                          | Review and moderate their own class, run sessions, forward absence packages, manage invitations |
-| Lecturer                    | Signed in with an institutional email domain registered on the university; activated automatically at signup/email confirmation | Administer their own classes on StarsTask (narrow scope; not an official record)                |
-| Platform admin              | Seeded manually in the database; no UI or API grants it                                                                         | Approve classes, verify representatives, moderate across classes                                |
-| Developer                   | Email allowlist (`DEVELOPER_EMAILS`)                                                                                            | Internal monitoring console; no student-facing access                                           |
+## Roles and Permissions
 
-StarsTask is unofficial, and the lecturer persona proves nothing about employment: it is granted by the database at signup and whenever the account's email becomes confirmed (an institutional domain registered on a university activates it automatically), scoped to classes its holder administers, and revocable by platform and university admins. Roles are never read from the browser: identity comes from the verified server session and is re-checked inside the database. Full permission tables are in [docs/CLASSES.md](./docs/CLASSES.md).
+| Role                            | How it is granted                                                              | Scope                                                                                           |
+| :------------------------------ | :----------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- |
+| **Visitor**                     | Unauthenticated                                                                | Landing page (`/`) and public directory                                                         |
+| **Member (Student)**            | Google OAuth via Supabase Auth + class/course invitation or self-join          | Read scoped tasks/materials, submit work, check in, file absence requests, E2EE DM              |
+| **Class Admin (_Ketua Kelas_)** | Self-created class, approved application, verified rep, or class manager grant | Manage class/courses, review submissions, run attendance meetings, enter grades, export reports |
+| **Lecturer**                    | Verified institutional email domain matching an active university              | Manage their own university-linked classes, BAP, grading, and attendance                        |
+| **Platform Admin**              | Seeded manually in `public.platform_admins`                                    | Approve class applications, verify representatives, moderate across classes                     |
+| **Developer**                   | Email allowlist (`DEVELOPER_EMAILS`)                                           | Internal `/developer` observability console (error digests, auth activity, health)              |
+
+See [docs/CLASSES.md](./docs/CLASSES.md) and [docs/SECURITY.md](./docs/SECURITY.md) for the complete authorization matrix.
+
+---
 
 ## Features
 
-### Assignments and review
+### Courses, Assignments & Materials
 
-| Area                  | Description                                                                                                                                                                                                      |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Assignment management | Submit, edit, and delete your own assignments; attach up to three files.                                                                                                                                         |
-| Two content types     | Every class post is either a **lecturer assignment** (instructions a class admin recorded; the source lecturer may be named) or a **class announcement**. The type is a checked database column, not a UI label. |
-| Personal completion   | Students tick off assignments for their own tracking. Stored per student and per assignment, invisible to class admins and lecturers, and never a submission.                                                    |
-| Google Drive links    | Optional Drive or Docs link per assignment, validated to a Google host and opened in a new tab.                                                                                                                  |
-| Search and filters    | Filter by course, semester, type, tag, and deadline; full-text search.                                                                                                                                           |
-| Assignment review     | Class admins approve or reject; approval publishes the assignment.                                                                                                                                               |
-| Public moderation     | Unpublish, archive, restore, and remove sensitive attachments.                                                                                                                                                   |
-| Reader reports        | Flag a wrong deadline, wrong details, a duplicate, or a broken file. Reports are advisory.                                                                                                                       |
-| Revision history      | Every change to a published brief is recorded by a database trigger and cannot be rewritten.                                                                                                                     |
-| Saved assignments     | Follow an assignment you do not own to receive its reminders.                                                                                                                                                    |
-| Personal dashboard    | Deadline badges, a seven-day "My Week" view, and a banner for overdue tasks.                                                                                                                                     |
+- **Course-scoped workspaces:** Organize classes into courses (`class_subjects`) with per-meeting materials (Pertemuan 1–16 in Markdown, sandboxed HTML, or PDF/image files), threaded comments with image attachments, and emoji reactions.
+- **Course-scoped invitations & QR codes:** Generate SHA-256 hashed, expiring, usage-limited, optionally email-restricted invite links and QR codes for an entire class or a single course (`course_scope = 'selected'`).
+- **Assignment lifecycle & trust loop:** Draft/review queue, personal completion tracking, revision history triggers, reader reports, and Google Drive submission links (`/d/[token]`) with 30-day revocable share tokens.
+- **KRS import:** Parse uploaded KRS PDFs or screenshots to provision canonical class identities, courses, and collision-checked weekly schedules.
 
-### Classes and access
+### Attendance, Grading & Exports
 
-| Area                   | Description                                                                                         |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| Authentication         | Sign in with Google through Supabase Auth.                                                          |
-| Profile onboarding     | Nickname, student ID, and class. Legal name and student ID stay private.                            |
-| Classes and roles      | Approved classes, separate class and platform admin scopes.                                         |
-| Class applications     | Any signed-in user may apply; a platform admin approves or rejects.                                 |
-| Invitations            | Hashed, expiring, usage-limited, optionally email-restricted links.                                 |
-| Join by class name     | Classes that opt in let a student join by typing the class name; invitation-only is the default.    |
-| Class rep verification | A declared position plus evidence; a platform admin approval grants class admin for that one class. |
+- **GPS check-in & manual corrections:** Geo-fenced check-ins (`geo`), organizer manual overrides (`manual`) requiring reason + physical verification, and `system` / `offline_sync` support with full `attendance_correction_audits`.
+- **Inline grading & BAP:** Per-course weighted grading (`Absensi`, `Tugas`, `UTS`, `UAS` summing to 100%) and lecture notes (_Berita Acara Perkuliahan_ / `bap_topic`, `bap_notes`) stored per meeting.
+- **Branded Excel, PDF & ZIP exports:** Sync and async (Upstash QStash worker) exports for semester attendance recaps, checklists, meeting sheets, and leave-request evidence packages.
+- **SIAKAD sync extension:** Chrome extension (`apps/extension`) consuming short-lived HMAC tokens from `/api/attendance/sync`.
 
-### Sessions, attendance, and calendar
+### Communication, Calendar & Clients
 
-| Area                     | Description                                                                                                     |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Discussion sessions      | Class admins schedule tutorials and reviews with RSVP and capacity.                                             |
-| Attendance check-in      | GPS-verified within a class-defined radius, or marked manually by the organizer.                                |
-| Shared academic calendar | One `/schedule` view of deadlines, sessions, the weekly timetable, exams, academic events, and personal events. |
-| Add to Google Calendar   | One link, no account needed; never exposes participant data.                                                    |
-| Calendar sync            | Optional OAuth connection that copies sessions into your own calendar.                                          |
+- **E2EE Direct & Group Messages:** Multi-device X3DH/ECDH (`v2`) and Group Sender Keys (`v2g`), encrypted media attachments, passphrase key backup, and per-participant privacy/block controls.
+- **Unified schedule & Google Calendar:** `/schedule` combines assignment deadlines, weekly timetables, exams, discussion sessions, and personal events with optional one-way Google Calendar OAuth sync.
+- **Notifications & PWA:** In-app notification inbox (`/notifications`), Web Push reminders (`web-push` + VAPID), and push-only service worker (`/sw.js`) with no stale-cache risk.
+- **Mobile companion:** Capacitor + native Android shell in `apps/mobile`.
 
-### Notifications and PWA
+---
 
-| Area                   | Description                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| In-app inbox           | Every event is stored and readable at `/notifications`, with unread state and per-item read.  |
-| Instant publish alerts | Web Push to every class member when a task is published (once per revision, author excluded). |
-| Deadline reminders     | Opt-in Web Push reminders 24 hours and 3 hours before a deadline.                             |
-| Session reminders      | Opt-in Web Push 24 hours and 3 hours before a session you are going to.                       |
-| PWA                    | Installable manifest and a push-only service worker.                                          |
+## Monorepo Structure
 
-### Administration
+```text
+apps/
+  web/                  Next.js 16 (App Router) web application
+    src/app/            Route groups: (home), (site), (onboarding), (workspace), (console), api/
+    src/components/     Domain-organized React UI components
+    src/features/       Multi-step workflows (attendance, classes, leave, exports, calendar)
+    src/lib/            Server DB access, Supabase clients, E2EE crypto, security, storage, push
+    tests/              Vitest unit/integration suites and Playwright E2E tests
+  mobile/               Capacitor + Android native wrapper
+  extension/            SIAKAD attendance sync browser extension
+packages/
+  contracts/            Shared Zod validation schemas and domain constants
+  shared/               Pure utilities (deadlines, calendar ranges, ICS, CSV, formatting)
+supabase/
+  migrations/           Versioned PostgreSQL schema, RLS policies, triggers, and RPCs
+docs/                   Architecture, security, API, database, and operations runbooks
+scripts/                Env validation (`check-env.mjs`), DB type generator, and helpers
+```
 
-| Area                    | Description                                                                                  |
-| ----------------------- | -------------------------------------------------------------------------------------------- |
-| Absence requests        | Students record dates and evidence; class admins forward, never approve.                     |
-| OCR document extraction | Optional reader suggests dates from a PDF text layer; the student confirms each one.         |
-| CSV / PDF exports       | Summary PDF, complete PDF with evidence, ZIP, and injection-safe CSV.                        |
-| Platform admin console  | Review applications and verifications, moderate content, read the audit trail.               |
-| Developer monitoring    | Internal, allowlisted `/developer` view of accounts, sign-ins, activity, errors, and health. |
-| Access control          | Server-side authorization plus RLS and private storage.                                      |
-
-> These tables reflect the code in this repository. Planned items are intentionally not described as working features.
+---
 
 ## Tech Stack
 
-| Technology                                    | Purpose                                                    |
-| --------------------------------------------- | ---------------------------------------------------------- |
-| [Next.js](https://nextjs.org/) (App Router)   | Web application and routing                                |
-| [TypeScript](https://www.typescriptlang.org/) | Type safety                                                |
-| [Tailwind CSS](https://tailwindcss.com/)      | Styling and responsive UI                                  |
-| [Supabase](https://supabase.com/)             | Authentication, PostgreSQL database, RLS, and file storage |
-| [Zod](https://zod.dev/)                       | One set of validation schemas shared by client and server  |
-| [Vercel](https://vercel.com/)                 | Application deployment and cron scheduling                 |
-| Web Push (VAPID)                              | Reminders and publish alerts through `web-push`            |
-| Google OAuth                                  | User authentication and optional calendar sync             |
-| pnpm                                          | Package management (monorepo workspaces)                   |
-| Vitest / Playwright                           | Unit, integration, and browser tests                       |
+| Layer                  | Technology                                                           |
+| :--------------------- | :------------------------------------------------------------------- |
+| **Web Framework**      | Next.js 16.4.6 (App Router, Turbopack), React 19.3, TypeScript 5.9   |
+| **Styling & UI**       | Tailwind CSS v4, Radix UI primitives, Lucide icons                   |
+| **Database & Auth**    | Supabase (PostgreSQL, Row Level Security, Google OAuth, Storage)     |
+| **Validation**         | Zod v4 (`@starstask/contracts`)                                      |
+| **Object Storage**     | Supabase Storage, Backblaze B2, Cloudflare R2 (`@aws-sdk/client-s3`) |
+| **Background & Cache** | Upstash QStash (async export worker), Upstash Redis (rate limiting)  |
+| **Documents & Media**  | ExcelJS, `pdf-lib`, `unpdf`, `jszip`, `qrcode`                       |
+| **Notifications**      | Web Push (`web-push` VAPID), Firebase Admin                          |
+| **Testing & Quality**  | Vitest, Playwright, Axe-core, ESLint 9 (zero-warning), Prettier      |
 
-## Project Structure
-
-```text
-apps/web/              Next.js application (App Router)
-  src/app/             Routes: (home) (site) (onboarding) (workspace) (console) api
-  src/components/      UI components grouped by domain
-  src/features/        Multi-step workflows: uploads, RSVP, calendar sync, leave
-  src/lib/             Data access, Supabase clients, security, storage, push, OCR
-  tests/               unit, integration, and e2e suites
-packages/contracts/    Zod schemas and constants shared by client and server
-packages/shared/       Pure helpers: deadlines, ICS, CSV, calendar, formatting
-supabase/migrations/   Versioned SQL: schema, RLS, functions, storage policies
-docs/                  Runbooks and design notes
-scripts/               Environment check, icon and salt generators
-```
-
-Layering rule: UI renders, `lib/db` is the only place that queries Supabase, `features` orchestrates multi-step operations, and the database is the final write boundary through `SECURITY DEFINER` functions. Details are in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+---
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 20.9 or newer, in a version compatible with the project's Next.js release
-- [pnpm](https://pnpm.io/)
-- A Supabase project (or the [Supabase CLI](https://supabase.com/docs/guides/cli) for a local instance)
-- A Google OAuth client configured for Supabase Auth
+- **Node.js** `>= 20.9.0`
+- **pnpm** `11.x` (`packageManager: pnpm@11.10.0`)
+- **Supabase project** (or [Supabase CLI](https://supabase.com/docs/guides/cli) + Docker for local development)
+- **Google OAuth** client configured in Supabase Auth (`https://<project-ref>.supabase.co/auth/v1/callback`)
 
-### Install and run
+### Install and Run Locally
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/knsiuss/starstask.git
 cd starstask
 pnpm install
 cp .env.example apps/web/.env.local   # PowerShell: Copy-Item .env.example apps/web/.env.local
-# fill in the values, then:
+# Fill in required environment variables in apps/web/.env.local
 pnpm check:env
-pnpm db:reset                          # local Supabase: applies every migration
+pnpm db:reset                          # Local Supabase: applies all migrations
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without Supabase configured the app still builds and shows a setup notice instead of failing.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Environment variables
+---
 
-Values prefixed with `NEXT_PUBLIC_` reach the browser and must be safe to publish. Everything else is server-only. The template in [.env.example](./.env.example) contains placeholders for every variable.
+## Environment Variables
 
-| Group                  | Variables                                                                                                                   | Rule                                                                                              |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Core (required)        | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RATE_LIMIT_SALT` (32+ chars)   | Required                                                                                          |
-| Push and cron          | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`                        | VAPID all-or-none; the service role may be set alone; cron needs both the service role and secret |
-| Google Calendar sync   | `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `GOOGLE_CALENDAR_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY` | All or none; the "Add to Google Calendar" link works without them                                 |
-| Developer console      | `DEVELOPER_EMAILS` (comma-separated allowlist)                                                                              | Empty or malformed means nobody gets access                                                       |
-| OCR                    | `OCR_PROVIDER` (`pdf-text` default, or `disabled`)                                                                          | Optional                                                                                          |
-| Distributed rate limit | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`                                                                        | Optional pair; otherwise a Postgres counter is used                                               |
-| Tests only             | `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY`, `SUPABASE_TEST_SERVICE_ROLE_KEY`                                             | Never set these in a deployment                                                                   |
+Only `NEXT_PUBLIC_*` variables are exposed to the browser; all keys, tokens, and secrets remain strictly server-side. See [.env.example](./.env.example) for the full template.
 
-`scripts/check-env.mjs` fails when a group is partially configured, when the encryption key is not 32 bytes, or when a secret is exposed through a `NEXT_PUBLIC_` variable.
+| Group                   | Variables                                                                                                                 | Notes                                                          |
+| :---------------------- | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------- |
+| **Core (Required)**     | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RATE_LIMIT_SALT` (32+ chars) | Required to run                                                |
+| **Server & Cron**       | `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`                      | Required for cron jobs, push delivery, and admin storage tasks |
+| **Storage (Optional)**  | `B2_*` (Backblaze B2) or `R2_*` (Cloudflare R2)                                                                           | Falls back to Supabase Storage when unset                      |
+| **Google Integrations** | `GOOGLE_CALENDAR_CLIENT_*`, `GOOGLE_DRIVE_CLIENT_*`, `GOOGLE_TOKEN_ENCRYPTION_KEY` (32 bytes)                             | Optional OAuth sync & Drive picker                             |
+| **Queue & Rate Limit**  | `UPSTASH_QSTASH_*`, `UPSTASH_REDIS_REST_*`                                                                                | Falls back to sync exports / Postgres rate limit when unset    |
+| **Observability**       | `DEVELOPER_EMAILS`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`                                                   | Optional developer console & telemetry                         |
 
-> **Warning:** never commit `.env.local`, and never expose service-role keys, OAuth client secrets, or VAPID private keys in client-side code. The service-role key is server-only and is used just by code that must bypass RLS, such as the cron scheduler.
+Run `pnpm check:env` before deploying to verify no partial groups or leaked secrets exist.
+
+---
 
 ## Available Scripts
 
-The exact scripts are defined in `package.json`.
+| Command                             | Description                                             |
+| :---------------------------------- | :------------------------------------------------------ |
+| `pnpm dev`                          | Start Next.js development server (`@starstask/web`)     |
+| `pnpm build`                        | Build production bundle (`@starstask/web`)              |
+| `pnpm start`                        | Serve production build                                  |
+| `pnpm lint`                         | Run ESLint across all workspace packages                |
+| `pnpm typecheck`                    | Run `tsc --noEmit` across all workspace packages        |
+| `pnpm test`                         | Run Vitest unit suites across all workspace packages    |
+| `pnpm test:integration`             | Run opt-in RLS/DB integration tests (`SUPABASE_TEST_*`) |
+| `pnpm test:e2e`                     | Run Playwright browser tests                            |
+| `pnpm format` / `pnpm format:check` | Format / verify code with Prettier                      |
+| `pnpm check:env`                    | Validate environment configuration                      |
+| `pnpm db:push`                      | Push local migrations to the linked Supabase project    |
+| `pnpm db:reset`                     | Reset local Supabase stack and apply all migrations     |
+| `pnpm db:types`                     | Regenerate `apps/web/src/types/database.generated.ts`   |
 
-| Command                             | Description                                                                                                |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`                          | Start the development server                                                                               |
-| `pnpm build`                        | Create a production build                                                                                  |
-| `pnpm start`                        | Serve the production build                                                                                 |
-| `pnpm lint`                         | Run ESLint across the workspace                                                                            |
-| `pnpm typecheck`                    | Run TypeScript type checking                                                                               |
-| `pnpm test`                         | Run unit tests                                                                                             |
-| `pnpm test:integration`             | Run the opt-in RLS suite (needs `SUPABASE_TEST_*`; CI runs it on a disposable local Supabase)              |
-| `pnpm test:e2e`                     | Run Playwright browser tests (the authenticated flows skip unless `E2E_SUPABASE_*` point at a local stack) |
-| `pnpm format` / `pnpm format:check` | Apply / verify Prettier formatting                                                                         |
-| `pnpm check:env`                    | Validate environment variables before deploying                                                            |
-| `pnpm db:push`                      | Apply migrations to the linked Supabase project                                                            |
-| `pnpm db:reset`                     | Reset a local Supabase instance                                                                            |
-| `pnpm db:types`                     | Regenerate `apps/web/src/types/database.generated.ts`                                                      |
+---
 
-The PWA icons in `apps/web/public/icons` are exported from the brand logo at
-`apps/web/public/brand/logo.png`: 192, 512, maskable 512, 180 Apple touch, and the
-96 px notification badge. Re-export them when the logo changes.
+## Security Architecture
 
-The authenticated Playwright flows sign disposable users in against a local Supabase
-stack. They are skipped unless `E2E_SUPABASE_URL`, `E2E_SUPABASE_ANON_KEY`, and
-`E2E_SUPABASE_SERVICE_ROLE_KEY` are set and both the stack and `PLAYWRIGHT_BASE_URL`
-are loopback. They create and delete rows, so never point them at the hosted project.
+- **Defense-in-depth authz:** Every server route and page verifies the authenticated session (`getUser()`) and role, reinforced by PostgreSQL RLS policies and `SECURITY DEFINER` RPCs.
+- **Strict CSP & CSRF protection:** Per-request CSP nonces (`script-src 'nonce-...' 'strict-dynamic'`), `Sec-Fetch-Site` / `Origin` checks on state-changing `/api/` routes, and validated internal redirects (`safeRedirectPath`).
+- **Upload & SSRF hardening:** Magic-byte file validation, bounded multipart uploads, `import "server-only"` guards, and strict storage allowlists for export branding logos.
+- **Privacy & E2EE:** Student IDs (`nim`), legal names, evidence files, and DM ciphertexts are protected by column grants, private buckets, and client-side WebCrypto keys.
 
-## Authentication Setup
+To report a security issue, please contact the maintainers privately rather than opening a public issue.
 
-StarsTask uses Google authentication through Supabase Auth.
-
-1. Create or open a Supabase project.
-2. Enable Google as an authentication provider.
-3. Add the Google OAuth client credentials in Supabase.
-4. Register the Supabase callback URL in the Google Cloud Console.
-5. Configure the application's allowed redirect URLs in Supabase (include the `**` wildcard after `/auth/callback`).
-6. Add the required environment variables locally and in the deployment environment.
-
-The Google OAuth callback URL uses this format:
-
-```text
-https://<project-ref>.supabase.co/auth/v1/callback
-```
-
-Use your own Supabase project reference, and do not reuse credentials from another environment. The first platform admin must be seeded manually; see [docs/CLASSES.md](./docs/CLASSES.md#14-manual-setup).
-
-## Push Notifications and PWA
-
-StarsTask is installable and can send reminders and publish alerts through the browser.
-
-- Users opt in from `/settings/notifications`; the browser permission prompt is shown only after a click.
-- When a class admin publishes a task, every member who opted in receives a notification, sent once per revision. The payload carries no assignment content, only a generic message and a link.
-- Reminders are sent about 24 hours and 3 hours before a deadline for assignments the user owns or saved.
-- On iPhone and iPad (iOS/iPadOS 16.4+), the site must be added to the Home Screen first. The settings page explains this and does not show a non-working enable button in Safari.
-- The service worker at `/sw.js` only shows notifications and opens the target page. It has no `fetch` handler and caches nothing, so authenticated pages are never served stale.
-
-The scheduler is a set of cron routes protected by `CRON_SECRET`. They are not active until a cron source is configured. On Vercel Hobby the 10-minute schedule requires Pro; see [docs/PUSH_NOTIFICATIONS.md](./docs/PUSH_NOTIFICATIONS.md) for alternatives and the full runbook.
-
-## Discussion Sessions, Check-in, and Google Calendar
-
-Class admins (_ketua kelas_) schedule discussion sessions (tutorials, review meetings, Q&A), and members RSVP with `going`, `maybe`, or `not_going`. Platform admins and class admins are the only roles that can create or edit sessions; students participate but never schedule. Capacity is enforced inside the database with a row lock, so two people cannot take the last seat.
-
-**Attendance check-in replaces the paper sheet.** An in-person session can define a check-in point (latitude, longitude, radius in meters). Members check in from their phones; the database function re-validates membership, session state, check-in window, and distance on every attempt, so the UI is never the security boundary. The organizer can also record attendance manually, including for members who could not use geolocation, and every override is audited. Check-in is evidence of proximity, not proof: browser coordinates can be spoofed, so treat a suspicious record as a conversation, not an automatic sanction.
-
-Every session offers **"Add to Google Calendar"**: a plain link that opens Google with the title, time, location, and join link pre-filled. It needs no account connection and no calendar permission, and it deliberately contains no participant information. Cancelled sessions render no link at all.
-
-Optionally, a user can connect their own Google Calendar from `/settings/calendar`. That uses a separate OAuth client with the single scope `calendar.events`, stores the tokens encrypted on the server, and copies sessions into the user's calendar. StarsTask stays the source of truth: edits flow one way, and deleting the connection deletes the tokens without signing anyone out.
-
-The full runbook (schema, permissions, RSVP rules, check-in rules, OAuth flow, sync behaviour, and troubleshooting) is [docs/SESSIONS.md](./docs/SESSIONS.md).
-
-## Security
-
-Security is part of the foundation, not a later layer:
-
-- Authorization is enforced on the server **and** by database policies; either layer alone would still be correct.
-- Row Level Security protects sensitive records, and privileged transitions run in `SECURITY DEFINER` functions that derive the actor from `auth.uid()`.
-- Private documents live in non-public storage buckets and are served through short-lived signed URLs (5 minutes for medical and verification evidence, 15 minutes for assignment attachments).
-- Uploaded files are validated by extension, size, and file signature; the browser's declared type is ignored.
-- Redirect destinations are validated to prevent open-redirect vulnerabilities.
-- Secrets and privileged credentials stay out of client-side code.
-- Push endpoints and subscription keys are never returned to the browser; only the public VAPID key is exposed.
-- Invitation tokens are stored as SHA-256 hashes and never logged. Class admins and platform admins are separate roles that cannot be self-assigned.
-- Personal data is minimized: the student ID and legal name have no client-side grant, and notification payloads never contain evidence, names, or document content.
-- Cron routes reject requests without a timing-safe bearer-token check.
-
-See [docs/SECURITY.md](./docs/SECURITY.md) for the trust boundaries and the full authorization matrix, [docs/CLASSES.md](./docs/CLASSES.md) for role boundaries, and [docs/ADMIN_CONSOLE.md](./docs/ADMIN_CONSOLE.md) for the platform admin console.
-
-To report a vulnerability, contact the project maintainers privately instead of opening a public issue.
+---
 
 ## Documentation
 
-| Document                                               | What it covers                                                  |
-| ------------------------------------------------------ | --------------------------------------------------------------- |
-| [ARCHITECTURE](./docs/ARCHITECTURE.md)                 | Layers, request flows, caching, design trade-offs               |
-| [DATABASE](./docs/DATABASE.md)                         | Schema, migrations, storage                                     |
-| [API](./docs/API.md)                                   | HTTP endpoints and error contract                               |
-| [SECURITY](./docs/SECURITY.md)                         | Trust boundaries, RLS, validation, residual risks               |
-| [AUTHENTICATION](./docs/AUTHENTICATION.md)             | Sign-in flow and redirects                                      |
-| [CLASSES](./docs/CLASSES.md)                           | Roles, class workflow, review, moderation                       |
-| [SESSIONS](./docs/SESSIONS.md)                         | Sessions, RSVP, check-in, Google Calendar                       |
-| [SCHEDULE](./docs/SCHEDULE.md)                         | Shared academic calendar                                        |
-| [LEAVE_REQUESTS](./docs/LEAVE_REQUESTS.md)             | Absence requests, evidence, OCR, forwarding, exports            |
-| [CLASS_VERIFICATION](./docs/CLASS_VERIFICATION.md)     | Class representative verification                               |
-| [TRUST_LOOP](./docs/TRUST_LOOP.md)                     | Reader reports and revision history                             |
-| [PROFILE_ONBOARDING](./docs/PROFILE_ONBOARDING.md)     | Profile fields and class auto-matching                          |
-| [PUSH_NOTIFICATIONS](./docs/PUSH_NOTIFICATIONS.md)     | Web Push, reminders, scheduler runbook                          |
-| [ADMIN_CONSOLE](./docs/ADMIN_CONSOLE.md)               | Platform admin console                                          |
-| [DEVELOPER_MONITORING](./docs/DEVELOPER_MONITORING.md) | Internal monitoring console                                     |
-| [DEPLOYMENT](./docs/DEPLOYMENT.md)                     | Supabase, Google Cloud, and Vercel runbook                      |
-| [PILOT_RUNBOOK](./docs/PILOT_RUNBOOK.md)               | Closed one-class pilot: setup, operations, incidents, exit      |
-| [PILOT_MEASUREMENT](./docs/PILOT_MEASUREMENT.md)       | Pilot metrics, evidence ledger, and backlog triage              |
-| [PRD](./docs/PRD.md)                                   | The original MVP scope; partly superseded by the class workflow |
+| Document                                           | Topic                                                  |
+| :------------------------------------------------- | :----------------------------------------------------- |
+| [AGENTS.md](./AGENTS.md)                           | Engineering, linting, spacing, and security guidelines |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)     | Layering, request flows, and system boundaries         |
+| [docs/DATABASE.md](./docs/DATABASE.md)             | Database schema, migrations, and storage buckets       |
+| [docs/API.md](./docs/API.md)                       | API routes and response/error contracts                |
+| [docs/SECURITY.md](./docs/SECURITY.md)             | Trust boundaries, RLS, and residual risks              |
+| [docs/CLASSES.md](./docs/CLASSES.md)               | Class roles, invitations, review, and moderation       |
+| [docs/SESSIONS.md](./docs/SESSIONS.md)             | Attendance meetings, GPS check-in, and Calendar sync   |
+| [docs/LEAVE_REQUESTS.md](./docs/LEAVE_REQUESTS.md) | Absence requests, OCR, forwarding, and exports         |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)         | Supabase, Google Cloud, and Vercel deployment runbook  |
 
-## Deployment
-
-StarsTask is designed to run on Vercel with Supabase. **It has not been deployed yet**; the full runbook is [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) and push-specific steps are in [docs/PUSH_NOTIFICATIONS.md](./docs/PUSH_NOTIFICATIONS.md).
-
-1. Import the repository into Vercel with **Root Directory** set to `apps/web`.
-2. Add the required environment variables for each environment.
-3. Add the production domain to the allowed redirect URLs in Supabase Auth.
-4. Apply all migrations to the target Supabase project before releasing.
-5. Configure a cron source for `/api/cron/deadline-reminders`, `/api/cron/notification-events`, and `/api/cron/session-jobs` if reminders are enabled. Vercel Hobby only supports daily cron; a 10-minute schedule needs Pro or an external scheduler.
-
-## Project Status
-
-StarsTask is under active development. Every feature in [Features](#features) is implemented in code. Reader reports exist for assignment briefs only; account suspension is not implemented.
-
-| Area                                                                          | State                                                                                                |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Type check, lint (zero warnings), unit tests, production build                | Passing locally                                                                                      |
-| Playwright tests for public pages, redirects, authenticated flows, WCAG scans | Passing against a disposable local Supabase stack; authenticated specs skip without `E2E_SUPABASE_*` |
-| Migrations applied to a real Postgres, RLS and storage policies               | Verified on a fresh local Supabase instance; a CI job runs the same suite                            |
-| Google sign-in, uploads, signed URLs                                          | **Not yet verified**                                                                                 |
-| Push delivery, iOS Home Screen behaviour, cron schedule                       | **Not yet verified**; no key pair, scheduler, or physical device was used                            |
-| Google Calendar API sync                                                      | **Not yet verified**                                                                                 |
-| Deployment                                                                    | Not performed                                                                                        |
-
-Known limitations worth knowing before a pilot:
-
-- Notifications are stored in the in-app inbox and delivered through Web Push when enabled; iOS push requires the Home Screen app.
-- Student ID and university are self-declared and not verified.
-- OCR reads only the text layer of PDFs; scans are accepted but not read.
-- Check-in coordinates come from the browser and can be spoofed.
-- Pending attachments are readable by every class admin of that class; reviewer assignment is not modelled.
-- There is no error-tracking integration and no automatic retention job for evidence or delivery records.
-
-Platform admin access must be seeded manually; see [docs/CLASSES.md](./docs/CLASSES.md).
-
-## Roadmap
-
-Direction, not a commitment:
-
-1. Verify the full stack on a staging project: migrations, RLS tests in CI, OAuth, uploads, push, and a running cron source.
-2. Run a closed pilot with a single class and collect feedback.
-3. Harden for wider use: account suspension, data retention jobs, error tracking, and refreshed documentation.
+---
 
 ## Contributing
 
-Contributions and improvements are welcome.
+1. Read [AGENTS.md](./AGENTS.md) before making changes.
+2. Branch off `main` using Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
+3. Ensure `pnpm typecheck`, `pnpm lint` (0 errors, 0 warnings), `pnpm format:check`, `pnpm test`, and `pnpm build` pass before opening a PR.
+4. Keep database changes in new, timestamped files under `supabase/migrations/`.
 
-1. Review the engineering rules in [AGENTS.md](./AGENTS.md). They apply equally to people and AI coding agents.
-2. Keep changes focused and consistent with the current scope.
-3. Inspect existing patterns before adding code, and reuse them.
-4. Run lint, type checking, tests, and the production build; do not claim a check passed unless it ran.
-5. Document any required environment or database changes in your pull request.
-
-Code must pass ESLint with zero warnings and be formatted with Prettier. Database changes go in a new, uniquely versioned migration, never in an edited old one.
+---
 
 ## License
 
-No license has been specified yet. All rights remain with the respective copyright holder until a license is added to the repository.
+All rights reserved. No open-source license has been granted yet.
