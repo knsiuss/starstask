@@ -17,3 +17,11 @@ overrides:
   fast-csv: ^4.3.6
   glob: ^14.0.2
   minimatch: ^11.0.1
+
+# picomatch <=4.0.7 has a high-severity ReDoS advisory, but no patched
+# release exists yet (4.0.8 is unpublished). It only reaches us through
+# @sentry/nextjs -> @rollup/plugin-commonjs, a build-time tool that never
+# runs on user input. Drop this entry once picomatch 4.0.8 ships.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf
