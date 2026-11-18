@@ -23,7 +23,39 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 const MIN_PASSPHRASE_LENGTH = 12;
 const CURRENT_ITERATIONS = 600_000;
 const LEGACY_ITERATIONS = 100_000;
+const MIN_RESTORE_ITERATIONS = 100_000;
+const MAX_RESTORE_ITERATIONS = 1_000_000;
 const BACKUP_VERSION = "v2";
+
+type KeyBackupTable = {
+  upsert: (
+    values: {
+      user_id: string;
+      wrapped_private_key: string;
+      updated_at: string;
+    },
+    options: { onConflict: string },
+  ) => Promise<{ error: unknown }>;
+  select: (columns: string) => {
+    eq: (
+      column: string,
+      value: string,
+    ) => {
+      maybeSingle: () => Promise<{
+        data: { wrapped_private_key?: unknown } | null;
+        error: unknown;
+      }>;
+    };
+  };
+};
+
+function keyBackupTable(
+  supabase: ReturnType<typeof createSupabaseBrowserClient>,
+): KeyBackupTable {
+  const from = supabase.from as unknown as (table: string) => KeyBackupTable;
+
+  return from("dm_key_backup");
+}
 
 function assertPassphrase(passphrase: string): void {
   if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
@@ -33,11 +65,23 @@ function assertPassphrase(passphrase: string): void {
   }
 }
 
+function isAllowedIterationCount(iterations: number): boolean {
+  return (
+    Number.isInteger(iterations) &&
+    iterations >= MIN_RESTORE_ITERATIONS &&
+    iterations <= MAX_RESTORE_ITERATIONS
+  );
+}
+
 async function derivePassphraseKey(
   passphrase: string,
   salt: Uint8Array<ArrayBuffer>,
   iterations: number,
 ): Promise<CryptoKey> {
+  if (!isAllowedIterationCount(iterations)) {
+    throw new Error("Invalid backup format.");
+  }
+
   const base = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(passphrase),
@@ -115,7 +159,7 @@ export async function backupPrivateKey(passphrase: string): Promise<void> {
     bytesToBase64(new Uint8Array(cipher)),
   ].join(":");
 
-  const { error } = await supabase.from("dm_key_backup" as any).upsert(
+  const { error } = await keyBackupTable(supabase).upsert(
     {
       user_id: userId,
       wrapped_private_key: wrapped,
@@ -147,8 +191,7 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
     throw new Error("Not signed in.");
   }
 
-  const { data, error: fetchError } = await supabase
-    .from("dm_key_backup" as any)
+  const { data, error: fetchError } = await keyBackupTable(supabase)
     .select("wrapped_private_key")
     .eq("user_id", userId)
     .maybeSingle();
@@ -161,8 +204,7 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
     throw new Error("No key backup found for this account.");
   }
 
-  const wrapped = (data as unknown as { wrapped_private_key?: unknown })
-    .wrapped_private_key;
+  const wrapped = data.wrapped_private_key;
 
   if (typeof wrapped !== "string" || wrapped.length === 0) {
     throw new Error("Invalid backup format.");
@@ -179,7 +221,7 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
   if (parts[0] === BACKUP_VERSION) {
     const parsedIterations = Number(parts[1]);
 
-    if (!Number.isInteger(parsedIterations) || parsedIterations < 1) {
+    if (!isAllowedIterationCount(parsedIterations)) {
       throw new Error("Invalid backup format.");
     }
 

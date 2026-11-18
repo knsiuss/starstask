@@ -15,7 +15,10 @@ import {
   unwrapDataKey,
   wrapDataKey,
 } from "@/lib/crypto/e2ee";
-import { isCiphertextWireFormat } from "@/lib/db/direct-messages";
+import {
+  isCiphertextWireFormat,
+  MAX_CIPHERTEXT_LENGTH,
+} from "@/lib/db/direct-messages";
 
 describe("e2ee wire format", () => {
   it("parses iv:ciphertext into bytes", async () => {
@@ -56,11 +59,46 @@ describe("e2ee wire format", () => {
 });
 
 describe("isCiphertextWireFormat", () => {
-  it("accepts a single-colon wire and rejects colon abuse", () => {
+  it("accepts legacy v1, v2:iv:cipher, v2:{...}, and v2g:{...} wires", () => {
     expect(isCiphertextWireFormat("abc:def")).toBe(true);
+    expect(isCiphertextWireFormat("v2:abc:def")).toBe(true);
+    expect(
+      isCiphertextWireFormat(
+        'v2:{"v":2,"envelopes":{"dev-1":{"senderDeviceId":"d0","dhPub":"p","n":0,"pn":0,"iv":"i","ct":"c"}}}',
+      ),
+    ).toBe(true);
+    expect(
+      isCiphertextWireFormat(
+        'v2g:{"v":2,"senderDeviceId":"d0","keyId":"k1","iteration":0,"iv":"i","ct":"c"}',
+      ),
+    ).toBe(true);
+    expect(
+      isCiphertextWireFormat(
+        'v2g:{"v":2,"keyId":"k1","iv":"i","ciphertext":"c"}',
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects malformed or empty envelopes and colon abuse", () => {
     expect(isCiphertextWireFormat("abc")).toBe(false);
     expect(isCiphertextWireFormat("a:b:c")).toBe(false);
     expect(isCiphertextWireFormat("")).toBe(false);
+    expect(isCiphertextWireFormat('v2:{"v":2,"envelopes":{}}')).toBe(false);
+    expect(isCiphertextWireFormat('v2:{"v":1,"envelopes":{"d1":{}}}')).toBe(
+      false,
+    );
+    expect(isCiphertextWireFormat("v2:{not-json")).toBe(false);
+    expect(
+      isCiphertextWireFormat('v2g:{"v":2,"keyId":"","iv":"i","ct":"c"}'),
+    ).toBe(false);
+    expect(
+      isCiphertextWireFormat('v2g:{"v":2,"keyId":"k1","iv":"","ct":"c"}'),
+    ).toBe(false);
+    expect(isCiphertextWireFormat("v2g:a:b")).toBe(false);
+  });
+
+  it("matches DB 32000-char ciphertext cap", () => {
+    expect(MAX_CIPHERTEXT_LENGTH).toBe(32000);
   });
 });
 

@@ -38,10 +38,8 @@ export function isAllowedGoogleMapsHost(rawUrl: string): boolean {
   }
 
   return (
-    host === "google.com" ||
-    host.endsWith(".google.com") ||
-    /^maps\.google\.[a-z.]{2,}$/.test(host) ||
-    /^www\.google\.[a-z.]{2,}$/.test(host)
+    /^maps\.google\.[a-z]{2,}(?:\.[a-z]{2,})?$/.test(host) ||
+    /^www\.google\.[a-z]{2,}(?:\.[a-z]{2,})?$/.test(host)
   );
 }
 
@@ -67,7 +65,15 @@ function pointFromPair(
 
 /** Extracts coordinates from a URL that already carries them. */
 export function parseGoogleMapsUrl(rawUrl: string): GoogleMapsPoint | null {
-  const candidates = [rawUrl, decodeURIComponent(rawUrl)];
+  let decoded = rawUrl;
+
+  try {
+    decoded = decodeURIComponent(rawUrl);
+  } catch {
+    decoded = rawUrl;
+  }
+
+  const candidates = decoded === rawUrl ? [rawUrl] : [rawUrl, decoded];
 
   for (const candidate of candidates) {
     const embed = EMBED_3D_4D.exec(candidate);

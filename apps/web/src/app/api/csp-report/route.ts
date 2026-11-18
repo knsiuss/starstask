@@ -1,3 +1,9 @@
+import { ApiError } from "@/lib/api/errors";
+import {
+  enforceRateLimit,
+  getClientIdentifier,
+} from "@/lib/security/rate-limit";
+
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -24,6 +30,20 @@ const ALLOWED_DIRECTIVES = new Set([
  * (report bodies can echo URLs with tokens).
  */
 export async function POST(request: Request) {
+  try {
+    await enforceRateLimit({
+      action: "security:csp-report",
+      identifier: getClientIdentifier(request),
+      limit: 60,
+      windowSeconds: 60,
+      onBackendFailure: "open",
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return new Response(null, { status: error.status });
+    }
+  }
+
   const contentType = request.headers.get("content-type") ?? "";
 
   if (

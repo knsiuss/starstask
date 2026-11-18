@@ -40,37 +40,55 @@ export async function GET(request: NextRequest) {
     return redirectToLogin("not_configured");
   }
 
-  // Sign-in rate limiting disabled while operators throttle logins from a
-  // shared network/IP: 30/5min per IP blocked legitimate sign-ins after
-  // heavy retrying during destination testing. Re-enable with a higher,
-  // per-account limit once production is stable in Singapore.
-  void enforceRateLimit;
-  void getClientIdentifier;
-  void recordAuthActivity;
-
   const providerError = requestUrl.searchParams.get("error");
   const code = requestUrl.searchParams.get("code");
 
+  const canRecordFailure = async (): Promise<boolean> => {
+    try {
+      await enforceRateLimit({
+        action: "auth:callback:error",
+        identifier: getClientIdentifier(request),
+        limit: 30,
+        windowSeconds: 300,
+        onBackendFailure: "open",
+      });
+
+      return true;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return false;
+      }
+
+      return true;
+    }
+  };
+
   if (providerError) {
-    await recordAuthActivity({
-      eventType: "sign_in_failed",
-      userId: null,
-      reason:
-        providerError === "access_denied"
-          ? "oauth_cancelled"
-          : "provider_error",
-    });
+    if (await canRecordFailure()) {
+      await recordAuthActivity({
+        eventType: "sign_in_failed",
+        userId: null,
+        reason:
+          providerError === "access_denied"
+            ? "oauth_cancelled"
+            : "provider_error",
+      });
+    }
+
     return redirectToLogin(
       providerError === "access_denied" ? "oauth_cancelled" : "callback_failed",
     );
   }
 
   if (!code) {
-    await recordAuthActivity({
-      eventType: "sign_in_failed",
-      userId: null,
-      reason: "missing_code",
-    });
+    if (await canRecordFailure()) {
+      await recordAuthActivity({
+        eventType: "sign_in_failed",
+        userId: null,
+        reason: "missing_code",
+      });
+    }
+
     return redirectToLogin("callback_failed");
   }
 

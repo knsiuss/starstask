@@ -1,19 +1,23 @@
 import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/api/errors";
+import { getSessionUser } from "@/lib/auth/session";
 import { getOwnPublicKey, upsertOwnPublicKey } from "@/lib/db/direct-messages";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:keys:get",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 120,
       windowSeconds: 60,
       onBackendFailure: "closed",
@@ -35,9 +39,15 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:keys:put",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 30,
       windowSeconds: 60,
       onBackendFailure: "closed",

@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 /**
  * Background queue (Upstash QStash, free tier).

@@ -60,6 +60,21 @@ describe("buildContentSecurityPolicy", () => {
     );
   });
 
+  it("normalizes Supabase URLs with trailing slashes or paths and allows B2/R2 storage previews", () => {
+    vi.stubEnv(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "https://example.supabase.co/rest/v1/;evil-directive",
+    );
+
+    const policy = buildContentSecurityPolicy("nonce");
+
+    expect(policy).toContain("connect-src 'self' https://example.supabase.co ");
+    expect(policy).not.toContain("/rest/v1/");
+    expect(policy).not.toContain("evil-directive");
+    expect(policy).toContain("https://*.backblazeb2.com");
+    expect(policy).toContain("https://*.r2.cloudflarestorage.com");
+  });
+
   it("keeps the OAuth form target and clickjacking guard", () => {
     const policy = buildContentSecurityPolicy("nonce");
 

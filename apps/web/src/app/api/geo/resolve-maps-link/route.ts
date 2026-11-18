@@ -216,7 +216,11 @@ async function fetchLimited(
       return null;
     }
 
-    const html = (await response.text()).slice(0, MAX_HTML_BYTES);
+    const html = await readBoundedText(response, MAX_HTML_BYTES);
+
+    if (html === null) {
+      return null;
+    }
 
     return { html };
   } catch {
@@ -224,4 +228,57 @@ async function fetchLimited(
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function readBoundedText(
+  response: Response,
+  maxBytes: number,
+): Promise<string | null> {
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    return "";
+  }
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      const remaining = maxBytes - total;
+
+      if (remaining <= 0) {
+        await reader.cancel().catch(() => {});
+        break;
+      }
+
+      if (value.byteLength > remaining) {
+        chunks.push(value.subarray(0, remaining));
+        total += remaining;
+        await reader.cancel().catch(() => {});
+        break;
+      }
+
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const combined = new Uint8Array(total);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new TextDecoder().decode(combined);
 }
