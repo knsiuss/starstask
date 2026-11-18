@@ -51,7 +51,6 @@ export function ThemeToggle() {
     const stored = resolveTheme();
     document.documentElement.classList.toggle("dark", stored === "dark");
     document.documentElement.style.colorScheme = stored;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggle = () => {
@@ -78,7 +77,7 @@ export function ThemeToggle() {
           ? "Switch to light theme"
           : "Switch to dark theme"
       }
-      className="border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent flex h-9 w-9 items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border transition-[background-color,color,transform] duration-200 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {activeTheme === "dark" ? (
         <Sun
