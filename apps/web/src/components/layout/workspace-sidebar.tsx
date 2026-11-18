@@ -54,7 +54,7 @@ export function WorkspaceSidebar({
   return (
     <aside
       className={cn(
-        "border-border bg-surface sticky top-0 hidden h-dvh shrink-0 flex-col border-r transition-[width] lg:flex",
+        "border-border bg-surface dark:border-[#22304d] dark:bg-[#111b31] sticky top-0 hidden h-dvh shrink-0 flex-col border-r transition-[width] lg:flex",
         isCollapsed ? "w-[76px]" : "w-[260px]",
       )}
     >
@@ -77,7 +77,7 @@ export function WorkspaceSidebar({
           onClick={toggle}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground dark:text-[#8b98b8] dark:hover:bg-white/[0.06] dark:hover:text-white focus-visible:outline-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {isCollapsed ? (
             <PanelLeftOpen

@@ -83,8 +83,8 @@ export function WorkspaceNav({
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
             compact && "justify-center px-2",
             isActive
-              ? "bg-accent-soft text-accent font-medium"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              ? "bg-accent-soft text-accent font-medium dark:bg-[#2563eb] dark:text-white"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-[#8b98b8] dark:hover:bg-white/[0.06] dark:hover:text-[#eef2fb]",
           )}
         >
           <NavIcon Icon={item.icon} />
@@ -165,7 +165,7 @@ function NavSection({
       {compact ? (
         <span className="sr-only">{label}</span>
       ) : (
-        <p className="text-muted-foreground px-3 text-[11px] font-medium tracking-[0.08em] uppercase">
+        <p className="text-muted-foreground dark:text-[#8b98b8] px-3 text-[11px] font-medium tracking-[0.12em] uppercase">
           {label}
         </p>
       )}

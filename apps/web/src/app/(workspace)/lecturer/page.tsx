@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { getLecturerToday } from "@/lib/lecturer-today";
 import { buildLoginPath } from "@/lib/security/redirect";
 
 export const metadata: Metadata = {
@@ -43,10 +44,14 @@ export default async function LecturerPage() {
   }
 
   if (await isLecturer()) {
+    const today = await getLecturerToday(session.user.id).catch(() => null);
+
     return (
       <TeachingHome
         userId={session.user.id}
         displayName={session.profile?.display_name ?? "Lecturer"}
+        userEmail={session.user.email ?? null}
+        today={today}
       />
     );
   }

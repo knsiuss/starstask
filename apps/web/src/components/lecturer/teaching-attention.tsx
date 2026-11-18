@@ -1,116 +1,130 @@
-import { ArrowRight, CalendarClock } from "lucide-react";
+import {
+  ArrowRight,
+  BellRing,
+  CalendarClock,
+  ChevronRight,
+  ClipboardCheck,
+  ClipboardList,
+  FileWarning,
+  ExternalLink,
+  MapPin,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 
-import {
-  type ActionCenterRow,
-  type ActionCounts,
-} from "@/lib/classes/action-center";
+import { Alert } from "@/components/ui/alert";
+import { type ActionCounts } from "@/lib/classes/action-center";
+import type { LecturerToday, LecturerTodaySession } from "@/lib/lecturer-today";
 import { cn } from "@/lib/utils/cn";
 import { pluralize } from "@starstask/shared";
+
+/** Light tokens remap to existing theme variables; dark tokens are the lecturer navy. */
+const PANEL =
+  "border-border bg-surface text-foreground dark:border-white/[0.06] dark:bg-[#131e33] dark:text-[#e6ebf5]";
+const MUTED_TEXT = "text-muted-foreground dark:text-[#93a1bd]";
+const DIVIDER = "divide-border dark:divide-white/[0.06]";
 
 type AttentionMetric = {
   key: keyof ActionCounts;
   label: string;
+  description: string;
   href: string;
+  icon: LucideIcon;
 };
 
 const ATTENTION_METRICS: readonly AttentionMetric[] = [
   {
     key: "pendingSubmissions",
     label: "Submissions to review",
+    description: "Student submissions waiting for your review",
     href: "/actions?tab=assignments",
+    icon: ClipboardCheck,
   },
   {
     key: "pendingLeave",
     label: "Absence requests",
+    description: "Absence requests awaiting your approval",
     href: "/actions?tab=absences",
+    icon: ClipboardList,
   },
   {
     key: "todaysSessions",
     label: "Sessions today",
+    description: "Meetings scheduled for today",
     href: "/actions?tab=attendance",
+    icon: CalendarClock,
   },
   {
     key: "openReports",
-    label: "Reader reports",
+    label: "Reports to review",
+    description: "Open reader reports from your classes",
     href: "/actions",
+    icon: FileWarning,
   },
 ];
 
+type TeachingAttentionProps = {
+  totals: ActionCounts;
+};
+
 /**
- * Calm metric strip for the four counters a lecturer checks first.
- * Zero values stay muted; only non-zero counts carry accent emphasis.
+ * Attention list: one row per counter a lecturer checks first.
+ * Zero counts stay muted; non-zero counts carry accent emphasis.
  */
-export function TeachingAttention({ totals }: { totals: ActionCounts }) {
+export function TeachingAttention({ totals }: TeachingAttentionProps) {
   const waitingTotal =
     totals.pendingSubmissions + totals.pendingLeave + totals.openReports;
 
   return (
     <section
       aria-labelledby="teaching-attention"
-      className="mt-7"
+      className={cn("flex h-full flex-col rounded-xl border p-4 sm:p-5", PANEL)}
     >
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <h2
           id="teaching-attention"
-          className="text-base font-semibold tracking-tight"
+          className="flex items-center gap-2 text-base font-semibold tracking-tight"
         >
+          <BellRing
+            aria-hidden="true"
+            className="h-4 w-4 text-[#b45309] dark:text-[#d9a441]"
+          />
           Needs your attention
         </h2>
-        <p className="text-muted-foreground text-xs">
+        <Link
+          href="/actions"
+          className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+        >
           {waitingTotal === 0
             ? "All clear"
             : `${waitingTotal} ${pluralize(waitingTotal, "item")} open`}
-        </p>
+          <ArrowRight
+            aria-hidden="true"
+            className="h-3.5 w-3.5"
+          />
+        </Link>
       </div>
 
-      <ul className="border-border bg-surface divide-border mt-3 grid grid-cols-4 divide-x overflow-hidden rounded-xl border">
+      <ul
+        className={cn(
+          "border-border divide-y border-t border-b sm:rounded-lg sm:border",
+          DIVIDER,
+          "dark:border-white/[0.06]",
+          "mt-3 flex-1",
+        )}
+      >
         {ATTENTION_METRICS.map((metric) => {
           const value = totals[metric.key];
-          const hasItems = value > 0;
 
           return (
-            <li
+            <AttentionRow
               key={metric.key}
-              className="min-w-0"
-            >
-              <Link
-                href={metric.href}
-                className="hover:bg-muted/40 focus-visible:outline-accent group flex h-full flex-col items-center justify-center gap-1 px-1.5 py-2.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] sm:flex-row sm:justify-between sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left"
-              >
-                <span className="min-w-0 max-w-full">
-                  <span
-                    className={cn(
-                      "block text-lg leading-none font-semibold tracking-tight tabular-nums sm:hidden",
-                      hasItems ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {value}
-                  </span>
-                  <span className="text-muted-foreground mt-1 block truncate text-[11px] font-medium sm:mt-0 sm:text-xs">
-                    {metric.label}
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-1 hidden text-2xl leading-none font-semibold tracking-tight tabular-nums sm:block",
-                      hasItems ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {value}
-                  </span>
-                </span>
-
-                <ArrowRight
-                  aria-hidden="true"
-                  className={cn(
-                    "hidden h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 sm:block",
-                    hasItems
-                      ? "text-accent"
-                      : "text-muted-foreground/50 group-hover:text-muted-foreground",
-                  )}
-                />
-              </Link>
-            </li>
+              icon={metric.icon}
+              label={metric.label}
+              description={metric.description}
+              href={metric.href}
+              count={value}
+            />
           );
         })}
       </ul>
@@ -118,70 +132,259 @@ export function TeachingAttention({ totals }: { totals: ActionCounts }) {
   );
 }
 
-/** Classes with a scheduled meeting today, linking straight to sessions or attendance. */
-export function TeachingToday({ rows }: { rows: ActionCenterRow[] }) {
-  const sessions = rows.filter((row) => row.todaysSessions > 0);
+function AttentionRow({
+  icon: Icon,
+  label,
+  description,
+  href,
+  count,
+}: {
+  icon: LucideIcon;
+  label: string;
+  description: string;
+  href: string;
+  count: number;
+}) {
+  const hasItems = count > 0;
 
   return (
-    <section aria-labelledby="teaching-today">
-      <h2
-        id="teaching-today"
-        className="text-base font-semibold tracking-tight"
+    <li>
+      <Link
+        href={href}
+        className="focus-visible:outline-accent group flex items-center gap-3 px-1 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] hover:bg-muted/40 sm:px-3 dark:hover:bg-white/[0.04]"
       >
-        Today&rsquo;s teaching
-      </h2>
+        <span
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+            hasItems
+              ? "bg-[#2563eb] text-white"
+              : "bg-muted text-muted-foreground dark:bg-white/[0.06] dark:text-[#8b98b8]",
+          )}
+        >
+          <Icon
+            aria-hidden="true"
+            className="h-4 w-4"
+          />
+        </span>
 
-      {sessions.length === 0 ? (
-        <div className="border-border bg-surface mt-3 flex items-center gap-3 rounded-xl border px-4 py-4">
+        <span className="min-w-0 flex-1">
+          <span className="text-foreground block truncate text-sm font-medium dark:text-[#e6ebf5]">
+            {label}
+          </span>
+          <span className={cn("mt-0.5 block truncate text-xs", MUTED_TEXT)}>
+            {description}
+          </span>
+        </span>
+
+        <span
+          className={cn(
+            "shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums",
+            hasItems
+              ? "border-[#f5c15d]/30 bg-[#f5c15d]/15 text-[#92600f] dark:border-[#f5c15d]/25 dark:bg-[#f5c15d]/10 dark:text-[#e8b84b]"
+              : "border-border bg-muted text-muted-foreground dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#8b98b8]",
+          )}
+        >
+          {count}
+        </span>
+        <ChevronRight
+          aria-hidden="true"
+          className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 dark:text-[#8b98b8]"
+        />
+      </Link>
+    </li>
+  );
+}
+
+const timeFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Jakarta",
+});
+
+function formatTimeRange(startsAtIso: string, endsAtIso: string): string {
+  const start = new Date(startsAtIso);
+  const end = new Date(endsAtIso);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "Time unavailable";
+  }
+
+  return `${timeFormatter.format(start)} – ${timeFormatter.format(end)}`;
+}
+
+/** Today's teaching sessions for the classes the caller administers. */
+export function TeachingToday({ today }: { today: LecturerToday | null }) {
+  return (
+    <section
+      aria-labelledby="teaching-today"
+      className={cn("flex h-full flex-col rounded-xl border p-4 sm:p-5", PANEL)}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2
+          id="teaching-today"
+          className="flex items-center gap-2 text-base font-semibold tracking-tight"
+        >
           <CalendarClock
             aria-hidden="true"
-            className="text-muted-foreground h-4 w-4 shrink-0"
+            className="h-4 w-4 text-[#2563eb] dark:text-[#60a5fa]"
           />
-          <p className="text-muted-foreground text-sm">
+          Today&rsquo;s teaching
+        </h2>
+        <Link
+          href="/schedule"
+          className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+        >
+          View schedule
+          <ArrowRight
+            aria-hidden="true"
+            className="h-3.5 w-3.5"
+          />
+        </Link>
+      </div>
+
+      {today === null ? (
+        <Alert
+          variant="error"
+          className="mt-3"
+        >
+          Could not load today&rsquo;s sessions. Try again in a moment.
+        </Alert>
+      ) : today.sessions.length === 0 ? (
+        <div className="border-border mt-3 flex flex-1 items-center gap-3 rounded-xl border border-dashed px-4 py-6 dark:border-white/[0.1]">
+          <CalendarClock
+            aria-hidden="true"
+            className={cn("h-5 w-5 shrink-0", MUTED_TEXT)}
+          />
+          <p className={cn("text-sm", MUTED_TEXT)}>
             No sessions scheduled today.
           </p>
         </div>
       ) : (
-        <ul className="border-border bg-surface divide-border mt-3 divide-y overflow-hidden rounded-xl border">
-          {sessions.map((row) => (
-            <li
-              key={row.classId}
-              className="flex items-center justify-between gap-3 px-4 py-3.5"
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/classes/${row.classSlug}/sessions`}
-                  className="hover:text-accent focus-visible:outline-accent block truncate rounded-sm text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  {row.className}
-                </Link>
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  {row.todaysSessions}{" "}
-                  {pluralize(row.todaysSessions, "session")} today
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Link
-                  href={`/classes/${row.classSlug}/attendance`}
-                  className="border-border bg-background hover:bg-muted rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
-                >
-                  Attendance
-                </Link>
-                <Link
-                  href={`/classes/${row.classSlug}/sessions`}
-                  aria-label={`Open ${row.className} sessions`}
-                  className="text-muted-foreground hover:text-accent p-1 transition-colors"
-                >
-                  <ArrowRight
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                  />
-                </Link>
-              </div>
-            </li>
+        <ol className="mt-3 flex-1">
+          {today.sessions.map((session, index) => (
+            <TodayTimelineRow
+              key={session.id}
+              session={session}
+              isLast={index === today.sessions.length - 1}
+            />
           ))}
-        </ul>
+        </ol>
       )}
     </section>
+  );
+}
+
+function TodayTimelineRow({
+  session,
+  isLast,
+}: {
+  session: LecturerTodaySession;
+  isLast: boolean;
+}) {
+  const isCompleted = session.status === "completed";
+  const isCancelled = session.status === "cancelled";
+  const code = session.classCode ?? session.classSlug;
+
+  return (
+    <li className="relative flex gap-3 pb-5 last:pb-1">
+      {!isLast ? (
+        <span
+          aria-hidden="true"
+          className="bg-border absolute top-5 left-[7px] h-[calc(100%-1rem)] w-px dark:bg-white/[0.1]"
+        />
+      ) : null}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "relative mt-1 h-3.5 w-3.5 shrink-0 rounded-full border-2",
+          isCompleted &&
+            "border-success bg-success dark:border-[#5cb98a] dark:bg-[#5cb98a]",
+          isCancelled &&
+            "border-muted-foreground/40 bg-transparent dark:border-[#4b5878]",
+          !isCompleted &&
+            !isCancelled &&
+            "border-[#2563eb] bg-[#2563eb] dark:border-[#3b82f6] dark:bg-[#3b82f6]",
+        )}
+      />
+
+      <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={cn("text-xs tabular-nums", MUTED_TEXT)}>
+              {formatTimeRange(session.startsAtIso, session.endsAtIso)}
+            </span>
+            {code ? (
+              <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-mono text-[10px] dark:bg-white/[0.06] dark:text-[#aeb9d6]">
+                {code}
+              </span>
+            ) : null}
+          </div>
+
+          <p className="text-foreground mt-1 truncate text-sm font-semibold dark:text-[#e6ebf5]">
+            {session.className}
+          </p>
+          <p className={cn("truncate text-xs", MUTED_TEXT)}>{session.title}</p>
+
+          {session.sessionType === "in_person" && session.location ? (
+            <p
+              className={cn(
+                "mt-1 inline-flex max-w-full items-center gap-1 text-[11px]",
+                MUTED_TEXT,
+              )}
+            >
+              <MapPin
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0"
+              />
+              <span className="truncate">{session.location}</span>
+            </p>
+          ) : null}
+          {session.sessionType === "online" && session.meetingUrl ? (
+            <a
+              href={session.meetingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent focus-visible:outline-accent mt-1 inline-flex max-w-full items-center gap-1 rounded-sm text-[11px] font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+            >
+              <ExternalLink
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0"
+              />
+              <span className="truncate">Join online meeting</span>
+            </a>
+          ) : null}
+        </div>
+
+        <SessionAction session={session} />
+      </div>
+    </li>
+  );
+}
+
+function SessionAction({ session }: { session: LecturerTodaySession }) {
+  if (session.status === "completed") {
+    return (
+      <span className="border-success/30 bg-success-soft text-success inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold dark:border-[#5cb98a]/30 dark:bg-[#5cb98a]/10 dark:text-[#5cb98a]">
+        Completed
+      </span>
+    );
+  }
+
+  if (session.status === "cancelled") {
+    return (
+      <span className="border-border bg-muted text-muted-foreground inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-medium dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#8b98b8]">
+        Cancelled
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={`/sessions/${session.id}`}
+      className="focus-visible:outline-accent inline-flex shrink-0 items-center rounded-full border border-transparent bg-[#2563eb] px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-[#1d4ed8] focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      Open class
+    </Link>
   );
 }

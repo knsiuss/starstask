@@ -31,7 +31,7 @@ export function WorkspaceTopbar({
   unreadNotificationCount,
 }: WorkspaceTopbarProps) {
   return (
-    <header className="border-border bg-surface/90 sticky top-0 z-30 border-b backdrop-blur">
+    <header className="border-border bg-surface/90 dark:border-[#22304d] dark:bg-[#111b31] sticky top-0 z-30 border-b backdrop-blur">
       <div className="flex h-14 items-center gap-1.5 px-2 sm:gap-3 sm:px-6 lg:h-16 lg:px-8">
         <MobileNav
           isAuthenticated={isAuthenticated}
@@ -55,7 +55,7 @@ export function WorkspaceTopbar({
                   ? `Notifications, ${unreadNotificationCount} unread`
                   : "Notifications"
               }
-              className="border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-accent relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground dark:border-[#22304d] dark:bg-[#0d1526] dark:text-[#8b98b8] dark:hover:bg-white/[0.06] dark:hover:text-[#eef2fb] focus-visible:outline-accent relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <Bell
                 aria-hidden="true"
@@ -64,7 +64,7 @@ export function WorkspaceTopbar({
               {unreadNotificationCount > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="bg-accent text-accent-foreground absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold"
+                  className="bg-accent text-accent-foreground dark:bg-[#ef4444] dark:text-white absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold"
                 >
                   {unreadNotificationCount > 99
                     ? "99+"
