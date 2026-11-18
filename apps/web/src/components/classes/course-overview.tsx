@@ -17,8 +17,13 @@ import type {
   CourseMaterialKind,
   CourseMaterialView,
 } from "@starstask/contracts";
-import { formatDate, formatTimeRemaining } from "@starstask/shared";
+import {
+  formatDate,
+  formatTimeRemaining,
+  type AttendanceSummaryCounts,
+} from "@starstask/shared";
 
+import { CourseMyProgressCard } from "@/components/classes/course-my-progress-card";
 import type { GroupedUpcomingAssignments } from "@/features/classes/course-assignment-filters";
 import type {
   CourseAssignmentSummary,
@@ -43,6 +48,13 @@ type CourseOverviewProps = {
   upcomingAssignments: GroupedUpcomingAssignments<CourseAssignmentSummary>;
   materials: CourseMaterialView[];
   counts: CourseContentCounts;
+  attendanceSummary?: AttendanceSummaryCounts;
+  studentGrades?: {
+    tugas: number | null;
+    uts: number | null;
+    uas: number | null;
+  };
+  pendingCount?: number;
   now?: Date;
 };
 
@@ -68,6 +80,9 @@ export function CourseOverview({
   upcomingAssignments,
   materials,
   counts,
+  attendanceSummary,
+  studentGrades,
+  pendingCount = 0,
   now = new Date(),
 }: CourseOverviewProps) {
   const activity: ActivityItem[] = [
@@ -105,6 +120,20 @@ export function CourseOverview({
     // upcoming work, and announcements; the two wrapper columns dissolve
     // into the flex flow on small screens and come back on lg.
     <div className="mt-5 space-y-4 sm:mt-6 sm:gap-5">
+      {attendanceSummary && studentGrades ? (
+        <CourseMyProgressCard
+          courseId={course.id}
+          assignmentsHref={`${courseBase}/assignments`}
+          attendancePercentage={attendanceSummary.percentage}
+          attendedSessions={attendanceSummary.attended}
+          eligibleSessions={attendanceSummary.eligible}
+          pendingAssignmentsCount={pendingCount}
+          tugas={studentGrades.tugas}
+          uts={studentGrades.uts}
+          uas={studentGrades.uas}
+        />
+      ) : null}
+
       <CourseOverviewStats counts={counts} />
 
       <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-start lg:gap-6">
@@ -279,7 +308,7 @@ export function CourseOverview({
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
                         course.status === "active"
-                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                          ? "bg-success-soft text-success"
                           : "bg-muted text-muted-foreground",
                       )}
                     >
@@ -288,7 +317,7 @@ export function CourseOverview({
                         className={cn(
                           "h-1.5 w-1.5 rounded-full",
                           course.status === "active"
-                            ? "bg-emerald-500"
+                            ? "bg-success"
                             : "bg-muted-foreground",
                         )}
                       />

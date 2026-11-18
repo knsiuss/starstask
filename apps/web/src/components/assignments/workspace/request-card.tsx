@@ -113,7 +113,7 @@ export function RequestCard({ request, mode, reviewAction }: Props) {
           {mode === "student" &&
           request.displayStatus === "revision_requested" ? (
             <Link
-              href={`/app/classes/${request.class_slug}`}
+              href={`/classes/${request.class_slug}`}
               className="text-accent hover:text-accent-hover mt-1 inline-flex min-h-[44px] items-center gap-1 font-semibold sm:mt-1.5 sm:min-h-[28px]"
             >
               Revise in {request.class_name}

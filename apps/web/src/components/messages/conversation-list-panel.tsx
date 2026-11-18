@@ -196,7 +196,7 @@ export function ConversationListPanel({
                 key={story.id}
                 className="flex shrink-0 flex-col items-center"
               >
-                <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-accent via-accent-hover to-band text-sm font-semibold text-white ring-2 ring-accent ring-offset-2 ring-offset-white">
+                <span className="bg-accent-soft text-accent ring-accent ring-offset-surface relative flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold ring-2 ring-offset-2">
                   <CircleUserRound
                     aria-hidden="true"
                     className="h-6 w-6 opacity-70"
@@ -275,7 +275,7 @@ export function ConversationListPanel({
                           className="h-12 w-12 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="from-accent to-accent-hover flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+                        <span className="bg-accent-soft text-accent flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold">
                           {initials(conversation.otherName)}
                         </span>
                       )}

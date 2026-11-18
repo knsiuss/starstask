@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { JoinClassForm } from "@/components/classes/join-class-form";
+import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth/session";
@@ -34,21 +35,24 @@ export default async function JoinClassPage({
 }: JoinClassPageProps) {
   if (!isSupabaseConfigured()) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-12 sm:px-6">
+      <PageShell width="reading">
         <SetupNotice />
-      </div>
+      </PageShell>
     );
-  }
-
-  const session = await getSessionUser();
-
-  if (!session) {
-    redirect(buildLoginPath("/classes/join"));
   }
 
   const rawParams = await searchParams;
   const submitted =
     typeof rawParams.invitation === "string" ? rawParams.invitation : "";
+  const session = await getSessionUser();
+
+  if (!session) {
+    const nextPath = submitted
+      ? `/classes/join?invitation=${encodeURIComponent(submitted)}`
+      : "/classes/join";
+    redirect(buildLoginPath(nextPath));
+  }
+
   const token = submitted ? extractInvitationToken(submitted) : null;
 
   if (token) {
@@ -58,7 +62,7 @@ export default async function JoinClassPage({
   const showInvalid = submitted !== "" && token === null;
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 lg:py-10">
+    <PageShell width="reading">
       <Link
         href="/classes"
         className="text-muted-foreground hover:text-foreground focus-visible:outline-accent inline-flex items-center gap-1.5 rounded-sm text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -102,6 +106,6 @@ export default async function JoinClassPage({
           showInvalidLink={showInvalid}
         />
       </div>
-    </div>
+    </PageShell>
   );
 }

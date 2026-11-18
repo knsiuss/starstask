@@ -357,7 +357,7 @@ export function AttendanceSheet({
               <dt className="text-muted-foreground text-xs">
                 Rata-rata Kehadiran
               </dt>
-              <dd className="text-2xl font-semibold text-green-700 dark:text-green-400">
+              <dd className="text-success text-2xl font-semibold">
                 {average === null
                   ? "—"
                   : `${average.toFixed(1).replace(".", ",")}%`}
@@ -689,7 +689,7 @@ export function AttendanceSheet({
                   <td className="px-2 py-2 text-center text-xs">
                     {totals.late}
                   </td>
-                  <td className="bg-green-50 px-2 py-2 text-center text-xs font-semibold text-green-700 dark:bg-green-950 dark:text-green-300">
+                  <td className="bg-success-soft text-success px-2 py-2 text-center text-xs font-semibold">
                     {percentage === null
                       ? "—"
                       : `${percentage.toFixed(1).replace(".", ",")}%`}

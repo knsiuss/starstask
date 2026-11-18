@@ -61,6 +61,14 @@ export async function POST(
 
     const bytes = new Uint8Array(await file.arrayBuffer());
 
+    if (bytes.length > MAX_UPLOAD_BYTES) {
+      throw new ApiError(
+        413,
+        "file_too_large",
+        "File exceeds the 10 MB limit.",
+      );
+    }
+
     // Validate by signature, not by the browser-supplied MIME type.
     const isPdf =
       bytes.length >= 5 &&

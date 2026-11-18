@@ -39,9 +39,9 @@ export function LeaveRequestCard({
   return (
     <Link
       href={href}
-      className="border-border bg-card hover:border-accent/60 focus-visible:ring-ring block rounded-xl border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      className="border-border bg-surface hover:border-accent/60 focus-visible:ring-ring block min-h-[44px] rounded-xl border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-muted-foreground font-mono text-[11px] tracking-wide">
             {request.reference}
@@ -50,14 +50,16 @@ export function LeaveRequestCard({
             {showStudent ? request.studentName : request.className}
           </p>
           {showStudent ? (
-            <p className="text-muted-foreground text-xs">{request.className}</p>
+            <p className="text-muted-foreground truncate text-xs">
+              {request.className}
+            </p>
           ) : null}
         </div>
 
         <LeaveStatusBadge status={request.status} />
       </div>
 
-      <dl className="text-muted-foreground mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-3">
+      <dl className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:grid sm:grid-cols-3">
         <div className="flex items-center gap-1.5">
           <CalendarDays
             aria-hidden="true"
@@ -93,7 +95,7 @@ export function LeaveRequestCard({
       </dl>
 
       {request.submittedAt ? (
-        <p className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
+        <p className="text-muted-foreground mt-3 hidden items-center gap-1.5 text-xs sm:flex">
           <FileText
             aria-hidden="true"
             className="h-3.5 w-3.5"
@@ -103,12 +105,12 @@ export function LeaveRequestCard({
       ) : null}
 
       {request.status === "forwarded" ? (
-        <p className="text-muted-foreground mt-3 text-xs">
+        <p className="text-muted-foreground mt-2.5 text-xs">
           Forwarded
           {request.forwardedAt
             ? ` on ${formatLeaveDate(request.forwardedAt.slice(0, 10))}`
-            : ""}{" "}
-          — this records the hand-off, not a decision.
+            : ""}
+          . Records the hand-off, not a decision.
         </p>
       ) : null}
 

@@ -3,6 +3,9 @@ package id.starstask.mobile.data
 import android.content.Context
 import android.content.Intent
 import id.starstask.mobile.BuildConfig
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Native entry point to the web Google integration flows.
@@ -22,11 +25,53 @@ enum class IntegrationKind(val label: String, val startPath: String, val disconn
     DRIVE("Google Drive", "/api/integrations/google-drive/start", "/api/integrations/google-drive/disconnect"),
 }
 
+sealed class IntegrationDisconnectResult {
+    data object Disconnected : IntegrationDisconnectResult()
+    data class Failed(val message: String) : IntegrationDisconnectResult()
+}
+
 fun openIntegrationConnect(context: Context, kind: IntegrationKind): Boolean =
     openWebFlow(context, kind.startPath)
 
-fun openIntegrationDisconnect(context: Context, kind: IntegrationKind): Boolean =
-    openWebFlow(context, kind.disconnectPath)
+suspend fun disconnectIntegration(kind: IntegrationKind): IntegrationDisconnectResult {
+    val token = runCatching { SupabaseProvider.client.auth.currentSessionOrNull()?.accessToken }.getOrNull()
+        ?: return IntegrationDisconnectResult.Failed("Sign in to disconnect ${kind.label}.")
+    val baseUrl = BuildConfig.SITE_URL.trimEnd('/')
+    if (baseUrl.isBlank() || baseUrl.contains("your-site-url")) {
+        return IntegrationDisconnectResult.Failed("Web site URL is not configured — disconnect from web Settings instead.")
+    }
+    val url = java.net.URL(baseUrl + kind.disconnectPath)
+    return withContext(Dispatchers.IO) {
+        val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 30_000
+            requestMethod = "POST"
+            setRequestProperty("Authorization", "Bearer $token")
+            setRequestProperty("Accept", "application/json")
+            doOutput = true
+            outputStream.close()
+        }
+        val status = try {
+            conn.responseCode
+        } catch (_: java.io.IOException) {
+            conn.disconnect()
+            return@withContext IntegrationDisconnectResult.Failed(
+                "Could not reach server to disconnect ${kind.label}. Try again shortly.",
+            )
+        }
+        try {
+            when {
+                status in 200..299 -> IntegrationDisconnectResult.Disconnected
+                status == java.net.HttpURLConnection.HTTP_UNAUTHORIZED ->
+                    IntegrationDisconnectResult.Failed("Session expired — sign in again to disconnect ${kind.label}.")
+                else ->
+                    IntegrationDisconnectResult.Failed("Failed to disconnect ${kind.label}. Try again.")
+            }
+        } finally {
+            conn.disconnect()
+        }
+    }
+}
 
 private fun openWebFlow(context: Context, path: String): Boolean {
     val baseUrl = BuildConfig.SITE_URL.trimEnd('/')

@@ -151,8 +151,23 @@ export async function uploadVerificationEvidence(
 /** Soft-deletes the row, then removes the object. */
 export async function removeVerificationEvidence(
   evidenceId: string,
+  requestId?: string,
 ): Promise<void> {
   const supabase = await createSupabaseServerClient();
+
+  if (requestId) {
+    const { data: row, error: lookupError } = await supabase
+      .from("class_verification_evidence")
+      .select("id")
+      .eq("id", evidenceId)
+      .eq("request_id", requestId)
+      .maybeSingle();
+
+    if (lookupError || !row) {
+      throw notFound();
+    }
+  }
+
   const { data: storagePath, error } = await supabase.rpc(
     "remove_class_verification_evidence",
     { p_evidence_id: evidenceId },

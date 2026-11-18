@@ -11,10 +11,13 @@ import {
   MoreHorizontal,
   PlusCircle,
   Settings,
+  Trash2,
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import * as React from "react";
 
+import { DeleteClassDialog } from "@/components/classes/delete-class-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -41,7 +44,8 @@ export function ClassWorkspaceActions({
   canManage,
   isActive,
 }: ClassWorkspaceActionsProps) {
-  const base = `/app/classes/${classSlug}`;
+  const base = `/classes/${classSlug}`;
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
 
   return (
     <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
@@ -240,8 +244,31 @@ export function ClassWorkspaceActions({
               Browse classes
             </Link>
           </DropdownMenuItem>
+          {canManage ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => setDeleteOpen(true)}
+                className="text-danger focus:text-danger flex items-center gap-2"
+              >
+                <Trash2
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                />
+                Delete class
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {canManage ? (
+        <DeleteClassDialog
+          classSlug={classSlug}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+        />
+      ) : null}
     </div>
   );
 }

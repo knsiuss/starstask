@@ -6,7 +6,10 @@ import {
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { requireSession } from "@/features/classes/class-access";
-import { acceptClassInvitation } from "@/features/classes/class-invitation-service";
+import {
+  acceptClassInvitation,
+  getInvitationPreview,
+} from "@/features/classes/class-invitation-service";
 import { getClassById } from "@/lib/db/classes";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
@@ -45,6 +48,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const preview = await getInvitationPreview(parsed.data.token);
     const { classId } = await acceptClassInvitation(parsed.data.token);
     const joinedClass = await getClassById(classId);
 
@@ -52,6 +56,7 @@ export async function POST(request: Request) {
       classId,
       slug: joinedClass?.slug ?? null,
       name: joinedClass?.name ?? null,
+      subjectId: preview.subject_id ?? null,
     });
   } catch (error) {
     return handleRouteError(error);

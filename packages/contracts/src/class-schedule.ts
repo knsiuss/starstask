@@ -3,6 +3,16 @@ import { z } from "zod";
 export const CLASS_SCHEDULE_ROOM_MAX = 120;
 export const CLASS_SCHEDULE_LECTURER_MAX = 120;
 export const CLASS_SCHEDULE_PERIOD_MAX = 20;
+export const SCHEDULE_COLLISION_ERROR_CODE = "schedule_collision" as const;
+
+export type ScheduleCollisionConflict = {
+  id?: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  room?: string | null;
+  lecturerName?: string | null;
+};
 
 /** ISO weekday: 1 = Monday .. 7 = Sunday. */
 export const CLASS_SCHEDULE_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;

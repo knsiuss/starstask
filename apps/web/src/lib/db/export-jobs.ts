@@ -17,6 +17,9 @@ export type ExportJob = {
   updated_at: string;
 };
 
+const EXPORT_JOB_COLUMNS =
+  "id, user_id, kind, params, status, result_path, error_category, created_at, updated_at";
+
 /** Creates a job row owned by the caller (RLS owner policy applies). */
 export async function createExportJob(input: {
   userId: string;
@@ -31,7 +34,7 @@ export async function createExportJob(input: {
       kind: input.kind,
       params: input.params,
     } as never)
-    .select("*")
+    .select(EXPORT_JOB_COLUMNS)
     .single();
 
   if (error || !data) {
@@ -49,7 +52,7 @@ export async function getOwnExportJob(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("export_jobs" as never)
-    .select("*")
+    .select(EXPORT_JOB_COLUMNS)
     .eq("id", jobId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -73,8 +76,8 @@ export async function getExportJobForWorker(
       updated_at: new Date().toISOString(),
     } as never)
     .eq("id", jobId)
-    .eq("status", "pending")
-    .select("*")
+    .in("status", ["pending", "failed"])
+    .select(EXPORT_JOB_COLUMNS)
     .maybeSingle();
 
   if (error) {

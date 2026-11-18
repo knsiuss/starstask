@@ -1910,9 +1910,29 @@ export type Database = {
           },
         ];
       };
+      class_member_courses: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          subject_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          subject_id: string;
+          user_id: string;
+        };
+        Update: {
+          subject_id?: string;
+        };
+        Relationships: [];
+      };
       class_members: {
         Row: {
           class_id: string;
+          course_scope: string;
           joined_at: string;
           joined_via: string;
           user_id: string;
@@ -1920,12 +1940,14 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           class_id: string;
+          course_scope?: string;
           joined_at?: string;
           joined_via?: string;
           user_id: string;
         };
         Update: {
           class_id?: string;
+          course_scope?: string;
           joined_at?: string;
           joined_via?: string;
           user_id?: string;
@@ -2609,14 +2631,57 @@ export type Database = {
           },
         ];
       };
+      course_comments: {
+        Row: {
+          author_id: string;
+          body: string;
+          class_id: string;
+          created_at: string;
+          id: string;
+          image_mime: string | null;
+          image_path: string | null;
+          meeting_number: number | null;
+          parent_id: string | null;
+          reactions: Json;
+          subject_id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          author_id: string;
+          body: string;
+          class_id: string;
+          created_at?: string;
+          id?: string;
+          image_mime?: string | null;
+          image_path?: string | null;
+          meeting_number?: number | null;
+          parent_id?: string | null;
+          reactions?: Json;
+          subject_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          reactions?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       course_materials: {
         Row: {
           class_id: string;
+          content_format: string;
           created_at: string;
           created_by: string | null;
           description: string | null;
+          file_mime: string | null;
+          file_name: string | null;
+          file_path: string | null;
+          file_size: number | null;
           id: string;
           kind: string;
+          meeting_number: number | null;
           offering_id: string | null;
           resource_url: string | null;
           subject_id: string;
@@ -2627,11 +2692,17 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           class_id: string;
+          content_format?: string;
           created_at?: string;
           created_by?: string | null;
           description?: string | null;
+          file_mime?: string | null;
+          file_name?: string | null;
+          file_path?: string | null;
+          file_size?: number | null;
           id?: string;
           kind?: string;
+          meeting_number?: number | null;
           offering_id?: string | null;
           resource_url?: string | null;
           subject_id: string;
@@ -2641,11 +2712,17 @@ export type Database = {
         };
         Update: {
           class_id?: string;
+          content_format?: string;
           created_at?: string;
           created_by?: string | null;
           description?: string | null;
+          file_mime?: string | null;
+          file_name?: string | null;
+          file_path?: string | null;
+          file_size?: number | null;
           id?: string;
           kind?: string;
+          meeting_number?: number | null;
           offering_id?: string | null;
           resource_url?: string | null;
           subject_id?: string;
@@ -6394,9 +6471,10 @@ export type Database = {
       create_class_invitation: {
         Args: {
           p_class_id: string;
-          p_email_restriction?: string;
+          p_email_restriction?: string | null;
           p_expires_at: string;
           p_max_uses?: number;
+          p_subject_id?: string | null;
           p_token_hash: string;
         };
         Returns: string;

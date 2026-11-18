@@ -70,7 +70,7 @@ function filterHref(
     params.set("q", search);
   }
 
-  return `/app/classes/${classSlug}/manage?${params.toString()}`;
+  return `/classes/${classSlug}/manage?${params.toString()}`;
 }
 
 type ManageContentTabProps = {
@@ -121,10 +121,10 @@ export async function ManageContentTab({
       params.set("q", search);
     }
 
-    redirect(`/app/classes/${classSlug}/manage?${params.toString()}`);
+    redirect(`/classes/${classSlug}/manage?${params.toString()}`);
   }
 
-  const base = `/app/classes/${classSlug}/manage`;
+  const base = `/classes/${classSlug}/manage`;
   const filters = buildFilters(counts);
   const emptyCopy = EMPTY_COPY[status];
 

@@ -54,16 +54,35 @@ export async function POST(request: Request) {
     return apiError(401, "unauthorized", "Invalid signature.");
   }
 
-  let jobId: string;
+  const isFailureCallback =
+    new URL(request.url).searchParams.get("failure") === "1";
+
+  let jobId = "";
 
   try {
-    jobId = (JSON.parse(rawBody) as { jobId?: string }).jobId ?? "";
+    const parsed = JSON.parse(rawBody) as {
+      jobId?: string;
+      sourceBody?: string;
+    };
+
+    if (typeof parsed.jobId === "string" && parsed.jobId) {
+      jobId = parsed.jobId;
+    } else if (isFailureCallback && typeof parsed.sourceBody === "string") {
+      const decoded = Buffer.from(parsed.sourceBody, "base64").toString("utf8");
+      const inner = JSON.parse(decoded) as { jobId?: string };
+      jobId = typeof inner.jobId === "string" ? inner.jobId : "";
+    }
   } catch {
     return apiError(400, "invalid_body", "Invalid job payload.");
   }
 
   if (!jobId) {
     return apiError(400, "invalid_body", "Missing jobId.");
+  }
+
+  if (isFailureCallback) {
+    await markExportJobFailed(jobId, "export_failed");
+    return apiSuccess({ ok: true });
   }
 
   const job = await getExportJobForWorker(jobId);

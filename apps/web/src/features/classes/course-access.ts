@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import type { ClassSubjectView } from "@starstask/contracts";
 
 import { getClassSubject } from "@/lib/db/classes";
+import { canAccessCourse } from "@/lib/db/course-access";
 import {
   requireClassMember,
   type ClassContext,
@@ -28,6 +29,18 @@ export async function requireCourseContext(
 
   if (!course) {
     notFound();
+  }
+
+  if (!context.role.canManage) {
+    const allowed = await canAccessCourse(
+      context.class.id,
+      context.session.user.id,
+      course.id,
+    );
+
+    if (!allowed) {
+      notFound();
+    }
   }
 
   return { ...context, course };

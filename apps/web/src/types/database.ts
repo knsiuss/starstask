@@ -1072,6 +1072,7 @@ export interface Database {
         Row: {
           class_id: string;
           user_id: string;
+          course_scope: "all" | "selected";
           joined_via:
             | "invitation"
             | "admin_assignment"
@@ -1082,6 +1083,7 @@ export interface Database {
         Insert: {
           class_id: string;
           user_id: string;
+          course_scope?: "all" | "selected";
           joined_via?:
             | "invitation"
             | "admin_assignment"
@@ -1090,6 +1092,7 @@ export interface Database {
           joined_at?: string;
         };
         Update: {
+          course_scope?: "all" | "selected";
           joined_via?:
             | "invitation"
             | "admin_assignment"
@@ -1105,6 +1108,24 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      class_member_courses: {
+        Row: {
+          class_id: string;
+          user_id: string;
+          subject_id: string;
+          created_at: string;
+        };
+        Insert: {
+          class_id: string;
+          user_id: string;
+          subject_id: string;
+          created_at?: string;
+        };
+        Update: {
+          subject_id?: string;
+        };
+        Relationships: [];
       };
       class_admins: {
         Row: {
@@ -2359,10 +2380,16 @@ export interface Database {
           id: string;
           class_id: string;
           subject_id: string;
+          meeting_number: number | null;
+          content_format: "markdown" | "html" | "plain";
           kind: "document" | "video" | "link" | "other";
           title: string;
           description: string | null;
           resource_url: string | null;
+          file_path: string | null;
+          file_name: string | null;
+          file_mime: string | null;
+          file_size: number | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -2371,20 +2398,32 @@ export interface Database {
           id?: string;
           class_id: string;
           subject_id: string;
+          meeting_number?: number | null;
+          content_format?: "markdown" | "html" | "plain";
           kind?: "document" | "video" | "link" | "other";
           title: string;
           description?: string | null;
           resource_url?: string | null;
+          file_path?: string | null;
+          file_name?: string | null;
+          file_mime?: string | null;
+          file_size?: number | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           subject_id?: string;
+          meeting_number?: number | null;
+          content_format?: "markdown" | "html" | "plain";
           kind?: "document" | "video" | "link" | "other";
           title?: string;
           description?: string | null;
           resource_url?: string | null;
+          file_path?: string | null;
+          file_name?: string | null;
+          file_mime?: string | null;
+          file_size?: number | null;
           updated_at?: string;
         };
         Relationships: [
@@ -2403,6 +2442,42 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      course_comments: {
+        Row: {
+          id: string;
+          class_id: string;
+          subject_id: string;
+          meeting_number: number | null;
+          parent_id: string | null;
+          author_id: string;
+          body: string;
+          image_path: string | null;
+          image_mime: string | null;
+          reactions: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          class_id: string;
+          subject_id: string;
+          meeting_number?: number | null;
+          parent_id?: string | null;
+          author_id: string;
+          body: string;
+          image_path?: string | null;
+          image_mime?: string | null;
+          reactions?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          reactions?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       class_calendar_events: {
         Row: {

@@ -45,7 +45,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       onBackendFailure: "closed",
     });
 
-    await removeVerificationEvidence(evidenceId);
+    await removeVerificationEvidence(evidenceId, id);
 
     return apiSuccess({ id: evidenceId, removed: true });
   } catch (error) {

@@ -5,7 +5,6 @@ export const COURSE_TABS = [
   "assignments",
   "materials",
   "announcements",
-  "members",
   "attendance",
   "schedule",
 ] as const;
@@ -17,7 +16,6 @@ export const COURSE_TAB_LABELS: Record<CourseTab, string> = {
   assignments: "Assignments",
   materials: "Materials",
   announcements: "Announcements",
-  members: "Members",
   attendance: "Attendance",
   schedule: "Schedule",
 };
@@ -33,7 +31,7 @@ export function courseTabHref(
   courseId: string,
   tab: CourseTab,
 ): string {
-  const base = `/app/classes/${slug}/courses/${courseId}`;
+  const base = `/classes/${slug}/courses/${courseId}`;
 
   return tab === "overview" ? base : `${base}/${tab}`;
 }

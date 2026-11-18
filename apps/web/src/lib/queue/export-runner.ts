@@ -17,6 +17,7 @@ import {
 import { listCourseComponentGrades } from "@/lib/db/course-grades";
 import { loadBrandingForExport } from "@/features/export-branding/service";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { runWithWorkerSupabaseClient } from "@/lib/supabase/server";
 import { listEvidenceForRequests, listLeaveReportRows } from "@/lib/db/leave";
 import type { ExportJob } from "@/lib/db/export-jobs";
 import {
@@ -442,5 +443,7 @@ export async function runExportJob(job: ExportJob): Promise<ExportResult> {
     throw new Error(`UNKNOWN_EXPORT_KIND:${job.kind}`);
   }
 
-  return runner(job);
+  return runWithWorkerSupabaseClient(createSupabaseAdminClient(), () =>
+    runner(job),
+  );
 }

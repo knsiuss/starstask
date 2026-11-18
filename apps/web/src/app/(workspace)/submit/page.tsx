@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AssignmentForm } from "@/components/forms/assignment-form";
+import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { getSessionUser } from "@/lib/auth/session";
 import {
@@ -23,14 +24,14 @@ export const dynamic = "force-dynamic";
 export default async function SubmitAssignmentPage() {
   if (!isSupabaseConfigured()) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <PageShell width="narrow">
         <h1 className="text-3xl font-semibold tracking-tight">
           Submit an assignment
         </h1>
         <div className="mt-6">
           <SetupNotice />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -51,7 +52,7 @@ export default async function SubmitAssignmentPage() {
     : "Your submission becomes a request: a platform admin reviews it before it appears in the public archive.";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <PageShell width="narrow">
       <h1 className="text-3xl font-semibold tracking-tight">
         Submit an assignment
       </h1>
@@ -83,6 +84,6 @@ export default async function SubmitAssignmentPage() {
           }}
         />
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -4,12 +4,18 @@ import {
   toFieldErrors,
 } from "@starstask/contracts";
 
-import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
+import {
+  ApiError,
+  forbidden,
+  notFound,
+  serviceUnavailable,
+} from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import {
   deleteClassScheduleEntry,
   updateClassScheduleEntry,
 } from "@/lib/db/class-schedule";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireClassMember } from "@/features/classes/class-access";
@@ -25,7 +31,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const { slug, scheduleId } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
+
+    const access = role.canManage
+      ? null
+      : await getMemberCourseAccess(found.id, session.user.id);
+
+    if (access?.scope === "selected") {
+      throw forbidden();
+    }
 
     await enforceRateLimit({
       action: "classes:schedule:update",
@@ -66,7 +80,15 @@ export async function DELETE(_request: Request, context: RouteContext) {
     }
 
     const { slug, scheduleId } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
+
+    const access = role.canManage
+      ? null
+      : await getMemberCourseAccess(found.id, session.user.id);
+
+    if (access?.scope === "selected") {
+      throw forbidden();
+    }
 
     await enforceRateLimit({
       action: "classes:schedule:delete",

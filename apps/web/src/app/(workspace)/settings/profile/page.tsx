@@ -198,7 +198,7 @@ export default async function ProfileSettingsPage() {
                     className="flex flex-wrap items-baseline gap-x-2"
                   >
                     <Link
-                      href={`/app/classes/${item.slug}/manage`}
+                      href={`/classes/${item.slug}/manage`}
                       className="text-accent underline-offset-4 hover:underline"
                     >
                       {item.name}

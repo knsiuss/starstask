@@ -67,7 +67,7 @@ export function AssignmentRowMenu({
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link
-            href={`/app/classes/${classSlug}/review/${assignmentId}`}
+            href={`/classes/${classSlug}/review/${assignmentId}`}
             className="flex min-h-[44px] items-center gap-2 sm:min-h-0"
           >
             <ClipboardCheck

@@ -38,7 +38,7 @@ export function CourseWorkspaceHeader({
   canManage,
   classActive,
 }: CourseWorkspaceHeaderProps) {
-  const base = `/app/classes/${classSlug}`;
+  const base = `/classes/${classSlug}`;
 
   return (
     <>

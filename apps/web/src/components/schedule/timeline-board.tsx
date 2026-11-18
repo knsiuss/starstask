@@ -248,7 +248,7 @@ function WeekRow({
     : Math.max(laneBudget, isWeekView ? 3 : 1);
   const height =
     laneSlots * LANE_HEIGHT + Math.max(laneSlots - 1, 0) * LANE_GAP + 12;
-  const emptyStateMin = isWeekView ? 320 : 64;
+  const emptyStateMin = isWeekView ? 180 : 64;
 
   return (
     <div className={cn(showTopBorder && "border-border border-t")}>
@@ -271,7 +271,7 @@ function WeekRow({
         >
           {layout.items.length === 0 ? (
             <div className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center text-xs">
-              —
+              {isWeekView ? "No events scheduled this week" : "—"}
             </div>
           ) : null}
 

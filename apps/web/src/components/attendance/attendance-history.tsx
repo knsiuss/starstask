@@ -38,10 +38,7 @@ export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
       </div>
 
       <ul
-        // Height fits two rows: ~138px per stacked row on mobile, ~60px
-        // per grid row on sm+, so older sessions scroll inside the box
-        // instead of stretching the page.
-        className="divide-border divide-y max-h-[17.25rem] overflow-y-auto overscroll-contain sm:max-h-[7.5rem]"
+        className="divide-border max-h-[24rem] divide-y overflow-y-auto overscroll-contain"
         tabIndex={isScrollable ? 0 : undefined}
         aria-label={
           isScrollable
@@ -53,11 +50,14 @@ export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
           <li key={entry.sessionId}>
             <Link
               href={`/attendance/${entry.sessionId}`}
-              className="group hover:bg-subtle flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto] sm:items-center sm:gap-4"
+              className="group hover:bg-subtle flex min-h-[44px] flex-col gap-2 px-4 py-3.5 transition-colors sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto] sm:items-center sm:gap-4"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{entry.title}</p>
-                <p className="text-muted-foreground truncate text-xs">
+                <p className="text-muted-foreground truncate text-xs sm:hidden">
+                  {SESSION_TYPE_LABELS[entry.sessionType]}
+                </p>
+                <p className="text-muted-foreground hidden truncate text-xs sm:block">
                   {entry.className} · {entry.subjectName ?? "No linked subject"}{" "}
                   · {SESSION_TYPE_LABELS[entry.sessionType]}
                 </p>
@@ -89,7 +89,8 @@ export function AttendanceHistory({ entries }: { entries: AttendanceEntry[] }) {
 
       {isScrollable ? (
         <p className="border-border text-muted-foreground border-t px-4 py-2 text-xs">
-          {entries.length} sessions — scroll inside this box for older ones.
+          {entries.length} sessions recorded. Scroll inside this list for older
+          entries.
         </p>
       ) : null}
     </div>

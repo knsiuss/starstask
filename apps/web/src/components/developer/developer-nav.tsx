@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Blocks,
   Database,
+  Eye,
   Gauge,
   GraduationCap,
   ScrollText,
@@ -34,6 +35,7 @@ const DEVELOPER_ITEMS: DeveloperNavItem[] = [
   { href: "/developer/integrations", label: "Integrations", icon: Blocks },
   { href: "/developer/incidents", label: "Incidents", icon: Siren },
   { href: "/developer/monitoring", label: "Monitoring", icon: Activity },
+  { href: "/developer/observability", label: "Observability", icon: Eye },
 ];
 
 /**
@@ -57,11 +59,7 @@ export function DeveloperNav() {
 
       <ul className="mt-2 flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
         {DEVELOPER_ITEMS.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href === "/developer"
-              ? pathname === item.href
-              : pathname.startsWith(`${item.href}/`));
+          const isActive = item.href === activeHref;
 
           return (
             <li

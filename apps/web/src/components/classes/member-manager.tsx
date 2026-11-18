@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookLock,
   Ellipsis,
   Loader2,
   Search,
@@ -14,6 +15,7 @@ import * as React from "react";
 import { formatDate } from "@starstask/shared";
 
 import { AdminUserCell } from "@/components/admin/admin-user-cell";
+import { MemberCourseAccessDialog } from "@/components/classes/member-course-access-dialog";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -54,6 +56,10 @@ export function MemberManager({
   const [error, setError] = React.useState<string | null>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
+  const [courseTarget, setCourseTarget] = React.useState<{
+    user_id: string;
+    display_name: string;
+  } | null>(null);
 
   const send = async (
     url: string,
@@ -240,6 +246,24 @@ export function MemberManager({
                       </DropdownMenuItem>
                     ) : null}
 
+                    {!member.is_admin ? (
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          setCourseTarget({
+                            user_id: member.user_id,
+                            display_name: member.display_name,
+                          })
+                        }
+                        className="flex items-center gap-2"
+                      >
+                        <BookLock
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                        />
+                        Course access (Retake)
+                      </DropdownMenuItem>
+                    ) : null}
+
                     {canManageAdmins ? <DropdownMenuSeparator /> : null}
 
                     <DropdownMenuItem
@@ -263,6 +287,12 @@ export function MemberManager({
       <p className="text-muted-foreground text-xs">
         A class always keeps at least one admin.
       </p>
+
+      <MemberCourseAccessDialog
+        classSlug={classSlug}
+        member={courseTarget}
+        onClose={() => setCourseTarget(null)}
+      />
     </div>
   );
 }

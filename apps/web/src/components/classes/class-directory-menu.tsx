@@ -40,7 +40,7 @@ export function ClassDirectoryMenu({
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
           <Link
-            href={`/app/classes/${classSlug}`}
+            href={`/classes/${classSlug}`}
             className="flex items-center gap-2"
           >
             <LayoutDashboard
@@ -55,7 +55,7 @@ export function ClassDirectoryMenu({
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link
-                href={`/app/classes/${classSlug}/manage`}
+                href={`/classes/${classSlug}/manage`}
                 className="flex items-center gap-2"
               >
                 <ShieldCheck

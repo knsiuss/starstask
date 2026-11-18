@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { CreateClassForm } from "@/components/classes/create-class-form";
+import { CreateClassTabs } from "@/components/classes/create-class-tabs";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { getSessionUser } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -60,7 +60,7 @@ export default async function CreateClassPage() {
           the same cohort class cannot be created twice.
         </p>
 
-        <CreateClassForm />
+        <CreateClassTabs />
       </div>
     </div>
   );

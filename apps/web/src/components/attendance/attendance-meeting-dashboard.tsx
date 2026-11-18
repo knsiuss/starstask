@@ -18,6 +18,7 @@ import * as React from "react";
 import { AttendanceMeetingLocationForm } from "@/components/attendance/attendance-meeting-location-form";
 import { AttendanceMeetingTable } from "@/components/attendance/attendance-meeting-table";
 import { AttendanceShareLinkButton } from "@/components/attendance/attendance-share-link";
+import { AttendanceSyncCodeButton } from "@/components/attendance/attendance-sync-code-button";
 import { Alert } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import type {
   AttendanceMeetingDetail,
@@ -92,6 +96,8 @@ export function AttendanceMeetingDashboard({
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
   const [isChangingLocation, setIsChangingLocation] = React.useState(false);
   const [finalizeOpen, setFinalizeOpen] = React.useState(false);
+  const [bapTopic, setBapTopic] = React.useState("");
+  const [bapNotes, setBapNotes] = React.useState("");
   const pendingRef = React.useRef<string | null>(null);
   const refreshSeqRef = React.useRef(0);
   const isOpen = detail.phase === "open";
@@ -153,7 +159,17 @@ export function AttendanceMeetingDashboard({
 
       if (response.ok) {
         const blob = await response.blob();
-        window.open(URL.createObjectURL(blob), "_blank");
+        const disposition = response.headers.get("Content-Disposition") ?? "";
+        const match = /filename="?([^";]+)"?/i.exec(disposition);
+        const filename = match?.[1] ?? `meeting-${detail.meetingNumber}.xlsx`;
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
         return;
       }
 
@@ -409,6 +425,35 @@ export function AttendanceMeetingDashboard({
                     Reopening removes only those automatic absences, so a manual
                     correction is never discarded.
                   </DialogDescription>
+                  <div className="mt-4 space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bap-topic">
+                        Session topic (BAP, optional)
+                      </Label>
+                      <Input
+                        id="bap-topic"
+                        value={bapTopic}
+                        onChange={(event) => setBapTopic(event.target.value)}
+                        placeholder="e.g. Week 5 — Normalization & Indexing"
+                        maxLength={300}
+                        disabled={pending !== null}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bap-notes">
+                        Teaching notes (optional)
+                      </Label>
+                      <Textarea
+                        id="bap-notes"
+                        value={bapNotes}
+                        onChange={(event) => setBapNotes(event.target.value)}
+                        placeholder="Summary of material covered or follow-ups"
+                        rows={3}
+                        maxLength={2000}
+                        disabled={pending !== null}
+                      />
+                    </div>
+                  </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button
                       type="button"
@@ -416,7 +461,15 @@ export function AttendanceMeetingDashboard({
                       onClick={() =>
                         void run(
                           "close",
-                          { finalize: true },
+                          {
+                            finalize: true,
+                            ...(bapTopic.trim()
+                              ? { bapTopic: bapTopic.trim() }
+                              : {}),
+                            ...(bapNotes.trim()
+                              ? { bapNotes: bapNotes.trim() }
+                              : {}),
+                          },
                           "Attendance finalized",
                         )
                       }
@@ -523,6 +576,12 @@ export function AttendanceMeetingDashboard({
           </Button>
 
           <AttendanceShareLinkButton
+            sessionId={detail.sessionId}
+            meetingNumber={detail.meetingNumber}
+          />
+
+          <AttendanceSyncCodeButton
+            classSlug={classSlug}
             sessionId={detail.sessionId}
             meetingNumber={detail.meetingNumber}
           />

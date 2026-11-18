@@ -6,23 +6,56 @@ import { Button } from "@/components/ui/button";
  * Plain-text empty states. When the list is empty the only useful things are
  * the reason and the way out, so there is no card, icon tile, or shadow here.
  */
-export function EmptyClassDirectory() {
+export function EmptyClassDirectory({
+  isLecturer = false,
+}: {
+  isLecturer?: boolean;
+}) {
   return (
     <div className="px-2 py-16 text-center">
       <p className="text-foreground text-sm font-medium">
-        You haven&apos;t joined any classes yet
+        {isLecturer
+          ? "You do not teach any classes yet"
+          : "You haven't joined any classes yet"}
       </p>
-      <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-sm leading-relaxed">
-        Join a class with an invitation code to see its subjects, assignments,
-        and members.
+      <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm leading-relaxed">
+        {isLecturer
+          ? "Create a new class, import your teaching schedule / KRS, or join an existing class with an invitation code."
+          : "Join a class with an invitation code to see its subjects, assignments, and members."}
       </p>
-      <Button
-        asChild
-        size="sm"
-        className="mt-5"
-      >
-        <Link href="/classes/join">Join a class</Link>
-      </Button>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        {isLecturer ? (
+          <>
+            <Button
+              asChild
+              size="sm"
+            >
+              <Link href="/classes/create">Create class</Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="secondary"
+            >
+              <Link href="/classes/create?tab=krs">Import KRS / Schedule</Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="secondary"
+            >
+              <Link href="/classes/join">Join a class</Link>
+            </Button>
+          </>
+        ) : (
+          <Button
+            asChild
+            size="sm"
+          >
+            <Link href="/classes/join">Join a class</Link>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

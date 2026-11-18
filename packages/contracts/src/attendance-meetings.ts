@@ -267,14 +267,62 @@ export type AttendanceMeetingLocationChangeInput = z.infer<
   typeof attendanceMeetingLocationChangeSchema
 >;
 
+export const ATTENDANCE_MEETING_BAP_TOPIC_MAX = 300;
+export const ATTENDANCE_MEETING_BAP_NOTES_MAX = 2000;
+export const ATTENDANCE_TARGET_MEETINGS_MIN = 14;
+export const ATTENDANCE_TARGET_MEETINGS_MAX = 16;
+export const ATTENDANCE_TARGET_MEETINGS_DEFAULT = 14;
+
+const optionalBapTopicSchema = z
+  .string()
+  .trim()
+  .max(
+    ATTENDANCE_MEETING_BAP_TOPIC_MAX,
+    `BAP topic must be ${ATTENDANCE_MEETING_BAP_TOPIC_MAX} characters or fewer`,
+  )
+  .optional()
+  .nullable()
+  .transform((value) => (value === "" || value === null ? undefined : value));
+
+const optionalBapNotesSchema = z
+  .string()
+  .trim()
+  .max(
+    ATTENDANCE_MEETING_BAP_NOTES_MAX,
+    `BAP notes must be ${ATTENDANCE_MEETING_BAP_NOTES_MAX} characters or fewer`,
+  )
+  .optional()
+  .nullable()
+  .transform((value) => (value === "" || value === null ? undefined : value));
+
 export const attendanceMeetingCloseSchema = z
   .object({
     finalize: z.boolean().default(true),
+    bapTopic: optionalBapTopicSchema,
+    bapNotes: optionalBapNotesSchema,
   })
   .strict();
 
 export type AttendanceMeetingCloseInput = z.infer<
   typeof attendanceMeetingCloseSchema
+>;
+
+export const attendanceMeetingBapUpdateSchema = z
+  .object({
+    bapTopic: z
+      .string()
+      .trim()
+      .min(3, "Enter a BAP topic of at least 3 characters")
+      .max(
+        ATTENDANCE_MEETING_BAP_TOPIC_MAX,
+        `BAP topic must be ${ATTENDANCE_MEETING_BAP_TOPIC_MAX} characters or fewer`,
+      ),
+    bapNotes: optionalBapNotesSchema,
+  })
+  .strict();
+
+export type AttendanceMeetingBapUpdateInput = z.infer<
+  typeof attendanceMeetingBapUpdateSchema
 >;
 
 export const ATTENDANCE_CORRECTION_REASON_MIN = 3;

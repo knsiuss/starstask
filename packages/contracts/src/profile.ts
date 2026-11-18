@@ -232,7 +232,7 @@ export const classJoinResultSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("no_match") }),
   z.object({
     status: z.literal("ambiguous"),
-    candidates: z.array(joinCandidateSchema).min(1),
+    candidates: z.array(joinCandidateSchema).min(1).max(50),
   }),
 ]);
 
@@ -298,8 +298,13 @@ export function buildCanonicalClassIdentity(input: {
   semesterNumber: number;
   academicYear: string;
 }): CanonicalClassIdentity {
-  const classCode = input.classCode.trim().toUpperCase();
   const paddedSemester = String(input.semesterNumber).padStart(2, "0");
+  const rawCode = input.classCode.trim().toUpperCase();
+  const classCode =
+    rawCode.startsWith(paddedSemester) &&
+    rawCode.length > paddedSemester.length + 1
+      ? rawCode.slice(paddedSemester.length)
+      : rawCode;
   const [startYear = "", endYear = ""] = input.academicYear.trim().split("/");
   const shortYear = `${startYear.slice(-2)}/${endYear.slice(-2)}`;
   const name = `${paddedSemester}${classCode}-${shortYear}`;

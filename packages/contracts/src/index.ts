@@ -3,6 +3,7 @@ export * from "./admin";
 export * from "./assignment";
 export * from "./attendance";
 export * from "./attendance-meetings";
+export * from "./attendance-sync";
 export * from "./calendar";
 export * from "./class-schedule";
 export * from "./classes";

@@ -14,6 +14,10 @@ import {
 import { ScheduleEntryGroups } from "@/components/schedule/schedule-entry-groups";
 import { ScheduleImport } from "@/components/schedule/schedule-import";
 import type { ClassScheduleEntry } from "@/lib/db/class-schedule";
+import {
+  findScheduleCollisions,
+  formatScheduleCollisionMessage,
+} from "@/lib/schedule/collision";
 
 type ScheduleManagerProps = {
   classSlug: string;
@@ -111,13 +115,45 @@ export function ScheduleManager({
       return;
     }
 
-    setBusyId(editingId ?? "new");
-
     // The manual form has no period/date controls, so an edit keeps the
     // semester range the row already carries (usually from an import).
     const editingEntry = editingId
       ? entries.find((entry) => entry.id === editingId)
       : undefined;
+
+    const collisions = findScheduleCollisions(
+      {
+        id: editingId ?? undefined,
+        dayOfWeek: parsed.data.dayOfWeek,
+        startTime: parsed.data.startTime,
+        endTime: parsed.data.endTime,
+        room: parsed.data.room,
+        lecturerName: parsed.data.lecturerName,
+        startDate: parsed.data.startDate ?? editingEntry?.start_date,
+        endDate: parsed.data.endDate ?? editingEntry?.end_date,
+      },
+      entries.map((entry) => ({
+        id: entry.id,
+        dayOfWeek: entry.day_of_week,
+        startTime: entry.start_time,
+        endTime: entry.end_time,
+        room: entry.room,
+        lecturerName: entry.lecturer_name,
+        startDate: entry.start_date,
+        endDate: entry.end_date,
+      })),
+    );
+
+    const [firstConflict] = collisions;
+
+    if (firstConflict) {
+      const conflictMessage = formatScheduleCollisionMessage(firstConflict);
+      setFieldErrors({ startTime: conflictMessage });
+      setError(conflictMessage);
+      return;
+    }
+
+    setBusyId(editingId ?? "new");
     const payload = {
       ...parsed.data,
       period: parsed.data.period ?? editingEntry?.period ?? undefined,
@@ -138,11 +174,15 @@ export function ScheduleManager({
       );
 
       const body = (await response.json().catch(() => null)) as {
-        error?: { message?: string; fields?: Record<string, string> };
+        error?: {
+          message?: string;
+          fields?: Record<string, string>;
+          fieldErrors?: Record<string, string>;
+        };
       } | null;
 
       if (!response.ok) {
-        setFieldErrors(body?.error?.fields ?? {});
+        setFieldErrors(body?.error?.fieldErrors ?? body?.error?.fields ?? {});
         setError(body?.error?.message ?? "Could not save the schedule entry.");
         return;
       }

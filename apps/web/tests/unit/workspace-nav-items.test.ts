@@ -10,13 +10,18 @@ import {
 const hrefs = (items: { href: string }[]) => items.map((item) => item.href);
 
 describe("workspace navigation for a lecturer", () => {
-  it("leads with the work waiting on them", () => {
+  it("leads with teaching destinations and excludes student-only routes", () => {
     expect(hrefs(TEACHING_ITEMS)).toEqual([
-      "/app",
-      "/app/actions",
+      "/lecturer",
+      "/actions",
+      "/classes",
+      "/schedule",
       "/attendance",
       "/leave-requests",
     ]);
+    expect(hrefs(TEACHING_ITEMS)).not.toContain("/app");
+    expect(hrefs(TEACHING_ITEMS)).not.toContain("/assignments");
+    expect(hrefs(TEACHING_ITEMS)).not.toContain("/messages");
   });
 
   it("keeps the teaching destinations out of the study list", () => {
@@ -28,13 +33,8 @@ describe("workspace navigation for a lecturer", () => {
     expect(duplicates).toEqual([]);
   });
 
-  it("still leaves the student-only destinations under My studies", () => {
-    expect(hrefs(LEARNING_ITEMS)).toEqual([
-      "/assignments",
-      "/classes",
-      "/schedule",
-      "/messages",
-    ]);
+  it("leaves only non-teaching student items in LEARNING_ITEMS", () => {
+    expect(hrefs(LEARNING_ITEMS)).toEqual(["/assignments", "/messages"]);
   });
 
   it("does not change the student study list", () => {
@@ -44,6 +44,6 @@ describe("workspace navigation for a lecturer", () => {
   });
 
   it("routes the class-leader action center to the same destination", () => {
-    expect(hrefs(LEADER_ITEMS)).toEqual(["/app/actions"]);
+    expect(hrefs(LEADER_ITEMS)).toEqual(["/actions"]);
   });
 });

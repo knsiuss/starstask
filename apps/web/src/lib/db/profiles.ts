@@ -262,7 +262,16 @@ export async function joinOrCreateCanonicalClass(
     };
   } catch (error) {
     if (error instanceof DataAccessError && error.code === "23505") {
-      return joinClassByName(identity.slug);
+      const retry = await joinClassByName(identity.slug);
+
+      if (retry.status === "no_match") {
+        throw new DataAccessError(
+          "This class exists but is not currently active.",
+          "22023",
+        );
+      }
+
+      return retry;
     }
 
     throw error;

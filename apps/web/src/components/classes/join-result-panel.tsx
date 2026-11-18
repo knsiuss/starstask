@@ -45,7 +45,7 @@ export function JoinResultPanel({
           ) : null}
           <p className="mt-2">
             <Link
-              href={`/app/classes/${encodeURIComponent(result.slug)}`}
+              href={`/classes/${encodeURIComponent(result.slug)}`}
               className="text-accent font-medium hover:underline"
             >
               Open the class

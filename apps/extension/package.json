@@ -1,0 +1,22 @@
+{
+  "name": "@starstask/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "StarsTask SIAKAD Attendance Injector Manifest V3 browser extension",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "esbuild": "0.28.2",
+    "eslint": "9.39.5",
+    "jsdom": "^26.1.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.0.5"
+  }
+}

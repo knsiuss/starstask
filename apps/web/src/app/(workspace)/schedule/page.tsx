@@ -10,8 +10,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { PageHeader } from "@/components/layout/page-header";
+import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { EventFormDialog } from "@/components/schedule/event-form-dialog";
+import { FilterDrawer } from "@/components/schedule/filter-drawer";
 import { MobileViewRedirect } from "@/components/schedule/mobile-view-redirect";
 import {
   MiniCalendar,
@@ -25,6 +28,7 @@ import { ResponsiveTimelineBoard } from "@/components/schedule/timeline-board";
 import { TimelineList } from "@/components/schedule/timeline-list";
 import { UpcomingAssignments } from "@/components/schedule/upcoming-assignments";
 import { Alert } from "@/components/ui/alert";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
 import { listCalendarEvents } from "@/lib/db/calendar";
 import { isSupabaseConfigured } from "@/lib/env/public";
@@ -62,8 +66,6 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const pageContainer = "mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8";
-
 const VIEW_LABELS: Record<Exclude<CalendarView, "day">, string> = {
   week: "Week",
   month: "Month",
@@ -83,12 +85,12 @@ export default async function SchedulePage({
 }: SchedulePageProps) {
   if (!isSupabaseConfigured()) {
     return (
-      <div className={pageContainer}>
-        <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
+      <PageShell width="canvas">
+        <PageHeader title="Calendar" />
         <div className="mt-6">
           <SetupNotice />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -119,8 +121,8 @@ export default async function SchedulePage({
 
   if (!parsed.success) {
     return (
-      <div className={pageContainer}>
-        <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
+      <PageShell width="canvas">
+        <PageHeader title="Calendar" />
         <Alert
           variant="error"
           className="mt-6"
@@ -136,11 +138,12 @@ export default async function SchedulePage({
             and try again.
           </p>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
   const query = parsed.data;
+  const lecturer = flat.view !== "student" && (await isLecturer());
   const today = todayDateKey();
   const showHistory = query.history === "1";
   const hasExplicitView = "view" in raw;
@@ -190,16 +193,21 @@ export default async function SchedulePage({
 
   const isBoardView = query.view === "week" || query.view === "month";
 
+  const activeFilterCount =
+    (query.type !== "all" ? 1 : 0) +
+    (query.mine === "mine" ? 1 : 0) +
+    (selected !== null ? 1 : 0);
+
   const sidebarContent = (
     <>
-      <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
+      <div className="border-border bg-surface rounded-xl border p-4">
         <MiniCalendar
           anchorKey={anchorKey}
           markedKeys={markedKeys}
         />
       </div>
 
-      <div className="border-border bg-surface rounded-2xl border p-4 shadow-sm">
+      <div className="border-border bg-surface rounded-xl border p-4">
         <TypeSelect
           query={query}
           dateKey={anchorKey}
@@ -221,54 +229,56 @@ export default async function SchedulePage({
     </>
   );
 
-  return (
-    <div className={pageContainer}>
-      <MobileViewRedirect hasExplicitView={hasExplicitView} />
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm">
-            Every deadline across your classes on one academic timeline.
-            Assignment bars span from publication to deadline.
-          </p>
-        </div>
+  const headerActions = (
+    <>
+      {data.storageReady ? (
+        <EventFormDialog
+          scope="personal"
+          defaultDateKey={anchorKey}
+          triggerLabel={
+            <>
+              <UserRound
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Personal event
+            </>
+          }
+          triggerVariant="secondary"
+        />
+      ) : null}
+      {data.storageReady && adminClasses.length > 0 ? (
+        <EventFormDialog
+          scope="official"
+          defaultDateKey={anchorKey}
+          classes={data.classes}
+          subjects={data.subjects}
+          triggerLabel={
+            <>
+              <PlusCircle
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+              Official event
+            </>
+          }
+        />
+      ) : null}
+    </>
+  );
 
-        <div className="flex flex-wrap items-center gap-2">
-          {data.storageReady ? (
-            <EventFormDialog
-              scope="personal"
-              defaultDateKey={anchorKey}
-              triggerLabel={
-                <>
-                  <UserRound
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                  />
-                  Personal event
-                </>
-              }
-              triggerVariant="secondary"
-            />
-          ) : null}
-          {data.storageReady && adminClasses.length > 0 ? (
-            <EventFormDialog
-              scope="official"
-              defaultDateKey={anchorKey}
-              classes={data.classes}
-              subjects={data.subjects}
-              triggerLabel={
-                <>
-                  <PlusCircle
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                  />
-                  Official event
-                </>
-              }
-            />
-          ) : null}
-        </div>
-      </header>
+  return (
+    <PageShell width="canvas">
+      <MobileViewRedirect hasExplicitView={hasExplicitView} />
+      <PageHeader
+        title={lecturer ? "Teaching Schedule" : "Calendar"}
+        description={
+          lecturer
+            ? "Scheduled classes, teaching sessions, and assignment deadlines across the classes you administer."
+            : "Every deadline across your classes on one academic timeline. Assignment bars span from publication to deadline."
+        }
+        actions={headerActions}
+      />
 
       {!data.storageReady ? (
         <Alert
@@ -285,101 +295,116 @@ export default async function SchedulePage({
         </Alert>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <nav
-          aria-label="Calendar views"
-          className="bg-muted inline-flex rounded-lg p-1"
-        >
-          {VISIBLE_VIEWS.map((view) => (
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <nav
+            aria-label="Calendar views"
+            className="bg-muted inline-flex rounded-lg p-1"
+          >
+            {VISIBLE_VIEWS.map((view) => (
+              <Link
+                key={view}
+                href={scheduleHref(query, anchorKey, { view }, selected)}
+                prefetch={false}
+                aria-current={
+                  view === query.view ||
+                  (view === "list" && query.view === "day")
+                    ? "page"
+                    : undefined
+                }
+                className={cn(
+                  "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  view === query.view ||
+                    (view === "list" && query.view === "day")
+                    ? "bg-surface text-foreground border-border border"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {VIEW_LABELS[view]}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="lg:hidden">
+            <FilterDrawer activeFilterCount={activeFilterCount}>
+              {sidebarContent}
+            </FilterDrawer>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <Link
-              key={view}
-              href={scheduleHref(query, anchorKey, { view }, selected)}
+              href={scheduleHref(
+                query,
+                anchorKey,
+                { date: shiftCalendarAnchor(query.view, anchorKey, -1) },
+                selected,
+              )}
+              aria-label="Previous period"
               prefetch={false}
-              aria-current={
-                view === query.view || (view === "list" && query.view === "day")
-                  ? "page"
-                  : undefined
-              }
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
+            >
+              <ChevronLeft
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            </Link>
+            <p
+              aria-live="polite"
+              className="min-w-36 text-center text-sm font-medium sm:min-w-44"
+            >
+              {rangeLabel}
+            </p>
+            <Link
+              href={scheduleHref(
+                query,
+                anchorKey,
+                { date: shiftCalendarAnchor(query.view, anchorKey, 1) },
+                selected,
+              )}
+              aria-label="Next period"
+              prefetch={false}
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
+            >
+              <ChevronRight
+                aria-hidden="true"
+                className="h-4 w-4"
+              />
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Link
+              href={scheduleHref(query, anchorKey, { date: today }, selected)}
+              prefetch={false}
+              className="border-border bg-surface text-foreground hover:bg-muted rounded-md border px-2.5 py-1.5 text-xs font-medium"
+            >
+              Today
+            </Link>
+            <Link
+              href={scheduleHref(
+                query,
+                anchorKey,
+                { history: showHistory ? "0" : "1" },
+                selected,
+              )}
+              aria-pressed={showHistory}
+              prefetch={false}
               className={cn(
-                "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-                view === query.view || (view === "list" && query.view === "day")
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                showHistory
+                  ? "border-accent/40 bg-accent-soft text-accent"
+                  : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              {VIEW_LABELS[view]}
+              <History
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+              Past Events
             </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-1">
-          <Link
-            href={scheduleHref(
-              query,
-              anchorKey,
-              { date: shiftCalendarAnchor(query.view, anchorKey, -1) },
-              selected,
-            )}
-            aria-label="Previous period"
-            prefetch={false}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
-          >
-            <ChevronLeft
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-          </Link>
-          <p
-            aria-live="polite"
-            className="min-w-44 text-center text-sm font-medium"
-          >
-            {rangeLabel}
-          </p>
-          <Link
-            href={scheduleHref(
-              query,
-              anchorKey,
-              { date: shiftCalendarAnchor(query.view, anchorKey, 1) },
-              selected,
-            )}
-            aria-label="Next period"
-            prefetch={false}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2"
-          >
-            <ChevronRight
-              aria-hidden="true"
-              className="h-4 w-4"
-            />
-          </Link>
-          <Link
-            href={scheduleHref(query, anchorKey, { date: today }, selected)}
-            prefetch={false}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground ml-1 rounded-md px-2.5 py-1.5 text-xs font-medium"
-          >
-            Today
-          </Link>
-          <Link
-            href={scheduleHref(
-              query,
-              anchorKey,
-              { history: showHistory ? "0" : "1" },
-              selected,
-            )}
-            aria-pressed={showHistory}
-            prefetch={false}
-            className={cn(
-              "ml-1 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-              showHistory
-                ? "bg-surface text-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <History
-              aria-hidden="true"
-              className="h-3.5 w-3.5"
-            />
-            Past Events
-          </Link>
+          </div>
         </div>
       </div>
 
@@ -428,7 +453,7 @@ export default async function SchedulePage({
         data from the assignment record, so publishing, editing, or archiving an
         assignment is reflected here immediately.
       </p>
-    </div>
+    </PageShell>
   );
 }
 

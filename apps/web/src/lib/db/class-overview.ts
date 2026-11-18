@@ -2,6 +2,7 @@ import "server-only";
 
 import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { DataAccessError } from "@/lib/db/assignments";
+import { listClassAttendanceMeetings } from "@/lib/db/attendance-meetings";
 import { loadProfiles } from "@/lib/db/classes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getDeadlineState } from "@starstask/shared";
@@ -42,10 +43,18 @@ export type ClassOverviewStats = {
   completed: number;
 };
 
+export type OverviewActiveMeeting = {
+  id: string;
+  title: string;
+  meetingNumber: number | null;
+  courseName: string | null;
+};
+
 export type ClassOverviewData = {
   recent: OverviewAssignment[];
   posts: OverviewPost[];
   stats: ClassOverviewStats;
+  activeMeeting: OverviewActiveMeeting | null;
 };
 
 const RECENT_LIMIT = 5;
@@ -178,7 +187,20 @@ export async function getClassOverviewData(
   const postRows = [...announcements]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, POSTS_LIMIT);
-  const profiles = await loadProfiles(postRows.map((row) => row.user_id));
+  const [profiles, meetings] = await Promise.all([
+    loadProfiles(postRows.map((row) => row.user_id)),
+    listClassAttendanceMeetings(classId).catch(() => []),
+  ]);
+
+  const openMeeting = meetings.find((meeting) => meeting.phase === "open");
+  const activeMeeting: OverviewActiveMeeting | null = openMeeting
+    ? {
+        id: openMeeting.sessionId,
+        title: openMeeting.title,
+        meetingNumber: openMeeting.meetingNumber,
+        courseName: openMeeting.subjectName,
+      }
+    : null;
 
   const posts = postRows.map((row) => ({
     id: row.id,
@@ -198,5 +220,6 @@ export async function getClassOverviewData(
       dueToday,
       completed: completedIds.size,
     },
+    activeMeeting,
   };
 }

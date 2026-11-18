@@ -455,7 +455,7 @@ const CLASS_DIRECTORY_LIMIT = 100;
  * caller's rows, so a different user's classes never reach this function even
  * if a userId is passed in from the client.
  */
-export async function listMyClassDirectory(
+export const listMyClassDirectory = cache(async function listMyClassDirectory(
   userId: string,
 ): Promise<ClassDirectoryItem[]> {
   const supabase = await createSupabaseServerClient();
@@ -553,7 +553,7 @@ export async function listMyClassDirectory(
     member_count: memberCounts.get(membership.id) ?? 0,
     admin_name: adminNames.get(membership.id) ?? null,
   }));
-}
+});
 
 /** One request per class, matching the dashboard's exact-count approach. */
 async function countPublishedAssignmentsByClass(

@@ -7,9 +7,11 @@ import { Pagination } from "@/components/assignments/pagination";
 import { LeaveFilters } from "@/components/leave/leave-filters";
 import { LeaveRequestList } from "@/components/leave/leave-request-list";
 import { LeaveStats } from "@/components/leave/leave-stats";
+import { LecturerLeaveView } from "@/components/lecturer/lecturer-leave-view";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
 import { listMyClasses } from "@/lib/db/classes";
 import {
@@ -30,7 +32,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const pageContainer = "mx-auto w-full max-w-6xl px-3 py-5 sm:px-8 lg:px-10";
+const pageContainer =
+  "mx-auto w-full max-w-6xl px-4 pt-6 pb-24 sm:px-8 sm:py-8 lg:px-10";
 
 type LeaveRequestsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -78,6 +81,10 @@ export default async function LeaveRequestsPage({
 
   if (!session) {
     redirect(buildLoginPath("/leave-requests"));
+  }
+
+  if (flat.view !== "student" && (await isLecturer())) {
+    return <LecturerLeaveView userId={session.user.id} />;
   }
 
   const query = parsed.data;
@@ -131,7 +138,7 @@ export default async function LeaveRequestsPage({
           <Button
             asChild
             size="lg"
-            className="w-full sm:w-auto"
+            className="min-h-[44px] w-full sm:w-auto"
           >
             <Link href={newHref}>
               <PlusCircle
@@ -171,7 +178,12 @@ export default async function LeaveRequestsPage({
       <div className="mt-4">
         <LeaveFilters
           action="/leave-requests"
-          values={{ status: query.status, from: query.from, to: query.to }}
+          values={{
+            status: query.status,
+            from: query.from,
+            to: query.to,
+            q: query.q,
+          }}
         />
       </div>
 
@@ -218,7 +230,7 @@ export default async function LeaveRequestsPage({
         }}
       />
 
-      <p className="bg-band text-muted-foreground mt-5 flex items-start gap-2 rounded-xl px-4 py-3 text-xs leading-relaxed">
+      <p className="bg-band text-muted-foreground mt-5 hidden items-start gap-2 rounded-xl px-4 py-3 text-xs leading-relaxed sm:flex">
         <Info
           aria-hidden="true"
           className="text-accent mt-0.5 h-3.5 w-3.5 shrink-0"

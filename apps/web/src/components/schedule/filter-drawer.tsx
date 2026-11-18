@@ -3,6 +3,7 @@
 import { SlidersHorizontal } from "lucide-react";
 import * as React from "react";
 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +13,8 @@ import {
 
 /**
  * Filters below the lg breakpoint. The desktop sticky sidebar renders the
- * same content; here it lives in a bottom sheet so the board keeps the
- * full width on tablet and mobile.
+ * same content; here it lives in a dialog so the board keeps the full width
+ * on tablet and mobile.
  */
 export function FilterDrawer({
   activeFilterCount,
@@ -26,30 +27,31 @@ export function FilterDrawer({
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="border-border bg-surface text-foreground hover:bg-subtle inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium"
       >
         <SlidersHorizontal
           aria-hidden="true"
-          className="h-4 w-4"
+          className="h-3.5 w-3.5"
         />
         Filters
         {activeFilterCount > 0 ? (
-          <span className="bg-accent inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold text-white">
+          <span className="bg-accent text-accent-foreground inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
             {activeFilterCount}
           </span>
         ) : null}
-      </button>
+      </Button>
 
       <Dialog
         open={open}
         onOpenChange={setOpen}
       >
         <DialogContent
-          className="max-h-[85dvh] overflow-y-auto rounded-t-3xl"
+          className="max-h-[85dvh] overflow-y-auto rounded-xl"
           aria-label="Calendar filters"
         >
           <DialogTitle>Filters</DialogTitle>
@@ -57,13 +59,13 @@ export function FilterDrawer({
             Refine the calendar to the courses and event types you need.
           </DialogDescription>
           <div className="mt-4 space-y-5">{children}</div>
-          <button
+          <Button
             type="button"
             onClick={() => setOpen(false)}
-            className="bg-accent hover:bg-accent-soft mt-4 w-full rounded-xl py-2.5 text-sm font-medium text-white"
+            className="mt-5 w-full"
           >
             Show Results
-          </button>
+          </Button>
         </DialogContent>
       </Dialog>
     </>

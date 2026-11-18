@@ -38,9 +38,7 @@ export function CreatePresenceButton({
         asChild
         size="sm"
       >
-        <Link
-          href={`/app/classes/${firstClass.slug}/attendance#create-attendance`}
-        >
+        <Link href={`/classes/${firstClass.slug}/attendance#create-attendance`}>
           <Plus
             aria-hidden="true"
             className="h-3.5 w-3.5"
@@ -73,7 +71,7 @@ export function CreatePresenceButton({
             asChild
           >
             <Link
-              href={`/app/classes/${classItem.slug}/attendance#create-attendance`}
+              href={`/classes/${classItem.slug}/attendance#create-attendance`}
             >
               {classItem.name}
             </Link>

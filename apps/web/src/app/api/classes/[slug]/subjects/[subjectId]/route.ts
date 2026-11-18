@@ -13,6 +13,7 @@ import {
   getClassSubjectById,
   updateClassSubject,
 } from "@/lib/db/classes";
+import { canAccessCourse } from "@/lib/db/course-access";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import {
@@ -32,7 +33,7 @@ export async function GET(
     }
 
     const { slug, subjectId } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     await enforceRateLimit({
       action: "classes:subjects:get",
@@ -43,7 +44,12 @@ export async function GET(
 
     const subject = await getClassSubjectById(subjectId);
 
-    if (!subject || subject.class_id !== found.id) {
+    if (
+      !subject ||
+      subject.class_id !== found.id ||
+      (!role.canManage &&
+        !(await canAccessCourse(found.id, session.user.id, subject.id)))
+    ) {
       throw notFound();
     }
 

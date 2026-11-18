@@ -11,9 +11,12 @@ import {
 import { ClassDirectoryToolbar } from "@/components/classes/class-directory-toolbar";
 import { ClassDirectoryViewToggle } from "@/components/classes/class-directory-view-toggle";
 import { SetupNotice } from "@/components/layout/setup-notice";
+import { LecturerCoursesView } from "@/components/lecturer/lecturer-courses-view";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
+import { getLecturerBapProgress } from "@/lib/db/lecturer-bap";
 import {
   listMyClassDirectory,
   type ClassDirectoryItem,
@@ -87,7 +90,15 @@ export default async function MyClassesPage({
   }
 
   const query = parsed.data;
-  const classes = await listMyClassDirectory(session.user.id);
+  const lecturer = rawParams.view !== "student" ? await isLecturer() : false;
+  const lecturerMode =
+    lecturer && rawParams.mode !== "classes" ? "courses" : "classes";
+  const [classes, lecturerCourses] = await Promise.all([
+    listMyClassDirectory(session.user.id),
+    lecturer && lecturerMode === "courses"
+      ? getLecturerBapProgress(session.user.id).catch(() => null)
+      : Promise.resolve(null),
+  ]);
   const semesters = [
     ...new Set(classes.map((classItem) => classItem.semester)),
   ].sort((left, right) => left.localeCompare(right));
@@ -107,10 +118,12 @@ export default async function MyClassesPage({
       <header className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-[26px] leading-tight font-semibold tracking-tight sm:text-3xl">
-            My Classes
+            {lecturer ? "Classes you teach" : "My Classes"}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            All your enrolled class groups in one place.
+            {lecturer
+              ? "Manage the classes you administer and teach on StarsTask."
+              : "All your enrolled class groups in one place."}
           </p>
         </div>
 
@@ -143,43 +156,103 @@ export default async function MyClassesPage({
         ) : null}
       </header>
 
-      {classes.length > 0 ? (
-        // Filters are a desktop concern only: on mobile they eat the first
-        // screen and push the cards down, so the panel is not rendered there
-        // at all. The toolbar component itself stays untouched.
-        <div className="mt-5 hidden lg:block">
-          <ClassDirectoryToolbar
-            query={query}
-            semesters={semesters}
-            academicYears={academicYears}
-            hasFilters={hasFilters}
-          />
+      {lecturer && classes.length > 0 ? (
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-muted inline-flex rounded-lg p-1 text-xs font-medium">
+            <Link
+              href="/classes?mode=courses"
+              className={
+                lecturerMode === "courses"
+                  ? "bg-background text-foreground rounded-md px-3 py-1.5 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5"
+              }
+            >
+              By course
+            </Link>
+            <Link
+              href="/classes?mode=classes"
+              className={
+                lecturerMode === "classes" && query.status !== "archived"
+                  ? "bg-background text-foreground rounded-md px-3 py-1.5 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5"
+              }
+            >
+              By class
+            </Link>
+            <Link
+              href="/classes?mode=classes&status=archived"
+              className={
+                lecturerMode === "classes" && query.status === "archived"
+                  ? "bg-background text-foreground rounded-md px-3 py-1.5 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5"
+              }
+            >
+              Archived
+            </Link>
+          </div>
+          {lecturerMode === "courses" && lecturerCourses ? (
+            <p className="text-muted-foreground text-sm">
+              {formatCount(lecturerCourses.offerings.length)}{" "}
+              {pluralize(lecturerCourses.offerings.length, "course")}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
-      {classes.length > 0 ? (
-        <div className="mt-4 flex items-center justify-between gap-3 lg:mt-5">
-          <p className="text-muted-foreground text-sm">
-            {formatCount(visible.length)}{" "}
-            {pluralize(visible.length, "class group")}
-            {hasFilters ? ` of ${formatCount(classes.length)}` : ""}
-          </p>
-          <ClassDirectoryViewToggle query={query} />
-        </div>
-      ) : null}
-
-      <div className="mt-4">
-        {classes.length === 0 ? (
-          <EmptyClassDirectory />
-        ) : visible.length === 0 ? (
-          <EmptyClassSearch />
+      {lecturerMode === "courses" && classes.length > 0 ? (
+        lecturerCourses ? (
+          <div className="mt-4">
+            <LecturerCoursesView summary={lecturerCourses} />
+          </div>
         ) : (
-          <ClassDirectoryList
-            classes={visible}
-            view={query.view}
-          />
-        )}
-      </div>
+          <Alert
+            variant="error"
+            className="mt-5"
+          >
+            Could not load your course BAP overview. Try refreshing the page.
+          </Alert>
+        )
+      ) : (
+        <>
+          {classes.length > 0 ? (
+            // Filters are a desktop concern only: on mobile they eat the first
+            // screen and push the cards down, so the panel is not rendered there
+            // at all. The toolbar component itself stays untouched.
+            <div className="mt-5 hidden lg:block">
+              <ClassDirectoryToolbar
+                query={query}
+                semesters={semesters}
+                academicYears={academicYears}
+                hasFilters={hasFilters}
+              />
+            </div>
+          ) : null}
+
+          {classes.length > 0 ? (
+            <div className="mt-4 flex items-center justify-between gap-3 lg:mt-5">
+              <p className="text-muted-foreground text-sm">
+                {formatCount(visible.length)}{" "}
+                {pluralize(visible.length, "class group")}
+                {hasFilters ? ` of ${formatCount(classes.length)}` : ""}
+              </p>
+              <ClassDirectoryViewToggle query={query} />
+            </div>
+          ) : null}
+
+          <div className="mt-4">
+            {classes.length === 0 ? (
+              <EmptyClassDirectory isLecturer={lecturer} />
+            ) : visible.length === 0 ? (
+              <EmptyClassSearch />
+            ) : (
+              <ClassDirectoryList
+                classes={visible}
+                view={query.view}
+              />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

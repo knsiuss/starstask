@@ -43,6 +43,6 @@ export async function enqueueExport(jobId: string): Promise<void> {
     url: `${getSiteUrl()}/api/worker/export`,
     body: { jobId },
     retries: 3,
-    failureCallback: `${getSiteUrl()}/api/worker/export`,
+    failureCallback: `${getSiteUrl()}/api/worker/export?failure=1`,
   });
 }

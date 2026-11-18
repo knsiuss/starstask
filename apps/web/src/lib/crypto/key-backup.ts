@@ -12,10 +12,11 @@
  */
 
 import {
-  exportPublicKey,
-  getOrCreateKeyPair,
+  getDefaultDeviceLabel,
+  getLocalKeyPairIfPresent,
+  getOrCreateSignedPrekey,
   importKeyPairFromJwk,
-  storeSelfKeyPair,
+  storeDeviceIdentity,
 } from "@/lib/crypto/e2ee";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -77,11 +78,26 @@ export async function backupPrivateKey(passphrase: string): Promise<void> {
   assertPassphrase(passphrase);
 
   const supabase = createSupabaseBrowserClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
-  if (!userId) throw new Error("Not signed in");
+  const { data: userData, error: userError } = await supabase.auth.getUser();
 
-  const pair = await getOrCreateKeyPair();
+  if (userError) {
+    throw new Error("Unable to verify your session. Sign in and retry.");
+  }
+
+  const userId = userData.user?.id;
+
+  if (!userId) {
+    throw new Error("Not signed in.");
+  }
+
+  const pair = await getLocalKeyPairIfPresent();
+
+  if (!pair) {
+    throw new Error(
+      "No encryption key found on this device. Set up or restore your key first.",
+    );
+  }
+
   const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -107,24 +123,51 @@ export async function backupPrivateKey(passphrase: string): Promise<void> {
     },
     { onConflict: "user_id" },
   );
-  if (error) throw error;
+
+  if (error) {
+    throw new Error("Could not save key backup to server. Try again.");
+  }
 }
 
 export async function restorePrivateKey(passphrase: string): Promise<void> {
-  const supabase = createSupabaseBrowserClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
-  if (!userId) throw new Error("Not signed in");
+  if (!passphrase) {
+    throw new Error("Enter your recovery passphrase.");
+  }
 
-  const { data } = await supabase
+  const supabase = createSupabaseBrowserClient();
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw new Error("Unable to verify your session. Sign in and retry.");
+  }
+
+  const userId = userData.user?.id;
+
+  if (!userId) {
+    throw new Error("Not signed in.");
+  }
+
+  const { data, error: fetchError } = await supabase
     .from("dm_key_backup" as any)
     .select("wrapped_private_key")
     .eq("user_id", userId)
-    .single();
-  if (!data) throw new Error("No backup found");
+    .maybeSingle();
 
-  const wrapped = (data as unknown as { wrapped_private_key: string })
+  if (fetchError) {
+    throw new Error("Could not load key backup from server.");
+  }
+
+  if (!data) {
+    throw new Error("No key backup found for this account.");
+  }
+
+  const wrapped = (data as unknown as { wrapped_private_key?: unknown })
     .wrapped_private_key;
+
+  if (typeof wrapped !== "string" || wrapped.length === 0) {
+    throw new Error("Invalid backup format.");
+  }
+
   const parts = wrapped.split(":");
   let iterations = LEGACY_ITERATIONS;
   let saltB64 = parts[0];
@@ -135,9 +178,11 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
   // 100k format and still restores (but is never written anymore).
   if (parts[0] === BACKUP_VERSION) {
     const parsedIterations = Number(parts[1]);
+
     if (!Number.isInteger(parsedIterations) || parsedIterations < 1) {
-      throw new Error("Invalid backup format");
+      throw new Error("Invalid backup format.");
     }
+
     iterations = parsedIterations;
     saltB64 = parts[2];
     ivB64 = parts[3];
@@ -145,35 +190,73 @@ export async function restorePrivateKey(passphrase: string): Promise<void> {
   }
 
   if (!saltB64 || !ivB64 || !cipherB64) {
-    throw new Error("Invalid backup format");
+    throw new Error("Invalid backup format.");
   }
 
-  const key = await derivePassphraseKey(
-    passphrase,
-    base64ToBytes(saltB64),
-    iterations,
-  );
-  const plain = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: base64ToBytes(ivB64) },
-    key,
-    base64ToBytes(cipherB64),
-  );
-  const jwk = JSON.parse(new TextDecoder().decode(plain)) as JsonWebKey;
+  let plain: ArrayBuffer;
 
-  const pair = await importKeyPairFromJwk(jwk);
+  try {
+    const key = await derivePassphraseKey(
+      passphrase,
+      base64ToBytes(saltB64),
+      iterations,
+    );
+
+    plain = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToBytes(ivB64) },
+      key,
+      base64ToBytes(cipherB64),
+    );
+  } catch {
+    throw new Error("Incorrect recovery passphrase or corrupted backup.");
+  }
+
+  let pair: CryptoKeyPair;
+
+  try {
+    const jwk = JSON.parse(new TextDecoder().decode(plain)) as JsonWebKey;
+
+    pair = await importKeyPairFromJwk(jwk);
+  } catch {
+    throw new Error("Backed-up key data is invalid.");
+  }
 
   // Store under the canonical device key: anything else would be orphaned
   // (this was the "self-private-only" bug).
-  await storeSelfKeyPair(pair);
+  const { deviceId, publicKey } = await storeDeviceIdentity(pair);
 
   // Re-publish the public key so peers encrypt to the restored keypair.
-  const publicKey = await exportPublicKey(pair);
   const response = await fetch("/api/dm/keys/me", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ publicKey }),
   });
+
   if (!response.ok) {
-    throw new Error("Key restored locally, but sync failed — retry setup");
+    throw new Error("Key restored locally, but sync failed. Retry setup.");
+  }
+
+  await registerCurrentDevice(deviceId, publicKey);
+}
+
+export async function registerCurrentDevice(
+  deviceId: string,
+  identityPublicKey: string,
+): Promise<void> {
+  const signedPrekey = await getOrCreateSignedPrekey();
+  const deviceResponse = await fetch("/api/dm/devices", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      deviceId,
+      deviceLabel: getDefaultDeviceLabel(),
+      identityPublicKey,
+      signedPrekeyPublic: signedPrekey.publicKey,
+      oneTimePrekeys: [],
+    }),
+  });
+
+  if (!deviceResponse.ok) {
+    throw new Error("Device registration failed. Reload and retry.");
   }
 }

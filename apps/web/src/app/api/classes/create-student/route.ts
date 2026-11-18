@@ -91,8 +91,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(
-      `[classes:create-student] ${error instanceof Error ? error.name : typeof error}: ` +
-        `${error instanceof Error ? error.message : "unknown"}` +
+      `[classes:create-student] ${error instanceof Error ? error.name : typeof error}` +
         `${error instanceof DataAccessError ? ` (${error.code})` : ""}`,
     );
 

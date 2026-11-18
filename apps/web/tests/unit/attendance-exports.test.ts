@@ -542,4 +542,40 @@ describe("manual checklist workbook", () => {
     expect(reference.slice(0, 3)).toEqual([1, "221001", "Ani Putri"]);
     expect(reference.slice(3)).toEqual(["P", "A"]);
   });
+
+  it("renders buildRecapWorkbook with brandingEnabled without merge collision", async () => {
+    const recap = recapFixture();
+    const bytes = await buildRecapWorkbook(recap, context, [], {
+      branding: {
+        universityName: "Universitas Pamulang",
+        universityShortName: "UNPAM",
+        universityTagline: "Berbagi Untuk Negeri",
+        faculty: "Fakultas Ilmu Komputer",
+        department: "Teknik Informatika",
+        studyProgram: "S1 Teknik Informatika",
+        address: "Jl. Surya Kencana No. 1",
+        city: "Tangerang Selatan",
+        officialWebsite: "https://unpam.ac.id",
+        officialEmail: "info@unpam.ac.id",
+        contactNumber: "021-7412566",
+        documentTitle: "Rekapitulasi Kehadiran Mahasiswa",
+        footerText: null,
+        productName: "Aphelion",
+        productTagline: "Academic Productivity",
+        productLogoUrl: "/aphelion-logo.png",
+        productFooter: "StarsTask",
+        brandingEnabled: true,
+        passingThreshold: 75,
+        universityLogoUrl: "",
+      },
+    });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(bytes.buffer as ArrayBuffer);
+
+    const sheet = requireSheet(workbook, "Summary");
+    expect(sheet.getRow(5).getCell(1).value).toBe(
+      "Rekapitulasi Kehadiran Mahasiswa",
+    );
+    expect(sheet.getRow(7).getCell(1).value).toContain("IMK");
+  });
 });

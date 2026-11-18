@@ -107,7 +107,7 @@ function ClassCard({ classItem }: { classItem: DashboardClass }) {
 
   return (
     <Link
-      href={`/app/classes/${classItem.slug}`}
+      href={`/classes/${classItem.slug}`}
       className="border-border bg-surface hover:border-accent/40 hover:bg-hover/40 focus-visible:outline-accent group flex h-full min-w-0 flex-col justify-between gap-3 rounded-xl border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <div className="flex items-start gap-3">

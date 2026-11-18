@@ -271,7 +271,7 @@ function IdentityStatusCard({ context }: { context: UniversityContext }) {
   switch (context.status) {
     case "active":
       return (
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
+        <Card className="border-success/30 bg-success-soft/40">
           <CardHeader>
             <CardTitle>Linked to {context.university.name}</CardTitle>
             <CardDescription>

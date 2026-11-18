@@ -31,9 +31,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import id.starstask.mobile.data.IntegrationDisconnectResult
 import id.starstask.mobile.data.IntegrationKind
+import id.starstask.mobile.data.disconnectIntegration
 import id.starstask.mobile.data.openIntegrationConnect
-import id.starstask.mobile.data.openIntegrationDisconnect
 import id.starstask.mobile.data.IntegrationStatus
 import id.starstask.mobile.data.NotificationPrefs
 import id.starstask.mobile.data.loadCalendarStatus
@@ -71,9 +72,11 @@ fun SettingsHubScreen(
     onSignOut: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var calendar by remember { mutableStateOf<IntegrationStatus?>(null) }
     var drive by remember { mutableStateOf<IntegrationStatus?>(null) }
     var refreshTick by remember { mutableStateOf(0) }
+    var disconnecting by remember { mutableStateOf<IntegrationKind?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
 
     suspend fun reload() {
@@ -95,14 +98,24 @@ fun SettingsHubScreen(
     }
 
     fun disconnect(kind: IntegrationKind) {
-        val launched = openIntegrationDisconnect(context, kind)
-        notice = if (launched) {
-            "Browser opened — finish disconnecting on web, then come back " +
-                "here and tap Refresh."
-        } else {
-            "Web site URL is not configured — disconnect from web Settings instead."
+        if (disconnecting != null) return
+        disconnecting = kind
+        notice = null
+        scope.launch {
+            try {
+                when (val result = disconnectIntegration(kind)) {
+                    is IntegrationDisconnectResult.Disconnected -> {
+                        notice = "${kind.label} disconnected."
+                        refreshTick++
+                    }
+                    is IntegrationDisconnectResult.Failed -> {
+                        notice = result.message
+                    }
+                }
+            } finally {
+                disconnecting = null
+            }
         }
-        refreshTick++
     }
 
     Column(
