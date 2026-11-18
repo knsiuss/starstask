@@ -32,7 +32,14 @@ export default async function OnboardingPage({
   searchParams,
 }: OnboardingPageProps) {
   const params = await searchParams;
-  const nextPath = safeRedirectPath(params.next, "/assignments");
+  const candidateNext = safeRedirectPath(params.next, "/assignments");
+  const candidatePathname = candidateNext.split(/[?#]/, 1)[0] ?? "";
+  // Never bounce back to /onboarding once profile setup completes.
+  const nextPath =
+    candidatePathname === "/onboarding" ||
+    candidatePathname.startsWith("/onboarding/")
+      ? "/assignments"
+      : candidateNext;
 
   if (!isSupabaseConfigured()) {
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);

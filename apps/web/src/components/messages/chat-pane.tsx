@@ -23,6 +23,7 @@ import { EncryptedMediaAttachment } from "@/components/messages/encrypted-media-
 import { KeyTrustBanner } from "@/components/messages/key-trust-banner";
 import { PresenceDot } from "@/components/messages/presence-dot";
 import { SafetyNumberDialog } from "@/components/messages/safety-number-dialog";
+import { sanitizePeerMediaMimeType } from "@/components/messages/safe-media-mime";
 import { subscribeConversation } from "@/components/messages/dm-realtime";
 import { SwipeReply } from "@/components/messages/swipe-reply";
 import {
@@ -288,6 +289,38 @@ export function ChatPane({
   const decryptedCacheRef = useRef<Map<string, DecryptedPayload>>(new Map());
   const distributedSenderKeysRef = useRef<Set<string>>(new Set());
   const deviceRegisteredRef = useRef(false);
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const urls = objectUrlsRef.current;
+
+    return () => {
+      mountedRef.current = false;
+
+      for (const url of urls) {
+        URL.revokeObjectURL(url);
+      }
+
+      urls.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const activeUrls = new Set(
+      messages
+        .map((message) => message.attachmentUrl)
+        .filter((url): url is string => Boolean(url)),
+    );
+
+    for (const url of objectUrlsRef.current) {
+      if (!activeUrls.has(url)) {
+        URL.revokeObjectURL(url);
+        objectUrlsRef.current.delete(url);
+      }
+    }
+  }, [messages]);
 
   const conversationId = conversation.id;
 
@@ -666,12 +699,21 @@ export function ChatPane({
                   const blob = await data.arrayBuffer();
                   const wireText = new TextDecoder().decode(blob);
                   const plain = await decryptFile(peerPublicKey, wireText);
-                  attachmentUrl = URL.createObjectURL(
+                  const safeMime = sanitizePeerMediaMimeType(
+                    message.attachment_mime,
+                  );
+                  const createdUrl = URL.createObjectURL(
                     new Blob([plain], {
-                      type:
-                        message.attachment_mime ?? "application/octet-stream",
+                      type: safeMime,
                     }),
                   );
+
+                  if (mountedRef.current) {
+                    objectUrlsRef.current.add(createdUrl);
+                    attachmentUrl = createdUrl;
+                  } else {
+                    URL.revokeObjectURL(createdUrl);
+                  }
                 }
               }
             } catch {
@@ -1707,18 +1749,7 @@ export function ChatPane({
                             </p>
                           ) : null}
                           <div className="group relative">
-                            <button
-                              type="button"
-                              aria-label={
-                                message.state === "failed"
-                                  ? "Failed to send. Tap to retry."
-                                  : `Message from ${mine ? "you" : (message.senderName ?? displayName)}`
-                              }
-                              onClick={() => {
-                                if (message.state === "failed") {
-                                  void retry(message);
-                                }
-                              }}
+                            <div
                               className={
                                 mine
                                   ? "block rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-accent-foreground"
@@ -1726,7 +1757,7 @@ export function ChatPane({
                               }
                             >
                               {editing?.id === message.id ? (
-                                <span className="block">
+                                <div className="block">
                                   <textarea
                                     value={editText}
                                     onChange={(event) =>
@@ -1736,35 +1767,23 @@ export function ChatPane({
                                     rows={2}
                                     className="w-full rounded bg-transparent text-inherit focus-visible:outline-2"
                                   />
-                                  <span className="mt-1 flex gap-2">
-                                    <span
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        void saveEdit();
-                                      }}
-                                      onKeyDown={(event) => {
-                                        if (event.key === "Enter")
-                                          void saveEdit();
-                                      }}
-                                      className="cursor-pointer text-xs font-semibold underline underline-offset-2"
+                                  <div className="mt-1.5 flex gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => void saveEdit()}
+                                      className="cursor-pointer rounded-sm text-xs font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
                                     >
                                       Save
-                                    </span>
-                                    <span
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        setEditing(null);
-                                      }}
-                                      className="cursor-pointer text-xs underline underline-offset-2"
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditing(null)}
+                                      className="cursor-pointer rounded-sm text-xs underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
                                     >
                                       Cancel
-                                    </span>
-                                  </span>
-                                </span>
+                                    </button>
+                                  </div>
+                                </div>
                               ) : message.decryptFailed ? (
                                 <span className="flex items-center gap-1.5 italic opacity-75">
                                   <Lock
@@ -1783,44 +1802,64 @@ export function ChatPane({
                                 />
                               ) : null}
                               {message.attachmentUrl ? (
-                                message.attachmentMime?.startsWith("image/") ? (
-                                  // eslint-disable-next-line @next/next/no-img-element -- attachment previews use signed/blob URLs that next/image cannot optimize
-                                  <img
-                                    src={message.attachmentUrl}
-                                    alt={message.attachmentName ?? "attachment"}
-                                    className="mt-2 max-h-64 rounded-lg"
-                                  />
-                                ) : message.attachmentMime?.startsWith(
-                                    "video/",
-                                  ) ? (
-                                  <video
-                                    src={message.attachmentUrl}
-                                    controls
-                                    className="mt-2 max-h-64 rounded-lg"
-                                  />
-                                ) : message.attachmentMime?.startsWith(
-                                    "audio/",
-                                  ) ? (
-                                  <audio
-                                    src={message.attachmentUrl}
-                                    controls
-                                    className="mt-2 w-full max-w-56"
-                                  />
-                                ) : (
-                                  <a
-                                    href={message.attachmentUrl}
-                                    download={message.attachmentName ?? "file"}
-                                    className="mt-2 block text-xs underline underline-offset-2"
-                                  >
-                                    {message.attachmentName ?? "Download file"}
-                                  </a>
-                                )
+                                (() => {
+                                  const safeAttachmentMime =
+                                    sanitizePeerMediaMimeType(
+                                      message.attachmentMime,
+                                    );
+
+                                  if (safeAttachmentMime.startsWith("image/")) {
+                                    return (
+                                      // eslint-disable-next-line @next/next/no-img-element -- attachment previews use signed/blob URLs that next/image cannot optimize
+                                      <img
+                                        src={message.attachmentUrl}
+                                        alt={
+                                          message.attachmentName ?? "attachment"
+                                        }
+                                        className="mt-2 max-h-64 rounded-lg"
+                                      />
+                                    );
+                                  }
+
+                                  if (safeAttachmentMime.startsWith("video/")) {
+                                    return (
+                                      <video
+                                        src={message.attachmentUrl}
+                                        controls
+                                        className="mt-2 max-h-64 rounded-lg"
+                                      />
+                                    );
+                                  }
+
+                                  if (safeAttachmentMime.startsWith("audio/")) {
+                                    return (
+                                      <audio
+                                        src={message.attachmentUrl}
+                                        controls
+                                        className="mt-2 w-full max-w-56"
+                                      />
+                                    );
+                                  }
+
+                                  return (
+                                    <a
+                                      href={message.attachmentUrl}
+                                      download={
+                                        message.attachmentName ?? "file"
+                                      }
+                                      className="mt-2 block rounded-sm text-xs underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+                                    >
+                                      {message.attachmentName ??
+                                        "Download file"}
+                                    </a>
+                                  );
+                                })()
                               ) : message.attachmentName ? (
                                 <span className="mt-1 block text-xs opacity-70">
                                   {message.attachmentName} (decrypt failed)
                                 </span>
                               ) : null}
-                            </button>
+                            </div>
                             <span className="mt-1 flex items-center gap-1 px-1">
                               <span className="text-muted-foreground text-[10px]">
                                 {formatTime(message.at)}
@@ -1836,7 +1875,7 @@ export function ChatPane({
                                   <button
                                     type="button"
                                     onClick={() => void retry(message)}
-                                    className="text-danger text-[10px] font-semibold underline underline-offset-2"
+                                    className="text-danger cursor-pointer rounded-sm text-[10px] font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
                                     aria-label="Retry sending message"
                                   >
                                     Failed, tap to retry

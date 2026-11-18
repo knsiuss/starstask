@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
 import { Activity, AlertTriangle, Eye, Users } from "lucide-react";
+import type { Metadata } from "next";
+
+import { isSafeHttpUrl } from "@starstask/contracts";
 
 import { DeveloperAccessDenied } from "@/components/developer/developer-access-denied";
 import { DeveloperMetricCard } from "@/components/developer/developer-metric-card";
@@ -95,12 +97,12 @@ export default async function MonitoringPage() {
                       {issue.userCount.toLocaleString()} users · {issue.level}
                     </p>
                   </div>
-                  {issue.permalink ? (
+                  {issue.permalink && isSafeHttpUrl(issue.permalink) ? (
                     <a
                       href={issue.permalink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-accent shrink-0 font-medium underline underline-offset-2"
+                      className="text-accent focus-visible:outline-accent shrink-0 rounded-sm font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       Sentry
                     </a>

@@ -78,23 +78,49 @@ export function buildReminderPayload(
 /** In-app pages a push notification may open. No external origin is allowed. */
 const STATIC_SAFE_PATHS = new Set([
   "/app",
+  "/app/actions",
+  "/app/lecturer",
   "/app/review",
-  // The page now redirects to /assignments; database events still emit this
-  // path, so dropping it would silently skip their notifications.
+  "/lecturer",
+  "/actions",
+  "/assignments",
+  // Legacy /my-assignments and /dashboard/* paths redirect via next.config.ts;
+  // SQL triggers still emit them, so dropping them would skip notifications.
   "/my-assignments",
+  "/classes",
+  "/university",
+  "/schedule",
   "/sessions",
+  "/attendance",
+  "/leave-requests",
+  "/notifications",
+  "/messages",
   "/settings/calendar",
   "/settings/profile",
+  "/settings/drive",
+  "/settings/security",
   "/admin/verifications",
+  "/dashboard",
+  "/dashboard/review",
+  "/dashboard/schedule",
+  "/dashboard/sessions",
+  "/dashboard/leave-requests",
 ]);
 
-const CLASS_PATH_PATTERN = /^\/classes\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CLASS_PATH_PATTERN =
+  /^\/(?:dashboard\/)?classes\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/(?:assignments|attendance|courses|leave-requests|manage|members|overview|review|schedule|settings|submit))?$/;
+
+const LEAVE_REQUEST_PATH_PATTERN =
+  /^\/leave-requests\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SESSION_PATH_PATTERN =
   /^\/sessions\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const MESSAGES_PATH_PATTERN =
   /^\/messages\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const ADMIN_ASSIGNMENT_PATH_PATTERN =
+  /^\/admin\/assignments\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Notification clicks may only open an internal app path: a published
@@ -103,15 +129,21 @@ const MESSAGES_PATH_PATTERN =
  * by the time it reaches the browser.
  */
 export function isSafeNotificationPath(value: string): boolean {
-  if (!value.startsWith("/") || value.startsWith("//")) {
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\")
+  ) {
     return false;
   }
 
   if (
     STATIC_SAFE_PATHS.has(value) ||
     CLASS_PATH_PATTERN.test(value) ||
+    LEAVE_REQUEST_PATH_PATTERN.test(value) ||
     SESSION_PATH_PATTERN.test(value) ||
-    MESSAGES_PATH_PATTERN.test(value)
+    MESSAGES_PATH_PATTERN.test(value) ||
+    ADMIN_ASSIGNMENT_PATH_PATTERN.test(value)
   ) {
     return true;
   }
