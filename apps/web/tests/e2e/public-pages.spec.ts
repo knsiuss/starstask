@@ -101,7 +101,7 @@ test.describe("public pages", () => {
       page.getByRole("heading", { level: 1, name: "Privacy" }),
     ).toBeVisible();
     await expect(
-      page.getByText(/does not yet offer self-service account deletion/i),
+      page.getByText(/self-service account controls/i),
     ).toBeVisible();
 
     await page.goto("/terms");

@@ -144,10 +144,12 @@ export default function PrivacyPage() {
           normal deletion flows or a verified request.
         </p>
         <p>
-          StarsTask does not yet offer self-service account deletion. Ask the
-          operator to delete your account and explain which records must be
-          retained. Backups may keep copies for a limited period before they
-          rotate out.
+          StarsTask offers self-service account controls in Settings → Profile.
+          You can deactivate your account (reversible; your data stays), or
+          permanently delete it. Permanent deletion removes your ability to sign
+          in and erases personal data such as your avatar and bio; your academic
+          records stay in the classes you joined with the name and NIM you used.
+          Backups may keep copies for a limited period before they rotate out.
         </p>
       </LegalSection>
 

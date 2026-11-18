@@ -5156,11 +5156,16 @@ export type Database = {
       };
       profiles: {
         Row: {
+          account_status: string;
           avatar_url: string | null;
           bio: string | null;
           created_at: string;
+          deactivated_at: string | null;
+          deactivation_reason: string | null;
           declared_class_name: string | null;
           declared_position: string;
+          deleted_at: string | null;
+          deletion_reason: string | null;
           display_name: string;
           full_name: string | null;
           id: string;
@@ -5171,11 +5176,16 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          account_status?: string;
           avatar_url?: string | null;
           bio?: string | null;
           created_at?: string;
+          deactivated_at?: string | null;
+          deactivation_reason?: string | null;
           declared_class_name?: string | null;
           declared_position?: string;
+          deleted_at?: string | null;
+          deletion_reason?: string | null;
           display_name?: string;
           full_name?: string | null;
           id: string;
@@ -5185,11 +5195,16 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          account_status?: string;
           avatar_url?: string | null;
           bio?: string | null;
           created_at?: string;
+          deactivated_at?: string | null;
+          deactivation_reason?: string | null;
           declared_class_name?: string | null;
           declared_position?: string;
+          deleted_at?: string | null;
+          deletion_reason?: string | null;
           display_name?: string;
           full_name?: string | null;
           id?: string;
@@ -6047,6 +6062,9 @@ export type Database = {
       };
     };
     Functions: {
+      deactivate_my_account: { Args: { p_reason?: string }; Returns: Json };
+      reactivate_my_account: { Args: Record<string, never>; Returns: Json };
+      tombstone_my_account: { Args: { p_reason?: string }; Returns: Json };
       accept_class_invitation: { Args: { p_token: string }; Returns: string };
       accept_pending_invitation: {
         Args: { p_invitation_id: string };

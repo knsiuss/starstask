@@ -12,6 +12,7 @@ import type { ProfileRole } from "@/components/profile/profile-editor";
 import { ProfileSection } from "@/components/profile/profile-section";
 import type { GrantableClass } from "@/components/verification/representative-grant-form";
 import { getSessionUser } from "@/lib/auth/session";
+import { resolveAccountLifecycleState } from "@/lib/auth/account-state";
 import { isLecturer } from "@/lib/auth/lecturer";
 import { isPlatformAdmin, listMyClasses } from "@/lib/db/classes";
 import { getMyProfile } from "@/lib/db/profiles";
@@ -149,6 +150,7 @@ export default async function ProfileSettingsPage() {
           classes.filter((item) => item.status === "active").length
         }
         role={role}
+        lifecycleState={resolveAccountLifecycleState(session.profile)}
       >
         <ProfileAcademic
           nim={profile?.nim ?? null}

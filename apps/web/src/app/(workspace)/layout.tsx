@@ -18,6 +18,7 @@ import { countUnreadNotifications } from "@/lib/db/notifications";
 import { getWorkspaceContext } from "@/lib/db/workspace-context";
 import { getMyProfile } from "@/lib/db/profiles";
 import { isSupabaseConfigured } from "@/lib/env/public";
+import { resolveAccountLifecycleState } from "@/lib/auth/account-state";
 
 export default async function WorkspaceLayout({
   children,
@@ -89,6 +90,53 @@ export default async function WorkspaceLayout({
   // Same principle: the allowlist check here only decides whether the console
   // link is rendered; /developer itself re-verifies the session email.
   const developer = session ? isDeveloperEmail(session.user.email) : false;
+
+  // Fail closed: a signed-in session whose profile row could not be verified
+  // (additive select failed against an unapplied migration, or a transient
+  // DB error swallowed by getSessionUser) must not render the full workspace.
+  // /settings/profile stays reachable below so a deactivated user can
+  // reactivate from there.
+  const profileUnavailable = session !== null && !session.profile;
+  const lifecycleState = session?.profile
+    ? resolveAccountLifecycleState(session.profile)
+    : "active";
+  const isAccountBlocked =
+    profileUnavailable ||
+    lifecycleState === "deactivated" ||
+    lifecycleState === "deleted";
+
+  if (isAccountBlocked) {
+    const blockedCopy = profileUnavailable
+      ? "Akun kamu tidak bisa diakses sementara. Coba lagi nanti atau hubungi operator."
+      : lifecycleState === "deleted"
+        ? "Akun kamu telah dihapus. Kamu tidak bisa mengakses workspace."
+        : "Akun kamu nonaktif. Kamu tidak bisa mengakses workspace sampai mengaktifkan kembali akun.";
+
+    // The whole workspace is gated; children still render so /settings/profile
+    // hosts the "Aktifkan kembali" button that lives in the Account section.
+    return (
+      <div className="bg-background flex min-h-dvh flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:bg-surface focus:text-foreground focus:p-3"
+        >
+          Skip to main content
+        </a>
+        <div
+          role="alert"
+          className="border-warning/30 bg-warning-soft text-warning border-b px-4 py-3 text-center text-sm font-medium"
+        >
+          {blockedCopy}
+        </div>
+        <main
+          id="main-content"
+          className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6"
+        >
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background flex min-h-dvh flex-col lg:flex-row">

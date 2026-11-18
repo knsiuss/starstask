@@ -12,6 +12,7 @@ import {
   toFieldErrors,
 } from "@starstask/contracts";
 
+import { AccountDangerZone } from "@/components/profile/account-danger-zone";
 import { ProfileAvatarDialog } from "@/components/profile/profile-avatar-dialog";
 import {
   ProfileRow,
@@ -43,6 +44,7 @@ type ProfileEditorProps = {
   memberSince: string | null;
   activeClassCount: number;
   role: ProfileRole;
+  lifecycleState: "active" | "deactivated" | "deleted";
   children: React.ReactNode;
 };
 
@@ -76,6 +78,7 @@ export function ProfileEditor({
   memberSince,
   activeClassCount,
   role,
+  lifecycleState,
   children,
 }: ProfileEditorProps) {
   const router = useRouter();
@@ -440,6 +443,14 @@ export function ProfileEditor({
           </ProfileSection>
 
           <div className="mt-6 space-y-6">{children}</div>
+
+          <div className="mt-6">
+            <AccountDangerZone
+              email={email}
+              lifecycleState={lifecycleState}
+              displayName={displayName}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -11,6 +11,8 @@ export type SessionProfile = {
   display_name: string;
   avatar_url: string | null;
   onboarded_at: string | null;
+  deactivated_at: string | null;
+  account_status: string | null;
 };
 
 export type SessionUser = {
@@ -55,11 +57,17 @@ export async function getSessionUserFromBearer(
     return null;
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const profileQuery = supabase
     .from("profiles")
-    .select("id, display_name, avatar_url, onboarded_at")
+    .select(
+      "id, display_name, avatar_url, onboarded_at, deactivated_at, account_status",
+    )
     .eq("id", user.id)
-    .maybeSingle();
+    .maybeSingle() as unknown as Promise<{
+    data: SessionProfile | null;
+    error: { code?: string } | null;
+  }>;
+  const { data: profile, error: profileError } = await profileQuery;
 
   if (profileError) {
     console.error("[session] profile lookup failed", {
@@ -128,14 +136,20 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     return null;
   }
 
-  // `university` has no SELECT grant for `authenticated` (private, RPC-only),
-  // so it must not be selected here: one ungranted column rejects the whole
-  // query and `profile` would silently be null.
-  const { data: profile, error: profileError } = await supabase
+  // T1's migration adds the two columns but is not applied yet, so the
+  // hand-maintained Database type does not know them; cast until `pnpm db:types`
+  // reruns against the migrated schema.
+  const profileQuery = supabase
     .from("profiles")
-    .select("id, display_name, avatar_url, onboarded_at")
+    .select(
+      "id, display_name, avatar_url, onboarded_at, deactivated_at, account_status",
+    )
     .eq("id", user.id)
-    .maybeSingle();
+    .maybeSingle() as unknown as Promise<{
+    data: SessionProfile | null;
+    error: { code?: string } | null;
+  }>;
+  const { data: profile, error: profileError } = await profileQuery;
 
   if (profileError) {
     console.error("[session] profile lookup failed", {
