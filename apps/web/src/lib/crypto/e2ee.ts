@@ -12,47 +12,164 @@
 const DB_NAME = "starstask-e2ee";
 const STORE = "keys";
 const SELF_KEY = "self";
+const DEVICE_ID_KEY = "device-id";
+const SIGNED_PREKEY_KEY = "signed-prekey";
 const IV_BYTES = 12;
 const HKDF_SALT = "starstask-e2ee-v1";
 const HKDF_INFO = "dm";
 
+let dbPromise: Promise<IDBDatabase> | null = null;
+let pendingKeyPair: Promise<CryptoKeyPair> | null = null;
+let pendingDeviceId: Promise<string> | null = null;
+let pendingSignedPrekey: Promise<SignedPrekeyPair> | null = null;
+
+export type SignedPrekeyPair = {
+  keyPair: CryptoKeyPair;
+  publicKey: string;
+};
+
+function resetDb(): void {
+  dbPromise = null;
+}
+
 function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (typeof indexedDB === "undefined") {
+    return Promise.reject(new Error("IndexedDB is not available."));
+  }
+
+  if (dbPromise) {
+    return dbPromise;
+  }
+
+  dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
 
     request.onupgradeneeded = (): void => {
-      request.result.createObjectStore(STORE);
+      const db = request.result;
+
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE);
+      }
     };
-    request.onsuccess = (): void => resolve(request.result);
-    request.onerror = (): void => reject(request.error);
+
+    request.onblocked = (): void => {
+      resetDb();
+      reject(
+        new Error(
+          "Encryption storage is blocked by another tab. Close other tabs and retry.",
+        ),
+      );
+    };
+
+    request.onsuccess = (): void => {
+      const db = request.result;
+
+      db.onversionchange = (): void => {
+        db.close();
+        resetDb();
+      };
+      db.onclose = (): void => {
+        resetDb();
+      };
+      db.onerror = (): void => {
+        resetDb();
+      };
+
+      resolve(db);
+    };
+
+    request.onerror = (): void => {
+      resetDb();
+      reject(request.error ?? new Error("Failed to open encryption storage."));
+    };
   });
+
+  return dbPromise;
 }
 
 async function idbGet<T>(key: string): Promise<T | null> {
-  const db = await openDb();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const db = await openDb();
 
-  return new Promise<T | null>((resolve, reject) => {
-    const request = db.transaction(STORE).objectStore(STORE).get(key);
+      return await new Promise<T | null>((resolve, reject) => {
+        const tx = db.transaction(STORE, "readonly");
+        const request = tx.objectStore(STORE).get(key);
 
-    request.onsuccess = (): void => {
-      resolve((request.result as T) ?? null);
-    };
-    request.onerror = (): void => reject(request.error);
-  });
+        request.onsuccess = (): void => {
+          resolve((request.result as T) ?? null);
+        };
+        request.onerror = (): void =>
+          reject(request.error ?? new Error("Failed to read key storage."));
+        tx.onabort = (): void =>
+          reject(tx.error ?? new Error("Key storage read aborted."));
+      });
+    } catch (error) {
+      if (
+        attempt === 0 &&
+        error instanceof DOMException &&
+        error.name === "InvalidStateError"
+      ) {
+        resetDb();
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  return null;
 }
 
 async function idbSet(key: string, value: unknown): Promise<void> {
-  const db = await openDb();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const db = await openDb();
 
-  return new Promise<void>((resolve, reject) => {
-    const request = db
-      .transaction(STORE, "readwrite")
-      .objectStore(STORE)
-      .put(value, key);
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE, "readwrite");
+        const request = tx.objectStore(STORE).put(value, key);
 
-    request.onsuccess = (): void => resolve();
-    request.onerror = (): void => reject(request.error);
-  });
+        tx.oncomplete = (): void => resolve();
+        request.onerror = (): void =>
+          reject(request.error ?? new Error("Failed to write key storage."));
+        tx.onerror = (): void =>
+          reject(tx.error ?? new Error("Key storage write failed."));
+        tx.onabort = (): void =>
+          reject(tx.error ?? new Error("Key storage write aborted."));
+      });
+
+      return;
+    } catch (error) {
+      if (
+        attempt === 0 &&
+        error instanceof DOMException &&
+        error.name === "InvalidStateError"
+      ) {
+        resetDb();
+        continue;
+      }
+
+      throw error;
+    }
+  }
+}
+
+function isValidKeyPair(value: unknown): value is CryptoKeyPair {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<CryptoKeyPair>;
+
+  return Boolean(
+    candidate.publicKey &&
+    candidate.privateKey &&
+    typeof candidate.publicKey === "object" &&
+    typeof candidate.privateKey === "object" &&
+    "type" in candidate.publicKey &&
+    "type" in candidate.privateKey,
+  );
 }
 
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
@@ -63,18 +180,40 @@ export async function generateKeyPair(): Promise<CryptoKeyPair> {
   );
 }
 
-export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
-  const existing = await idbGet<CryptoKeyPair>(SELF_KEY);
+/**
+ * Returns the device identity keypair from IndexedDB if present and valid,
+ * without creating a new one when missing.
+ */
+export async function getLocalKeyPairIfPresent(): Promise<CryptoKeyPair | null> {
+  const existing = await idbGet<unknown>(SELF_KEY);
 
-  if (existing) {
-    return existing;
+  return isValidKeyPair(existing) ? existing : null;
+}
+
+export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
+  if (pendingKeyPair) {
+    return pendingKeyPair;
   }
 
-  const pair = await generateKeyPair();
+  pendingKeyPair = (async () => {
+    const existing = await getLocalKeyPairIfPresent();
 
-  await idbSet(SELF_KEY, pair);
+    if (existing) {
+      return existing;
+    }
 
-  return pair;
+    const pair = await generateKeyPair();
+
+    await idbSet(SELF_KEY, pair);
+
+    return pair;
+  })();
+
+  try {
+    return await pendingKeyPair;
+  } finally {
+    pendingKeyPair = null;
+  }
 }
 
 /**
@@ -83,7 +222,131 @@ export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
  * written elsewhere is orphaned.
  */
 export async function storeSelfKeyPair(pair: CryptoKeyPair): Promise<void> {
+  if (!isValidKeyPair(pair)) {
+    throw new Error("Invalid encryption keypair.");
+  }
+
   await idbSet(SELF_KEY, pair);
+}
+
+export async function getOrCreateDeviceId(): Promise<string> {
+  if (pendingDeviceId) {
+    return pendingDeviceId;
+  }
+
+  pendingDeviceId = (async () => {
+    const existing = await idbGet<unknown>(DEVICE_ID_KEY);
+
+    if (typeof existing === "string" && existing.trim().length > 0) {
+      return existing;
+    }
+
+    const deviceId =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
+
+    await idbSet(DEVICE_ID_KEY, deviceId);
+
+    return deviceId;
+  })();
+
+  try {
+    return await pendingDeviceId;
+  } finally {
+    pendingDeviceId = null;
+  }
+}
+
+export async function getOrCreateSignedPrekey(): Promise<SignedPrekeyPair> {
+  if (pendingSignedPrekey) {
+    return pendingSignedPrekey;
+  }
+
+  pendingSignedPrekey = (async () => {
+    const existing = await idbGet<unknown>(SIGNED_PREKEY_KEY);
+
+    if (isValidKeyPair(existing)) {
+      return {
+        keyPair: existing,
+        publicKey: await exportPublicKey(existing),
+      };
+    }
+
+    const keyPair = await generateKeyPair();
+
+    await idbSet(SIGNED_PREKEY_KEY, keyPair);
+
+    return {
+      keyPair,
+      publicKey: await exportPublicKey(keyPair),
+    };
+  })();
+
+  try {
+    return await pendingSignedPrekey;
+  } finally {
+    pendingSignedPrekey = null;
+  }
+}
+
+export async function storeDeviceIdentity(
+  pair: CryptoKeyPair,
+  options?: { deviceId?: string; signedPrekey?: CryptoKeyPair },
+): Promise<{ deviceId: string; publicKey: string }> {
+  await storeSelfKeyPair(pair);
+
+  let deviceId: string;
+
+  if (options?.deviceId && options.deviceId.trim().length > 0) {
+    deviceId = options.deviceId.trim();
+    await idbSet(DEVICE_ID_KEY, deviceId);
+  } else {
+    deviceId = await getOrCreateDeviceId();
+  }
+
+  if (options?.signedPrekey) {
+    if (!isValidKeyPair(options.signedPrekey)) {
+      throw new Error("Invalid signed prekey pair.");
+    }
+
+    await idbSet(SIGNED_PREKEY_KEY, options.signedPrekey);
+  }
+
+  return {
+    deviceId,
+    publicKey: await exportPublicKey(pair),
+  };
+}
+
+export function getDefaultDeviceLabel(): string {
+  if (typeof navigator === "undefined") {
+    return "Web browser";
+  }
+
+  const ua = navigator.userAgent;
+  const browser = ua.includes("Edg/")
+    ? "Edge"
+    : ua.includes("Chrome/")
+      ? "Chrome"
+      : ua.includes("Firefox/")
+        ? "Firefox"
+        : ua.includes("Safari/")
+          ? "Safari"
+          : "Browser";
+  const os = ua.includes("Windows")
+    ? "Windows"
+    : ua.includes("Mac OS")
+      ? "macOS"
+      : ua.includes("Android")
+        ? "Android"
+        : ua.includes("iPhone") || ua.includes("iPad")
+          ? "iOS"
+          : ua.includes("Linux")
+            ? "Linux"
+            : "Unknown OS";
+
+  return `${browser} on ${os}`;
 }
 
 /** Rebuilds a keypair from its JWK parts (private `d` + public `x`/`y`). */

@@ -135,7 +135,7 @@ export function KeyTrustBanner({
   return (
     <div
       role="alert"
-      className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 sm:px-5 dark:bg-amber-950/40 dark:text-amber-200"
+      className="border-warning/40 bg-warning-soft text-warning border-b px-4 py-3 text-xs leading-relaxed sm:px-5"
     >
       <p className="font-semibold">
         This person&apos;s encryption key changed.

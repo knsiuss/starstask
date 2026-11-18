@@ -156,6 +156,12 @@ export async function becomeClassRepresentative(
         "class_inactive",
         "This class is no longer active.",
       );
+    case "recalled":
+      throw new ApiError(
+        403,
+        "representative_recalled",
+        "You were removed as a class representative and cannot reclaim it directly.",
+      );
     default:
       throw notFound();
   }

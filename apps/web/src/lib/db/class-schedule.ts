@@ -1,12 +1,19 @@
 import "server-only";
 
-import type {
-  ClassScheduleCreateInput,
-  ClassScheduleUpdateInput,
+import {
+  SCHEDULE_COLLISION_ERROR_CODE,
+  type ClassScheduleCreateInput,
+  type ClassScheduleUpdateInput,
 } from "@starstask/contracts";
 
+import { ApiError } from "@/lib/api/errors";
 import { DataAccessError } from "@/lib/db/assignments";
 import { listMyClasses } from "@/lib/db/classes";
+import {
+  findScheduleCollisions,
+  formatScheduleCollisionMessage,
+  type TimeSlotCandidate,
+} from "@/lib/schedule/collision";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ClassScheduleEntry = {
@@ -99,12 +106,67 @@ async function requireSubjectInClass(
   }
 }
 
+async function assertNoScheduleCollision(
+  classId: string,
+  candidate: TimeSlotCandidate,
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("class_course_schedules")
+    .select(
+      "id, class_id, day_of_week, start_time, end_time, room, lecturer_name, start_date, end_date",
+    )
+    .eq("class_id", classId)
+    .eq("day_of_week", candidate.dayOfWeek);
+
+  if (error) {
+    throw new DataAccessError(
+      "Could not validate schedule conflicts",
+      error.code,
+    );
+  }
+
+  const existing: TimeSlotCandidate[] = (data ?? []).map((row) => ({
+    id: row.id,
+    classId: row.class_id,
+    dayOfWeek: row.day_of_week,
+    startTime: row.start_time.slice(0, 5),
+    endTime: row.end_time.slice(0, 5),
+    room: row.room,
+    lecturerName: row.lecturer_name,
+    startDate: row.start_date,
+    endDate: row.end_date,
+  }));
+
+  const conflicts = findScheduleCollisions(candidate, existing);
+  const [firstConflict] = conflicts;
+
+  if (firstConflict) {
+    const message = formatScheduleCollisionMessage(firstConflict);
+
+    throw new ApiError(409, SCHEDULE_COLLISION_ERROR_CODE, message, {
+      startTime: message,
+    });
+  }
+}
+
 export async function createClassScheduleEntry(
   classId: string,
   userId: string,
   input: ClassScheduleCreateInput,
 ): Promise<string> {
   await requireSubjectInClass(classId, input.subjectId);
+  await assertNoScheduleCollision(classId, {
+    classId,
+    dayOfWeek: input.dayOfWeek,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    room: input.room,
+    lecturerName: input.lecturerName,
+    startDate: input.startDate,
+    endDate: input.endDate,
+  });
 
   const supabase = await createSupabaseServerClient();
 
@@ -126,6 +188,14 @@ export async function createClassScheduleEntry(
     .select("id")
     .single();
 
+  if (error?.code === "23P01") {
+    throw new ApiError(
+      409,
+      SCHEDULE_COLLISION_ERROR_CODE,
+      "This time slot overlaps with an existing schedule entry.",
+    );
+  }
+
   if (error || !data) {
     throw new DataAccessError("Could not add the schedule entry", error?.code);
   }
@@ -139,6 +209,17 @@ export async function updateClassScheduleEntry(
   input: ClassScheduleUpdateInput,
 ): Promise<void> {
   await requireSubjectInClass(classId, input.subjectId);
+  await assertNoScheduleCollision(classId, {
+    id: scheduleId,
+    classId,
+    dayOfWeek: input.dayOfWeek,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    room: input.room,
+    lecturerName: input.lecturerName,
+    startDate: input.startDate,
+    endDate: input.endDate,
+  });
 
   const supabase = await createSupabaseServerClient();
 
@@ -157,6 +238,14 @@ export async function updateClassScheduleEntry(
     })
     .eq("id", scheduleId)
     .eq("class_id", classId);
+
+  if (error?.code === "23P01") {
+    throw new ApiError(
+      409,
+      SCHEDULE_COLLISION_ERROR_CODE,
+      "This time slot overlaps with an existing schedule entry.",
+    );
+  }
 
   if (error) {
     throw new DataAccessError(

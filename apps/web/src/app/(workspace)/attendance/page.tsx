@@ -8,12 +8,14 @@ import { AttendanceHistorySection } from "@/components/attendance/attendance-his
 import { AttendanceOverviewMetrics } from "@/components/attendance/attendance-overview-metrics";
 import { CourseAttendanceTable } from "@/components/attendance/course-attendance-table";
 import { CreatePresenceButton } from "@/components/attendance/create-presence-button";
+import { LecturerAttendanceView } from "@/components/lecturer/lecturer-attendance-view";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
 import { buildCourseRows } from "@/lib/attendance/course-rows";
 import {
@@ -107,6 +109,10 @@ export default async function AttendancePage({
     redirect(buildLoginPath("/attendance"));
   }
 
+  if (flat.view !== "student" && (await isLecturer())) {
+    return <LecturerAttendanceView userId={session.user.id} />;
+  }
+
   const query = parsed.data;
   const [historyView, checkInView, meetingView, myClasses] = await Promise.all([
     getStudentAttendance(session.user.id, query),
@@ -149,7 +155,7 @@ export default async function AttendancePage({
             size="sm"
             variant="secondary"
           >
-            <Link href={`/app/classes/${classItem.slug}/attendance`}>
+            <Link href={`/classes/${classItem.slug}/attendance`}>
               <Settings
                 aria-hidden="true"
                 className="h-3.5 w-3.5"

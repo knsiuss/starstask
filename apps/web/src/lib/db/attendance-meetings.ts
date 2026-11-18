@@ -20,6 +20,10 @@ import { buildAttendanceRecap } from "@/lib/attendance/recap";
 import type { AttendanceCheckInStatus } from "@/lib/attendance/types";
 import { DataAccessError } from "@/lib/db/assignments";
 import { listMyClasses } from "@/lib/db/classes";
+import {
+  filterRosterByCourseAccess,
+  listUserCourseAccessMap,
+} from "@/lib/db/course-access";
 import { getMyProfile } from "@/lib/db/profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -304,9 +308,15 @@ export async function getClassAttendanceRecap(
     status: row.status,
   }));
 
+  const filteredRoster = await filterRosterByCourseAccess(
+    classId,
+    subjectId,
+    roster,
+  );
+
   return buildAttendanceRecap({
     meetings: meetings.filter((meeting) => meeting.subjectId === subjectId),
-    roster,
+    roster: filteredRoster,
     cells,
   });
 }
@@ -342,15 +352,18 @@ export async function getStudentAttendanceMeetingView(
     activeClasses.map((classItem) => [classItem.id, classItem]),
   );
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("discussion_sessions")
-    .select(STUDENT_MEETING_COLUMNS)
-    .in("class_id", [...membershipById.keys()])
-    .eq("status", "scheduled")
-    .not("meeting_number", "is", null)
-    .gte("ends_at", new Date(nowMs - 24 * 60 * 60 * 1_000).toISOString())
-    .order("starts_at", { ascending: true })
-    .limit(100);
+  const [accessMap, { data, error }] = await Promise.all([
+    listUserCourseAccessMap(userId, [...membershipById.keys()]),
+    supabase
+      .from("discussion_sessions")
+      .select(STUDENT_MEETING_COLUMNS)
+      .in("class_id", [...membershipById.keys()])
+      .eq("status", "scheduled")
+      .not("meeting_number", "is", null)
+      .gte("ends_at", new Date(nowMs - 24 * 60 * 60 * 1_000).toISOString())
+      .order("starts_at", { ascending: true })
+      .limit(100),
+  ]);
 
   if (error) {
     throw new DataAccessError("Could not load attendance meetings", error.code);
@@ -361,6 +374,15 @@ export async function getStudentAttendanceMeetingView(
     const membership = membershipById.get(row.class_id);
 
     if (!membership) {
+      return false;
+    }
+
+    const access = accessMap.get(row.class_id);
+
+    if (
+      access?.scope === "selected" &&
+      (!row.subject_id || !access.allowedSubjectIds.has(row.subject_id))
+    ) {
       return false;
     }
 

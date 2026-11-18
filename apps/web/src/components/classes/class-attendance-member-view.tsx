@@ -51,7 +51,7 @@ export function ClassAttendanceMemberView({
   /** When set, every section below is limited to this course. */
   selectedCourseId: string | null;
 }) {
-  const base = `/app/classes/${classSlug}/attendance`;
+  const base = `/classes/${classSlug}/attendance`;
 
   const scopedMeetings = selectedCourseId
     ? meetings.filter((meeting) => meeting.subjectId === selectedCourseId)

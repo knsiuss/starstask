@@ -58,6 +58,7 @@ export async function createClassInvitation(
     p_expires_at: expiresAt,
     p_max_uses: input.maxUses,
     p_email_restriction: input.email ?? null,
+    p_subject_id: input.subjectId ?? null,
   });
 
   if (error || !data) {
@@ -119,6 +120,9 @@ export type InvitationPreview = {
   class_id?: string;
   class_name?: string;
   class_slug?: string;
+  subject_id?: string;
+  subject_name?: string;
+  subject_code?: string;
   inviter_name?: string;
   expires_at?: string;
 };
@@ -155,6 +159,12 @@ export async function getInvitationPreview(
       typeof result.class_name === "string" ? result.class_name : undefined,
     class_slug:
       typeof result.class_slug === "string" ? result.class_slug : undefined,
+    subject_id:
+      typeof result.subject_id === "string" ? result.subject_id : undefined,
+    subject_name:
+      typeof result.subject_name === "string" ? result.subject_name : undefined,
+    subject_code:
+      typeof result.subject_code === "string" ? result.subject_code : undefined,
     inviter_name:
       typeof result.inviter_name === "string" ? result.inviter_name : undefined,
     expires_at:

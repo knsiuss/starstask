@@ -1,5 +1,7 @@
 "use client";
 
+import { User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -14,6 +16,7 @@ type Story = {
 
 /** IG-like story row: circles, 24h expiry, tap to view. */
 export function StoryRow() {
+  const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
   const [active, setActive] = useState<Story | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -22,12 +25,19 @@ export function StoryRow() {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase
-      .from("dm_stories" as any)
+      .from("dm_stories")
       .select("id, user_id, mime, path, caption")
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(20)
-      .then(({ data }) => setStories((data ?? []) as unknown as Story[]));
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) {
+          setError("Could not load stories.");
+          return;
+        }
+
+        setStories(data ?? []);
+      });
   }, []);
 
   async function upload(file: File) {
@@ -42,28 +52,39 @@ export function StoryRow() {
         setError("Sign in to post a story.");
         return;
       }
+
       // Story media NOT E2EE in v1 (public to authenticated, 24h) — caption only metadata
       const path = `${me}/${crypto.randomUUID()}`;
       const { error: uploadError } = await supabase.storage
         .from("dm-media")
         .upload(path, file, { contentType: file.type });
+
       if (uploadError) {
         setError("Could not upload story.");
         return;
       }
-      const { error: insertError } = await supabase
-        .from("dm_stories" as any)
+
+      const { data: inserted, error: insertError } = await supabase
+        .from("dm_stories")
         .insert({
           user_id: me,
           mime: file.type,
           path,
           caption: null,
-        });
+        })
+        .select("id, user_id, mime, path, caption")
+        .single();
+
       if (insertError) {
         setError("Could not save story.");
         return;
       }
-      window.location.reload();
+
+      if (inserted) {
+        setStories((current) => [inserted, ...current]);
+      }
+
+      router.refresh();
     } catch {
       setError("Could not upload story.");
     } finally {
@@ -96,12 +117,16 @@ export function StoryRow() {
           <button
             key={s.id}
             type="button"
+            aria-label="View story"
             className="flex flex-col items-center"
             onClick={() => setActive(s)}
           >
-            <span className="h-14 w-14 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-400 p-[2px]">
-              <span className="flex h-full w-full items-center justify-center rounded-full bg-muted text-xl">
-                👤
+            <span className="bg-accent h-14 w-14 rounded-full p-[2px]">
+              <span className="bg-muted flex h-full w-full items-center justify-center rounded-full">
+                <User
+                  aria-hidden="true"
+                  className="text-muted-foreground h-6 w-6"
+                />
               </span>
             </span>
           </button>
@@ -110,7 +135,7 @@ export function StoryRow() {
       {error ? (
         <p
           role="alert"
-          className="mt-1 text-xs text-red-600"
+          className="text-danger mt-1 text-xs"
         >
           {error}
         </p>

@@ -58,7 +58,7 @@ export function CheckInResultDialog({
       <DialogContent>
         {success ? (
           <>
-            <div className="bg-emerald-50 text-emerald-700 flex h-12 w-12 items-center justify-center rounded-xl">
+            <div className="bg-success-soft text-success flex h-12 w-12 items-center justify-center rounded-xl">
               <CircleCheck
                 aria-hidden="true"
                 className="h-5 w-5"
@@ -107,7 +107,7 @@ export function CheckInResultDialog({
           </>
         ) : failure ? (
           <>
-            <div className="bg-red-50 text-red-600 flex h-12 w-12 items-center justify-center rounded-xl">
+            <div className="bg-danger-soft text-danger flex h-12 w-12 items-center justify-center rounded-xl">
               <CircleAlert
                 aria-hidden="true"
                 className="h-5 w-5"

@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Sparkles } from "lucide-react";
+import { ArrowLeft, Pencil, ScanText } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -144,7 +144,7 @@ export default async function LeaveRequestPage({
       <Link
         href={
           canManage
-            ? `/app/classes/${request.classSlug}/leave-requests`
+            ? `/classes/${request.classSlug}/leave-requests`
             : "/leave-requests"
         }
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
@@ -261,7 +261,7 @@ export default async function LeaveRequestPage({
           </span>
           {canManage ? (
             <Link
-              href={`/app/classes/${request.classSlug}`}
+              href={`/classes/${request.classSlug}`}
               className="bg-muted text-muted-foreground hover:text-accent rounded-full px-2.5 py-0.5 text-xs font-medium"
             >
               {request.className}
@@ -455,7 +455,7 @@ export default async function LeaveRequestPage({
           {isFeatureEnabled("ocr") ? (
             <Card>
               <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-                <Sparkles
+                <ScanText
                   aria-hidden="true"
                   className="h-4 w-4"
                 />

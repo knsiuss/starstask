@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, FileText, Paperclip } from "lucide-react";
 
 import { LeaveStatusBadge } from "@/components/leave/leave-status-badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -43,14 +44,14 @@ export function AbsenceFilterBar({
     <form
       action={action}
       method="get"
-      className="border-border bg-card hidden grid-cols-2 gap-3 rounded-xl border p-3 sm:p-4 lg:grid lg:grid-cols-7"
+      className="border-border bg-surface grid grid-cols-1 gap-3 rounded-xl border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))_auto] lg:items-end"
     >
       <input
         type="hidden"
         name="tab"
         value="absences"
       />
-      <div className="col-span-2 min-w-0 lg:col-span-2">
+      <div className="min-w-0 sm:col-span-2 lg:col-span-1">
         <Label htmlFor="absence-q">Search</Label>
         <Input
           id="absence-q"
@@ -89,7 +90,9 @@ export function AbsenceFilterBar({
           disabled={courses.length === 0}
           className="mt-1"
         >
-          <option value="all">All courses</option>
+          <option value="all">
+            {courses.length === 0 ? "Pick a class first" : "All courses"}
+          </option>
           {courses.map((item) => (
             <option
               key={item.id}
@@ -99,11 +102,6 @@ export function AbsenceFilterBar({
             </option>
           ))}
         </Select>
-        {courses.length === 0 ? (
-          <p className="text-muted-foreground mt-1 text-[11px]">
-            Pick a class first
-          </p>
-        ) : null}
       </div>
       <div className="min-w-0">
         <Label htmlFor="absence-status">Status</Label>
@@ -122,39 +120,13 @@ export function AbsenceFilterBar({
           <option value="cancelled">Cancelled</option>
         </Select>
       </div>
-      <div className="min-w-0">
-        <Label htmlFor="absence-from">Absence from</Label>
-        <Input
-          id="absence-from"
-          name="from"
-          type="date"
-          defaultValue={values.from ?? ""}
-          className="mt-1"
-        />
-      </div>
-      <div className="min-w-0">
-        <Label htmlFor="absence-to">Absence to</Label>
-        <Input
-          id="absence-to"
-          name="to"
-          type="date"
-          defaultValue={values.to ?? ""}
-          className="mt-1"
-        />
-      </div>
-      <div className="min-w-0">
-        <Label htmlFor="absence-sort">Sort</Label>
-        <Select
-          id="absence-sort"
-          name="sort"
-          defaultValue={values.sort ?? "newest"}
-          className="mt-1"
-        >
-          <option value="newest">Newest submitted</option>
-          <option value="oldest">Oldest submitted</option>
-          <option value="upcoming">Upcoming absence</option>
-        </Select>
-      </div>
+      <Button
+        type="submit"
+        variant="secondary"
+        className="h-10 w-full sm:col-span-2 lg:col-span-1 lg:w-auto"
+      >
+        Filter
+      </Button>
     </form>
   );
 }
@@ -191,7 +163,7 @@ export function AbsenceRequestCard({
 
   return (
     <Link
-      href={`/app/actions?tab=absences&request=${request.id}`}
+      href={`/actions?tab=absences&request=${request.id}`}
       className="border-border bg-surface hover:border-accent/60 block rounded-xl border px-4 py-3.5 transition-colors"
     >
       <div className="flex items-start justify-between gap-3">

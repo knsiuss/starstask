@@ -37,10 +37,10 @@ export function ThemePicker({
 }
 
 export const THEME_BUBBLE: Record<string, string> = {
-  default: "bg-muted",
-  sunset: "bg-gradient-to-r from-orange-400 to-pink-500 text-white",
-  ocean: "bg-gradient-to-r from-blue-400 to-cyan-400 text-white",
-  forest: "bg-gradient-to-r from-green-500 to-emerald-600 text-white",
-  candy: "bg-gradient-to-r from-pink-400 to-purple-500 text-white",
-  mono: "bg-black text-white",
+  default: "bg-muted text-foreground",
+  sunset: "bg-warning-soft text-warning",
+  ocean: "bg-accent text-accent-foreground",
+  forest: "bg-success-soft text-success",
+  candy: "bg-navy text-navy-foreground",
+  mono: "bg-foreground text-background",
 };

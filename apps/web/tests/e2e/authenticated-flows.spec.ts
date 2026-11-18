@@ -160,7 +160,7 @@ test.describe("authenticated workspace flows", () => {
 
     await page.getByRole("button", { name: "Join class" }).click();
 
-    await expect(page).toHaveURL(new RegExp(`/app/classes/${classSlug}$`));
+    await expect(page).toHaveURL(new RegExp(`/classes/${classSlug}$`));
     await expect(
       page.getByRole("heading", { level: 1, name: className }),
     ).toBeVisible();
@@ -189,7 +189,7 @@ test.describe("authenticated workspace flows", () => {
     };
 
     await signInBrowser(context, classAdmin);
-    await page.goto(`/app/classes/${classSlug}/manage?tab=settings`);
+    await page.goto(`/classes/${classSlug}/manage?tab=settings`);
     await waitForHydration(page);
 
     await page.getByRole("button", { name: "Edit", exact: true }).click();
@@ -217,7 +217,7 @@ test.describe("authenticated workspace flows", () => {
     const classNav = page.getByRole("navigation", { name: "Class sections" });
 
     await signInBrowser(context, member);
-    await page.goto(`/app/classes/${classSlug}`);
+    await page.goto(`/classes/${classSlug}`);
     await waitForHydration(page);
 
     await expect(
@@ -243,7 +243,7 @@ test.describe("authenticated workspace flows", () => {
 
     await classNav.getByRole("link", { name: "Members", exact: true }).click();
     await expect(page).toHaveURL(
-      new RegExp(`/app/classes/${classSlug}\\?tab=members$`),
+      new RegExp(`/classes/${classSlug}\\?tab=members$`),
     );
     await expect(
       page.getByRole("heading", { level: 2, name: "Members" }),
@@ -264,7 +264,7 @@ test.describe("authenticated workspace flows", () => {
 
     // The class admin sees the same workspace with manage controls.
     await signInBrowser(context, classAdmin);
-    await page.goto(`/app/classes/${classSlug}`);
+    await page.goto(`/classes/${classSlug}`);
     await waitForHydration(page);
 
     await expect(
@@ -378,7 +378,7 @@ test.describe("authenticated workspace flows", () => {
     );
 
     await signInBrowser(context, classAdmin);
-    await page.goto(`/app/classes/${classSlug}/review/${submissionId}`);
+    await page.goto(`/classes/${classSlug}/review/${submissionId}`);
     await waitForHydration(page);
 
     await expect(
@@ -389,7 +389,7 @@ test.describe("authenticated workspace flows", () => {
     await page.getByRole("button", { name: "Approve and publish" }).click();
 
     await expect(page).toHaveURL(
-      new RegExp(`/app/classes/${classSlug}/manage\\?reviewed=approved$`),
+      new RegExp(`/classes/${classSlug}/manage\\?reviewed=approved$`),
     );
 
     const { data: assignment } = await admin
@@ -465,7 +465,7 @@ test.describe("authenticated workspace flows", () => {
     page,
   }) => {
     await signInBrowser(context, classAdmin);
-    await page.goto(`/app/classes/${classSlug}/manage?tab=settings`);
+    await page.goto(`/classes/${classSlug}/manage?tab=settings`);
     await waitForHydration(page);
 
     await page.getByRole("button", { name: "Edit", exact: true }).click();
@@ -532,7 +532,7 @@ test.describe("authenticated workspace flows", () => {
 
     const paths = [
       "/app",
-      `/app/classes/${classSlug}`,
+      `/classes/${classSlug}`,
       "/notifications",
       `/leave-requests/new?class=${classSlug}`,
       `/sessions/${sessionId}`,

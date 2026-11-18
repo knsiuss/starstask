@@ -29,14 +29,17 @@ afterEach(() => {
 describe("isStudentWorkspacePath", () => {
   it("matches student workspace pages and their subpaths", () => {
     const paths = [
+      "/actions",
       "/app",
-      "/app/classes/slug",
+      "/applications",
       "/assignments",
       "/assignments/abc",
       "/classes",
+      "/classes/slug",
       "/classes/join",
       "/leave-requests",
       "/leave-requests/abc/edit",
+      "/lecturer",
       "/sessions",
       "/sessions/abc",
       "/submit",

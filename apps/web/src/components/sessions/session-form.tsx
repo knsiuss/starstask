@@ -267,9 +267,7 @@ export function SessionForm({
         }
       }
 
-      router.push(
-        id ? `/sessions/${id}` : `/app/classes/${classSlug}/sessions`,
-      );
+      router.push(id ? `/sessions/${id}` : `/classes/${classSlug}/sessions`);
       router.refresh();
     } catch {
       setError("Network error. Check your connection and try again.");

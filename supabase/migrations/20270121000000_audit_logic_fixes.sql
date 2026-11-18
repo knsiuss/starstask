@@ -153,8 +153,7 @@ BEGIN
     WHERE
       ca.class_id = c.id
       AND ca.user_id = p_user_id
-      AND c.university_id = p_university_id
-      AND c.created_by = p_user_id;
+      AND c.university_id = p_university_id;
 
     UPDATE public.class_admin_assignments a
     SET
@@ -166,8 +165,7 @@ BEGIN
       a.class_id = c.id
       AND a.user_id = p_user_id
       AND a.revoked_at IS NULL
-      AND c.university_id = p_university_id
-      AND c.created_by = p_user_id;
+      AND c.university_id = p_university_id;
   END IF;
 
   PERFORM public.record_audit (
@@ -374,10 +372,7 @@ FROM
 COMMENT ON FUNCTION public.grant_lecturer_membership_if_eligible (uuid, text, text, uuid) IS 'Internal: enroll a confirmed account as lecturer for the active university whose institutional_domains match the email domain, unless lecturer role was explicitly revoked.';
 
 
-CREATE OR REPLACE FUNCTION public.claim_lecturer_persona (
-  p_nidn text DEFAULT NULL,
-  p_university_id uuid DEFAULT NULL
-) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.claim_lecturer_persona (p_nidn text DEFAULT NULL, p_university_id uuid DEFAULT NULL) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = '' AS $$
 DECLARE
@@ -555,6 +550,11 @@ DECLARE
   v_new_since timestamptz;
   v_result jsonb;
 BEGIN
+  IF p_user_id IS DISTINCT FROM (SELECT auth.uid ())
+     AND NOT public.is_platform_admin () THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
   SELECT
     timezone INTO v_tz
   FROM
@@ -805,10 +805,7 @@ COMMENT ON FUNCTION public.get_dashboard_overview (uuid) IS 'Dashboard overview 
 -- ---------------------------------------------------------------------------
 -- 5. M-09: set_leave_request_subjects
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.set_leave_request_subjects (
-  p_request_id uuid,
-  p_subject_ids UUID[]
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.set_leave_request_subjects (p_request_id uuid, p_subject_ids UUID[]) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$
@@ -888,10 +885,7 @@ COMMENT ON FUNCTION public.set_leave_request_subjects (uuid, UUID[]) IS 'Replace
 -- ---------------------------------------------------------------------------
 -- 6. L-01: cancel_leave_request
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.cancel_leave_request (
-  p_request_id uuid,
-  p_note text DEFAULT NULL
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.cancel_leave_request (p_request_id uuid, p_note text DEFAULT NULL) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 SET
   search_path = public,
   pg_temp AS $$

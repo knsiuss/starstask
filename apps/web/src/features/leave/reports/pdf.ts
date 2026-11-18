@@ -95,7 +95,11 @@ const TYPOGRAPHIC_REPLACEMENTS: Record<string, string> = {
  * during `drawText`. Anything that cannot be transliterated becomes "?", which
  * keeps the report generatable for any name.
  */
-function sanitize(value: string): string {
+function sanitize(value: string | null | undefined): string {
+  if (!value) {
+    return "";
+  }
+
   let output = "";
 
   for (const char of value) {

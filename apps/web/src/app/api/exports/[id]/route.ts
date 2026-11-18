@@ -1,7 +1,7 @@
 import { ApiError, unauthorized } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { getOwnExportJob } from "@/lib/db/export-jobs";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -38,7 +38,7 @@ export async function GET(
     let downloadUrl: string | null = null;
 
     if (job.status === "done" && job.result_path) {
-      const supabase = await createSupabaseServerClient();
+      const supabase = createSupabaseAdminClient();
       const { data, error } = await supabase.storage
         .from("exports")
         .createSignedUrl(job.result_path, SIGNED_URL_TTL_SECONDS);

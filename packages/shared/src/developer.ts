@@ -78,10 +78,13 @@ export const MEMBER_HOME_PATH = "/app";
  * of the student area; every page still enforces its own auth requirements.
  */
 const STUDENT_WORKSPACE_PREFIXES = [
+  "/actions",
   "/app",
+  "/applications",
   "/assignments",
   "/classes",
   "/leave-requests",
+  "/lecturer",
   "/sessions",
   "/submit",
 ] as const;

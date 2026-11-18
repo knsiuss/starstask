@@ -6,6 +6,7 @@ import {
   toBrandingInput,
 } from "@/features/export-branding/service";
 import { requireClassManager } from "@/features/classes/class-access";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { exportBrandingSchema, toFieldErrors } from "@starstask/contracts";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,15 @@ export async function PUT(
 ) {
   try {
     const { slug } = await context.params;
-    const { class: found } = await requireClassManager(slug);
+    const { session, class: found } = await requireClassManager(slug);
+
+    await enforceRateLimit({
+      action: "classes:branding:update",
+      identifier: session.user.id,
+      limit: 20,
+      windowSeconds: 300,
+    });
+
     const body = (await request.json()) as unknown;
     const parsed = exportBrandingSchema.safeParse(body);
 

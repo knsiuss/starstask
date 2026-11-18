@@ -54,7 +54,23 @@ export function AttendanceSummary({
         ) : null}
       </div>
 
-      <dl className="border-border bg-border mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-5">
+      <div className="mt-3 flex flex-wrap gap-1.5 sm:hidden">
+        {STAT_LABELS.filter(
+          (stat) => (summary[stat.key] ?? 0) > 0 || stat.key === "present",
+        ).map((stat) => (
+          <span
+            key={stat.key}
+            className="border-border bg-subtle text-foreground inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs"
+          >
+            <span className="text-muted-foreground">{stat.label}</span>
+            <span className="font-semibold tabular-nums">
+              {summary[stat.key]}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      <dl className="border-border bg-border mt-4 hidden overflow-hidden rounded-lg border sm:grid sm:grid-cols-5 sm:gap-px">
         {STAT_LABELS.map((stat) => (
           <div
             key={stat.key}
@@ -68,7 +84,7 @@ export function AttendanceSummary({
         ))}
       </dl>
 
-      <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+      <p className="text-muted-foreground mt-3 hidden text-xs leading-relaxed sm:block">
         Present and late count as attended. The percentage divides those by
         present, late, absent, and unrecorded sessions. Excused absences and
         sessions that have not finished are left out.

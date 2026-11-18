@@ -218,7 +218,7 @@ export function DmUserSearch({ onClose, onSelect }: Props) {
                       className="h-11 w-11 shrink-0 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="from-accent to-accent-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+                    <span className="bg-accent-soft text-accent flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
                       {initials(user.display_name)}
                     </span>
                   )}

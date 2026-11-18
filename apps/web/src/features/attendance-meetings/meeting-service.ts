@@ -95,6 +95,7 @@ export async function openAttendanceMeeting(sessionId: string): Promise<void> {
 export async function closeAttendanceMeeting(
   sessionId: string,
   finalize: boolean,
+  bap?: { topic?: string; notes?: string },
 ): Promise<number> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("close_attendance_meeting", {
@@ -104,6 +105,23 @@ export async function closeAttendanceMeeting(
 
   if (error) {
     throw toSessionApiError(error, "Could not close attendance.");
+  }
+
+  const trimmedTopic = bap?.topic?.trim();
+  const trimmedNotes = bap?.notes?.trim();
+
+  if (trimmedTopic || trimmedNotes) {
+    const { error: bapError } = await supabase
+      .from("attendance_meetings")
+      .update({
+        ...(trimmedTopic ? { bap_topic: trimmedTopic } : {}),
+        ...(trimmedNotes ? { bap_notes: trimmedNotes } : {}),
+      } as never)
+      .eq("id", sessionId);
+
+    if (bapError) {
+      throw toSessionApiError(bapError, "Could not save BAP details.");
+    }
   }
 
   return typeof data === "number" ? data : 0;

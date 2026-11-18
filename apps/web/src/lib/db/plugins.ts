@@ -170,13 +170,15 @@ export async function getObservabilityViews() {
   const [drift, nim, gap] = await Promise.all([
     client
       .from("dual_write_drift" as never)
-      .select("*")
+      .select("legacy_members, new_memberships, legacy_without_new")
       .maybeSingle(),
     client
       .from("nim_drift" as never)
-      .select("*")
+      .select("identities_total, prefixed, unprefixed")
       .maybeSingle(),
-    client.from("observability_tenant_gap" as never).select("*"),
+    client
+      .from("observability_tenant_gap" as never)
+      .select("source, null_university_rows"),
   ]);
   return {
     drift: (drift as { data: unknown }).data,

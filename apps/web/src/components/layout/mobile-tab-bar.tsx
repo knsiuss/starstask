@@ -7,11 +7,9 @@ import {
   GraduationCap,
   LayoutDashboard,
   ListChecks,
-  Loader2,
   UserCheck,
   type LucideIcon,
 } from "lucide-react";
-import { useLinkStatus } from "next/link";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -34,13 +32,13 @@ const TABS: TabItem[] = [
   { href: "/leave-requests", label: "Absence", icon: ClipboardList },
 ];
 
-/** A lecturer's five daily destinations: the work waiting on them comes first. */
+/** A lecturer's five daily destinations: teaching and review come first. */
 const TEACHING_TABS: TabItem[] = [
-  { href: "/app", label: "Teaching", icon: LayoutDashboard },
-  { href: "/app/actions", label: "Review", icon: ListChecks },
-  { href: "/attendance", label: "Attendance", icon: UserCheck },
+  { href: "/lecturer", label: "Teaching", icon: LayoutDashboard },
+  { href: "/actions", label: "Review", icon: ListChecks },
   { href: "/classes", label: "Classes", icon: GraduationCap },
-  { href: "/leave-requests", label: "Absence", icon: ClipboardList },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
+  { href: "/attendance", label: "Attendance", icon: UserCheck },
 ];
 
 /**
@@ -79,10 +77,7 @@ export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <TabIcon
-                  Icon={tab.icon}
-                  isActive={isActive}
-                />
+                <TabIcon Icon={tab.icon} />
                 <span className="max-w-full truncate">{tab.label}</span>
               </Link>
             </li>
@@ -93,23 +88,7 @@ export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
   );
 }
 
-/**
- * Swaps the destination icon for a spinner while its navigation is pending,
- * so a tap on a slow (force-dynamic) route reads as immediate feedback
- * instead of a frozen screen until the server responds.
- */
-function TabIcon({ Icon, isActive }: { Icon: LucideIcon; isActive: boolean }) {
-  const { pending } = useLinkStatus();
-
-  if (pending && !isActive) {
-    return (
-      <Loader2
-        aria-hidden="true"
-        className="h-5 w-5 animate-spin"
-      />
-    );
-  }
-
+function TabIcon({ Icon }: { Icon: LucideIcon }) {
   return (
     <Icon
       aria-hidden="true"

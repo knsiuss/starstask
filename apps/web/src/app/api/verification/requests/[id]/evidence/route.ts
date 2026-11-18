@@ -5,6 +5,7 @@ import {
 
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireSession } from "@/features/classes/class-access";
@@ -44,15 +45,7 @@ export async function POST(request: Request, context: RouteContext) {
       onBackendFailure: "closed",
     });
 
-    const declaredLength = Number(request.headers.get("content-length") ?? "0");
-
-    if (declaredLength > VERIFICATION_EVIDENCE_MAX_BYTES + 1024) {
-      throw new ApiError(
-        413,
-        "file_too_large",
-        "Each file must be 10 MB or smaller.",
-      );
-    }
+    assertUploadContentLength(request);
 
     const formData = await request.formData();
     const file = formData.get("file");

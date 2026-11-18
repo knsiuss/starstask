@@ -1,9 +1,16 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, QrCode } from "lucide-react";
 import * as React from "react";
 
+import { InviteQrCard } from "@/components/classes/invite-qr-card";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 type InvitationLinkToastProps = {
@@ -12,8 +19,8 @@ type InvitationLinkToastProps = {
 };
 
 /**
- * The raw invitation token is returned only once, so the copy affordance is
- * part of the security story rather than a convenience.
+ * The raw invitation token is returned only once, so the copy and QR code
+ * affordances are part of the security story rather than a convenience.
  */
 export function InvitationLinkToast({
   url,
@@ -21,6 +28,7 @@ export function InvitationLinkToast({
 }: InvitationLinkToastProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [copied, setCopied] = React.useState(false);
+  const [qrOpen, setQrOpen] = React.useState(false);
   const resetTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
@@ -61,32 +69,74 @@ export function InvitationLinkToast({
         onFocus={(event) => event.currentTarget.select()}
       />
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-muted-foreground text-[11px]">
           {emailRestriction
-            ? `Only ${emailRestriction} can join.`
-            : "Anyone with the link can join."}
+            ? `Only ${emailRestriction} can join. Save now; hidden once closed.`
+            : "Anyone with the link can join. Save now; hidden once closed."}
         </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => void copy()}
-        >
-          {copied ? (
-            <Check
+        <div className="flex items-center gap-1.5">
+          <Button
+            asChild
+            size="sm"
+            variant="secondary"
+          >
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Join our class on StarsTask: ${url}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp
+            </a>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => setQrOpen(true)}
+          >
+            <QrCode
               aria-hidden="true"
               className="h-3.5 w-3.5"
             />
-          ) : (
-            <Copy
-              aria-hidden="true"
-              className="h-3.5 w-3.5"
-            />
-          )}
-          {copied ? "Copied" : "Copy"}
-        </Button>
+            QR
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => void copy()}
+          >
+            {copied ? (
+              <Check
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+            ) : (
+              <Copy
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              />
+            )}
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
       </div>
+
+      <Dialog
+        open={qrOpen}
+        onOpenChange={setQrOpen}
+      >
+        <DialogContent className="max-w-sm rounded-xl">
+          <DialogTitle>Invitation QR code</DialogTitle>
+          <DialogDescription>
+            Scan to open the join confirmation prompt.
+          </DialogDescription>
+          <div className="mt-4">
+            <InviteQrCard url={url} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

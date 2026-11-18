@@ -12,14 +12,17 @@ import {
   Plus,
   Search,
   SendHorizonal,
+  ShieldCheck,
   Smile,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { EmojiPicker } from "@/components/messages/emoji-picker";
+import { EncryptedMediaAttachment } from "@/components/messages/encrypted-media-attachment";
 import { KeyTrustBanner } from "@/components/messages/key-trust-banner";
 import { PresenceDot } from "@/components/messages/presence-dot";
+import { SafetyNumberDialog } from "@/components/messages/safety-number-dialog";
 import { subscribeConversation } from "@/components/messages/dm-realtime";
 import { SwipeReply } from "@/components/messages/swipe-reply";
 import {
@@ -30,14 +33,42 @@ import {
   encryptFile,
   encryptMessage,
   encryptWithDataKey,
+  exportPublicKey,
   generateDataKey,
+  getOrCreateDeviceId,
   getOrCreateKeyPair,
+  getOrCreateSignedPrekey,
   isAllowedMedia,
   isReplay,
   MAX_MEDIA_BYTES,
   unwrapDataKey,
   wrapDataKey,
 } from "@/lib/crypto/e2ee";
+import { encryptMediaBytes } from "@/lib/crypto/e2ee-media";
+import {
+  importRawPublicKey,
+  ratchetDecrypt,
+  ratchetEncrypt,
+  ratchetInitReceiver,
+  ratchetInitSender,
+} from "@/lib/crypto/e2ee-ratchet";
+import {
+  createIndexedDbRatchetStore,
+  createSenderKeyState,
+  decryptGroupMessage,
+  deriveInitialSharedSecret,
+  deriveResponderSharedSecret,
+  encryptGroupMessage,
+  parseV2Envelope,
+  parseV2GroupEnvelope,
+  type DecryptedPayload,
+  type EncryptedMediaMeta,
+  type RatchetStore,
+  type V2DeviceEnvelope,
+  serializeV2Envelope,
+  serializeV2GroupEnvelope,
+} from "@/lib/crypto/e2ee-v2";
+import { registerCurrentDevice } from "@/lib/crypto/key-backup";
 import type { ConversationRow } from "@/lib/db/direct-messages";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -60,6 +91,7 @@ export type RenderMessage = {
   attachmentName: string | null;
   attachmentMime: string | null;
   attachmentUrl: string | null;
+  encryptedMedia?: EncryptedMediaMeta | null;
   replyToId: string | null;
   reactions: Record<string, number>;
   edited: boolean;
@@ -81,8 +113,121 @@ type WireMessage = {
   is_pinned?: boolean;
 };
 
+type DeviceKeyInfo = {
+  user_id: string;
+  device_id: string;
+  identity_public_key: string;
+  signed_prekey_public: string;
+  revoked_at: string | null;
+};
+
+type SenderKeyRecord = {
+  owner_device_id: string;
+  key_id: string;
+  encrypted_sender_key: string;
+};
+
 const UNDECRYPTABLE = "Encrypted (cannot decrypt on this device)";
 const PAGE_SIZE = 50;
+const CACHE_DB_NAME = "starstask-e2ee-msg-cache";
+const CACHE_STORE_NAME = "messages";
+
+function openCacheDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(CACHE_DB_NAME, 1);
+
+    req.onupgradeneeded = (): void => {
+      if (!req.result.objectStoreNames.contains(CACHE_STORE_NAME)) {
+        req.result.createObjectStore(CACHE_STORE_NAME);
+      }
+    };
+    req.onsuccess = (): void => resolve(req.result);
+    req.onerror = (): void => reject(req.error);
+  });
+}
+
+async function getCachedPayload(
+  messageId: string,
+): Promise<DecryptedPayload | null> {
+  try {
+    const db = await openCacheDb();
+
+    return await new Promise<DecryptedPayload | null>((resolve, reject) => {
+      const req = db
+        .transaction(CACHE_STORE_NAME, "readonly")
+        .objectStore(CACHE_STORE_NAME)
+        .get(messageId);
+
+      req.onsuccess = (): void =>
+        resolve((req.result as DecryptedPayload | undefined) ?? null);
+      req.onerror = (): void => reject(req.error);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function setCachedPayload(
+  messageId: string,
+  payload: DecryptedPayload,
+): Promise<void> {
+  try {
+    const db = await openCacheDb();
+
+    await new Promise<void>((resolve, reject) => {
+      const req = db
+        .transaction(CACHE_STORE_NAME, "readwrite")
+        .objectStore(CACHE_STORE_NAME)
+        .put(payload, messageId);
+
+      req.onsuccess = (): void => resolve();
+      req.onerror = (): void => reject(req.error);
+    });
+  } catch {
+    // Cache failure must not block decryption.
+  }
+}
+
+function isEncryptedMediaMeta(value: unknown): value is EncryptedMediaMeta {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<EncryptedMediaMeta>;
+
+  return (
+    typeof candidate.storagePath === "string" &&
+    typeof candidate.mimeType === "string" &&
+    typeof candidate.fileName === "string" &&
+    typeof candidate.fileSize === "number" &&
+    typeof candidate.keyB64 === "string" &&
+    typeof candidate.ivB64 === "string" &&
+    typeof candidate.sha256B64 === "string"
+  );
+}
+
+function parseDecryptedPayload(plaintext: string): DecryptedPayload {
+  try {
+    const parsed: unknown = JSON.parse(plaintext);
+
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const obj = parsed as Record<string, unknown>;
+      const hasText = typeof obj.text === "string";
+      const hasMedia = isEncryptedMediaMeta(obj.media);
+
+      if (hasText || hasMedia) {
+        return {
+          text: hasText ? (obj.text as string) : undefined,
+          media: hasMedia ? (obj.media as EncryptedMediaMeta) : undefined,
+        };
+      }
+    }
+  } catch {
+    // Plaintext was not JSON; treat as raw message string.
+  }
+
+  return { text: plaintext };
+}
 
 type Props = {
   conversation: ConversationRow;
@@ -113,6 +258,7 @@ export function ChatPane({
     updateDraft(value);
   };
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [peerTyping, setPeerTyping] = useState(false);
   const [online, setOnline] = useState(false);
   const [replyTo, setReplyTo] = useState<RenderMessage | null>(null);
@@ -123,6 +269,9 @@ export function ChatPane({
   const [infoOpen, setInfoOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [safetyOpen, setSafetyOpen] = useState(false);
+  const [myPublicKey, setMyPublicKey] = useState<string | null>(null);
+  const [peerDeviceCount, setPeerDeviceCount] = useState(0);
   const peerPublicKeyRef = useRef<string | null>(null);
   const [peerPublicKey, setPeerPublicKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -134,8 +283,140 @@ export function ChatPane({
     { userId: string; name: string }[]
   >([]);
   const memberKeysRef = useRef<Record<string, string>>({});
+  const ratchetStoreRef = useRef<RatchetStore | null>(null);
+  const conversationDevicesRef = useRef<DeviceKeyInfo[]>([]);
+  const decryptedCacheRef = useRef<Map<string, DecryptedPayload>>(new Map());
+  const distributedSenderKeysRef = useRef<Set<string>>(new Set());
+  const deviceRegisteredRef = useRef(false);
 
   const conversationId = conversation.id;
+
+  const getRatchetStore = useCallback((): RatchetStore => {
+    if (!ratchetStoreRef.current) {
+      ratchetStoreRef.current = createIndexedDbRatchetStore();
+    }
+
+    return ratchetStoreRef.current;
+  }, []);
+
+  const ensureLocalIdentity = useCallback(async () => {
+    const [deviceId, identityPair, signedPrekey] = await Promise.all([
+      getOrCreateDeviceId(),
+      getOrCreateKeyPair(),
+      getOrCreateSignedPrekey(),
+    ]);
+    const publicKey = await exportPublicKey(identityPair);
+
+    setMyPublicKey(publicKey);
+
+    if (!deviceRegisteredRef.current) {
+      deviceRegisteredRef.current = true;
+      registerCurrentDevice(deviceId, publicKey).catch(() => {
+        deviceRegisteredRef.current = false;
+      });
+    }
+
+    return { deviceId, identityPair, signedPrekey, publicKey };
+  }, []);
+
+  const fetchConversationDevices = useCallback(
+    async (forceRefresh = false): Promise<DeviceKeyInfo[]> => {
+      if (!forceRefresh && conversationDevicesRef.current.length > 0) {
+        return conversationDevicesRef.current;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/dm/devices?conversationId=${encodeURIComponent(conversationId)}`,
+        );
+
+        if (!res.ok) {
+          return conversationDevicesRef.current;
+        }
+
+        const data = (await res.json()) as { devices?: DeviceKeyInfo[] };
+        const active = (data.devices ?? []).filter((d) => !d.revoked_at);
+
+        conversationDevicesRef.current = active;
+        setPeerDeviceCount(active.filter((d) => d.user_id !== myUserId).length);
+
+        return active;
+      } catch {
+        return conversationDevicesRef.current;
+      }
+    },
+    [conversationId, myUserId],
+  );
+
+  const decryptWithPairwiseRatchet = useCallback(
+    async (
+      senderDeviceId: string,
+      isSelfSameDevice: boolean,
+      env: V2DeviceEnvelope,
+      devices: DeviceKeyInfo[],
+    ): Promise<string> => {
+      const store = getRatchetStore();
+      const {
+        deviceId: myDeviceId,
+        identityPair,
+        signedPrekey,
+      } = await ensureLocalIdentity();
+      const sessionKey = isSelfSameDevice
+        ? `dm-self-recv:${conversationId}:${myDeviceId}`
+        : `dm:${conversationId}:${senderDeviceId}`;
+      let state = await store.getRatchet(sessionKey);
+
+      if (!state) {
+        let remoteIdentityKeyStr: string | null = null;
+
+        if (isSelfSameDevice) {
+          remoteIdentityKeyStr = await exportPublicKey(identityPair);
+        } else {
+          const matched = devices.find((d) => d.device_id === senderDeviceId);
+
+          if (matched) {
+            remoteIdentityKeyStr = matched.identity_public_key;
+          } else {
+            const refreshed = await fetchConversationDevices(true);
+
+            remoteIdentityKeyStr =
+              refreshed.find((d) => d.device_id === senderDeviceId)
+                ?.identity_public_key ?? null;
+          }
+        }
+
+        if (!remoteIdentityKeyStr) {
+          throw new Error("Missing sender device identity key");
+        }
+
+        const remoteIdPub = await importRawPublicKey(remoteIdentityKeyStr);
+        const sharedSecret = await deriveResponderSharedSecret(
+          identityPair.privateKey,
+          signedPrekey.keyPair.privateKey,
+          remoteIdPub,
+        );
+
+        state = await ratchetInitReceiver(sharedSecret, signedPrekey.keyPair);
+      }
+
+      const { state: nextState, plaintext } = await ratchetDecrypt(
+        state,
+        { dhPub: env.dhPub, n: env.n, pn: env.pn },
+        env.iv,
+        env.ct,
+      );
+
+      await store.setRatchet(sessionKey, nextState);
+
+      return plaintext;
+    },
+    [
+      conversationId,
+      ensureLocalIdentity,
+      fetchConversationDevices,
+      getRatchetStore,
+    ],
+  );
 
   const mapWire = useCallback(
     async (wire: WireMessage[], peerPublicKey: string | null) => {
@@ -143,14 +424,189 @@ export function ChatPane({
       const nameById = new Map(participants.map((p) => [p.userId, p.name]));
       const memberKeys = memberKeysRef.current;
       const group = conversation.isGroup;
+      const { deviceId: myDeviceId } = await ensureLocalIdentity();
+      const devices = await fetchConversationDevices();
+      const store = getRatchetStore();
+      let fetchedSenderKeys: SenderKeyRecord[] | null = null;
+
       return Promise.all(
         wire.map(async (message) => {
           let text = UNDECRYPTABLE;
           let decryptFailed = true;
           let attachmentUrl: string | null = null;
+          let encryptedMedia: EncryptedMediaMeta | null = null;
 
-          // Replay guard: the same wire twice in one conversation is a
-          // resend/replay, not a new message.
+          const v2Env = parseV2Envelope(message.body);
+          const v2gEnv = v2Env ? null : parseV2GroupEnvelope(message.body);
+
+          if (v2Env || v2gEnv) {
+            const memCached = decryptedCacheRef.current.get(message.id);
+            const cached = memCached ?? (await getCachedPayload(message.id));
+
+            if (cached) {
+              decryptedCacheRef.current.set(message.id, cached);
+              text = cached.text ?? "";
+              encryptedMedia = cached.media ?? null;
+              decryptFailed = false;
+
+              return {
+                id: message.id,
+                senderId: message.sender_id,
+                senderName: nameById.get(message.sender_id),
+                text,
+                at: message.created_at,
+                state: "read" as MessageState,
+                decryptFailed,
+                attachmentName: message.attachment_name,
+                attachmentMime: message.attachment_mime,
+                attachmentUrl: null,
+                encryptedMedia,
+                replyToId: message.reply_to_id ?? null,
+                reactions: {},
+                edited: Boolean(message.edited_at),
+                pinned: Boolean(message.is_pinned),
+              } satisfies RenderMessage;
+            }
+          }
+
+          if (v2Env) {
+            try {
+              const devEnv = v2Env.envelopes[myDeviceId];
+
+              if (devEnv) {
+                const isSelfSameDevice =
+                  message.sender_id === myUserId &&
+                  devEnv.senderDeviceId === myDeviceId;
+                const plaintext = await decryptWithPairwiseRatchet(
+                  devEnv.senderDeviceId,
+                  isSelfSameDevice,
+                  devEnv,
+                  devices,
+                );
+                const payload = parseDecryptedPayload(plaintext);
+
+                decryptedCacheRef.current.set(message.id, payload);
+                await setCachedPayload(message.id, payload);
+                text = payload.text ?? "";
+                encryptedMedia = payload.media ?? null;
+                decryptFailed = false;
+              }
+            } catch {
+              text = UNDECRYPTABLE;
+              decryptFailed = true;
+            }
+
+            return {
+              id: message.id,
+              senderId: message.sender_id,
+              senderName: nameById.get(message.sender_id),
+              text,
+              at: message.created_at,
+              state: "read" as MessageState,
+              decryptFailed,
+              attachmentName: message.attachment_name,
+              attachmentMime: message.attachment_mime,
+              attachmentUrl: null,
+              encryptedMedia,
+              replyToId: message.reply_to_id ?? null,
+              reactions: {},
+              edited: Boolean(message.edited_at),
+              pinned: Boolean(message.is_pinned),
+            } satisfies RenderMessage;
+          }
+
+          if (v2gEnv) {
+            try {
+              const groupRecvKey = `group-recv:${conversationId}:${v2gEnv.senderDeviceId}:${v2gEnv.keyId}`;
+              let senderKeyState = await store.getSenderKey(groupRecvKey);
+
+              if (!senderKeyState) {
+                if (fetchedSenderKeys === null) {
+                  const skRes = await fetch(
+                    `/api/dm/conversations/${conversationId}/sender-keys?deviceId=${encodeURIComponent(myDeviceId)}`,
+                  );
+
+                  if (skRes.ok) {
+                    const skData = (await skRes.json()) as {
+                      senderKeys?: SenderKeyRecord[];
+                    };
+
+                    fetchedSenderKeys = skData.senderKeys ?? [];
+                  } else {
+                    fetchedSenderKeys = [];
+                  }
+                }
+
+                const match = fetchedSenderKeys.find(
+                  (sk) =>
+                    sk.owner_device_id === v2gEnv.senderDeviceId &&
+                    sk.key_id === v2gEnv.keyId,
+                );
+
+                if (match) {
+                  const wrappedEnv = JSON.parse(
+                    match.encrypted_sender_key,
+                  ) as V2DeviceEnvelope;
+                  const unwrappedJson = await decryptWithPairwiseRatchet(
+                    wrappedEnv.senderDeviceId,
+                    false,
+                    wrappedEnv,
+                    devices,
+                  );
+                  const parsedKey = JSON.parse(unwrappedJson) as {
+                    keyId: string;
+                    chainKeyB64: string;
+                  };
+
+                  senderKeyState = createSenderKeyState(
+                    v2gEnv.senderDeviceId,
+                    parsedKey.keyId,
+                    parsedKey.chainKeyB64,
+                  );
+                }
+              }
+
+              if (senderKeyState) {
+                const { state: nextSk, plaintext } = await decryptGroupMessage(
+                  senderKeyState,
+                  v2gEnv,
+                );
+
+                await store.setSenderKey(groupRecvKey, nextSk);
+                const payload = parseDecryptedPayload(plaintext);
+
+                decryptedCacheRef.current.set(message.id, payload);
+                await setCachedPayload(message.id, payload);
+                text = payload.text ?? "";
+                encryptedMedia = payload.media ?? null;
+                decryptFailed = false;
+              }
+            } catch {
+              text = UNDECRYPTABLE;
+              decryptFailed = true;
+            }
+
+            return {
+              id: message.id,
+              senderId: message.sender_id,
+              senderName: nameById.get(message.sender_id),
+              text,
+              at: message.created_at,
+              state: "read" as MessageState,
+              decryptFailed,
+              attachmentName: message.attachment_name,
+              attachmentMime: message.attachment_mime,
+              attachmentUrl: null,
+              encryptedMedia,
+              replyToId: message.reply_to_id ?? null,
+              reactions: {},
+              edited: Boolean(message.edited_at),
+              pinned: Boolean(message.is_pinned),
+            } satisfies RenderMessage;
+          }
+
+          // Replay guard for v1 messages: the same wire twice in one
+          // conversation is a resend/replay, not a new message.
           if (await isReplay(conversationId, message.body)) {
             return {
               id: message.id,
@@ -241,16 +697,26 @@ export function ChatPane({
         }),
       );
     },
-    [participants, conversationId, conversation.isGroup, myUserId],
+    [
+      participants,
+      conversationId,
+      conversation.isGroup,
+      myUserId,
+      ensureLocalIdentity,
+      fetchConversationDevices,
+      getRatchetStore,
+      decryptWithPairwiseRatchet,
+    ],
   );
 
   const loadPage = useCallback(
     async (before?: string) => {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
       if (before) params.set("before", before);
-      const response = await fetch(
-        `/api/dm/conversations/${conversationId}/messages?${params}`,
-      );
+      const [response] = await Promise.all([
+        fetch(`/api/dm/conversations/${conversationId}/messages?${params}`),
+        fetchConversationDevices(true),
+      ]);
       if (!response.ok) throw new Error("Could not load messages");
       const data = (await response.json()) as {
         messages: WireMessage[];
@@ -267,7 +733,7 @@ export function ChatPane({
       const rendered = await mapWire(data.messages, data.peerPublicKey);
       return rendered;
     },
-    [conversationId, mapWire],
+    [conversationId, fetchConversationDevices, mapWire],
   );
 
   useEffect(() => {
@@ -357,21 +823,263 @@ export function ChatPane({
     }, 3500);
   }, [conversationId]);
 
+  const encryptPairwiseDevice = useCallback(
+    async (
+      target: DeviceKeyInfo,
+      plaintext: string,
+      myDeviceId: string,
+      identityPair: CryptoKeyPair,
+    ): Promise<V2DeviceEnvelope> => {
+      const store = getRatchetStore();
+      const sessionKey = `dm:${conversationId}:${target.device_id}`;
+      let state = await store.getRatchet(sessionKey);
+
+      if (!state) {
+        const [remoteIdPub, remoteSpkPub] = await Promise.all([
+          importRawPublicKey(target.identity_public_key),
+          importRawPublicKey(target.signed_prekey_public),
+        ]);
+        const sharedSecret = await deriveInitialSharedSecret(
+          identityPair.privateKey,
+          remoteIdPub,
+          remoteSpkPub,
+        );
+
+        state = await ratchetInitSender(
+          sharedSecret,
+          target.signed_prekey_public,
+        );
+      }
+
+      const {
+        state: nextState,
+        header,
+        iv,
+        ct,
+      } = await ratchetEncrypt(state, plaintext);
+
+      await store.setRatchet(sessionKey, nextState);
+
+      return {
+        senderDeviceId: myDeviceId,
+        dhPub: header.dhPub,
+        n: header.n,
+        pn: header.pn,
+        iv,
+        ct,
+      };
+    },
+    [conversationId, getRatchetStore],
+  );
+
+  const encryptForConversation = useCallback(
+    async (
+      payload: DecryptedPayload,
+    ): Promise<{
+      ciphertext: string;
+      groupWraps?: Record<string, { iv: string; cipher: string }>;
+    }> => {
+      const group = conversation.isGroup;
+      const peerPublicKey = peerPublicKeyRef.current;
+      const memberKeys = memberKeysRef.current;
+      const {
+        deviceId: myDeviceId,
+        identityPair,
+        signedPrekey,
+      } = await ensureLocalIdentity();
+      const devices = await fetchConversationDevices(true);
+      const otherDevices = devices.filter((d) => d.device_id !== myDeviceId);
+      const hasPeerDevices = devices.some((d) => d.user_id !== myUserId);
+      const serializedPayload = JSON.stringify(payload);
+      const store = getRatchetStore();
+
+      if (group && otherDevices.length > 0) {
+        const groupSendKey = `group-send:${conversationId}:${myDeviceId}`;
+        let senderState = await store.getSenderKey(groupSendKey);
+
+        if (!senderState) {
+          senderState = createSenderKeyState(myDeviceId);
+          await store.setSenderKey(
+            `group-recv:${conversationId}:${myDeviceId}:${senderState.keyId}`,
+            senderState,
+          );
+        }
+
+        const missingDevices = otherDevices.filter(
+          (d) =>
+            !distributedSenderKeysRef.current.has(
+              `${senderState.keyId}:${d.device_id}`,
+            ),
+        );
+
+        if (missingDevices.length > 0) {
+          const keyDistributionPayload = JSON.stringify({
+            keyId: senderState.keyId,
+            chainKeyB64: senderState.chainKeyB64,
+          });
+          const envelopes = await Promise.all(
+            missingDevices.map(async (target) => {
+              const env = await encryptPairwiseDevice(
+                target,
+                keyDistributionPayload,
+                myDeviceId,
+                identityPair,
+              );
+
+              return {
+                ownerDeviceId: myDeviceId,
+                recipientUserId: target.user_id,
+                recipientDeviceId: target.device_id,
+                keyId: senderState.keyId,
+                encryptedSenderKey: JSON.stringify(env),
+              };
+            }),
+          );
+          const distRes = await fetch(
+            `/api/dm/conversations/${conversationId}/sender-keys`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ envelopes }),
+            },
+          );
+
+          if (!distRes.ok) {
+            throw new Error("Could not distribute group sender key");
+          }
+
+          for (const target of missingDevices) {
+            distributedSenderKeysRef.current.add(
+              `${senderState.keyId}:${target.device_id}`,
+            );
+          }
+        }
+
+        const { state: nextSenderState, envelope } = await encryptGroupMessage(
+          senderState,
+          serializedPayload,
+        );
+
+        await store.setSenderKey(groupSendKey, nextSenderState);
+
+        return { ciphertext: serializeV2GroupEnvelope(envelope) };
+      }
+
+      if (!group && hasPeerDevices) {
+        const envelopes: Record<string, V2DeviceEnvelope> = {};
+
+        for (const target of otherDevices) {
+          envelopes[target.device_id] = await encryptPairwiseDevice(
+            target,
+            serializedPayload,
+            myDeviceId,
+            identityPair,
+          );
+        }
+
+        // Also encrypt a self-envelope so this device can decrypt its own
+        // sent message on subsequent page reloads.
+        const selfSendKey = `dm-self-send:${conversationId}:${myDeviceId}`;
+        let selfSendState = await store.getRatchet(selfSendKey);
+
+        if (!selfSendState) {
+          const selfSecret = await deriveInitialSharedSecret(
+            identityPair.privateKey,
+            identityPair.publicKey,
+            signedPrekey.keyPair.publicKey,
+          );
+
+          selfSendState = await ratchetInitSender(
+            selfSecret,
+            signedPrekey.publicKey,
+          );
+        }
+
+        const {
+          state: nextSelfState,
+          header,
+          iv,
+          ct,
+        } = await ratchetEncrypt(selfSendState, serializedPayload);
+
+        await store.setRatchet(selfSendKey, nextSelfState);
+        envelopes[myDeviceId] = {
+          senderDeviceId: myDeviceId,
+          dhPub: header.dhPub,
+          n: header.n,
+          pn: header.pn,
+          iv,
+          ct,
+        };
+
+        return { ciphertext: serializeV2Envelope({ v: 2, envelopes }) };
+      }
+
+      // v1 fallback when peer devices have not registered for v2 yet.
+      if (group) {
+        const dataKey = await generateDataKey();
+        const selfPair = await getOrCreateKeyPair();
+        const aad = buildAad(conversationId, myUserId);
+        const ciphertext = await encryptWithDataKey(
+          dataKey,
+          payload.text ?? "",
+          aad,
+        );
+        const wrapped = await Promise.all(
+          Object.entries(memberKeys).map(async ([memberId, memberKey]) => [
+            memberId,
+            await wrapDataKey(selfPair, memberKey, dataKey),
+          ]),
+        );
+
+        return { ciphertext, groupWraps: Object.fromEntries(wrapped) };
+      }
+
+      if (!peerPublicKey) {
+        throw new Error(
+          "Waiting for the other person to sign in. Their encryption key is not published yet.",
+        );
+      }
+
+      const ciphertext = await encryptMessage(
+        peerPublicKey,
+        payload.text ?? "",
+        {
+          conversationId,
+          senderId: myUserId,
+        },
+      );
+
+      return { ciphertext };
+    },
+    [
+      conversation.isGroup,
+      conversationId,
+      encryptPairwiseDevice,
+      ensureLocalIdentity,
+      fetchConversationDevices,
+      getRatchetStore,
+      myUserId,
+    ],
+  );
+
   async function send(): Promise<void> {
     const text = draft.trim();
     if (!text) return;
     const peerPublicKey = peerPublicKeyRef.current;
-    if (!peerPublicKey) {
+    const group = conversation.isGroup;
+    const memberKeys = memberKeysRef.current;
+    const devices = await fetchConversationDevices();
+    const hasPeerDevices = devices.some((d) => d.user_id !== myUserId);
+    if (!peerPublicKey && !hasPeerDevices) {
       setError(
-        "Waiting for the other person to sign in — their encryption key is not published yet. Try again in a moment.",
+        "Waiting for the other person to sign in. Their encryption key is not published yet.",
       );
       return;
     }
-    const group = conversation.isGroup;
-    const memberKeys = memberKeysRef.current;
-    if (group && Object.keys(memberKeys).length === 0) {
+    if (group && Object.keys(memberKeys).length === 0 && !hasPeerDevices) {
       setError(
-        "Waiting for group members to sign in — their encryption keys are not published yet. Try again in a moment.",
+        "Waiting for group members to sign in. Their encryption keys are not published yet.",
       );
       return;
     }
@@ -394,31 +1102,8 @@ export function ChatPane({
     setReplyTo(null);
     clearDraft();
     try {
-      let ciphertext: string;
-      let groupWraps:
-        Record<string, { iv: string; cipher: string }> | undefined;
-
-      if (group) {
-        // Per-recipient envelopes: one data key, wrapped for every member
-        // (including self, so the sender can decrypt own messages).
-        const dataKey = await generateDataKey();
-        const selfPair = await getOrCreateKeyPair();
-        const aad = buildAad(conversationId, myUserId);
-        ciphertext = await encryptWithDataKey(dataKey, text, aad);
-        groupWraps = {};
-        const wrapped = await Promise.all(
-          Object.entries(memberKeys).map(async ([memberId, memberKey]) => [
-            memberId,
-            await wrapDataKey(selfPair, memberKey, dataKey),
-          ]),
-        );
-        groupWraps = Object.fromEntries(wrapped);
-      } else {
-        ciphertext = await encryptMessage(peerPublicKey, text, {
-          conversationId,
-          senderId: myUserId,
-        });
-      }
+      const payload: DecryptedPayload = { text };
+      const { ciphertext, groupWraps } = await encryptForConversation(payload);
 
       const response = await fetch(
         `/api/dm/conversations/${conversationId}/messages`,
@@ -429,6 +1114,15 @@ export function ChatPane({
         },
       );
       if (!response.ok) throw new Error("Could not send message");
+      const created = (await response.json().catch(() => null)) as {
+        id?: string;
+      } | null;
+
+      if (created?.id) {
+        decryptedCacheRef.current.set(created.id, payload);
+        await setCachedPayload(created.id, payload);
+      }
+
       setMessages((current) =>
         current.map((m) =>
           m.id === optimistic.id ? { ...m, state: "sent" as const } : m,
@@ -455,22 +1149,30 @@ export function ChatPane({
         m.id === message.id ? { ...m, state: "sending" as const } : m,
       ),
     );
-    const peerPublicKey = peerPublicKeyRef.current;
-    if (!peerPublicKey) return;
     try {
-      const ciphertext = await encryptMessage(peerPublicKey, message.text, {
-        conversationId,
-        senderId: myUserId,
-      });
+      const payload: DecryptedPayload = {
+        text: message.text,
+        ...(message.encryptedMedia ? { media: message.encryptedMedia } : {}),
+      };
+      const { ciphertext, groupWraps } = await encryptForConversation(payload);
       const response = await fetch(
         `/api/dm/conversations/${conversationId}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ciphertext }),
+          body: JSON.stringify({ ciphertext, groupWraps }),
         },
       );
       if (!response.ok) throw new Error("Retry failed");
+      const created = (await response.json().catch(() => null)) as {
+        id?: string;
+      } | null;
+
+      if (created?.id) {
+        decryptedCacheRef.current.set(created.id, payload);
+        await setCachedPayload(created.id, payload);
+      }
+
       setMessages((current) =>
         current.map((m) =>
           m.id === message.id ? { ...m, state: "sent" as const } : m,
@@ -486,14 +1188,8 @@ export function ChatPane({
   }
 
   async function react(messageId: string, emoji: string): Promise<void> {
-    await fetch(
-      `/api/dm/conversations/${conversationId}/messages/${messageId}/react`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emoji }),
-      },
-    ).catch(() => {});
+    setError(null);
+    setEmojiFor(null);
     setMessages((current) =>
       current.map((m) =>
         m.id === messageId
@@ -507,32 +1203,58 @@ export function ChatPane({
           : m,
       ),
     );
-    setEmojiFor(null);
+
+    try {
+      const response = await fetch(
+        `/api/dm/conversations/${conversationId}/messages/${messageId}/react`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emoji }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Could not update reaction");
+      }
+    } catch {
+      setMessages((current) =>
+        current.map((m) => {
+          if (m.id !== messageId) return m;
+          const nextCount = (m.reactions[emoji] ?? 0) - 1;
+          const nextReactions = { ...m.reactions };
+          if (nextCount <= 0) {
+            delete nextReactions[emoji];
+          } else {
+            nextReactions[emoji] = nextCount;
+          }
+          return { ...m, reactions: nextReactions };
+        }),
+      );
+      setError("Could not update reaction");
+    }
   }
 
   async function saveEdit(): Promise<void> {
     if (!editing || !editText.trim()) return;
-    const peerPublicKey = peerPublicKeyRef.current;
-    if (!peerPublicKey) return;
     try {
-      const ciphertext = await encryptMessage(peerPublicKey, editText.trim(), {
-        conversationId,
-        senderId: myUserId,
-      });
+      const nextText = editText.trim();
+      const payload: DecryptedPayload = { text: nextText };
+      const { ciphertext, groupWraps } = await encryptForConversation(payload);
       const response = await fetch(
         `/api/dm/conversations/${conversationId}/messages/${editing.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ciphertext }),
+          body: JSON.stringify({ ciphertext, groupWraps }),
         },
       );
       if (!response.ok) throw new Error("Edit failed");
+      decryptedCacheRef.current.set(editing.id, payload);
+      await setCachedPayload(editing.id, payload);
       setMessages((current) =>
         current.map((m) =>
-          m.id === editing.id
-            ? { ...m, text: editText.trim(), edited: true }
-            : m,
+          m.id === editing.id ? { ...m, text: nextText, edited: true } : m,
         ),
       );
       setEditing(null);
@@ -562,31 +1284,47 @@ export function ChatPane({
   async function copyMessage(message: RenderMessage): Promise<void> {
     try {
       await navigator.clipboard.writeText(message.text);
-      setError("Copied to clipboard");
-      window.setTimeout(() => setError(null), 2000);
+      setError(null);
+      setNotice("Copied to clipboard");
+      window.setTimeout(() => setNotice(null), 2000);
     } catch {
+      setNotice(null);
       setError("Could not copy message");
     }
   }
 
   async function togglePin(message: RenderMessage): Promise<void> {
-    const pinned = !message.pinned;
-    await fetch(
-      `/api/dm/conversations/${conversationId}/messages/${message.id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pinned }),
-      },
-    ).catch(() => {});
+    const previousPinned = Boolean(message.pinned);
+    const pinned = !previousPinned;
+    setError(null);
     setMessages((current) =>
       current.map((m) => (m.id === message.id ? { ...m, pinned } : m)),
     );
+
+    try {
+      const response = await fetch(
+        `/api/dm/conversations/${conversationId}/messages/${message.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pinned }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Could not update pin state");
+      }
+    } catch {
+      setMessages((current) =>
+        current.map((m) =>
+          m.id === message.id ? { ...m, pinned: previousPinned } : m,
+        ),
+      );
+      setError("Could not update pin state");
+    }
   }
 
   async function sendFile(file: File): Promise<void> {
-    const peerPublicKey = peerPublicKeyRef.current;
-    if (!peerPublicKey) return;
     if (file.size > MAX_MEDIA_BYTES) {
       setError("File max 25MB");
       return;
@@ -601,6 +1339,74 @@ export function ChatPane({
     try {
       const supabase = createSupabaseBrowserClient();
       const buf = await file.arrayBuffer();
+      const devices = await fetchConversationDevices();
+      const hasV2Targets = devices.some(
+        (d) => conversation.isGroup || d.user_id !== myUserId,
+      );
+
+      if (hasV2Targets) {
+        const { encryptedBytes, keyB64, ivB64, sha256B64 } =
+          await encryptMediaBytes(new Uint8Array(buf));
+        const path = `${conversationId}/${crypto.randomUUID()}.enc`;
+        const { error: uploadError } = await supabase.storage
+          .from("dm-media")
+          .upload(
+            path,
+            new Blob([encryptedBytes], { type: "application/octet-stream" }),
+            { contentType: "application/octet-stream" },
+          );
+        if (uploadError) {
+          setError("Upload failed");
+          return;
+        }
+
+        const payload: DecryptedPayload = {
+          media: {
+            storagePath: path,
+            mimeType: file.type || "application/octet-stream",
+            fileName: file.name,
+            fileSize: file.size,
+            keyB64,
+            ivB64,
+            sha256B64,
+          },
+        };
+        const { ciphertext, groupWraps } =
+          await encryptForConversation(payload);
+        const response = await fetch(
+          `/api/dm/conversations/${conversationId}/messages`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ciphertext, groupWraps }),
+          },
+        );
+
+        if (!response.ok) {
+          setError("Could not send file");
+          return;
+        }
+
+        const created = (await response.json().catch(() => null)) as {
+          id?: string;
+        } | null;
+
+        if (created?.id) {
+          decryptedCacheRef.current.set(created.id, payload);
+          await setCachedPayload(created.id, payload);
+        }
+
+        router.refresh();
+        return;
+      }
+
+      const peerPublicKey = peerPublicKeyRef.current;
+      if (!peerPublicKey) {
+        setError(
+          "Waiting for the other person to sign in. Their encryption key is not published yet.",
+        );
+        return;
+      }
       const wire = await encryptFile(peerPublicKey, buf);
       const path = `${conversationId}/${crypto.randomUUID()}.enc`;
       const { error: uploadError } = await supabase.storage
@@ -705,7 +1511,7 @@ export function ChatPane({
           />
         </button>
         <span className="relative shrink-0">
-          <span className="from-accent to-accent-hover flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white">
+          <span className="bg-accent-soft text-accent flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold">
             {initials(displayName)}
           </span>
           <PresenceDot online={online} />
@@ -721,6 +1527,18 @@ export function ChatPane({
           </p>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Verify end-to-end encryption safety number"
+            onClick={() => setSafetyOpen(true)}
+            className="border-border bg-accent-soft/60 text-accent hover:bg-accent-soft hidden items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:inline-flex"
+          >
+            <ShieldCheck
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+            <span>E2EE</span>
+          </button>
           <button
             type="button"
             aria-label="Search in conversation"
@@ -747,15 +1565,31 @@ export function ChatPane({
               />
             </button>
             {infoOpen ? (
-              <span className="bg-surface border-border absolute top-full right-0 z-20 mt-2 flex w-64 items-start gap-2 rounded-xl border p-3 text-xs leading-relaxed shadow-lg">
-                <Lock
-                  aria-hidden="true"
-                  className="text-accent mt-0.5 h-4 w-4 shrink-0"
-                />
-                <span>
-                  Your messages are protected with end-to-end encryption. Only
-                  you and the people you chat with can read them.
+              <span className="bg-surface border-border absolute top-full right-0 z-20 mt-2 flex w-64 flex-col gap-2 rounded-xl border p-3 text-xs leading-relaxed shadow-lg">
+                <span className="flex items-start gap-2">
+                  <Lock
+                    aria-hidden="true"
+                    className="text-accent mt-0.5 h-4 w-4 shrink-0"
+                  />
+                  <span>
+                    Your messages are protected with end-to-end encryption. Only
+                    you and the people you chat with can read them.
+                  </span>
                 </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInfoOpen(false);
+                    setSafetyOpen(true);
+                  }}
+                  className="text-accent hover:bg-accent-soft flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <ShieldCheck
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+                  Verify safety number
+                </button>
               </span>
             ) : null}
           </span>
@@ -854,7 +1688,7 @@ export function ChatPane({
                         }
                       >
                         {!mine && !groupedWithPrevious ? (
-                          <span className="from-accent to-accent-hover flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold text-white">
+                          <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
                             {initials(message.senderName ?? displayName)}
                           </span>
                         ) : null}
@@ -887,7 +1721,7 @@ export function ChatPane({
                               }}
                               className={
                                 mine
-                                  ? "block rounded-2xl rounded-br-md bg-gradient-to-br from-accent to-accent-hover px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-white shadow-sm"
+                                  ? "block rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-accent-foreground"
                                   : "block rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-left text-sm whitespace-pre-wrap text-foreground"
                               }
                             >
@@ -931,9 +1765,23 @@ export function ChatPane({
                                     </span>
                                   </span>
                                 </span>
+                              ) : message.decryptFailed ? (
+                                <span className="flex items-center gap-1.5 italic opacity-75">
+                                  <Lock
+                                    aria-hidden="true"
+                                    className="h-3.5 w-3.5 shrink-0"
+                                  />
+                                  <span>{message.text}</span>
+                                </span>
                               ) : (
                                 message.text
                               )}
+                              {message.encryptedMedia ? (
+                                <EncryptedMediaAttachment
+                                  media={message.encryptedMedia}
+                                  isMine={mine}
+                                />
+                              ) : null}
                               {message.attachmentUrl ? (
                                 message.attachmentMime?.startsWith("image/") ? (
                                   // eslint-disable-next-line @next/next/no-img-element -- attachment previews use signed/blob URLs that next/image cannot optimize
@@ -988,7 +1836,7 @@ export function ChatPane({
                                   <button
                                     type="button"
                                     onClick={() => void retry(message)}
-                                    className="text-red-600 text-[10px] font-semibold underline underline-offset-2"
+                                    className="text-danger text-[10px] font-semibold underline underline-offset-2"
                                     aria-label="Retry sending message"
                                   >
                                     Failed, tap to retry
@@ -1082,7 +1930,7 @@ export function ChatPane({
                                     type="button"
                                     aria-label="Delete message"
                                     onClick={() => void remove(message.id)}
-                                    className="text-red-600 text-[11px] underline underline-offset-2"
+                                    className="text-danger text-[11px] underline underline-offset-2"
                                   >
                                     Delete
                                   </button>
@@ -1141,10 +1989,19 @@ export function ChatPane({
 
       {error ? (
         <p
-          className="px-4 pt-2 text-sm text-red-600 sm:px-6"
+          className="text-danger px-4 pt-2 text-sm sm:px-6"
           role="alert"
         >
           {error}
+        </p>
+      ) : null}
+
+      {notice ? (
+        <p
+          className="text-muted-foreground px-4 pt-2 text-sm sm:px-6"
+          role="status"
+        >
+          {notice}
         </p>
       ) : null}
 
@@ -1272,6 +2129,14 @@ export function ChatPane({
           </button>
         </div>
       </form>
+      <SafetyNumberDialog
+        open={safetyOpen}
+        onClose={() => setSafetyOpen(false)}
+        peerName={displayName}
+        myPublicKey={myPublicKey}
+        peerPublicKey={peerPublicKey}
+        peerDeviceCount={peerDeviceCount}
+      />
     </div>
   );
 }

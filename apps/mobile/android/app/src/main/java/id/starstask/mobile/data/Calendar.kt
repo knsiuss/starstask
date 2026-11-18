@@ -501,7 +501,11 @@ suspend fun syncSessionToGoogleCalendar(sessionId: String): CalendarSyncResult {
         try {
             if (status == java.net.HttpURLConnection.HTTP_OK) {
                 val body = conn.inputStream.bufferedReader().use { it.readText() }
-                val eventId = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject["eventId"]?.jsonPrimitive?.content }.getOrNull()
+                val eventId = runCatching {
+                    val root = kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject
+                    val dataEventId = root["data"]?.jsonObject?.get("eventId")?.jsonPrimitive?.contentOrNull
+                    dataEventId ?: root["eventId"]?.jsonPrimitive?.contentOrNull
+                }.getOrNull()
                 CalendarSyncResult.Synced(eventId)
             } else {
                 val body = runCatching { conn.errorStream?.bufferedReader()?.use { it.readText() } }.getOrNull().orEmpty()

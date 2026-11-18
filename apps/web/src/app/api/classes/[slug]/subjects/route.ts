@@ -7,6 +7,7 @@ import {
   DuplicateSubjectCodeError,
   listClassSubjects,
 } from "@/lib/db/classes";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import {
@@ -39,11 +40,21 @@ export async function GET(
       windowSeconds: 3600,
     });
 
-    const subjects = await listClassSubjects(found.id, {
-      includeArchived: role.canManage,
-    });
+    const [subjects, access] = await Promise.all([
+      listClassSubjects(found.id, {
+        includeArchived: role.canManage,
+      }),
+      role.canManage
+        ? Promise.resolve(null)
+        : getMemberCourseAccess(found.id, session.user.id),
+    ]);
 
-    return apiSuccess(subjects);
+    const visibleSubjects =
+      access?.scope === "selected"
+        ? subjects.filter((subject) => access.allowedSubjectIds.has(subject.id))
+        : subjects;
+
+    return apiSuccess(visibleSubjects);
   } catch (error) {
     return handleRouteError(error);
   }

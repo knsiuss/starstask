@@ -49,7 +49,7 @@ export function InvitationManager({
   const [invitations, setInvitations] =
     React.useState<InvitationListItem[]>(initialInvitations);
   const [expiresInDays, setExpiresInDays] = React.useState("7");
-  const [maxUses, setMaxUses] = React.useState("1");
+  const [maxUses, setMaxUses] = React.useState("50");
   const [email, setEmail] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(

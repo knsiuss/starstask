@@ -85,6 +85,7 @@ export async function buildMeetingWorkbook(
   detail: AttendanceMeetingDetail,
   context: AttendanceExportContext,
   audits: AttendanceCorrectionAuditEntry[] = [],
+  extras: { branding?: ExportBrandingInput } = {},
 ): Promise<Uint8Array> {
   const workbook = createWorkbook(context.generatedAt);
   const sheet = workbook.addWorksheet(`Pertemuan ${detail.meetingNumber}`, {
@@ -101,11 +102,15 @@ export async function buildMeetingWorkbook(
     { key: "notes", width: 38 },
   ];
 
-  let row = addReportHeading(
-    sheet,
-    "Attendance Report",
-    `Pertemuan ${detail.meetingNumber} — ${context.subject.name}`,
-  );
+  const branding = extras.branding?.brandingEnabled ? extras.branding : null;
+
+  let row = branding
+    ? await addBrandingHeader(sheet, branding, context, 7)
+    : addReportHeading(
+        sheet,
+        "Attendance Report",
+        `Pertemuan ${detail.meetingNumber} — ${context.subject.name}`,
+      );
 
   row = addMetadataRows(sheet, row, 7, [
     ["Class", context.classInfo.name],
@@ -141,6 +146,7 @@ export async function buildMeetingWorkbook(
   ];
   styleHeaderRow(headerRow, 7);
   const headerRowNumber = row;
+  sheet.views = [{ state: "frozen", ySplit: headerRowNumber }];
 
   const firstDataRow = headerRowNumber + 1;
 
@@ -308,10 +314,18 @@ export async function buildRecapWorkbook(
   const courseRow = sheet.getRow(courseRowNumber);
   sheet.mergeCells(courseRowNumber, 1, courseRowNumber, 3);
   courseRow.getCell(1).value = subjectLabel(context.subject);
-  courseRow.getCell(1).font = { size: 16, bold: true };
+  courseRow.getCell(1).font = {
+    size: 15,
+    bold: true,
+    color: { argb: HEADER_FILL },
+  };
+  courseRow.height = 24;
+
+  const subjectSubRow = sheet.getRow(courseRowNumber + 1);
   sheet.mergeCells(courseRowNumber + 1, 1, courseRowNumber + 1, 3);
-  courseRow.getCell(1).value = context.subject.name;
-  courseRow.getCell(1).font = { size: 11, color: { argb: MUTED_TEXT } };
+  subjectSubRow.getCell(1).value = context.subject.name;
+  subjectSubRow.getCell(1).font = { size: 11, color: { argb: MUTED_TEXT } };
+  subjectSubRow.height = 18;
 
   const infoRows = [5 + rowShift, 6 + rowShift, 7 + rowShift];
   const infoValues = [
@@ -352,8 +366,13 @@ export async function buildRecapWorkbook(
     const column = statsStartColumn + index * 2;
     const labelRow = sheet.getRow(courseRowNumber);
     const valueRow = sheet.getRow(courseRowNumber + 1);
-    sheet.mergeCells(3, column, 3, column + 1);
-    sheet.mergeCells(4, column, 4, column + 1);
+    sheet.mergeCells(courseRowNumber, column, courseRowNumber, column + 1);
+    sheet.mergeCells(
+      courseRowNumber + 1,
+      column,
+      courseRowNumber + 1,
+      column + 1,
+    );
     labelRow.getCell(column).value = label;
     labelRow.getCell(column).font = {
       size: 9,
@@ -1253,6 +1272,9 @@ function styleHeaderRow(row: ExcelJS.Row, columnCount: number): void {
 }
 
 function styleDataRow(row: ExcelJS.Row, columnCount: number): void {
+  row.height = Math.max(row.height ?? 0, 20);
+  const isEven = row.number % 2 === 0;
+
   for (let column = 1; column <= columnCount; column += 1) {
     const cell = row.getCell(column);
     cell.alignment = {
@@ -1260,6 +1282,15 @@ function styleDataRow(row: ExcelJS.Row, columnCount: number): void {
       wrapText: true,
       horizontal: column === 1 ? "center" : "left",
     };
+
+    if (isEven) {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF8FAFC" },
+      };
+    }
+
     applyBorder(cell);
   }
 }

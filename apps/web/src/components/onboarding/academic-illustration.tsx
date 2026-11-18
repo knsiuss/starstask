@@ -17,7 +17,6 @@ export function AcademicIllustration({ className }: AcademicIllustrationProps) {
       aria-hidden="true"
       className={cn("relative mx-auto h-56 w-full max-w-sm sm:h-64", className)}
     >
-      <div className="st-glow absolute top-1/2 left-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,var(--color-accent-soft),transparent)]" />
       <svg
         viewBox="0 0 320 180"
         className="absolute inset-0 h-full w-full"
@@ -33,28 +32,13 @@ export function AcademicIllustration({ className }: AcademicIllustrationProps) {
           opacity="0.45"
         />
       </svg>
-      <span className="st-twinkle absolute top-6 left-8 text-lg text-accent">
-        ✦
-      </span>
-      <span
-        className="st-twinkle absolute top-10 right-10 text-sm text-accent/60"
-        style={{ animationDelay: "1s" }}
-      >
-        ✦
-      </span>
-      <span
-        className="st-twinkle absolute bottom-8 left-14 text-xs text-accent/60"
-        style={{ animationDelay: "2s" }}
-      >
-        ✦
-      </span>
 
       <div className="absolute top-6 left-1/2 w-44 -translate-x-1/2">
         <div
-          className="st-enter-up rounded-2xl border border-border bg-surface p-4 shadow-xl"
+          className="st-enter-up rounded-2xl border border-border bg-surface p-4"
           style={{ animationDelay: "800ms" }}
         >
-          <div className="st-float">
+          <div>
             <div className="flex items-center gap-2">
               <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold text-accent-foreground">
                 ✓
@@ -84,7 +68,7 @@ export function AcademicIllustration({ className }: AcademicIllustrationProps) {
       </div>
 
       <div
-        className="st-enter-left st-float-slow absolute top-24 left-0 w-20 rounded-xl border border-border bg-surface p-3 shadow-lg sm:left-2"
+        className="st-enter-left absolute top-24 left-0 w-20 rounded-xl border border-border bg-surface p-3 sm:left-2"
         style={{ animationDelay: "900ms" }}
       >
         <p className="text-accent text-center text-2xl font-bold leading-none">
@@ -96,7 +80,7 @@ export function AcademicIllustration({ className }: AcademicIllustrationProps) {
       </div>
 
       <div
-        className="st-enter-right st-float-slow absolute top-24 right-0 w-20 rounded-xl border border-border bg-surface p-3 shadow-lg sm:right-2"
+        className="st-enter-right absolute top-24 right-0 w-20 rounded-xl border border-border bg-surface p-3 sm:right-2"
         style={{ animationDelay: "1000ms" }}
       >
         <GraduationCap

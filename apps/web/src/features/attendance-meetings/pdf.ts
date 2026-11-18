@@ -84,13 +84,21 @@ function ensureSpace(ctx: Ctx, needed: number): void {
   }
 }
 
+function toAscii(value: string): string {
+  return value
+    .replaceAll("—", "-")
+    .replaceAll("–", "-")
+    .replaceAll("→", "->")
+    .replace(/[^\x20-\x7E]/g, "?");
+}
+
 function text(
   ctx: Ctx,
   value: string,
   size: number,
   opts?: { bold?: boolean; muted?: boolean; y?: number },
 ): void {
-  ctx.page.drawText(value.replace(/[^\x20-\x7E]/g, "?"), {
+  ctx.page.drawText(toAscii(value), {
     x: MARGIN,
     y: opts?.y ?? ctx.y,
     size,
@@ -241,16 +249,16 @@ export async function buildAttendanceReportPdf(
     }
     const p = String(student.totals.present);
     const l = String(student.totals.late);
-    const e = String(student.totals.excused);
+    const e = String(student.totals.excused + student.totals.sick);
     const a = String(student.totals.absent);
     const perc =
       student.totals.percentage === null
-        ? "—"
+        ? "-"
         : String(student.totals.percentage);
     const row = [
       String(index + 1),
-      student.nim ?? "—",
-      student.fullName,
+      student.nim ?? "-",
+      student.fullName.slice(0, 28),
       p,
       l,
       e,
@@ -258,7 +266,7 @@ export async function buildAttendanceReportPdf(
       perc,
     ];
     row.forEach((cell, i) => {
-      ctx.page.drawText(cell.replace(/[^\x20-\x7E]/g, "?"), {
+      ctx.page.drawText(toAscii(cell), {
         x: colX[i] ?? MARGIN,
         y: ctx.y,
         size: 8,
@@ -322,7 +330,7 @@ export async function buildAttendanceReportPdf(
       elig += 1;
       if (cell === "present") mp += 1;
       else if (cell === "late") ml += 1;
-      else if (cell === "excused") me += 1;
+      else if (cell === "excused" || cell === "sick") me += 1;
       else if (cell === "absent") ma += 1;
     }
     const attendedM = mp + ml + me;
@@ -338,7 +346,7 @@ export async function buildAttendanceReportPdf(
       pctM,
     ];
     row.forEach((cell, i) => {
-      ctx.page.drawText(cell.replace(/[^\x20-\x7E]/g, "?"), {
+      ctx.page.drawText(toAscii(cell), {
         x: mX[i] ?? MARGIN,
         y: ctx.y,
         size: 8,

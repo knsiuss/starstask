@@ -364,6 +364,7 @@ export const classInvitationCreateSchema = z
         value === undefined || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
       { message: "Enter a valid email address" },
     ),
+    subjectId: z.string().uuid().optional(),
   })
   .strict();
 
@@ -486,9 +487,29 @@ const courseMaterialUrlSchema = z
     message: "Use a full https:// link",
   });
 
+export const COURSE_MATERIAL_FORMATS = ["markdown", "html", "plain"] as const;
+export type CourseMaterialFormat = (typeof COURSE_MATERIAL_FORMATS)[number];
+
+export const COURSE_COMMENT_EMOJIS = [
+  "👍",
+  "❤️",
+  "🔥",
+  "👏",
+  "🤔",
+  "🎉",
+] as const;
+
 const courseMaterialFields = {
   subjectId: z.uuid("Choose a course"),
   kind: z.enum(COURSE_MATERIAL_KINDS).default("document"),
+  meetingNumber: z.coerce
+    .number()
+    .int()
+    .min(1, "Meeting must be between 1 and 16")
+    .max(16, "Meeting must be between 1 and 16")
+    .nullable()
+    .optional(),
+  contentFormat: z.enum(COURSE_MATERIAL_FORMATS).default("markdown"),
   title: z
     .string()
     .trim()
@@ -496,19 +517,28 @@ const courseMaterialFields = {
     .max(COURSE_MATERIAL_TITLE_MAX, "Title must be 200 characters or fewer"),
   description: optionalCourseMaterialText(COURSE_MATERIAL_DESCRIPTION_MAX),
   resourceUrl: courseMaterialUrlSchema,
+  filePath: z.string().trim().max(400).nullable().optional(),
+  fileName: z.string().trim().max(200).nullable().optional(),
+  fileMime: z.string().trim().max(120).nullable().optional(),
+  fileSize: z.number().int().min(0).max(10_485_760).nullable().optional(),
 };
 
 /**
- * A material needs either written content or a link. A bare title would create
- * an empty item that students cannot use.
+ * A material needs written content, a link, or an uploaded file.
  */
 export const courseMaterialCreateSchema = z
   .object(courseMaterialFields)
   .strict()
-  .refine((value) => Boolean(value.description) || Boolean(value.resourceUrl), {
-    message: "Add a description or a resource link",
-    path: ["description"],
-  });
+  .refine(
+    (value) =>
+      Boolean(value.description) ||
+      Boolean(value.resourceUrl) ||
+      Boolean(value.filePath),
+    {
+      message: "Add a description, a resource link, or a file",
+      path: ["description"],
+    },
+  );
 
 export type CourseMaterialCreateInput = z.infer<
   typeof courseMaterialCreateSchema
@@ -517,10 +547,16 @@ export type CourseMaterialCreateInput = z.infer<
 export const courseMaterialUpdateSchema = z
   .object(courseMaterialFields)
   .strict()
-  .refine((value) => Boolean(value.description) || Boolean(value.resourceUrl), {
-    message: "Add a description or a resource link",
-    path: ["description"],
-  });
+  .refine(
+    (value) =>
+      Boolean(value.description) ||
+      Boolean(value.resourceUrl) ||
+      Boolean(value.filePath),
+    {
+      message: "Add a description, a resource link, or a file",
+      path: ["description"],
+    },
+  );
 
 export type CourseMaterialUpdateInput = z.infer<
   typeof courseMaterialUpdateSchema
@@ -530,12 +566,52 @@ export type CourseMaterialView = {
   id: string;
   class_id: string;
   subject_id: string;
+  meeting_number: number | null;
+  content_format: CourseMaterialFormat;
   kind: CourseMaterialKind;
   title: string;
   description: string | null;
   resource_url: string | null;
+  file_path: string | null;
+  file_name: string | null;
+  file_mime: string | null;
+  file_size: number | null;
+  signed_url?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export const courseCommentCreateSchema = z.object({
+  meetingNumber: z.coerce.number().int().min(1).max(16).nullable().optional(),
+  parentId: z.uuid().nullable().optional(),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Write a comment first")
+    .max(2000, "Comment must be 2,000 characters or fewer"),
+});
+
+export type CourseCommentCreateInput = z.infer<
+  typeof courseCommentCreateSchema
+>;
+
+export const courseCommentReactionSchema = z.object({
+  emoji: z.enum(COURSE_COMMENT_EMOJIS),
+});
+
+export type CourseCommentView = {
+  id: string;
+  subject_id: string;
+  meeting_number: number | null;
+  parent_id: string | null;
+  author_id: string;
+  author_name: string;
+  author_avatar_url: string | null;
+  body: string;
+  image_url: string | null;
+  reactions: Record<string, string[]>;
+  created_at: string;
+  can_delete: boolean;
 };
 
 /**
@@ -769,3 +845,96 @@ export const classInvitationDeclineSchema = z
 export type ClassInvitationDeclineInput = z.infer<
   typeof classInvitationDeclineSchema
 >;
+
+export const KRS_COURSE_CODE_MAX = 30;
+export const KRS_COURSE_NAME_MIN = 2;
+export const KRS_COURSE_NAME_MAX = 120;
+export const KRS_LECTURER_NAME_MAX = 120;
+export const KRS_ROOM_MAX = 80;
+export const KRS_COURSES_MAX = 30;
+
+const krsOptionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .optional()
+    .transform((value) => (value === "" ? null : value));
+
+const krsOptionalTime = z
+  .string()
+  .trim()
+  .nullable()
+  .optional()
+  .transform((value) => (value === "" ? null : value))
+  .refine(
+    (value) =>
+      value === undefined ||
+      value === null ||
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
+    { message: "Use the 24-hour format HH:MM" },
+  );
+
+/** Single course row extracted from a KRS document before confirmation. */
+export const krsCourseDraftSchema = z.object({
+  courseCode: z
+    .string()
+    .trim()
+    .min(1, "Course code is required")
+    .max(
+      KRS_COURSE_CODE_MAX,
+      `Course code must be ${KRS_COURSE_CODE_MAX} characters or fewer`,
+    ),
+  courseName: z
+    .string()
+    .trim()
+    .min(
+      KRS_COURSE_NAME_MIN,
+      `Course name must be at least ${KRS_COURSE_NAME_MIN} characters`,
+    )
+    .max(
+      KRS_COURSE_NAME_MAX,
+      `Course name must be ${KRS_COURSE_NAME_MAX} characters or fewer`,
+    ),
+  lecturerName: krsOptionalText(KRS_LECTURER_NAME_MAX),
+  dayOfWeek: z.number().int().min(1).max(7).nullable().optional(),
+  startTime: krsOptionalTime,
+  endTime: krsOptionalTime,
+  room: krsOptionalText(KRS_ROOM_MAX),
+});
+
+export type KrsCourseDraft = z.infer<typeof krsCourseDraftSchema>;
+
+/** Confirmed KRS import payload used to provision a class, subjects, and schedule. */
+export const krsImportConfirmSchema = z.object({
+  classCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[A-Z0-9]{2,20}$/,
+      "Use 2 to 20 uppercase letters or numbers (for example TPLM002)",
+    ),
+  semesterNumber: z.coerce
+    .number()
+    .int("Semester must be a whole number")
+    .min(1, "Semester must be between 1 and 14")
+    .max(14, "Semester must be between 1 and 14"),
+  academicYear: academicYearSchema,
+  joinPolicy: z.enum(CLASS_JOIN_POLICIES).default("invitation"),
+  courses: z
+    .array(krsCourseDraftSchema)
+    .min(1, "Include at least one course")
+    .max(KRS_COURSES_MAX, `Import at most ${KRS_COURSES_MAX} courses at once`),
+});
+
+export type KrsImportConfirmInput = z.infer<typeof krsImportConfirmSchema>;
+
+export type KrsParseResponse = {
+  classCode: string | null;
+  semesterNumber: number | null;
+  academicYear: string | null;
+  courses: KrsCourseDraft[];
+  warnings: string[];
+};

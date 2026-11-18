@@ -70,10 +70,23 @@ function AsyncExportButton({
       }
 
       if (response.ok) {
-        // Sync fallback (async disabled server-side): it is the download.
+        // Sync fallback (async disabled server-side): trigger file download.
         const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") ?? "";
+        const match = /filename="?([^";]+)"?/i.exec(disposition);
+        const filename =
+          match?.[1] ??
+          (blob.type === "application/pdf"
+            ? "attendance-export.pdf"
+            : "attendance-export.xlsx");
         const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
         return;
       }
 

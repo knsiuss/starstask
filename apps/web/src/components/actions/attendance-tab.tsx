@@ -7,11 +7,11 @@ import {
   Users,
 } from "lucide-react";
 
+import { ClassSwitcherSelect } from "@/components/actions/class-switcher-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import type { AttendanceMeetingListItem } from "@/lib/attendance/meeting-types";
 import { formatLeaveDate } from "@starstask/shared";
 
@@ -108,13 +108,18 @@ export function AttendanceTab({
   return (
     <div className="mt-4 space-y-4">
       <form
-        action="/app/actions?tab=attendance"
+        action="/actions"
         method="get"
-        className="border-border bg-card flex items-center gap-2 rounded-xl border p-3 sm:p-4"
+        className="border-border bg-surface flex items-end gap-2 rounded-xl border p-3 sm:p-4"
       >
+        <input
+          type="hidden"
+          name="tab"
+          value="attendance"
+        />
         <div className="min-w-0 flex-1">
           <Label htmlFor="attendance-class">Class</Label>
-          <Select
+          <ClassSwitcherSelect
             id="attendance-class"
             name="class"
             defaultValue={selected.id}
@@ -130,7 +135,7 @@ export function AttendanceTab({
                   : `${item.name} — Semester ${item.semester} (${item.academicYear})`}
               </option>
             ))}
-          </Select>
+          </ClassSwitcherSelect>
         </div>
         <Button
           type="submit"
@@ -190,7 +195,7 @@ export function AttendanceTab({
         <ul className="grid gap-3">
           {courses.map((course) => {
             const latest = latestMeeting(course.meetings);
-            const viewHref = `/app/classes/${selected.slug}/courses/${course.id}/attendance`;
+            const viewHref = `/classes/${selected.slug}/courses/${course.id}/attendance`;
             const exportHref = `/api/classes/${selected.slug}/attendance/exports/recap?subjectId=${course.id}`;
 
             return (

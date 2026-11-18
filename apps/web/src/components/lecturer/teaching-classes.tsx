@@ -96,19 +96,19 @@ function TeachingClassCard({
         <span className="text-muted-foreground">
           {row.semester} · {row.academic_year}
         </span>
-        {!actionCenterUnavailable ? (
+        {!actionCenterUnavailable && waiting > 0 ? (
           <Badge
             className="ml-auto"
-            variant={waiting > 0 ? "warning" : "success"}
+            variant="warning"
           >
-            {waiting > 0 ? `${waiting} waiting` : "Clear"}
+            {waiting} waiting
           </Badge>
         ) : null}
       </div>
 
       <h3 className="mt-2 text-base leading-snug font-semibold">
         <Link
-          href={`/app/classes/${row.slug}`}
+          href={`/classes/${row.slug}`}
           className="hover:text-accent focus-visible:outline-accent rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {row.name}
@@ -136,19 +136,19 @@ function TeachingClassCard({
 
       <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 pt-4">
         <ClassLink
-          href={`/app/classes/${row.slug}/manage`}
+          href={`/classes/${row.slug}/manage`}
           label="Manage"
         />
         <ClassLink
-          href={`/app/classes/${row.slug}/sessions`}
+          href={`/classes/${row.slug}/sessions`}
           label="Sessions"
         />
         <ClassLink
-          href={`/app/classes/${row.slug}/attendance`}
+          href={`/classes/${row.slug}/attendance`}
           label="Attendance"
         />
         <ClassLink
-          href={`/app/classes/${row.slug}/leave-requests`}
+          href={`/classes/${row.slug}/leave-requests`}
           label="Absences"
         />
       </div>

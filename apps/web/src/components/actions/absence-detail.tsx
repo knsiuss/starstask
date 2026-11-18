@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarDays, Download } from "lucide-react";
 import { LeaveHistory } from "@/components/leave/leave-history";
 import { LeaveReviewActions } from "@/components/leave/leave-review-actions";
 import { LeaveStatusBadge } from "@/components/leave/leave-status-badge";
+import { LecturerOutcomeActions } from "@/components/leave/lecturer-outcome-actions";
 import { Card } from "@/components/ui/card";
 import type { EvidenceView } from "@/features/leave/evidence-service";
 import type {
@@ -79,7 +80,7 @@ export function AbsenceDetail({
   return (
     <div className="mt-4 space-y-4">
       <Link
-        href="/app/actions?tab=absences"
+        href="/actions?tab=absences"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
         <ArrowLeft
@@ -263,6 +264,20 @@ export function AbsenceDetail({
           <h3 className="text-sm font-semibold">Review</h3>
           <div className="mt-3">
             <LeaveReviewActions
+              requestId={request.id}
+              classSlug={request.classSlug}
+            />
+          </div>
+        </Card>
+      ) : request.status === "forwarded" ? (
+        <Card className="p-4 sm:p-5">
+          <h3 className="text-sm font-semibold">Lecturer decision</h3>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Record the lecturer&rsquo;s decision on this forwarded absence
+            request.
+          </p>
+          <div className="mt-3">
+            <LecturerOutcomeActions
               requestId={request.id}
               classSlug={request.classSlug}
             />

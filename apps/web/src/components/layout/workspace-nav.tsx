@@ -1,13 +1,12 @@
 ﻿"use client";
 
-import { Loader2, type LucideIcon } from "lucide-react";
-import Link, { useLinkStatus } from "next/link";
+import { type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
   ACCOUNT_ITEMS,
   LEADER_ITEMS,
-  LEARNING_ITEMS,
   STUDY_ITEMS,
   TEACHING_ITEMS,
   UNIVERSITY_ITEMS,
@@ -32,8 +31,9 @@ type WorkspaceNavProps = {
 /**
  * Role-aware workspace navigation.
  *
- * A lecturer sees the Teaching section first and keeps their student
- * destinations under "My studies". Class admins gain the leader section and
+ * A lecturer sees only the Teaching section (plus Campus/Account when enabled)
+ * without the default "My studies" section; `/app?view=student` remains
+ * available as an escape hatch. Class admins gain the leader section and
  * management actions inside My Classes. Platform and developer consoles
  * deliberately have their own shells; access is still enforced server-side on
  * every console route.
@@ -47,7 +47,7 @@ export function WorkspaceNav({
   onNavigate,
 }: WorkspaceNavProps) {
   const pathname = usePathname();
-  const studyItems = isLecturer ? LEARNING_ITEMS : STUDY_ITEMS;
+  const studyItems = isLecturer ? [] : STUDY_ITEMS;
 
   const items = [
     ...(isLecturer ? TEACHING_ITEMS : []),
@@ -87,10 +87,7 @@ export function WorkspaceNav({
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
-          <NavIcon
-            Icon={item.icon}
-            isActive={isActive}
-          />
+          <NavIcon Icon={item.icon} />
           <span className={cn("truncate", compact && "sr-only")}>
             {item.label}
           </span>
@@ -109,12 +106,14 @@ export function WorkspaceNav({
           {TEACHING_ITEMS.map(renderItem)}
         </NavSection>
       ) : null}
-      <NavSection
-        label={isLecturer ? "My studies" : "Study"}
-        compact={compact}
-      >
-        {studyItems.map(renderItem)}
-      </NavSection>
+      {!isLecturer ? (
+        <NavSection
+          label="Study"
+          compact={compact}
+        >
+          {studyItems.map(renderItem)}
+        </NavSection>
+      ) : null}
       {isClassAdmin && !isLecturer && isAuthenticated ? (
         <NavSection
           label="Class leader"
@@ -143,23 +142,7 @@ export function WorkspaceNav({
   );
 }
 
-/**
- * Swaps the destination icon for a spinner while its navigation is pending,
- * so a click on a slow (force-dynamic) route reads as immediate feedback
- * instead of a frozen screen until the server responds.
- */
-function NavIcon({ Icon, isActive }: { Icon: LucideIcon; isActive: boolean }) {
-  const { pending } = useLinkStatus();
-
-  if (pending && !isActive) {
-    return (
-      <Loader2
-        aria-hidden="true"
-        className="h-[18px] w-[18px] shrink-0 animate-spin"
-      />
-    );
-  }
-
+function NavIcon({ Icon }: { Icon: LucideIcon }) {
   return (
     <Icon
       aria-hidden="true"

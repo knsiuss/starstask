@@ -54,6 +54,10 @@ export async function POST(
     const absencesCreated = await closeAttendanceMeeting(
       id,
       parsed.data.finalize,
+      {
+        topic: parsed.data.bapTopic,
+        notes: parsed.data.bapNotes,
+      },
     );
 
     return apiSuccess({ finalized: parsed.data.finalize, absencesCreated });

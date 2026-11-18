@@ -5,19 +5,24 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { AttendanceHistory } from "@/components/attendance/attendance-history";
-import { AttendanceOverviewMetrics } from "@/components/attendance/attendance-overview-metrics";
 import { AttendanceSummary } from "@/components/attendance/attendance-summary";
+import { CourseGradesCard } from "@/components/attendance/course-grades-card";
 import { getSessionUser } from "@/lib/auth/session";
 import { DataAccessError } from "@/lib/db/assignments";
 import { getStudentAttendance } from "@/lib/db/attendance";
 import { listMyClasses } from "@/lib/db/classes";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  courseGradeKey,
+  listCourseComponentGrades,
+  type CourseComponentGrades,
+} from "@/lib/db/course-grades";
 import { buildLoginPath } from "@/lib/security/redirect";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Course attendance",
   description:
-    "One course's attendance percentage and session-by-session record.",
+    "Course attendance percentage, Tugas/UTS/UAS grades, and session record.",
   robots: { index: false, follow: false },
 };
 
@@ -65,17 +70,27 @@ export default async function CourseAttendancePage({
   const className =
     classes.find((classItem) => classItem.id === course.class_id)?.name ??
     "Class";
-  const view = await getStudentAttendance(session.user.id, {
-    status: "all",
-    subject: course.id,
-  });
+
+  const [view, allGrades] = await Promise.all([
+    getStudentAttendance(session.user.id, {
+      status: "all",
+      subject: course.id,
+    }),
+    listCourseComponentGrades(course.class_id, course.id).catch(
+      (): CourseComponentGrades => ({}),
+    ),
+  ]);
+
   const summary = view.summary;
+  const tugas = allGrades[courseGradeKey(session.user.id, "tugas")] ?? null;
+  const uts = allGrades[courseGradeKey(session.user.id, "uts")] ?? null;
+  const uas = allGrades[courseGradeKey(session.user.id, "uas")] ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 lg:px-10">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-24 sm:px-8 sm:py-8 lg:px-10">
       <Link
         href="/attendance"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+        className="text-muted-foreground hover:text-foreground focus-visible:outline-accent inline-flex min-h-[44px] items-center gap-1.5 rounded-sm text-sm focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-0"
       >
         <ArrowLeft
           aria-hidden="true"
@@ -85,30 +100,32 @@ export default async function CourseAttendancePage({
       </Link>
 
       <header className="mt-3">
-        {course.code ? (
-          <p className="text-muted-foreground text-xs font-medium">
-            {course.code}
-          </p>
-        ) : null}
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
+        <div className="flex flex-wrap items-center gap-2">
+          {course.code ? (
+            <span className="border-border bg-subtle text-muted-foreground rounded-md border px-2 py-0.5 text-xs font-medium">
+              {course.code}
+            </span>
+          ) : null}
+          <span className="text-muted-foreground text-xs font-medium">
+            {className}
+          </span>
+        </div>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
           {course.name}
         </h1>
-        <p className="text-muted-foreground mt-1.5 text-sm">{className}</p>
       </header>
 
-      <div className="mt-6">
-        <AttendanceOverviewMetrics
-          totalSessions={summary.eligible}
-          present={summary.present}
-          late={summary.late}
-          absent={summary.absent + summary.unrecorded}
-        />
-      </div>
-
-      <div className="mt-6">
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <AttendanceSummary
           summary={summary}
           pending={summary.pending}
+        />
+        <CourseGradesCard
+          tugas={tugas}
+          uts={uts}
+          uas={uas}
+          attendedCount={summary.attended}
+          totalMeetings={summary.eligible}
         />
       </div>
 
@@ -116,13 +133,19 @@ export default async function CourseAttendancePage({
         aria-labelledby="course-attendance-history"
         className="mt-8"
       >
-        <h2
-          id="course-attendance-history"
-          className="text-lg font-semibold tracking-tight"
-        >
-          Session history
-        </h2>
-        <div className="mt-4">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2
+            id="course-attendance-history"
+            className="text-lg font-semibold tracking-tight"
+          >
+            Session history
+          </h2>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {view.entries.length}{" "}
+            {view.entries.length === 1 ? "session" : "sessions"}
+          </span>
+        </div>
+        <div className="mt-3">
           <AttendanceHistory entries={view.entries} />
         </div>
       </section>

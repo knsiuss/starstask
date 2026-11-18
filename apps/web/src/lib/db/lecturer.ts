@@ -42,11 +42,9 @@ export async function getLecturerOverview(
   const supabase = await createSupabaseServerClient();
 
   const directory = await listMyClassDirectory(userId);
-  const adminRows = directory.filter(
-    (row) => row.is_admin && row.status === "active",
-  );
+  const activeRows = directory.filter((row) => row.status === "active");
 
-  if (adminRows.length === 0) {
+  if (activeRows.length === 0) {
     return {
       classCount: 0,
       memberCount: 0,
@@ -56,41 +54,40 @@ export async function getLecturerOverview(
     };
   }
 
-  // Tasks the caller authored in each administered class: one head-count pair per class.
-  const perClass = await Promise.all(
-    adminRows.map(async (row) => {
-      const [total, published] = await Promise.all([
-        supabase
-          .from("assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId)
-          .eq("class_id", row.id),
-        supabase
-          .from("assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId)
-          .eq("status", "published")
-          .eq("class_id", row.id),
-      ]);
+  const adminIds = activeRows.map((row) => row.id);
+  const { data: authoredAssignments, error: countError } = await supabase
+    .from("assignments")
+    .select("class_id, status")
+    .eq("user_id", userId)
+    .in("class_id", adminIds)
+    .limit(5000);
 
-      if (total.error || published.error) {
-        throw new DataAccessError(
-          "Could not count your lecturer tasks",
-          total.error?.code ?? published.error?.code,
-        );
-      }
+  if (countError) {
+    throw new DataAccessError(
+      "Could not count your lecturer tasks",
+      countError.code,
+    );
+  }
 
-      return {
-        id: row.id,
-        task_count: total.count ?? 0,
-        published_count: published.count ?? 0,
-      };
-    }),
-  );
+  const perClassMap = new Map<
+    string,
+    { task_count: number; published_count: number }
+  >();
 
-  const perClassMap = new Map(perClass.map((row) => [row.id, row]));
+  for (const row of authoredAssignments ?? []) {
+    if (!row.class_id) continue;
+    const current = perClassMap.get(row.class_id) ?? {
+      task_count: 0,
+      published_count: 0,
+    };
+    current.task_count += 1;
+    if (row.status === "published") {
+      current.published_count += 1;
+    }
+    perClassMap.set(row.class_id, current);
+  }
 
-  const classes: LecturerClass[] = adminRows
+  const classes: LecturerClass[] = activeRows
     .map((row) => ({
       id: row.id,
       slug: row.slug,

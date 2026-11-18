@@ -71,7 +71,7 @@ export function DmKeySetup() {
     return (
       <p
         role="alert"
-        className="text-xs text-amber-600"
+        className="text-warning text-xs"
       >
         Encryption setup failed — reload to retry.
       </p>

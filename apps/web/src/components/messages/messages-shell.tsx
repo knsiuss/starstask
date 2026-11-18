@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ConversationListPanel } from "@/components/messages/conversation-list-panel";
+import { Button } from "@/components/ui/button";
 import type { ConversationRow } from "@/lib/db/direct-messages";
 import { cn } from "@/lib/utils/cn";
 
@@ -135,17 +136,17 @@ export function MessagesShell({ conversations, myUserId, className }: Props) {
             <p className="text-muted-foreground mt-1.5 max-w-xs text-sm leading-relaxed">
               Select a conversation to start chatting with your classmates.
             </p>
-            <button
+            <Button
               type="button"
               onClick={() => setComposing(true)}
-              className="bg-accent hover:bg-accent-hover mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="mt-5"
             >
               <PencilLine
                 aria-hidden="true"
                 className="h-4 w-4"
               />
               New Message
-            </button>
+            </Button>
           </div>
         )}
       </section>

@@ -1,17 +1,6 @@
-import {
-  ArrowRight,
-  BookOpenText,
-  CalendarClock,
-  ClipboardCheck,
-  ClipboardList,
-  FileWarning,
-  GraduationCap,
-  ListChecks,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, CalendarClock } from "lucide-react";
 import Link from "next/link";
 
-import { Card } from "@/components/ui/card";
 import {
   type ActionCenterRow,
   type ActionCounts,
@@ -22,58 +11,36 @@ import { pluralize } from "@starstask/shared";
 type AttentionMetric = {
   key: keyof ActionCounts;
   label: string;
-  hint: string;
-  icon: LucideIcon;
   href: string;
-  tone: "accent" | "warning" | "success" | "danger";
 };
 
 const ATTENTION_METRICS: readonly AttentionMetric[] = [
   {
     key: "pendingSubmissions",
     label: "Submissions to review",
-    hint: "Waiting on your grade",
-    icon: ClipboardCheck,
-    href: "/app/actions?tab=assignments",
-    tone: "accent",
+    href: "/actions?tab=assignments",
   },
   {
     key: "pendingLeave",
     label: "Absence requests",
-    hint: "Forwarded by your class",
-    icon: ClipboardList,
-    href: "/app/actions?tab=absences",
-    tone: "warning",
+    href: "/actions?tab=absences",
   },
   {
     key: "todaysSessions",
     label: "Sessions today",
-    hint: "Scheduled class meetings",
-    icon: CalendarClock,
-    href: "/app/actions?tab=attendance",
-    tone: "success",
+    href: "/actions?tab=attendance",
   },
   {
     key: "openReports",
     label: "Reader reports",
-    hint: "Flagged submissions",
-    icon: FileWarning,
-    href: "/app/actions",
-    tone: "danger",
+    href: "/actions",
   },
 ];
 
-const TONE_CLASSES: Record<AttentionMetric["tone"], string> = {
-  accent: "bg-accent-soft text-accent",
-  warning: "bg-warning-soft text-warning",
-  success: "bg-success-soft text-success",
-  danger: "bg-danger-soft text-danger",
-};
-
-const CARD_SURFACE =
-  "border-border bg-surface hover:border-accent/30 focus-visible:outline-accent group flex h-full items-center rounded-xl border p-3 shadow-[0_1px_2px_rgba(9,9,11,0.03)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:p-4";
-
-/** The four counters a lecturer checks before anything else. */
+/**
+ * Calm metric strip for the four counters a lecturer checks first.
+ * Zero values stay muted; only non-zero counts carry accent emphasis.
+ */
 export function TeachingAttention({ totals }: { totals: ActionCounts }) {
   const waitingTotal =
     totals.pendingSubmissions + totals.pendingLeave + totals.openReports;
@@ -83,55 +50,53 @@ export function TeachingAttention({ totals }: { totals: ActionCounts }) {
       aria-labelledby="teaching-attention"
       className="mt-7"
     >
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-baseline justify-between gap-3">
         <h2
           id="teaching-attention"
-          className="text-lg font-semibold tracking-tight"
+          className="text-base font-semibold tracking-tight"
         >
           Needs your attention
         </h2>
         <p className="text-muted-foreground text-xs">
           {waitingTotal === 0
-            ? "Nothing waiting"
+            ? "All clear"
             : `${waitingTotal} ${pluralize(waitingTotal, "item")} open`}
         </p>
       </div>
 
-      <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+      <ul className="border-border bg-surface divide-border mt-3 grid grid-cols-2 divide-x divide-y overflow-hidden rounded-xl border xl:grid-cols-4 xl:divide-y-0">
         {ATTENTION_METRICS.map((metric) => {
           const value = totals[metric.key];
+          const hasItems = value > 0;
 
           return (
             <li key={metric.key}>
               <Link
                 href={metric.href}
-                className={cn(CARD_SURFACE, "stat-shimmer gap-2.5 sm:gap-3")}
+                className="hover:bg-muted/40 focus-visible:outline-accent group flex h-full items-center justify-between gap-3 px-4 py-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
               >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10",
-                    TONE_CLASSES[metric.tone],
-                  )}
-                >
-                  <metric.icon className="h-[18px] w-[18px]" />
-                </span>
-
-                <span className="min-w-0 flex-1">
+                <span className="min-w-0">
                   <span className="text-muted-foreground block truncate text-xs font-medium">
                     {metric.label}
                   </span>
-                  <span className="text-foreground mt-0.5 block text-[22px] leading-none font-semibold tabular-nums tracking-tight sm:text-[26px]">
+                  <span
+                    className={cn(
+                      "mt-1 block text-2xl leading-none font-semibold tabular-nums tracking-tight",
+                      hasItems ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
                     {value}
-                  </span>
-                  <span className="text-muted-foreground mt-1 hidden truncate text-[11px] sm:block">
-                    {value === 0 ? "Clear" : metric.hint}
                   </span>
                 </span>
 
                 <ArrowRight
                   aria-hidden="true"
-                  className="text-muted-foreground group-hover:text-accent hidden h-4 w-4 shrink-0 transition-colors sm:block"
+                  className={cn(
+                    "h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5",
+                    hasItems
+                      ? "text-accent"
+                      : "text-muted-foreground/50 group-hover:text-muted-foreground",
+                  )}
                 />
               </Link>
             </li>
@@ -142,7 +107,7 @@ export function TeachingAttention({ totals }: { totals: ActionCounts }) {
   );
 }
 
-/** Classes with a scheduled meeting today, linking straight to that list. */
+/** Classes with a scheduled meeting today, linking straight to sessions or attendance. */
 export function TeachingToday({ rows }: { rows: ActionCenterRow[] }) {
   const sessions = rows.filter((row) => row.todaysSessions > 0);
 
@@ -150,132 +115,62 @@ export function TeachingToday({ rows }: { rows: ActionCenterRow[] }) {
     <section aria-labelledby="teaching-today">
       <h2
         id="teaching-today"
-        className="text-lg font-semibold tracking-tight"
+        className="text-base font-semibold tracking-tight"
       >
         Today&rsquo;s teaching
       </h2>
 
       {sessions.length === 0 ? (
-        <Card className="mt-3 flex items-center gap-3 border-dashed">
+        <div className="border-border bg-surface mt-3 flex items-center gap-3 rounded-xl border px-4 py-4">
           <CalendarClock
             aria-hidden="true"
-            className="text-muted-foreground h-5 w-5 shrink-0"
+            className="text-muted-foreground h-4 w-4 shrink-0"
           />
           <p className="text-muted-foreground text-sm">
-            No class sessions are scheduled for today.
+            No sessions scheduled today.
           </p>
-        </Card>
+        </div>
       ) : (
-        <ul className="mt-3 space-y-2.5">
+        <ul className="border-border bg-surface divide-border mt-3 divide-y overflow-hidden rounded-xl border">
           {sessions.map((row) => (
-            <li key={row.classId}>
-              <Link
-                href={`/app/classes/${row.classSlug}/sessions`}
-                className="border-border bg-surface hover:border-accent/30 focus-visible:outline-accent flex items-center gap-3 rounded-lg border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <span className="bg-success-soft text-success flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                  <CalendarClock
+            <li
+              key={row.classId}
+              className="flex items-center justify-between gap-3 px-4 py-3.5"
+            >
+              <div className="min-w-0">
+                <Link
+                  href={`/classes/${row.classSlug}/sessions`}
+                  className="hover:text-accent focus-visible:outline-accent block truncate rounded-sm text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {row.className}
+                </Link>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {row.todaysSessions}{" "}
+                  {pluralize(row.todaysSessions, "session")} today
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Link
+                  href={`/classes/${row.classSlug}/attendance`}
+                  className="border-border bg-background hover:bg-muted rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
+                >
+                  Attendance
+                </Link>
+                <Link
+                  href={`/classes/${row.classSlug}/sessions`}
+                  aria-label={`Open ${row.className} sessions`}
+                  className="text-muted-foreground hover:text-accent p-1 transition-colors"
+                >
+                  <ArrowRight
                     aria-hidden="true"
-                    className="h-[18px] w-[18px]"
+                    className="h-4 w-4"
                   />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">
-                    {row.className}
-                  </span>
-                  <span className="text-muted-foreground mt-0.5 block text-xs">
-                    {row.todaysSessions}{" "}
-                    {pluralize(row.todaysSessions, "session")} scheduled
-                  </span>
-                </span>
-                <ArrowRight
-                  aria-hidden="true"
-                  className="text-muted-foreground h-4 w-4 shrink-0"
-                />
-              </Link>
+                </Link>
+              </div>
             </li>
           ))}
         </ul>
       )}
-    </section>
-  );
-}
-
-type Shortcut = {
-  href: string;
-  icon: LucideIcon;
-  label: string;
-  detail: string;
-};
-
-const SHORTCUTS: readonly Shortcut[] = [
-  {
-    href: "/app/actions",
-    icon: ListChecks,
-    label: "Action center",
-    detail: "Review queues across every class",
-  },
-  {
-    href: "/classes",
-    icon: GraduationCap,
-    label: "Class roster",
-    detail: "Members, invitations, and settings",
-  },
-  {
-    href: "/attendance",
-    icon: ClipboardCheck,
-    label: "Attendance",
-    detail: "Meetings and check-in records",
-  },
-  {
-    href: "/app?view=student",
-    icon: BookOpenText,
-    label: "Student view",
-    detail: "Your own enrolled classes",
-  },
-];
-
-/** Four one-tap destinations, including the escape hatch to the student view. */
-export function TeachingShortcuts() {
-  return (
-    <section aria-labelledby="teaching-quick">
-      <h2
-        id="teaching-quick"
-        className="text-lg font-semibold tracking-tight"
-      >
-        Teaching shortcuts
-      </h2>
-      <Card className="mt-3 p-2">
-        <ul className="divide-border divide-y">
-          {SHORTCUTS.map((shortcut) => (
-            <li key={shortcut.href}>
-              <Link
-                href={shortcut.href}
-                className="hover:bg-muted focus-visible:outline-accent group flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-md">
-                  <shortcut.icon
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                  />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">
-                    {shortcut.label}
-                  </span>
-                  <span className="text-muted-foreground block truncate text-xs">
-                    {shortcut.detail}
-                  </span>
-                </span>
-                <ArrowRight
-                  aria-hidden="true"
-                  className="text-muted-foreground group-hover:text-accent h-4 w-4 shrink-0 transition-colors"
-                />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Card>
     </section>
   );
 }

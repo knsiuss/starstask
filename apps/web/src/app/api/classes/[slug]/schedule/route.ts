@@ -1,11 +1,12 @@
 import { classScheduleCreateSchema, toFieldErrors } from "@starstask/contracts";
 
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import { ApiError, forbidden, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import {
   createClassScheduleEntry,
   listClassSchedule,
 } from "@/lib/db/class-schedule";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { requireClassMember } from "@/features/classes/class-access";
@@ -23,7 +24,7 @@ export async function GET(
     }
 
     const { slug } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     await enforceRateLimit({
       action: "classes:schedule:list",
@@ -32,9 +33,23 @@ export async function GET(
       windowSeconds: 3600,
     });
 
-    const entries = await listClassSchedule(found.id);
+    const [entries, access] = await Promise.all([
+      listClassSchedule(found.id),
+      role.canManage
+        ? Promise.resolve(null)
+        : getMemberCourseAccess(found.id, session.user.id),
+    ]);
 
-    return apiSuccess(entries);
+    const visibleEntries =
+      access?.scope === "selected"
+        ? entries.filter(
+            (entry) =>
+              entry.subject_id !== null &&
+              access.allowedSubjectIds.has(entry.subject_id),
+          )
+        : entries;
+
+    return apiSuccess(visibleEntries);
   } catch (error) {
     return handleRouteError(error);
   }
@@ -51,7 +66,7 @@ export async function POST(
     }
 
     const { slug } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     await enforceRateLimit({
       action: "classes:schedule:create",
@@ -69,6 +84,18 @@ export async function POST(
         "Check the schedule details.",
         toFieldErrors(parsed.error),
       );
+    }
+
+    const access = role.canManage
+      ? null
+      : await getMemberCourseAccess(found.id, session.user.id);
+
+    if (
+      access?.scope === "selected" &&
+      (!parsed.data.subjectId ||
+        !access.allowedSubjectIds.has(parsed.data.subjectId))
+    ) {
+      throw forbidden();
     }
 
     const id = await createClassScheduleEntry(

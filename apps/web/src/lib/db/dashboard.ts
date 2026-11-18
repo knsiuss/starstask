@@ -835,6 +835,10 @@ export async function listStudentPendingInvitations(
   const supabase = await createSupabaseServerClient();
   const now = new Date().toISOString();
 
+  const escapedEmail = userEmail
+    .trim()
+    .replace(/[\\%_]/g, (match) => `\\${match}`);
+
   const { data: invitations, error } = await supabase
     .from("class_invitations")
     .select(
@@ -849,7 +853,7 @@ export async function listStudentPendingInvitations(
       classes!class_invitations_class_id_fkey ( id, name, slug, status )
     `,
     )
-    .ilike("email_restriction", userEmail.trim())
+    .ilike("email_restriction", escapedEmail)
     .is("revoked_at", null)
     .gt("expires_at", now);
 

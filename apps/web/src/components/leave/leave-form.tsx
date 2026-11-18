@@ -13,7 +13,7 @@ import {
   Paperclip,
   Search,
   Send,
-  Sparkles,
+  ScanText,
   Tags,
   Trash2,
   UploadCloud,
@@ -104,9 +104,8 @@ const SOURCE_LABELS: Record<LeaveFieldSource, string> = {
   ocr_corrected: "Corrected by you",
 };
 
-const CARD =
-  "rounded-2xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]";
-const FIELD = "mt-1.5 h-11 rounded-xl";
+const CARD = "rounded-xl border border-border bg-surface p-4";
+const FIELD = "mt-1.5 h-10 rounded-lg";
 
 /**
  * Create/edit form.
@@ -742,7 +741,7 @@ export function LeaveForm({
         {showReader && mode === "create" ? (
           <section className="border-border bg-subtle flex items-start gap-3 rounded-2xl border p-4">
             <span className="bg-accent-soft text-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-              <Sparkles
+              <ScanText
                 aria-hidden="true"
                 className="h-4 w-4"
               />
@@ -789,7 +788,7 @@ export function LeaveForm({
         {hasSuggestion && mode === "edit" ? (
           <section className="border-border bg-subtle grid gap-2 rounded-2xl border p-4">
             <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <Sparkles
+              <ScanText
                 aria-hidden="true"
                 className="text-accent h-4 w-4"
               />
@@ -923,7 +922,7 @@ export function LeaveForm({
         <aside className="grid content-start gap-3">
           <div className="border-border bg-subtle rounded-2xl border p-4">
             <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <Sparkles
+              <ScanText
                 aria-hidden="true"
                 className="text-accent h-4 w-4"
               />

@@ -154,13 +154,10 @@ export async function saveOnboardingProfile(
     await storeAvatar(session.user.id, avatar);
   }
 
-  try {
-    const profile = await updateMyProfile(input);
-    const classJoin = input.className
-      ? await joinOrCreateClass(input.className)
-      : null;
+  let profile: Awaited<ReturnType<typeof updateMyProfile>>;
 
-    return { profile, classJoin };
+  try {
+    profile = await updateMyProfile(input);
   } catch (error) {
     // A duplicate NIM is the only uniqueness rule this write can break; the
     // database is the source of truth, so a race is reported the same way.
@@ -171,5 +168,15 @@ export async function saveOnboardingProfile(
     }
 
     throw toClassApiError(error, "Could not save your profile. Try again.");
+  }
+
+  try {
+    const classJoin = input.className
+      ? await joinOrCreateClass(input.className)
+      : null;
+
+    return { profile, classJoin };
+  } catch (error) {
+    throw toClassApiError(error, "Could not join your class. Try again.");
   }
 }

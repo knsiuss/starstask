@@ -55,12 +55,15 @@ export async function POST(request: Request) {
 
     // Clear any existing current year first: the partial unique index
     // academic_years_one_current would otherwise reject the insert.
+    let previousCurrentId: string | null = null;
+
     if (isCurrent) {
-      const { error: clearError } = await service
+      const { data: prevRows, error: clearError } = await service
         .from("academic_years")
         .update({ is_current: false })
         .eq("university_id", universityId)
-        .eq("is_current", true);
+        .eq("is_current", true)
+        .select("id");
 
       if (clearError) {
         throw new ApiError(
@@ -69,6 +72,8 @@ export async function POST(request: Request) {
           "Could not update the current academic year.",
         );
       }
+
+      previousCurrentId = (prevRows?.[0]?.id as string | undefined) ?? null;
     }
 
     const { data, error } = await service
@@ -87,6 +92,12 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      if (previousCurrentId) {
+        await service
+          .from("academic_years")
+          .update({ is_current: true })
+          .eq("id", previousCurrentId);
+      }
       if (error.code === "23503") {
         throw new ApiError(
           422,

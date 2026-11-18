@@ -99,8 +99,7 @@ export async function POST(request: Request) {
     // Logged as a string: the dev logger serialises an object argument as
     // `{}`, which hid the real cause of an earlier failure on this route.
     console.error(
-      `[classes:join] ${error instanceof Error ? error.name : typeof error}: ` +
-        `${error instanceof Error ? error.message : "unknown"}` +
+      `[classes:join] ${error instanceof Error ? error.name : typeof error}` +
         `${error instanceof DataAccessError ? ` (${error.code})` : ""}`,
     );
 

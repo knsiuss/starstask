@@ -4,8 +4,8 @@ export function PresenceDot({ online }: { online: boolean }) {
       aria-hidden="true"
       className={
         online
-          ? "absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-green-500"
-          : "absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-slate-300"
+          ? "border-surface bg-success absolute right-0 bottom-0 h-3 w-3 rounded-full border-2"
+          : "border-surface bg-muted-foreground/40 absolute right-0 bottom-0 h-3 w-3 rounded-full border-2"
       }
     />
   );

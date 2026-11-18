@@ -3,8 +3,8 @@
 import { CirclePlus } from "lucide-react";
 import * as React from "react";
 
-import { CreateClassForm } from "@/components/classes/create-class-form";
 import { JoinClassForm } from "@/components/classes/join-class-form";
+import { KrsImportForm } from "@/components/classes/krs-import-form";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
@@ -12,21 +12,20 @@ type JoinClassStepProps = {
   onSkip: () => void;
 };
 
-type Mode = "join" | "create";
+type Mode = "join" | "krs";
 
 const TABS: Array<{ mode: Mode; label: string }> = [
   { mode: "join", label: "Join a class" },
-  { mode: "create", label: "Create your own" },
+  { mode: "krs", label: "Import from KRS" },
 ];
 
 /**
- * The "Join your class" onboarding step.
+ * The "Join your class" onboarding step for students.
  *
- * Two paths in, one place: join by name/code (existing `/api/classes/join`)
- * or open a self-organized class (`/api/classes/create-student`), which also
- * makes the creator the ketua kelas automatically. Skipping is a first-class
- * path: onboarding still completes and joining can happen later from My
- * Classes.
+ * Regular students cannot manually create arbitrary classes during onboarding:
+ * entering an existing class code auto-joins that class, and only a brand-new
+ * class (first onboarding students) is auto-created. Students can also upload
+ * their KRS to sync their courses and semester.
  */
 export function JoinClassStep({ onSkip }: JoinClassStepProps) {
   const [mode, setMode] = React.useState<Mode>("join");
@@ -43,8 +42,8 @@ export function JoinClassStep({ onSkip }: JoinClassStepProps) {
         Your class
       </h1>
       <p className="text-muted-foreground mt-2 text-center text-sm leading-relaxed">
-        Join the class your lecturer set up, or open your own study group and
-        share the invitation with your classmates.
+        Join your class by code or invitation link, or upload your KRS to set up
+        your current semester automatically.
       </p>
 
       <div
@@ -80,9 +79,10 @@ export function JoinClassStep({ onSkip }: JoinClassStepProps) {
           <JoinClassForm
             submittedLink=""
             showInvalidLink={false}
+            onboardingBootstrap
           />
         ) : (
-          <CreateClassForm />
+          <KrsImportForm />
         )}
       </div>
 
@@ -96,7 +96,7 @@ export function JoinClassStep({ onSkip }: JoinClassStepProps) {
           Skip for now
         </Button>
         <p className="text-muted-foreground mt-3 text-center text-xs leading-relaxed">
-          You can also join or create a class later from My Classes.
+          You can also join or import your KRS later from My Classes.
         </p>
       </div>
     </div>

@@ -1,10 +1,26 @@
 import "server-only";
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
 
 import { getSupabaseConfig } from "@/lib/env/public";
 import type { Database } from "@/types/database";
+
+const workerClientStore = new AsyncLocalStorage<SupabaseClient<Database>>();
+
+/**
+ * Runs a background worker callback with a pre-authorized service-role client
+ * scoped to the async call chain so cookie-less QStash jobs can read/write
+ * RLS-protected export data after signature and job-ownership verification.
+ */
+export function runWithWorkerSupabaseClient<T>(
+  client: SupabaseClient<Database>,
+  fn: () => Promise<T>,
+): Promise<T> {
+  return workerClientStore.run(client, fn);
+}
 
 /**
  * Request-scoped Supabase client for Server Components, Server Actions, and
@@ -18,6 +34,12 @@ import type { Database } from "@/types/database";
  * session works server-side as-is.
  */
 export async function createSupabaseServerClient() {
+  const workerClient = workerClientStore.getStore();
+
+  if (workerClient) {
+    return workerClient;
+  }
+
   const headerStore = await headers();
   const { url, key } = getSupabaseConfig();
 

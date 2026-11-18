@@ -10,6 +10,8 @@ import {
   toFieldErrors,
 } from "@starstask/contracts";
 
+import type { ClassLookupMatch } from "@/app/api/classes/lookup/route";
+import { ClassCourseJoinDialog } from "@/components/classes/class-course-join-dialog";
 import {
   JoinResultPanel,
   type JoinOutcome,
@@ -27,6 +29,11 @@ type JoinClassFormProps = {
   /** Value echoed back after a failed invitation-link submit. */
   submittedLink: string;
   showInvalidLink: boolean;
+  /**
+   * True during student onboarding: existing classes auto-join, and if no
+   * class exists yet, the first onboarding students bootstrap-create it.
+   */
+  onboardingBootstrap?: boolean;
 };
 
 type JoinResponse = {
@@ -41,10 +48,20 @@ const TABS: Array<{ mode: JoinMode; label: string }> = [
   { mode: "link", label: "Invitation link" },
 ];
 
-function currentAcademicYear(): string {
+function currentAcademicPeriod(): { year: string; term: "Ganjil" | "Genap" } {
   const now = new Date();
-  const start = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  return `${start}/${start + 1}`;
+  const month = now.getMonth();
+  const fullYear = now.getFullYear();
+
+  if (month >= 7) {
+    return { year: `${fullYear}/${fullYear + 1}`, term: "Ganjil" };
+  }
+
+  return { year: `${fullYear - 1}/${fullYear}`, term: "Genap" };
+}
+
+function currentAcademicYear(): string {
+  return currentAcademicPeriod().year;
 }
 
 /**
@@ -57,6 +74,7 @@ function currentAcademicYear(): string {
 export function JoinClassForm({
   submittedLink,
   showInvalidLink,
+  onboardingBootstrap = false,
 }: JoinClassFormProps) {
   const router = useRouter();
 
@@ -70,6 +88,10 @@ export function JoinClassForm({
     {},
   );
   const [result, setResult] = React.useState<JoinOutcome | null>(null);
+  const [lookupMatches, setLookupMatches] = React.useState<ClassLookupMatch[]>(
+    [],
+  );
+  const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const preview = React.useMemo(() => {
     const code = classCode.trim().toUpperCase();
@@ -119,14 +141,15 @@ export function JoinClassForm({
     setIsBusy(true);
 
     try {
-      const response = await fetch("/api/classes/join", {
+      const response = await fetch("/api/classes/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const body = (await response
-        .json()
-        .catch(() => null)) as JoinResponse | null;
+      const body = (await response.json().catch(() => null)) as {
+        data?: { found?: boolean; matches?: ClassLookupMatch[] };
+        error?: { message?: string; fields?: Record<string, string> };
+      } | null;
 
       if (!response.ok) {
         setFieldErrors(body?.error?.fields ?? {});
@@ -134,13 +157,48 @@ export function JoinClassForm({
         return;
       }
 
-      const next = body?.data?.result ?? null;
+      const matches = body?.data?.matches ?? [];
+      const firstMatch = matches[0];
 
-      setResult(next);
+      if (onboardingBootstrap) {
+        const joinPayload =
+          body?.data?.found && firstMatch
+            ? { className: firstMatch.slug }
+            : payload;
 
-      if (next?.status === "joined") {
-        router.refresh();
+        const joinRes = await fetch("/api/classes/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(joinPayload),
+        });
+        const joinBody = (await joinRes
+          .json()
+          .catch(() => null)) as JoinResponse | null;
+
+        if (!joinRes.ok) {
+          setFieldErrors(joinBody?.error?.fields ?? {});
+          setError(
+            joinBody?.error?.message ?? "Could not join or bootstrap class.",
+          );
+          return;
+        }
+
+        const next = joinBody?.data?.result ?? null;
+        setResult(next);
+
+        if (next?.status === "joined") {
+          router.refresh();
+        }
+        return;
       }
+
+      if (!body?.data?.found || matches.length === 0) {
+        setResult({ status: "no_match" });
+        return;
+      }
+
+      setLookupMatches(matches);
+      setDialogOpen(true);
     } catch {
       setError("Network error. Check your connection and try again.");
     } finally {
@@ -236,26 +294,16 @@ export function JoinClassForm({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="join-year">Academic year</Label>
+              <Label htmlFor="join-year">
+                Academic year ({currentAcademicPeriod().term})
+              </Label>
               <Input
                 id="join-year"
                 value={academicYear}
-                onChange={(event) => {
-                  setAcademicYear(event.target.value);
-                  setFieldErrors({});
-                  setResult(null);
-                }}
-                placeholder="2024/2025"
-                maxLength={9}
-                inputMode="numeric"
-                aria-invalid={Boolean(fieldErrors.academicYear)}
-                className="h-11"
+                readOnly
+                aria-readonly="true"
+                className="bg-muted/60 h-11"
               />
-              {fieldErrors.academicYear ? (
-                <p className="text-danger text-xs">
-                  {fieldErrors.academicYear}
-                </p>
-              ) : null}
             </div>
           </div>
 
@@ -348,6 +396,12 @@ export function JoinClassForm({
           }}
         />
       ) : null}
+
+      <ClassCourseJoinDialog
+        matches={lookupMatches}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 }

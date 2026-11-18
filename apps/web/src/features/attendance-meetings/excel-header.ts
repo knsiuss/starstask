@@ -11,8 +11,9 @@ import { resolveFooterText } from "@/features/export-branding/config";
 
 const HEADER_FILL = "FF0F172A";
 const MUTED_TEXT = "FF64748B";
-const LOGO_SIZE_PX = 44;
+const LOGO_SIZE_PX = 40;
 const IMAGE_FETCH_TIMEOUT_MS = 5_000;
+const FALLBACK_PRODUCT_LOGOS = ["/aphelion-logo.png", "/brand/logo-mark.png"];
 
 type ImageExtension = "png" | "jpeg" | "gif";
 
@@ -33,61 +34,89 @@ export async function addBrandingHeader(
 ): Promise<number> {
   void context;
 
-  const midColumn = Math.max(4, Math.floor(totalColumns / 2));
+  const leftEnd =
+    totalColumns >= 6
+      ? Math.max(2, Math.floor(totalColumns * 0.28))
+      : Math.max(1, Math.floor(totalColumns / 2));
+  const rightStart =
+    totalColumns >= 6
+      ? Math.max(
+          leftEnd + 2,
+          totalColumns - Math.max(2, Math.floor(totalColumns * 0.28)) + 1,
+        )
+      : leftEnd + 1;
+  const hasCenter = totalColumns >= 6 && rightStart - leftEnd > 1;
+
+  sheet.getRow(1).height = 24;
+  sheet.getRow(2).height = 24;
 
   // Left block: university logo + name + tagline.
-  const leftIndent = branding.universityLogoUrl.trim() !== "" ? 6 : 1;
+  const hasUniLogo = branding.universityLogoUrl.trim() !== "";
   const leftTop = sheet.getRow(1).getCell(1);
-  sheet.mergeCells(1, 1, 2, Math.min(3, midColumn));
+  sheet.mergeCells(1, 1, 2, leftEnd);
   leftTop.value =
     [branding.universityName, branding.universityTagline]
       .filter(Boolean)
       .join("\n") || "Universitas";
-  leftTop.font = { size: 14, bold: true };
+  leftTop.font = { size: 12, bold: true, color: { argb: HEADER_FILL } };
   leftTop.alignment = {
-    indent: leftIndent,
+    indent: hasUniLogo ? 5 : 1,
     vertical: "middle",
     wrapText: true,
   };
-  sheet.getRow(1).height = 30;
 
   // Center block: institution, faculty, study program.
-  const centerColumn = 4;
-  const centerTop = sheet.getRow(1).getCell(centerColumn);
-  sheet.mergeCells(1, centerColumn, 2, midColumn);
-  centerTop.value =
-    [branding.universityName, branding.faculty, branding.studyProgram]
-      .filter(Boolean)
-      .join("\n") || "Fakultas / Program Studi";
-  centerTop.font = { size: 12, bold: true };
-  centerTop.alignment = {
-    horizontal: "center",
-    vertical: "middle",
-    wrapText: true,
-  };
+  if (hasCenter) {
+    const centerColumn = leftEnd + 1;
+    const centerTop = sheet.getRow(1).getCell(centerColumn);
+    sheet.mergeCells(1, centerColumn, 2, rightStart - 1);
+    centerTop.value =
+      [branding.universityName, branding.faculty, branding.studyProgram]
+        .filter(Boolean)
+        .join("\n") || "Fakultas / Program Studi";
+    centerTop.font = { size: 11, bold: true, color: { argb: HEADER_FILL } };
+    centerTop.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+      wrapText: true,
+    };
+  }
 
   // Right block: product logo + name + tagline.
-  const rightColumn = midColumn + 1;
-  const rightIndent = branding.productLogoUrl.trim() !== "" ? 6 : 1;
-  const rightTop = sheet.getRow(1).getCell(rightColumn);
-  sheet.mergeCells(1, rightColumn, 2, totalColumns);
-  rightTop.value = [branding.productName, branding.productTagline]
+  const rightTop = sheet.getRow(1).getCell(rightStart);
+  sheet.mergeCells(1, rightStart, 2, totalColumns);
+  rightTop.value = [
+    branding.productName || "Aphelion",
+    branding.productTagline || "Academic Productivity",
+  ]
     .filter(Boolean)
     .join("\n");
-  rightTop.font = { size: 12, bold: true };
+  rightTop.font = { size: 11, bold: true, color: { argb: HEADER_FILL } };
   rightTop.alignment = {
     horizontal: "right",
-    indent: rightIndent,
+    indent: 5,
     vertical: "middle",
     wrapText: true,
   };
 
-  await addLogoImage(sheet, branding.universityLogoUrl, 0, 0);
-  await addLogoImage(sheet, branding.productLogoUrl, totalColumns - 1, 0);
+  if (hasUniLogo) {
+    await addLogoImage(sheet, [branding.universityLogoUrl], 0.1, 0.1);
+  }
+
+  const productLogoCandidates = [
+    branding.productLogoUrl.trim(),
+    ...FALLBACK_PRODUCT_LOGOS,
+  ].filter(Boolean);
+  await addLogoImage(
+    sheet,
+    productLogoCandidates,
+    Math.max(rightStart - 1, totalColumns - 0.85),
+    0.1,
+  );
 
   // Navy divider.
   const dividerRow = sheet.getRow(3);
-  dividerRow.height = 6;
+  dividerRow.height = 5;
   for (let column = 1; column <= totalColumns; column += 1) {
     dividerRow.getCell(column).fill = {
       type: "pattern",
@@ -108,7 +137,12 @@ export async function addBrandingHeader(
   addressRow.getCell(1).value =
     addressParts.length > 0 ? addressParts.join("  |  ") : "";
   addressRow.getCell(1).font = { size: 9, color: { argb: MUTED_TEXT } };
-  addressRow.height = 14;
+  addressRow.getCell(1).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+    wrapText: true,
+  };
+  addressRow.height = addressParts.length > 0 ? 18 : 8;
 
   // Navy title bar.
   const titleRow = sheet.getRow(5);
@@ -124,8 +158,12 @@ export async function addBrandingHeader(
     pattern: "solid",
     fgColor: { argb: HEADER_FILL },
   };
-  titleRow.getCell(1).alignment = { vertical: "middle", wrapText: true };
-  titleRow.height = 26;
+  titleRow.getCell(1).alignment = {
+    vertical: "middle",
+    indent: 1,
+    wrapText: true,
+  };
+  titleRow.height = 28;
 
   return 7;
 }
@@ -153,28 +191,29 @@ export function addBrandingFooterNote(
 
 async function addLogoImage(
   sheet: ExcelJS.Worksheet,
-  imageUrl: string,
+  imageUrls: string[],
   col: number,
   row: number,
 ): Promise<void> {
-  if (!imageUrl) {
-    return;
-  }
+  for (const imageUrl of imageUrls) {
+    if (!imageUrl) continue;
 
-  try {
-    const { buffer, extension } = await loadImage(imageUrl);
-    // ExcelJS types `buffer` as an ArrayBuffer while the runtime wants raw
-    // bytes, so the same payload goes through the typed `base64` field.
-    const imageId = sheet.workbook.addImage({
-      base64: buffer.toString("base64"),
-      extension,
-    });
-    sheet.addImage(imageId, {
-      tl: { col, row },
-      ext: { width: LOGO_SIZE_PX, height: LOGO_SIZE_PX },
-    });
-  } catch {
-    // Best-effort: a logo that cannot be fetched never fails the export.
+    try {
+      const { buffer, extension } = await loadImage(imageUrl);
+      // ExcelJS types `buffer` as an ArrayBuffer while the runtime wants raw
+      // bytes, so the same payload goes through the typed `base64` field.
+      const imageId = sheet.workbook.addImage({
+        base64: buffer.toString("base64"),
+        extension,
+      });
+      sheet.addImage(imageId, {
+        tl: { col, row },
+        ext: { width: LOGO_SIZE_PX, height: LOGO_SIZE_PX },
+      });
+      return;
+    } catch {
+      // Try next fallback candidate; missing logo never fails the export.
+    }
   }
 }
 

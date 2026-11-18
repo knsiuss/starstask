@@ -3,7 +3,8 @@ import { handleRouteError } from "@/lib/api/responses";
 import { getClassCalendarFeed } from "@/lib/db/class-calendar";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import { requireSession } from "@/features/classes/class-access";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
+import { requireClassMember } from "@/features/classes/class-access";
 import { buildIcsCalendar } from "@starstask/shared";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,10 @@ export async function GET(
     }
 
     const { slug } = await context.params;
-    const session = await requireSession();
+    const { session, class: found, role } = await requireClassMember(slug);
+    const access = role.canManage
+      ? undefined
+      : await getMemberCourseAccess(found.id, session.user.id);
 
     await enforceRateLimit({
       action: "classes:calendar",
@@ -28,7 +32,7 @@ export async function GET(
       windowSeconds: 60,
     });
 
-    const feed = await getClassCalendarFeed(slug);
+    const feed = await getClassCalendarFeed(slug, access);
 
     if (!feed) {
       throw notFound();

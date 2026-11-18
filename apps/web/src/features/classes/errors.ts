@@ -17,6 +17,11 @@ const CODE_MAP: Record<
     code: "forbidden",
     message: "You do not have permission to perform this action.",
   },
+  P0001: {
+    status: 400,
+    code: "limit_reached",
+    message: "You have reached the maximum limit for this action.",
+  },
   P0002: {
     status: 404,
     code: "not_found",

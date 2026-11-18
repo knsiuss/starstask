@@ -156,3 +156,59 @@ export const announcementUpdateSchema = z
     },
   );
 export type AnnouncementUpdateInput = z.infer<typeof announcementUpdateSchema>;
+
+export const GRADE_WEIGHT_COMPONENTS = [
+  "absensi",
+  "tugas",
+  "uts",
+  "uas",
+] as const;
+
+export type GradeWeightComponent = (typeof GRADE_WEIGHT_COMPONENTS)[number];
+
+export const gradeScoreSchema = z.coerce
+  .number()
+  .finite("Score must be a finite number")
+  .min(0, "Score must be at least 0")
+  .max(100, "Score must be at most 100");
+
+export type GradeScore = z.infer<typeof gradeScoreSchema>;
+
+const gradeWeightComponentSchema = gradeScoreSchema.refine(
+  (value) => Math.abs(Math.round(value * 100) - value * 100) < 1e-6,
+  "Weight must have at most 2 decimal places",
+);
+
+export const gradeWeightsSchema = z
+  .object({
+    absensi: gradeWeightComponentSchema,
+    tugas: gradeWeightComponentSchema,
+    uts: gradeWeightComponentSchema,
+    uas: gradeWeightComponentSchema,
+  })
+  .strict()
+  .refine(
+    (value) =>
+      Math.round(value.absensi * 100) +
+        Math.round(value.tugas * 100) +
+        Math.round(value.uts * 100) +
+        Math.round(value.uas * 100) ===
+      10000,
+    {
+      message: "Grade weights must sum to 100%",
+      path: ["uas"],
+    },
+  );
+
+export type GradeWeights = z.infer<typeof gradeWeightsSchema>;
+
+export const weightedGradeScoresSchema = z
+  .object({
+    absensi: gradeScoreSchema,
+    tugas: gradeScoreSchema,
+    uts: gradeScoreSchema,
+    uas: gradeScoreSchema,
+  })
+  .strict();
+
+export type WeightedGradeScores = z.infer<typeof weightedGradeScoresSchema>;

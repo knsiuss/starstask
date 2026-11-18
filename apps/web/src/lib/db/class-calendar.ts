@@ -3,6 +3,7 @@ import "server-only";
 import { getSiteUrl } from "@/lib/env/public";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DataAccessError } from "@/lib/db/assignments";
+import type { MemberCourseAccess } from "@/lib/db/course-access";
 import { getClassBySlug } from "@/lib/db/classes";
 import type { IcsEvent } from "@starstask/shared";
 
@@ -18,6 +19,7 @@ const CALENDAR_EVENT_LIMIT = 500;
 /** Calendar feed for a signed-in reader of one active class. */
 export async function getClassCalendarFeed(
   slug: string,
+  access?: MemberCourseAccess,
 ): Promise<ClassCalendarFeed | null> {
   const found = await getClassBySlug(slug);
 
@@ -28,15 +30,25 @@ export async function getClassCalendarFeed(
   const siteUrl = getSiteUrl();
   const supabase = await createSupabaseServerClient();
 
+  let assignmentsQuery = supabase
+    .from("assignments")
+    .select("id, title, deadline, updated_at")
+    .eq("class_id", found.id)
+    .eq("status", "published")
+    .not("deadline", "is", null)
+    .order("deadline", { ascending: true })
+    .limit(CALENDAR_EVENT_LIMIT);
+
+  if (access?.scope === "selected") {
+    const allowed = [...access.allowedSubjectIds];
+    assignmentsQuery =
+      allowed.length > 0
+        ? assignmentsQuery.in("subject_id", allowed)
+        : assignmentsQuery.is("id", null);
+  }
+
   const [assignmentsResult, sessionsResult] = await Promise.all([
-    supabase
-      .from("assignments")
-      .select("id, title, deadline, updated_at")
-      .eq("class_id", found.id)
-      .eq("status", "published")
-      .not("deadline", "is", null)
-      .order("deadline", { ascending: true })
-      .limit(CALENDAR_EVENT_LIMIT),
+    assignmentsQuery,
     supabase
       .from("discussion_sessions")
       .select(

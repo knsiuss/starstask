@@ -200,8 +200,7 @@ export function ClassMediaManager({
             <div
               className={cn(
                 "border-border relative h-28 overflow-hidden rounded-xl border",
-                !shownCover &&
-                  "from-accent-soft via-band to-surface bg-gradient-to-br",
+                !shownCover && "bg-subtle",
               )}
             >
               {shownCover ? (
@@ -325,8 +324,7 @@ export function ClassMediaManager({
             <div
               className={cn(
                 "border-border relative h-32 overflow-hidden rounded-xl border",
-                !shownCover &&
-                  "from-accent-soft via-band to-surface bg-gradient-to-br",
+                !shownCover && "bg-subtle",
               )}
             >
               {shownCover ? (

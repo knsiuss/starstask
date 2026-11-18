@@ -53,7 +53,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
           </span>
 
           <h1 className="mt-4 text-2xl font-semibold tracking-tight">
-            Class invitation
+            {preview?.subject_id ? "Course invitation" : "Class invitation"}
           </h1>
 
           <div className="mt-6 space-y-4">
@@ -71,7 +71,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                   <Link href="/app">Back to dashboard</Link>
                 </Button>
               </>
-            ) : preview && !preview.valid ? (
+            ) : preview && !preview.is_member && !preview.valid ? (
               <>
                 <Alert variant="error">
                   {preview.reason === "expired"
@@ -95,17 +95,33 @@ export default async function InvitePage({ params }: InvitePageProps) {
             ) : preview?.is_member ? (
               <div className="space-y-4">
                 <Alert variant="info">
-                  You are already an active member of{" "}
-                  <strong>{preview.class_name}</strong> ({preview.class_slug}).
-                  You already have full access to all its subjects and
-                  assignments.
+                  {preview.subject_id ? (
+                    <>
+                      You already have access to{" "}
+                      <strong>{preview.subject_name}</strong> in{" "}
+                      <strong>{preview.class_name}</strong>.
+                    </>
+                  ) : (
+                    <>
+                      You are already an active member of{" "}
+                      <strong>{preview.class_name}</strong> (
+                      {preview.class_slug}). You already have full access to all
+                      its subjects and assignments.
+                    </>
+                  )}
                 </Alert>
                 <Button
                   asChild
                   className="w-full"
                 >
-                  <Link href={`/app/classes/${preview.class_slug}`}>
-                    Open class group
+                  <Link
+                    href={
+                      preview.subject_id
+                        ? `/classes/${preview.class_slug}/courses/${preview.subject_id}`
+                        : `/classes/${preview.class_slug}`
+                    }
+                  >
+                    {preview.subject_id ? "Open course" : "Open class group"}
                     <ArrowRight
                       aria-hidden="true"
                       className="ml-1.5 h-4 w-4"
@@ -117,12 +133,31 @@ export default async function InvitePage({ params }: InvitePageProps) {
               <>
                 {preview ? (
                   <div className="bg-subtle border-border rounded-lg border p-4">
-                    <p className="text-foreground text-base font-semibold">
-                      {preview.class_name}
-                    </p>
-                    <p className="font-mono text-muted-foreground mt-0.5 text-xs">
-                      {preview.class_slug}
-                    </p>
+                    {preview.subject_id ? (
+                      <>
+                        <p className="text-foreground text-base font-semibold">
+                          {preview.subject_name}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          {preview.subject_code
+                            ? `${preview.subject_code} · `
+                            : ""}
+                          in{" "}
+                          <span className="text-foreground font-medium">
+                            {preview.class_name}
+                          </span>
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-foreground text-base font-semibold">
+                          {preview.class_name}
+                        </p>
+                        <p className="font-mono text-muted-foreground mt-0.5 text-xs">
+                          {preview.class_slug}
+                        </p>
+                      </>
+                    )}
 
                     <div className="text-muted-foreground mt-3 space-y-1 text-xs">
                       <p className="flex items-center gap-1.5">
@@ -148,13 +183,16 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 ) : null}
 
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Accepting this link adds you as a member of this class group.
-                  You will automatically gain access to all subjects and
-                  published assignments within it.
+                  {preview?.subject_id
+                    ? `Accepting this link gives you access only to ${preview.subject_name ?? "this course"} in ${preview.class_name ?? "this class"}, without joining other courses.`
+                    : "Accepting this link adds you as a member of this class group. You will automatically gain access to all subjects and published assignments within it."}
                 </p>
 
                 {session ? (
-                  <InviteAcceptButton token={parsed.data.token} />
+                  <InviteAcceptButton
+                    token={parsed.data.token}
+                    label={preview?.subject_id ? "Join course" : "Join class"}
+                  />
                 ) : (
                   <>
                     <Alert variant="info">

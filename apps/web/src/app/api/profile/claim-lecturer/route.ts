@@ -67,7 +67,9 @@ export async function POST(request: Request) {
         error.code === "42501" || error.message.includes("institutional")
           ? "Your account email domain is not registered as institutional for any active university. Ask the platform operator to enable your university first."
           : error.code === "22023"
-            ? error.message
+            ? error.message.includes("NIDN")
+              ? "NIDN must be exactly 10 digits."
+              : "Multiple universities match your email domain. Select a university or contact support."
             : "Could not activate the lecturer persona. Try again.";
 
       throw new ApiError(422, "claim_failed", message);

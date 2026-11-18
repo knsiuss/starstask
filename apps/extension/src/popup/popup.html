@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>StarsTask SIAKAD Injector</title>
+    <link
+      rel="stylesheet"
+      href="popup.css"
+    />
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="popup-header">
+        <div class="brand-row">
+          <span
+            class="brand-mark"
+            aria-hidden="true"
+          ></span>
+          <div>
+            <h1 class="popup-title">StarsTask Injector</h1>
+            <p class="popup-subtitle">Local SIAKAD attendance sync</p>
+          </div>
+        </div>
+        <span
+          id="calibration-badge"
+          class="status-pill status-pill-muted"
+          >Not calibrated</span
+        >
+      </header>
+
+      <section
+        class="card"
+        aria-labelledby="sync-section-title"
+      >
+        <h2
+          id="sync-section-title"
+          class="section-title"
+        >
+          1. Session Sync
+        </h2>
+
+        <div class="field">
+          <label
+            for="base-url-input"
+            class="field-label"
+            >StarsTask URL</label
+          >
+          <input
+            id="base-url-input"
+            type="url"
+            class="input"
+            placeholder="http://localhost:3000"
+            autocomplete="url"
+          />
+        </div>
+
+        <div class="field">
+          <label
+            for="sync-code-input"
+            class="field-label"
+            >Sync Code</label
+          >
+          <div class="input-row">
+            <input
+              id="sync-code-input"
+              type="text"
+              class="input"
+              placeholder="Paste meeting sync code"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button
+              id="fetch-btn"
+              type="button"
+              class="btn btn-primary"
+            >
+              Fetch Roster
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="roster-card"
+          class="roster-card hidden"
+          aria-live="polite"
+        >
+          <div class="roster-header">
+            <span
+              id="roster-class"
+              class="roster-class"
+            ></span>
+            <span
+              id="roster-count"
+              class="roster-count"
+            ></span>
+          </div>
+          <p
+            id="roster-meeting"
+            class="roster-meeting"
+          ></p>
+          <p
+            id="roster-expiry"
+            class="roster-expiry"
+          ></p>
+        </div>
+      </section>
+
+      <section
+        class="card"
+        aria-labelledby="inject-section-title"
+      >
+        <div class="section-header-row">
+          <h2
+            id="inject-section-title"
+            class="section-title"
+          >
+            2. SIAKAD Page Actions
+          </h2>
+          <button
+            id="clear-calibration-btn"
+            type="button"
+            class="btn-link hidden"
+          >
+            Reset calibration
+          </button>
+        </div>
+
+        <p
+          id="origin-label"
+          class="origin-label"
+        >
+          Active tab: checking...
+        </p>
+
+        <div
+          id="calibration-prompt"
+          class="banner banner-info hidden"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <label class="checkbox-row">
+          <input
+            id="dry-run-checkbox"
+            type="checkbox"
+          />
+          <span>Preview only (highlight rows without changing inputs)</span>
+        </label>
+
+        <div class="action-grid">
+          <button
+            id="calibrate-btn"
+            type="button"
+            class="btn btn-secondary"
+          >
+            Calibrate This Page
+          </button>
+          <button
+            id="inject-btn"
+            type="button"
+            class="btn btn-primary"
+            disabled
+          >
+            Inject Attendance Now
+          </button>
+        </div>
+
+        <div
+          id="progress-wrapper"
+          class="progress-wrapper hidden"
+          aria-live="polite"
+        >
+          <div class="progress-meta">
+            <span>Injecting attendance</span>
+            <span id="progress-text">0 / 0</span>
+          </div>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            id="progress-bar-role"
+          >
+            <div
+              id="progress-fill"
+              class="progress-fill"
+            ></div>
+          </div>
+        </div>
+      </section>
+
+      <div
+        id="error-banner"
+        class="banner banner-error hidden"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+      <section
+        id="summary-section"
+        class="card hidden"
+        aria-labelledby="summary-section-title"
+        aria-live="polite"
+      >
+        <h2
+          id="summary-section-title"
+          class="section-title"
+        >
+          Injection Summary
+        </h2>
+
+        <div class="summary-grid">
+          <div class="summary-stat summary-stat-green">
+            <span
+              id="stat-nim"
+              class="stat-value"
+              >0</span
+            >
+            <span class="stat-label">NIM Matched</span>
+          </div>
+          <div class="summary-stat summary-stat-yellow">
+            <span
+              id="stat-fallback"
+              class="stat-value"
+              >0</span
+            >
+            <span class="stat-label">Name Fallback</span>
+          </div>
+          <div class="summary-stat summary-stat-red">
+            <span
+              id="stat-unmatched"
+              class="stat-value"
+              >0</span
+            >
+            <span class="stat-label">Unmatched</span>
+          </div>
+        </div>
+
+        <ul
+          id="review-list"
+          class="review-list hidden"
+        ></ul>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

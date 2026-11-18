@@ -13,7 +13,6 @@ import {
 import { WhatsNewBanner } from "@/components/dashboard/whats-new-banner";
 import { PageShell } from "@/components/layout/page-shell";
 import { SetupNotice } from "@/components/layout/setup-notice";
-import { TeachingHome } from "@/components/lecturer/teaching-home";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { isLecturer } from "@/lib/auth/lecturer";
 import { getSessionUser } from "@/lib/auth/session";
@@ -69,15 +68,10 @@ export default async function DashboardPage({
   const weekOffset = parseWeekOffset(query.week);
 
   // A lecturer opens the app to answer a different question than a student, so
-  // `/app` becomes the teaching console. `?view=student` stays available for
-  // lecturers who are also enrolled somewhere.
+  // they land on `/lecturer`. `?view=student` stays available for lecturers who
+  // are also enrolled somewhere.
   if (query.view !== "student" && (await isLecturer())) {
-    return (
-      <TeachingHome
-        userId={session.user.id}
-        displayName={session.profile?.display_name ?? "Lecturer"}
-      />
-    );
+    redirect("/lecturer");
   }
 
   return (

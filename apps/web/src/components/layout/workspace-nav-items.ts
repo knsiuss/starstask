@@ -54,11 +54,11 @@ export const STUDY_ITEMS: NavItem[] = [
 
 /**
  * Leader destinations render only for users who administer at least one class.
- * The flag is cosmetic; /app/actions re-checks every class role on load.
+ * The flag is cosmetic; /actions re-checks every class role on load.
  */
 export const LEADER_ITEMS: NavItem[] = [
   {
-    href: "/app/actions",
+    href: "/actions",
     label: "Action center",
     icon: ListChecks,
     requiresAuth: true,
@@ -66,21 +66,34 @@ export const LEADER_ITEMS: NavItem[] = [
 ];
 
 /**
- * A verified lecturer gets a teaching-first shell: the same URLs, reordered so
- * the work waiting on them comes before their own studies. The flag is
- * cosmetic; every destination re-checks the lecturer role server-side.
+ * A verified lecturer gets a teaching-first shell: their teaching console
+ * lives at `/lecturer`, followed by the work waiting on them and the classes
+ * they administer. The flag is cosmetic; every destination re-checks the
+ * lecturer role server-side.
  */
 export const TEACHING_ITEMS: NavItem[] = [
   {
-    href: "/app",
+    href: "/lecturer",
     label: "Teaching home",
     icon: LayoutDashboard,
     requiresAuth: true,
   },
   {
-    href: "/app/actions",
+    href: "/actions",
     label: "Action center",
     icon: ListChecks,
+    requiresAuth: true,
+  },
+  {
+    href: "/classes",
+    label: "Classes",
+    icon: GraduationCap,
+    requiresAuth: true,
+  },
+  {
+    href: "/schedule",
+    label: "Schedule",
+    icon: CalendarDays,
     requiresAuth: true,
   },
   {
@@ -97,12 +110,11 @@ export const TEACHING_ITEMS: NavItem[] = [
   },
 ];
 
-/** Student-only destinations, used to keep the Study list free of duplicates. */
+const TEACHING_HREFS = new Set(TEACHING_ITEMS.map((item) => item.href));
+
+/** Student-only destinations, kept free of duplicates with Teaching. */
 export const LEARNING_ITEMS: NavItem[] = STUDY_ITEMS.filter(
-  (item) =>
-    item.href !== "/app" &&
-    item.href !== "/attendance" &&
-    item.href !== "/leave-requests",
+  (item) => item.href !== "/app" && !TEACHING_HREFS.has(item.href),
 );
 
 /**
@@ -146,7 +158,7 @@ export const ACCOUNT_ITEMS: NavItem[] = [
 ];
 
 /**
- * Pick the longest matching route prefix so nested pages (e.g. `/app/actions`)
+ * Pick the longest matching route prefix so nested pages (e.g. `/actions`)
  * do not highlight both their parent (`/app`) and themselves.
  */
 export function getActiveNavHref(
