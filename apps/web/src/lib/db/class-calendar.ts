@@ -47,18 +47,28 @@ export async function getClassCalendarFeed(
         : assignmentsQuery.is("id", null);
   }
 
+  let sessionsQuery = supabase
+    .from("discussion_sessions")
+    .select(
+      "id, subject_id, title, description, starts_at, ends_at, location, meeting_url, updated_at",
+    )
+    .eq("class_id", found.id)
+    .eq("status", "scheduled")
+    .eq("visibility", "public")
+    .order("starts_at", { ascending: true })
+    .limit(CALENDAR_EVENT_LIMIT);
+
+  if (access?.scope === "selected") {
+    const allowed = [...access.allowedSubjectIds];
+    sessionsQuery =
+      allowed.length > 0
+        ? sessionsQuery.in("subject_id", allowed)
+        : sessionsQuery.is("id", null);
+  }
+
   const [assignmentsResult, sessionsResult] = await Promise.all([
     assignmentsQuery,
-    supabase
-      .from("discussion_sessions")
-      .select(
-        "id, title, description, starts_at, ends_at, location, meeting_url, updated_at",
-      )
-      .eq("class_id", found.id)
-      .eq("status", "scheduled")
-      .eq("visibility", "public")
-      .order("starts_at", { ascending: true })
-      .limit(CALENDAR_EVENT_LIMIT),
+    sessionsQuery,
   ]);
 
   if (assignmentsResult.error) {

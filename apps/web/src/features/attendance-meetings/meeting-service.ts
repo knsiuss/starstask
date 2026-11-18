@@ -91,6 +91,23 @@ export async function openAttendanceMeeting(sessionId: string): Promise<void> {
   }
 }
 
+type CloseAttendanceMeetingArgs = {
+  p_session_id: string;
+  p_finalize: boolean;
+  p_bap_topic: string | null;
+  p_bap_notes: string | null;
+};
+
+type CloseAttendanceRpcClient = {
+  rpc: (
+    fn: "close_attendance_meeting",
+    args: CloseAttendanceMeetingArgs,
+  ) => PromiseLike<{
+    data: number | null;
+    error: { code?: string; message?: string } | null;
+  }>;
+};
+
 /** Closes the meeting; finalizing also writes an explicit absence per member. */
 export async function closeAttendanceMeeting(
   sessionId: string,
@@ -98,30 +115,18 @@ export async function closeAttendanceMeeting(
   bap?: { topic?: string; notes?: string },
 ): Promise<number> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("close_attendance_meeting", {
+  const trimmedTopic = bap?.topic?.trim() || null;
+  const trimmedNotes = bap?.notes?.trim() || null;
+  const rpcClient = supabase as unknown as CloseAttendanceRpcClient;
+  const { data, error } = await rpcClient.rpc("close_attendance_meeting", {
     p_session_id: sessionId,
     p_finalize: finalize,
+    p_bap_topic: trimmedTopic,
+    p_bap_notes: trimmedNotes,
   });
 
   if (error) {
     throw toSessionApiError(error, "Could not close attendance.");
-  }
-
-  const trimmedTopic = bap?.topic?.trim();
-  const trimmedNotes = bap?.notes?.trim();
-
-  if (trimmedTopic || trimmedNotes) {
-    const { error: bapError } = await supabase
-      .from("attendance_meetings")
-      .update({
-        ...(trimmedTopic ? { bap_topic: trimmedTopic } : {}),
-        ...(trimmedNotes ? { bap_notes: trimmedNotes } : {}),
-      } as never)
-      .eq("id", sessionId);
-
-    if (bapError) {
-      throw toSessionApiError(bapError, "Could not save BAP details.");
-    }
   }
 
   return typeof data === "number" ? data : 0;

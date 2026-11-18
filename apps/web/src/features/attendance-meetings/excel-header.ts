@@ -1,21 +1,18 @@
 import "server-only";
 
 import type ExcelJS from "exceljs";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 import type { ExportBrandingInput } from "@starstask/contracts";
 
-import type { AttendanceExportContext } from "./excel";
 import { resolveFooterText } from "@/features/export-branding/config";
+
+import type { AttendanceExportContext } from "./excel";
+import { loadBrandingImage } from "./excel-header-image";
 
 const HEADER_FILL = "FF0F172A";
 const MUTED_TEXT = "FF64748B";
 const LOGO_SIZE_PX = 40;
-const IMAGE_FETCH_TIMEOUT_MS = 5_000;
 const FALLBACK_PRODUCT_LOGOS = ["/aphelion-logo.png", "/brand/logo-mark.png"];
-
-type ImageExtension = "png" | "jpeg" | "gif";
 
 /**
  * Renders the campus printout header: a 3-part block (left: university logo +
@@ -99,8 +96,13 @@ export async function addBrandingHeader(
     wrapText: true,
   };
 
+  const classId =
+    "id" in context.classInfo && typeof context.classInfo.id === "string"
+      ? context.classInfo.id
+      : undefined;
+
   if (hasUniLogo) {
-    await addLogoImage(sheet, [branding.universityLogoUrl], 0.1, 0.1);
+    await addLogoImage(sheet, [branding.universityLogoUrl], 0.1, 0.1, classId);
   }
 
   const productLogoCandidates = [
@@ -112,6 +114,7 @@ export async function addBrandingHeader(
     productLogoCandidates,
     Math.max(rightStart - 1, totalColumns - 0.85),
     0.1,
+    classId,
   );
 
   // Navy divider.
@@ -194,12 +197,13 @@ async function addLogoImage(
   imageUrls: string[],
   col: number,
   row: number,
+  classId?: string,
 ): Promise<void> {
   for (const imageUrl of imageUrls) {
     if (!imageUrl) continue;
 
     try {
-      const { buffer, extension } = await loadImage(imageUrl);
+      const { buffer, extension } = await loadBrandingImage(imageUrl, classId);
       // ExcelJS types `buffer` as an ArrayBuffer while the runtime wants raw
       // bytes, so the same payload goes through the typed `base64` field.
       const imageId = sheet.workbook.addImage({
@@ -215,56 +219,4 @@ async function addLogoImage(
       // Try next fallback candidate; missing logo never fails the export.
     }
   }
-}
-
-async function loadImage(
-  imageUrl: string,
-): Promise<{ buffer: Buffer; extension: ImageExtension }> {
-  const normalized = imageUrl.trim();
-  const extension = extensionFor(normalized);
-
-  if (normalized.startsWith("https://")) {
-    const response = await fetch(normalized, {
-      signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS),
-    });
-
-    if (!response.ok) {
-      throw new Error("Logo URL unreachable");
-    }
-
-    const bytes = Buffer.from(await response.arrayBuffer());
-
-    return { buffer: bytes, extension };
-  }
-
-  if (normalized.startsWith("/") && !normalized.startsWith("/api/")) {
-    const relative = normalized.replace(/^\/+/, "");
-    if (!relative || relative.includes("..")) {
-      throw new Error("Invalid logo path");
-    }
-
-    const buffer = await readFile(
-      path.resolve(process.cwd(), "public", relative),
-    );
-
-    return { buffer, extension };
-  }
-
-  throw new Error("Unsupported logo location");
-}
-
-function extensionFor(imageUrl: string): ImageExtension {
-  const pathname = imageUrl.split("?")[0] ?? "";
-  const extension = pathname.split(".").pop()?.toLowerCase();
-
-  // ExcelJS only accepts "jpeg", never the "jpg" alias.
-  if (extension === "jpg" || extension === "jpeg") {
-    return "jpeg";
-  }
-
-  if (extension === "gif") {
-    return "gif";
-  }
-
-  return "png";
 }

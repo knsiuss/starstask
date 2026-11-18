@@ -28,8 +28,6 @@ const WEBP_RULE: MediaRule = {
 
 const MATERIAL_FILE_RULES: Record<string, MediaRule> = {
   pdf: { mimeType: "application/pdf", magic: [0x25, 0x50, 0x44, 0x46, 0x2d] },
-  html: { mimeType: "text/html" },
-  htm: { mimeType: "text/html" },
   md: { mimeType: "text/markdown" },
   txt: { mimeType: "text/plain" },
   png: PNG_RULE,
@@ -37,6 +35,14 @@ const MATERIAL_FILE_RULES: Record<string, MediaRule> = {
   jpeg: JPG_RULE,
   webp: WEBP_RULE,
 };
+
+const INLINE_SAFE_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
+
+export function isCourseMediaInlinePath(objectPath: string): boolean {
+  const ext = objectPath.split(".").pop()?.toLowerCase() ?? "";
+
+  return INLINE_SAFE_EXTENSIONS.has(ext);
+}
 
 const COMMENT_IMAGE_RULES: Record<string, MediaRule> = {
   png: PNG_RULE,
@@ -77,7 +83,7 @@ export async function uploadCourseMediaFile(params: {
     throw new Error(
       params.folder === "comments"
         ? "Only PNG, JPG, or WebP images are supported in comments."
-        : "Supported files: PDF, HTML, Markdown, TXT, PNG, JPG, or WebP.",
+        : "Supported files: PDF, Markdown, TXT, PNG, JPG, or WebP.",
     );
   }
 
@@ -118,17 +124,33 @@ export async function createCourseMediaSignedUrls(
     return map;
   }
 
+  const inlinePaths = unique.filter((objectPath) =>
+    isCourseMediaInlinePath(objectPath),
+  );
+  const downloadPaths = unique.filter(
+    (objectPath) => !isCourseMediaInlinePath(objectPath),
+  );
+
   try {
     const admin = createSupabaseAdminClient();
-    const { data, error } = await admin.storage
-      .from(COURSE_MEDIA_BUCKET)
-      .createSignedUrls(unique, COURSE_MEDIA_SIGNED_TTL_SECONDS);
+    const bucket = admin.storage.from(COURSE_MEDIA_BUCKET);
+    const [inlineRes, downloadRes] = await Promise.all([
+      inlinePaths.length > 0
+        ? bucket.createSignedUrls(inlinePaths, COURSE_MEDIA_SIGNED_TTL_SECONDS)
+        : Promise.resolve({ data: [], error: null }),
+      downloadPaths.length > 0
+        ? bucket.createSignedUrls(
+            downloadPaths,
+            COURSE_MEDIA_SIGNED_TTL_SECONDS,
+            { download: true },
+          )
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-    if (error || !data) {
-      return map;
-    }
-
-    for (const item of data) {
+    for (const item of [
+      ...(inlineRes.error ? [] : (inlineRes.data ?? [])),
+      ...(downloadRes.error ? [] : (downloadRes.data ?? [])),
+    ]) {
       if (item.path && item.signedUrl) {
         map.set(item.path, item.signedUrl);
       }

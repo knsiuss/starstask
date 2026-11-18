@@ -41,18 +41,45 @@ export async function assignClassAdmin(
   input: AssignClassAdminInput,
 ): Promise<AssignClassAdminResult> {
   if (input.userId) {
-    const { data: profile, error: profileError } = await client
-      .from("profiles")
-      .select("id")
-      .eq("id", input.userId)
-      .maybeSingle();
+    const [profileRes, memberRes, uniMemberRes] = await Promise.all([
+      client.from("profiles").select("id").eq("id", input.userId).maybeSingle(),
+      client
+        .from("class_members")
+        .select("user_id")
+        .eq("class_id", input.classId)
+        .eq("user_id", input.userId)
+        .maybeSingle(),
+      client
+        .from("university_memberships")
+        .select("id")
+        .eq("university_id", input.universityId)
+        .eq("user_id", input.userId)
+        .eq("status", "active")
+        .maybeSingle(),
+    ]);
 
-    if (profileError) {
-      throw new DataAccessError("Could not verify the user", profileError.code);
+    if (profileRes.error) {
+      throw new DataAccessError(
+        "Could not verify the user",
+        profileRes.error.code,
+      );
     }
 
-    if (!profile) {
+    if (!profileRes.data) {
       throw new InvalidGrantTargetError("User not found.");
+    }
+
+    if (memberRes.error || uniMemberRes.error) {
+      throw new DataAccessError(
+        "Could not verify the user membership",
+        memberRes.error?.code ?? uniMemberRes.error?.code,
+      );
+    }
+
+    if (!memberRes.data && !uniMemberRes.data) {
+      throw new InvalidGrantTargetError(
+        "The user does not belong to this class or university.",
+      );
     }
   }
 

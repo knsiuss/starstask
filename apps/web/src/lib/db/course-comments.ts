@@ -83,13 +83,18 @@ export async function listCourseComments(params: {
   }
 
   const rows = data ?? [];
+  const expectedPrefix = `${params.classId}/${params.subjectId}/comments/`;
   const [profiles, signedUrls] = await Promise.all([
     loadAuthorProfiles(rows.map((row) => row.author_id)),
     createCourseMediaSignedUrls(
       rows
         .map((row) => row.image_path)
         .filter(
-          (path): path is string => typeof path === "string" && path !== "",
+          (path): path is string =>
+            typeof path === "string" &&
+            path.startsWith(expectedPrefix) &&
+            !path.includes("..") &&
+            !path.includes("\\"),
         ),
     ),
   ]);
@@ -125,6 +130,28 @@ export async function createCourseComment(params: {
   imageMime?: string | null;
 }): Promise<string> {
   const supabase = await createSupabaseServerClient();
+
+  if (params.input.parentId) {
+    const { data: parent, error: parentError } = await supabase
+      .from("course_comments")
+      .select("id")
+      .eq("id", params.input.parentId)
+      .eq("class_id", params.classId)
+      .eq("subject_id", params.subjectId)
+      .maybeSingle();
+
+    if (parentError) {
+      throw new DataAccessError(
+        "Could not verify parent comment",
+        parentError.code,
+      );
+    }
+
+    if (!parent) {
+      throw new DataAccessError("Parent comment not found", "P0002");
+    }
+  }
+
   const { data, error } = await supabase
     .from("course_comments")
     .insert({

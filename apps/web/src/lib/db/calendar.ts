@@ -17,6 +17,7 @@ import {
 import { loadCompletionIds } from "@/lib/db/assignment-completions";
 import { DataAccessError } from "@/lib/db/assignments";
 import { listMyClasses } from "@/lib/db/classes";
+import { listUserCourseAccessMap } from "@/lib/db/course-access";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type CalendarEventStatus = "published" | "cancelled";
@@ -161,7 +162,8 @@ export async function listCalendarEvents(
 
   const supabase = await createSupabaseServerClient();
 
-  const subjectsResult =
+  const [accessMap, subjectsResult] = await Promise.all([
+    listUserCourseAccessMap(userId, allowedClassIds),
     allowedClassIds.length === 0
       ? { data: [], error: null }
       : await supabase
@@ -170,7 +172,8 @@ export async function listCalendarEvents(
           .in("class_id", allowedClassIds)
           .eq("status", "active")
           .order("name", { ascending: true })
-          .limit(EVENT_LIMIT);
+          .limit(EVENT_LIMIT),
+  ]);
 
   if (subjectsResult.error) {
     throw new DataAccessError(
@@ -179,7 +182,15 @@ export async function listCalendarEvents(
     );
   }
 
-  const subjectRows = subjectsResult.data ?? [];
+  const subjectRows = (subjectsResult.data ?? []).filter((row) => {
+    const access = accessMap.get(row.class_id);
+
+    return (
+      !access ||
+      access.scope !== "selected" ||
+      access.allowedSubjectIds.has(row.id)
+    );
+  });
   const scopedClassSet = new Set(scopedClassIds);
   const subjectCourseIds = [
     ...new Set(
@@ -264,7 +275,9 @@ export async function listCalendarEvents(
     includeSessions && !subjectFilter
       ? supabase
           .from("discussion_sessions")
-          .select("id, title, starts_at, ends_at, location, class_id, status")
+          .select(
+            "id, title, starts_at, ends_at, location, class_id, subject_id, status",
+          )
           .in("class_id", scopedClassIds)
           .in("status", ["scheduled", "cancelled"])
           .gte("starts_at", range.fromIso)
@@ -437,6 +450,17 @@ export async function listCalendarEvents(
       continue;
     }
 
+    if (row.class_id) {
+      const access = accessMap.get(row.class_id);
+
+      if (
+        access?.scope === "selected" &&
+        (!row.subject_id || !access.allowedSubjectIds.has(row.subject_id))
+      ) {
+        continue;
+      }
+    }
+
     const subject = row.subject_id
       ? subjectLookup.get(row.subject_id)
       : undefined;
@@ -478,6 +502,15 @@ export async function listCalendarEvents(
   };
 
   for (const row of sessionsResult?.data ?? []) {
+    const access = accessMap.get(row.class_id);
+
+    if (
+      access?.scope === "selected" &&
+      (!row.subject_id || !access.allowedSubjectIds.has(row.subject_id))
+    ) {
+      continue;
+    }
+
     const fields = classFields(row.class_id);
 
     events.push({
@@ -490,8 +523,10 @@ export async function listCalendarEvents(
       endsAt: row.ends_at,
       location: row.location,
       ...fields,
-      subjectId: null,
-      subjectName: null,
+      subjectId: row.subject_id,
+      subjectName: row.subject_id
+        ? (subjectLookup.get(row.subject_id)?.name ?? null)
+        : null,
       status: row.status === "cancelled" ? "cancelled" : "published",
       owner: "official",
       href: `/sessions/${row.id}`,
@@ -502,6 +537,15 @@ export async function listCalendarEvents(
 
   for (const row of officialResult?.data ?? []) {
     if (!isOfficialType(row.event_type)) {
+      continue;
+    }
+
+    const access = accessMap.get(row.class_id);
+
+    if (
+      access?.scope === "selected" &&
+      (!row.subject_id || !access.allowedSubjectIds.has(row.subject_id))
+    ) {
       continue;
     }
 
@@ -595,7 +639,15 @@ export async function listCalendarEvents(
     });
   }
 
-  const timetable = timetableResult?.data ?? [];
+  const timetable = (timetableResult?.data ?? []).filter((entry) => {
+    const access = accessMap.get(entry.class_id);
+
+    return (
+      !access ||
+      access.scope !== "selected" ||
+      access.allowedSubjectIds.has(entry.subject_id)
+    );
+  });
   const occurrences = expandWeeklyScheduleForDays(
     timetable,
     range.days.map((day) => day.dateKey),

@@ -9,6 +9,8 @@ import { AssignmentDetailSidebar } from "@/components/assignments/detail/assignm
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { requireAssignmentPageSession } from "@/lib/auth/assignment-access";
 import { getAssignmentDetail } from "@/lib/db/assignments";
+import { getClassRole } from "@/lib/db/classes";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import {
   getMyAssignmentReport,
   listAssignmentRevisions,
@@ -17,6 +19,7 @@ import { isAssignmentSaved } from "@/lib/db/push";
 import { getSiteUrl, isSupabaseConfigured } from "@/lib/env/public";
 import { buildWhatsAppShareUrl } from "@/lib/share/whatsapp";
 import { getAttachmentViews } from "@/lib/storage/signed-urls";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { assignmentIdSchema, isSafeHttpUrl } from "@starstask/contracts";
 import { excerpt } from "@starstask/shared";
 
@@ -101,6 +104,34 @@ export default async function AssignmentPage({
 
   if (!assignment) {
     notFound();
+  }
+
+  if (assignment.class_id) {
+    const role = await getClassRole(assignment.class_id);
+
+    if (!role.canManage) {
+      if (!role.isMember) {
+        notFound();
+      }
+
+      const supabase = await createSupabaseServerClient();
+      const [access, subjectRow] = await Promise.all([
+        getMemberCourseAccess(assignment.class_id, session.user.id),
+        supabase
+          .from("assignments")
+          .select("subject_id")
+          .eq("id", assignment.id)
+          .maybeSingle(),
+      ]);
+
+      if (
+        access.scope === "selected" &&
+        (!subjectRow.data?.subject_id ||
+          !access.allowedSubjectIds.has(subjectRow.data.subject_id))
+      ) {
+        notFound();
+      }
+    }
   }
 
   const isOwner = session.user.id === assignment.user_id;
@@ -191,7 +222,7 @@ export default async function AssignmentPage({
               </section>
             ) : null}
 
-            {assignment.drive_url ? (
+            {assignment.drive_url && isSafeHttpUrl(assignment.drive_url) ? (
               <section
                 aria-labelledby="drive-heading"
                 className="p-5 sm:p-6"

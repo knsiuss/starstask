@@ -1,4 +1,6 @@
-"server-only";
+import "server-only";
+
+import { z } from "zod";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,13 +22,13 @@ export type ExportJob = {
 const EXPORT_JOB_COLUMNS =
   "id, user_id, kind, params, status, result_path, error_category, created_at, updated_at";
 
-/** Creates a job row owned by the caller (RLS owner policy applies). */
+/** Creates a job row owned by the caller via service role. */
 export async function createExportJob(input: {
   userId: string;
   kind: string;
   params: Record<string, unknown>;
 }): Promise<ExportJob> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("export_jobs" as never)
     .insert({
@@ -49,6 +51,10 @@ export async function getOwnExportJob(
   jobId: string,
   userId: string,
 ): Promise<ExportJob | null> {
+  if (!z.uuid().safeParse(jobId).success) {
+    return null;
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("export_jobs" as never)

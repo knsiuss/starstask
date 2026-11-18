@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
@@ -52,11 +52,21 @@ async function hashShareToken(token: string): Promise<string> {
   return digest;
 }
 
-/** Inserts via the user-scoped client so RLS owner policy applies. */
+/** Inserts via service role after verifying the caller-owned storage key prefix. */
 export async function insertDriveSubmission(
   input: InsertDriveSubmissionInput,
 ): Promise<{ row: DriveSubmissionRow; shareToken: string }> {
-  const supabase = await createSupabaseServerClient();
+  const expectedPrefix = `${input.userId}/${input.assignmentId}/`;
+
+  if (
+    !input.storagePath.startsWith(expectedPrefix) ||
+    input.storagePath.includes("..") ||
+    input.storagePath.includes("\\")
+  ) {
+    throw new Error("Invalid submission storage path.");
+  }
+
+  const supabase = createSupabaseAdminClient();
   const shareToken = generateShareToken();
   const shareTokenHash = await hashShareToken(shareToken);
   const expiresAt = new Date(Date.now() + SHARE_TTL_DAYS * 86_400_000);

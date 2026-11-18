@@ -5,19 +5,20 @@ import type {
   AssignmentReviewInput,
 } from "@starstask/contracts";
 
-import { ApiError } from "@/lib/api/errors";
+import { ApiError, notFound } from "@/lib/api/errors";
 import {
   ASSIGNMENT_DETAIL_CACHE_TAG,
   DASHBOARD_CACHE_TAG,
   LISTING_CACHE_TAG,
   invalidateCacheTag,
 } from "@/lib/cache/redis-cache";
+import { ATTACHMENT_BUCKET } from "@/lib/storage/attachments";
+import { deleteStoredObject } from "@/lib/storage/b2";
 import {
   createSupabaseAdminClient,
   isServiceRoleConfigured,
 } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ATTACHMENT_BUCKET } from "@/lib/storage/attachments";
 import { toClassApiError } from "@/features/classes/errors";
 
 /**
@@ -83,7 +84,31 @@ export async function moderateAssignment(
 export async function removeSensitiveAttachment(
   attachmentId: string,
   reason: string,
+  assignmentId?: string,
 ): Promise<void> {
+  if (!isServiceRoleConfigured()) {
+    throw new ApiError(
+      503,
+      "storage_unavailable",
+      "Attachment cleanup is not configured on this deployment.",
+    );
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: existing, error: lookupError } = await admin
+    .from("assignment_attachments")
+    .select("assignment_id, storage_provider")
+    .eq("id", attachmentId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw toClassApiError(lookupError, "Could not load the attachment.");
+  }
+
+  if (!existing || (assignmentId && existing.assignment_id !== assignmentId)) {
+    throw notFound();
+  }
+
   const supabase = await createSupabaseServerClient();
 
   const { data: storagePath, error } = await supabase.rpc(
@@ -98,24 +123,29 @@ export async function removeSensitiveAttachment(
   await invalidateCacheTag(ASSIGNMENT_DETAIL_CACHE_TAG);
   await invalidateCacheTag(LISTING_CACHE_TAG);
 
-  if (!isServiceRoleConfigured()) {
-    throw new ApiError(
-      503,
-      "storage_unavailable",
-      "Attachment cleanup is not configured on this deployment.",
-    );
+  const provider = existing.storage_provider ?? "supabase";
+
+  if (provider === "supabase") {
+    const { error: storageError } = await admin.storage
+      .from(ATTACHMENT_BUCKET)
+      .remove([storagePath]);
+
+    if (storageError) {
+      // The row is already gone, so the file is unreachable through the app.
+      // Log the code only; the path may identify a user.
+      console.error("[storage] orphaned attachment object", {
+        code: storageError.name,
+      });
+    }
+
+    return;
   }
 
-  const admin = createSupabaseAdminClient();
-  const { error: storageError } = await admin.storage
-    .from(ATTACHMENT_BUCKET)
-    .remove([storagePath]);
-
-  if (storageError) {
-    // The row is already gone, so the file is unreachable through the app.
-    // Log the code only; the path may identify a user.
+  try {
+    await deleteStoredObject(provider, storagePath);
+  } catch (storageError) {
     console.error("[storage] orphaned attachment object", {
-      code: storageError.name,
+      code: storageError instanceof Error ? storageError.name : "unknown",
     });
   }
 }

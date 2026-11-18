@@ -32,7 +32,7 @@ export async function GET(
     }
 
     const { slug } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     const [access, subjects] = await Promise.all([
       getMemberCourseAccess(found.id, session.user.id),
@@ -40,7 +40,13 @@ export async function GET(
     ]);
 
     const realSubjects = subjects
-      .filter((item) => item.id !== found.id)
+      .filter(
+        (item) =>
+          item.id !== found.id &&
+          (role.canManage ||
+            access.scope === "all" ||
+            access.allowedSubjectIds.has(item.id)),
+      )
       .map((item) => ({ id: item.id, name: item.name, code: item.code }));
 
     return apiSuccess({
@@ -87,18 +93,24 @@ export async function PUT(
       );
     }
 
-    if (!role.canManage && parsed.data.scope === "all") {
+    if (!role.canManage) {
       const currentAccess = await getMemberCourseAccess(
         found.id,
         session.user.id,
       );
 
       if (currentAccess.scope === "selected") {
-        throw new ApiError(
-          403,
-          "forbidden",
-          "Only class managers can restore access to all courses.",
+        const hasUnauthorizedSubject = parsed.data.subjectIds.some(
+          (id) => !currentAccess.allowedSubjectIds.has(id),
         );
+
+        if (parsed.data.scope === "all" || hasUnauthorizedSubject) {
+          throw new ApiError(
+            403,
+            "forbidden",
+            "Only class managers can restore access or add courses beyond your assigned selection.",
+          );
+        }
       }
     }
 

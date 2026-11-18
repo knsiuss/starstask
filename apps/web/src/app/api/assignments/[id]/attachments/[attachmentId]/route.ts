@@ -135,6 +135,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       await removeSensitiveAttachment(
         parsedAttachment.data,
         parsed.data.reason,
+        parsedAssignment.data,
       );
 
       return apiSuccess({ id: parsedAttachment.data });

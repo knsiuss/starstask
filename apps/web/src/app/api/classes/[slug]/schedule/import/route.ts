@@ -3,6 +3,7 @@ import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { isFeatureEnabled } from "@/lib/config/features";
 import { listClassSubjects } from "@/lib/db/classes";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { runOcr } from "@/lib/ocr";
 import { parseScheduleText } from "@/lib/ocr/schedule-parse";
@@ -35,7 +36,7 @@ export async function POST(
     }
 
     const { slug } = await context.params;
-    const { session, class: found } = await requireClassMember(slug);
+    const { session, class: found, role } = await requireClassMember(slug);
 
     await enforceRateLimit({
       action: "classes:schedule:import",
@@ -131,8 +132,19 @@ export async function POST(
       );
     }
 
-    const subjects = await listClassSubjects(found.id);
-    const rows = parsed.rows.map((row) => matchScheduleRow(row, subjects));
+    const [subjects, access] = await Promise.all([
+      listClassSubjects(found.id),
+      role.canManage
+        ? Promise.resolve(null)
+        : getMemberCourseAccess(found.id, session.user.id),
+    ]);
+    const visibleSubjects =
+      access?.scope === "selected"
+        ? subjects.filter((subject) => access.allowedSubjectIds.has(subject.id))
+        : subjects;
+    const rows = parsed.rows.map((row) =>
+      matchScheduleRow(row, visibleSubjects),
+    );
 
     return apiSuccess({
       rows,
