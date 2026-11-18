@@ -71,7 +71,7 @@ export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] transition-all duration-150 active:scale-95",
+                  "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] transition-all duration-150 active:scale-95 sm:px-1 sm:text-[11px]",
                   isActive
                     ? "bg-accent-soft text-accent font-semibold"
                     : "text-muted-foreground hover:text-foreground",
