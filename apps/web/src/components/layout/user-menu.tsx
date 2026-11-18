@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { wipeOfflineStorage } from "@/components/pwa/account-wipe";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,11 +44,22 @@ export function UserMenu({
   // no server component rendered for the signed-in viewer survives.
   const router = useRouter();
   const signOut = () => {
+    // Start the wipe immediately so it overlaps the signout request; the
+    // navigation waits for it so a shared device never renders the next
+    // session with leftover offline data. wipeOfflineStorage never throws —
+    // the .then(navigate, navigate) pair is belt-and-braces so a wipe
+    // failure can never block sign-out or surface as an unhandled rejection.
+    const wiped = wipeOfflineStorage();
+
+    const navigate = () => {
+      router.push("/");
+      router.refresh();
+    };
+
     void fetch("/api/auth/signout", { method: "POST" })
       .catch(() => null)
       .finally(() => {
-        router.push("/");
-        router.refresh();
+        void wiped.then(navigate, navigate);
       });
   };
 

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ActiveAttendanceSection } from "@/components/attendance/active-attendance-section";
+import { AttendanceCacheMirror } from "@/components/attendance/attendance-cache-mirror";
+import { AttendanceOfflineView } from "@/components/attendance/attendance-offline-view";
 import { AttendanceHistorySection } from "@/components/attendance/attendance-history-section";
 import { AttendanceOverviewMetrics } from "@/components/attendance/attendance-overview-metrics";
 import { CourseAttendanceTable } from "@/components/attendance/course-attendance-table";
@@ -225,11 +227,18 @@ export default async function AttendancePage({
         </div>
       ) : (
         <div className="mt-8 space-y-8">
-          <ActiveAttendanceSection
+          <AttendanceCacheMirror
             meetings={meetingView.meetings}
             identity={meetingView.identity}
-            legacySessions={checkInView.activeSessions}
+            activeSessions={checkInView.activeSessions}
           />
+          <AttendanceOfflineView>
+            <ActiveAttendanceSection
+              meetings={meetingView.meetings}
+              identity={meetingView.identity}
+              legacySessions={checkInView.activeSessions}
+            />
+          </AttendanceOfflineView>
 
           <section aria-labelledby="course-attendance">
             <div className="flex flex-wrap items-baseline justify-between gap-2">

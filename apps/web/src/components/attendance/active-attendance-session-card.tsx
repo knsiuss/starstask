@@ -24,11 +24,13 @@ import {
   type CheckInResultSuccess,
 } from "@/components/attendance/check-in-result-dialog";
 import { LocationPermissionDialog } from "@/components/attendance/location-permission-dialog";
+import { PendingSyncNote } from "@/components/attendance/pending-sync-note";
 import type {
   ActiveAttendanceSession,
   AttendanceCheckInStatus,
 } from "@/lib/attendance/types";
 import { describeCheckInFailure } from "@/lib/attendance/check-in-errors";
+import { enqueue, list as listOutbox } from "@/lib/offline/checkin-outbox";
 import {
   describeGeolocationError,
   getCurrentPosition,
@@ -87,6 +89,8 @@ export function ActiveAttendanceSessionCard({
     React.useState<CheckInResultSuccess | null>(null);
   const [resultFailure, setResultFailure] =
     React.useState<CheckInResultFailure | null>(null);
+  const [pendingSync, setPendingSync] = React.useState(false);
+  const [sessionExpired, setSessionExpired] = React.useState(false);
   const pendingCheckIn = React.useRef(false);
 
   const subject = session.subjectName ?? session.courseName;
@@ -102,6 +106,141 @@ export function ActiveAttendanceSessionCard({
   const opensAt = checkInWindow
     ? new Date(checkInWindow.opensAt).toISOString()
     : session.startsAt;
+
+  React.useEffect(() => {
+    if (mode !== "student") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const reconcileAsync = async () => {
+      try {
+        const entries = await listOutbox();
+
+        if (cancelled) {
+          return;
+        }
+
+        const mine = entries.filter(
+          (entry) =>
+            entry.kind === "session" && entry.sessionId === session.sessionId,
+        );
+
+        const latest = mine[mine.length - 1];
+
+        if (!latest) {
+          return;
+        }
+
+        if (latest.status === "sent" && latest.serverStatus) {
+          const serverStatus = latest.serverStatus;
+
+          setPendingSync(false);
+          setSessionExpired(false);
+          setCheckIn((current) => ({
+            status: serverStatus,
+            checkedInAt: new Date(latest.createdAt).toISOString(),
+            distanceM: current?.distanceM ?? null,
+          }));
+          return;
+        }
+
+        if (latest.status === "failed") {
+          setPendingSync(false);
+          setSessionExpired(false);
+          setResultFailure({
+            message: describeCheckInFailure(
+              latest.lastError ?? undefined,
+              undefined,
+            ),
+            distanceM: null,
+            radiusM: session.radiusM,
+            canRetry: false,
+          });
+          return;
+        }
+
+        if (latest.status === "pending_sync" || latest.status === "syncing") {
+          setPendingSync(true);
+          setSessionExpired(latest.lastError === "http_401");
+        }
+      } catch (error) {
+        console.error("[offline] could not read the outbox", {
+          name: error instanceof Error ? error.name : typeof error,
+        });
+      }
+    };
+
+    void reconcileAsync();
+
+    const handleOnline = () => {
+      void reconcileAsync();
+    };
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [mode, session.sessionId, session.radiusM]);
+
+  const handleResponse = async (response: Response) => {
+    const body = (await response.json().catch(() => null)) as {
+      data?: { checkIn?: SavedCheckIn & { alreadyCheckedIn?: boolean } };
+      error?: { code?: string; message?: string };
+    } | null;
+
+    if (!response.ok) {
+      const retryable =
+        body?.error?.code !== "checkin_closed" &&
+        body?.error?.code !== "checkin_unavailable";
+      setResultFailure({
+        message: describeCheckInFailure(
+          body?.error?.code,
+          body?.error?.message,
+        ),
+        distanceM: null,
+        radiusM:
+          body?.error?.code === "checkin_too_far" ? session.radiusM : null,
+        canRetry: retryable,
+      });
+      setPermissionOpen(false);
+      return;
+    }
+
+    const saved = body?.data?.checkIn;
+
+    if (!saved) {
+      setResultFailure({
+        message:
+          "The server did not confirm your check-in. Try again before leaving the meeting point.",
+        distanceM: null,
+        radiusM: null,
+        canRetry: true,
+      });
+      setPermissionOpen(false);
+      return;
+    }
+
+    setCheckIn({
+      status: saved.status,
+      checkedInAt: saved.checkedInAt,
+      distanceM: saved.distanceM,
+    });
+    setPendingSync(false);
+    setSessionExpired(false);
+    setPermissionOpen(false);
+    setResultSuccess({
+      status: saved.status,
+      checkedInAt: saved.checkedInAt,
+      distanceM: saved.distanceM,
+      subjectName: subject,
+      meetingNumber: session.title || "Session",
+    });
+    router.refresh();
+  };
 
   const checkInNow = async () => {
     if (isLocating || pendingCheckIn.current) {
@@ -159,66 +298,70 @@ export function ActiveAttendanceSessionCard({
         return;
       }
 
-      const response = await fetch(
-        `/api/sessions/${session.sessionId}/checkin`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ latitude, longitude, accuracy, capturedAt }),
-        },
-      );
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
 
-      const body = (await response.json().catch(() => null)) as {
-        data?: { checkIn?: SavedCheckIn & { alreadyCheckedIn?: boolean } };
-        error?: { code?: string; message?: string };
-      } | null;
+      let response: Response | null = null;
 
-      if (!response.ok) {
-        const retryable =
-          body?.error?.code !== "checkin_closed" &&
-          body?.error?.code !== "checkin_unavailable";
-        setResultFailure({
-          message: describeCheckInFailure(
-            body?.error?.code,
-            body?.error?.message,
-          ),
-          distanceM: null,
-          radiusM:
-            body?.error?.code === "checkin_too_far" ? session.radiusM : null,
-          canRetry: retryable,
-        });
-        setPermissionOpen(false);
+      try {
+        if (offline) {
+          // Skip the fetch entirely: the browser would throw a TypeError
+          // anyway, and we want the enqueue path to be deterministic.
+          response = null;
+        } else {
+          response = await fetch(`/api/sessions/${session.sessionId}/checkin`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // capturedAt is audit metadata for the server path's existing
+            // freshness check; the outbox replay omits it (L1).
+            body: JSON.stringify({
+              latitude,
+              longitude,
+              accuracy,
+              capturedAt,
+            }),
+          });
+        }
+      } catch (fetchError) {
+        // Network-layer failure (TypeError): queue the tap instead of
+        // surfacing an error. `capturedAt` stays inside the outbox record.
+        if (!(fetchError instanceof TypeError)) {
+          throw fetchError;
+        }
+
+        response = null;
+      }
+
+      if (response === null) {
+        try {
+          await enqueue("session", session.sessionId, {
+            latitude,
+            longitude,
+            accuracy,
+          });
+          setPendingSync(true);
+          setSessionExpired(false);
+          setPermissionOpen(false);
+        } catch (enqueueError) {
+          console.error("[offline] could not enqueue the check-in", {
+            name:
+              enqueueError instanceof Error
+                ? enqueueError.name
+                : typeof enqueueError,
+          });
+          setResultFailure({
+            message:
+              "Tidak bisa menyimpan check-in di perangkat ini. Coba lagi saat online.",
+            distanceM: null,
+            radiusM: null,
+            canRetry: true,
+          });
+          setPermissionOpen(false);
+        }
+
         return;
       }
 
-      const saved = body?.data?.checkIn;
-
-      if (!saved) {
-        setResultFailure({
-          message:
-            "The server did not confirm your check-in. Try again before leaving the meeting point.",
-          distanceM: null,
-          radiusM: null,
-          canRetry: true,
-        });
-        setPermissionOpen(false);
-        return;
-      }
-
-      setCheckIn({
-        status: saved.status,
-        checkedInAt: saved.checkedInAt,
-        distanceM: saved.distanceM,
-      });
-      setPermissionOpen(false);
-      setResultSuccess({
-        status: saved.status,
-        checkedInAt: saved.checkedInAt,
-        distanceM: saved.distanceM,
-        subjectName: subject,
-        meetingNumber: session.title || "Session",
-      });
-      router.refresh();
+      await handleResponse(response);
     } catch (caught) {
       setResultFailure({
         message: describeGeolocationError(caught),
@@ -320,6 +463,13 @@ export function ActiveAttendanceSessionCard({
                 </Link>
               </Button>
             </div>
+          ) : pendingSync ? (
+            <div className="max-w-[14rem] text-right">
+              <Badge variant="warning">Menunggu sinkron</Badge>
+              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
+                Tersimpan di perangkat. Akan dikirim saat online.
+              </p>
+            </div>
           ) : checkIn ? (
             <>
               <div className="text-right">
@@ -397,6 +547,22 @@ export function ActiveAttendanceSessionCard({
           </Alert>
         ) : null}
       </div>
+
+      {mode === "student" && pendingSync ? (
+        <PendingSyncNote className="mt-4" />
+      ) : null}
+
+      {mode === "student" && sessionExpired ? (
+        <Alert
+          variant="warning"
+          className="mt-4"
+        >
+          <p className="text-xs leading-relaxed">
+            Sesi kamu berakhir. Masuk lagi untuk menyinkronkan absen yang
+            menunggu.
+          </p>
+        </Alert>
+      ) : null}
 
       {mode === "student" ? (
         <>

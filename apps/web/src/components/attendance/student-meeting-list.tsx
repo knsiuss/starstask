@@ -23,9 +23,11 @@ import {
   type CheckInResultSuccess,
 } from "@/components/attendance/check-in-result-dialog";
 import { LocationPermissionDialog } from "@/components/attendance/location-permission-dialog";
+import { PendingSyncNote } from "@/components/attendance/pending-sync-note";
 import { describeCheckInFailure } from "@/lib/attendance/check-in-errors";
 import type { StudentAttendanceMeeting } from "@/lib/attendance/meeting-types";
 import type { AttendanceCheckInStatus } from "@/lib/attendance/types";
+import { enqueue, list as listOutbox } from "@/lib/offline/checkin-outbox";
 import {
   describeGeolocationError,
   getCurrentPosition,
@@ -126,7 +128,6 @@ function StudentMeetingCard({
   meeting: StudentAttendanceMeeting;
   identity: { fullName: string | null; nim: string | null };
 }) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(false);
   const [fullName, setFullName] = React.useState(identity.fullName ?? "");
   const [nim, setNim] = React.useState(identity.nim ?? "");
@@ -142,11 +143,89 @@ function StudentMeetingCard({
     fullName?: string;
     nim?: string;
   }>({});
+  const [pendingSync, setPendingSync] = React.useState(false);
+  const [sessionExpired, setSessionExpired] = React.useState(false);
   const pendingCheckIn = React.useRef(false);
+  const router = useRouter();
 
   const identityReady = Boolean(identity.fullName && identity.nim);
   const hasCheckInTime = checkIn !== null;
   const isOpenPhase = meeting.phase === "open";
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const reconcileAsync = async () => {
+      try {
+        const entries = await listOutbox();
+
+        if (cancelled) {
+          return;
+        }
+
+        const mine = entries.filter(
+          (entry) =>
+            entry.kind === "attendance-meeting" &&
+            entry.sessionId === meeting.sessionId,
+        );
+
+        const latest = mine[mine.length - 1];
+
+        if (!latest) {
+          return;
+        }
+
+        if (latest.status === "sent" && latest.serverStatus) {
+          const serverStatus = latest.serverStatus;
+
+          setPendingSync(false);
+          setSessionExpired(false);
+          setCheckIn((current) => ({
+            status: serverStatus,
+            checkedInAt: new Date(latest.createdAt).toISOString(),
+            distanceM: current?.distanceM ?? null,
+          }));
+          return;
+        }
+
+        if (latest.status === "failed") {
+          setPendingSync(false);
+          setResultFailure({
+            message: describeCheckInFailure(
+              latest.lastError ?? undefined,
+              undefined,
+            ),
+            distanceM: null,
+            radiusM: meeting.radiusM,
+            canRetry: false,
+          });
+          return;
+        }
+
+        if (latest.status === "pending_sync" || latest.status === "syncing") {
+          setPendingSync(true);
+          setSessionExpired(latest.lastError === "http_401");
+        }
+      } catch (error) {
+        console.error("[offline] could not read the outbox", {
+          name: error instanceof Error ? error.name : typeof error,
+        });
+      }
+    };
+
+    void reconcileAsync();
+
+    const handleOnline = () => {
+      void reconcileAsync();
+    };
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [meeting.sessionId, meeting.radiusM]);
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -214,21 +293,76 @@ function StudentMeetingCard({
         return;
       }
 
-      const response = await fetch(
-        `/api/attendance/meetings/${meeting.sessionId}/checkin`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+
+      let response: Response | null = null;
+
+      try {
+        if (offline) {
+          // Skip the fetch entirely: the browser would throw a TypeError
+          // anyway, and we want the enqueue path to be deterministic.
+          response = null;
+        } else {
+          response = await fetch(
+            `/api/attendance/meetings/${meeting.sessionId}/checkin`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              // capturedAt is audit metadata for the server path's existing
+              // freshness check; the outbox replay omits it (L1).
+              body: JSON.stringify({
+                fullName: fullName.trim(),
+                nim: nim.trim(),
+                latitude,
+                longitude,
+                accuracy,
+                capturedAt,
+              }),
+            },
+          );
+        }
+      } catch (fetchError) {
+        // Network-layer failure (TypeError): queue the tap instead of
+        // surfacing an error. `capturedAt` stays inside the outbox record.
+        if (!(fetchError instanceof TypeError)) {
+          throw fetchError;
+        }
+
+        response = null;
+      }
+
+      if (response === null) {
+        try {
+          await enqueue("attendance-meeting", meeting.sessionId, {
             fullName: fullName.trim(),
             nim: nim.trim(),
             latitude,
             longitude,
             accuracy,
-            capturedAt,
-          }),
-        },
-      );
+          });
+          setPendingSync(true);
+          setSessionExpired(false);
+          setIsOpen(false);
+          setPermissionOpen(false);
+        } catch (enqueueError) {
+          console.error("[offline] could not enqueue the check-in", {
+            name:
+              enqueueError instanceof Error
+                ? enqueueError.name
+                : typeof enqueueError,
+          });
+          setResultFailure({
+            message:
+              "Tidak bisa menyimpan check-in di perangkat ini. Coba lagi saat online.",
+            distanceM: null,
+            radiusM: null,
+            canRetry: isOpenPhase,
+          });
+          setPermissionOpen(false);
+        }
+
+        return;
+      }
 
       const body = (await response.json().catch(() => null)) as {
         data?: {
@@ -400,7 +534,14 @@ function StudentMeetingCard({
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-2 sm:flex-col sm:items-end sm:self-center">
-          {checkIn ? (
+          {pendingSync ? (
+            <div className="max-w-[14rem] text-right">
+              <Badge variant="warning">Menunggu sinkron</Badge>
+              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
+                Tersimpan di perangkat. Akan dikirim saat online.
+              </p>
+            </div>
+          ) : checkIn ? (
             <div className="text-right">
               <Badge variant={STATUS_BADGE[checkIn.status]}>
                 {checkIn.status === "present" ? (
@@ -489,6 +630,20 @@ function StudentMeetingCard({
             Add your full name and NIM in your profile before checking in. The
             server rejects a name or NIM that does not match your verified
             profile.
+          </p>
+        </Alert>
+      ) : null}
+
+      {pendingSync ? <PendingSyncNote className="mt-4" /> : null}
+
+      {sessionExpired ? (
+        <Alert
+          variant="warning"
+          className="mt-4"
+        >
+          <p className="text-xs leading-relaxed">
+            Sesi kamu berakhir. Masuk lagi untuk menyinkronkan absen yang
+            menunggu.
           </p>
         </Alert>
       ) : null}
