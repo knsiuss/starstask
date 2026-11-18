@@ -203,7 +203,7 @@ export async function ManageContentTab({
               href={filterHref(classSlug, filter.status, search || undefined)}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0",
                 isActive
                   ? "border-accent bg-accent-soft text-accent"
                   : "border-border bg-surface text-muted-foreground hover:text-foreground",

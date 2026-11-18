@@ -85,18 +85,18 @@ export function CourseFilterPanel({
       ) : null}
 
       <div className="flex items-center justify-between gap-2 px-1">
-        <h3 className="text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground">
+        <h3 className="text-muted-foreground text-xs font-semibold tracking-[0.06em] uppercase">
           Courses
         </h3>
         <button
           type="submit"
-          className="text-accent text-xs font-medium hover:underline"
+          className="text-accent inline-flex min-h-9 cursor-pointer items-center px-2 text-xs font-medium hover:underline sm:min-h-0 sm:px-0"
         >
           Apply
         </button>
       </div>
 
-      <label className="border-border hover:bg-subtle flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-2 text-xs font-medium">
+      <label className="border-border hover:bg-subtle flex min-h-11 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium sm:min-h-0 sm:px-2.5">
         <input
           type="checkbox"
           name="all"

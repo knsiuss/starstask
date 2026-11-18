@@ -11,11 +11,11 @@ export default function ActionCenterLoading() {
       <Skeleton className="mt-2 h-8 w-56" />
       <Skeleton className="mt-2 h-4 w-96 max-w-full" />
       <Skeleton className="mt-6 h-10 w-full" />
-      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Skeleton className="h-20" />
-        <Skeleton className="h-20" />
-        <Skeleton className="h-20" />
-        <Skeleton className="h-20" />
+      <div className="mt-6 grid grid-cols-4 gap-1.5 sm:gap-3">
+        <Skeleton className="h-16 sm:h-20" />
+        <Skeleton className="h-16 sm:h-20" />
+        <Skeleton className="h-16 sm:h-20" />
+        <Skeleton className="h-16 sm:h-20" />
       </div>
       <Skeleton className="mt-4 h-64 w-full" />
     </div>

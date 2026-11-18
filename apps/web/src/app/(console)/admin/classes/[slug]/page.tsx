@@ -102,7 +102,7 @@ export default async function AdminClassPage({ params }: AdminClassPageProps) {
         </div>
       </header>
 
-      <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mt-6 grid grid-cols-4 gap-1.5 sm:gap-3">
         <Count
           label="Members"
           value={counts.members}

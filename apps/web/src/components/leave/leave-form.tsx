@@ -519,7 +519,7 @@ export function LeaveForm({
             title="Absence period"
           />
 
-          <div className="mt-3 grid grid-cols-1 gap-2.5 min-[350px]:grid-cols-2">
+          <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <div className="min-w-0">
               <Label
                 htmlFor="leaveStartDate"
@@ -873,7 +873,7 @@ export function LeaveForm({
 
         {/* Sits directly on top of the fixed mobile tab bar (3.75rem), so the
             content scrolls behind it and never peeks through a gap. */}
-        <div className="bg-surface/95 border-border fixed inset-x-0 bottom-15 z-30 flex gap-2.5 border-t px-4 py-3 backdrop-blur lg:static lg:mt-1 lg:justify-end lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        <div className="bg-surface/95 border-border fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-30 flex gap-2.5 border-t px-4 py-3 backdrop-blur lg:static lg:mt-1 lg:justify-end lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Button
             type="submit"
             variant="secondary"

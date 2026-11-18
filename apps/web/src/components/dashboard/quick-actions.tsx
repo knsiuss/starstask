@@ -39,7 +39,7 @@ export function QuickActions() {
   return (
     <section
       aria-labelledby="quick-actions-heading"
-      className="border-border bg-surface rounded-xl border p-4"
+      className="border-border bg-surface hidden rounded-xl border p-4 lg:block"
     >
       <SectionHeader
         id="quick-actions-heading"

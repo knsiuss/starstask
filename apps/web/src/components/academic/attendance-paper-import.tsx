@@ -225,7 +225,7 @@ export function AttendancePaperImport({
         Hadir: <strong>{presentCount}</strong> / {entries.length}
       </p>
 
-      <div className="mt-3 max-h-72 overflow-y-auto">
+      <div className="mt-3 max-h-72 overflow-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-muted-foreground text-left text-xs">

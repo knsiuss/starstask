@@ -106,7 +106,7 @@ export function ConversationListPanel({
           type="button"
           aria-label="New message"
           onClick={onCompose}
-          className="text-muted-foreground hover:text-foreground flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted-foreground hover:text-foreground hover:bg-muted flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-9 sm:w-9"
         >
           <PencilLine
             aria-hidden="true"
@@ -133,7 +133,7 @@ export function ConversationListPanel({
               type="button"
               aria-label="Clear search"
               onClick={() => setQuery("")}
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition-colors"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full transition-colors sm:right-2 sm:h-7 sm:w-7"
             >
               <X
                 aria-hidden="true"
@@ -160,7 +160,7 @@ export function ConversationListPanel({
               aria-selected={tab === item.key}
               onClick={() => setTab(item.key)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+                "min-h-10 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-0 sm:px-3 sm:py-1.5",
                 tab === item.key
                   ? "bg-accent text-white"
                   : "bg-muted text-muted-foreground hover:text-foreground",

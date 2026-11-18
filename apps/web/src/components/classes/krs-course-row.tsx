@@ -126,8 +126,8 @@ export function KrsCourseRow({
             ))}
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="min-w-0 space-y-1">
             <Label htmlFor={`start-${course.key}`}>Start</Label>
             <Input
               id={`start-${course.key}`}
@@ -138,10 +138,10 @@ export function KrsCourseRow({
                   startTime: event.target.value || null,
                 })
               }
-              className="h-11"
+              className="h-11 min-w-0"
             />
           </div>
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <Label htmlFor={`end-${course.key}`}>End</Label>
             <Input
               id={`end-${course.key}`}
@@ -152,7 +152,7 @@ export function KrsCourseRow({
                   endTime: event.target.value || null,
                 })
               }
-              className="h-11"
+              className="h-11 min-w-0"
             />
           </div>
         </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { CreateSubjectForm } from "@/components/classes/create-subject-form";
+import { ShareCourseButton } from "@/components/classes/share-course-dialog";
 import { StatusBadge } from "@/components/classes/status-badge";
 import { ClassWorkspaceTabs } from "@/components/classes/class-workspace-tabs";
 import { getSessionUser } from "@/lib/auth/session";
@@ -199,10 +200,22 @@ export default async function ClassCoursesPage({ params }: CoursesPageProps) {
                       className="text-muted-foreground/70 h-4 w-4 shrink-0"
                     />
                   ) : (
-                    <ChevronRight
-                      aria-hidden="true"
-                      className="text-muted-foreground/70 h-4 w-4 shrink-0"
-                    />
+                    <div className="relative z-10 flex shrink-0 items-center gap-2">
+                      {role.canManage &&
+                      found.status === "active" &&
+                      course.status === "active" ? (
+                        <ShareCourseButton
+                          classSlug={found.slug}
+                          courseId={course.id}
+                          courseName={course.name}
+                          className="min-h-9"
+                        />
+                      ) : null}
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="text-muted-foreground/70 h-4 w-4 shrink-0"
+                      />
+                    </div>
                   )}
                 </div>
               </li>

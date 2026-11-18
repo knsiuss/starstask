@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ClassSubjectView } from "@starstask/contracts";
 
 import { CourseAdminMenu } from "@/components/classes/course-admin-menu";
+import { ShareCourseButton } from "@/components/classes/share-course-dialog";
 import {
   CourseWorkspaceTabs,
   type CourseTab,
@@ -119,12 +120,23 @@ export function CourseWorkspaceHeader({
         </div>
 
         {canManage ? (
-          <CourseAdminMenu
-            classSlug={classSlug}
-            courseId={course.id}
-            courseStatus={course.status}
-            classActive={classActive}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            {classActive && course.status === "active" ? (
+              <ShareCourseButton
+                classSlug={classSlug}
+                courseId={course.id}
+                courseName={course.name}
+                label="Share course"
+                className="min-h-9"
+              />
+            ) : null}
+            <CourseAdminMenu
+              classSlug={classSlug}
+              courseId={course.id}
+              courseStatus={course.status}
+              classActive={classActive}
+            />
+          </div>
         ) : null}
       </header>
 

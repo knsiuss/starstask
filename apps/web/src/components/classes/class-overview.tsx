@@ -95,7 +95,7 @@ export function ClassOverview({
         <div className="order-1 xl:order-none">
           <OverviewStats stats={data.stats} />
         </div>
-        <div className="order-2 xl:order-none">
+        <div className="order-2 hidden lg:block xl:order-none">
           <ClassQuickActions
             classSlug={classSlug}
             canManage={canManage}

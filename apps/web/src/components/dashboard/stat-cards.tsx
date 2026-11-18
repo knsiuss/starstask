@@ -18,6 +18,7 @@ type StatTone = "accent" | "warning" | "danger" | "neutral";
 
 type StatItem = {
   label: string;
+  shortLabel: string;
   hint: string;
   value: number;
   icon: LucideIcon;
@@ -41,6 +42,7 @@ export function StatCards({ stats }: StatCardsProps) {
   const items: StatItem[] = [
     {
       label: "Total assignments",
+      shortLabel: "Tasks",
       hint: "Across active classes",
       value: stats.totalTasks,
       icon: ClipboardList,
@@ -50,6 +52,7 @@ export function StatCards({ stats }: StatCardsProps) {
     },
     {
       label: "Due in 7 days",
+      shortLabel: "Due soon",
       hint: stats.dueSoon > 0 ? "Upcoming deadlines" : "Nothing due soon",
       value: stats.dueSoon,
       icon: CalendarClock,
@@ -58,6 +61,7 @@ export function StatCards({ stats }: StatCardsProps) {
     },
     {
       label: "Past deadline",
+      shortLabel: "Overdue",
       hint: stats.pastDeadline > 0 ? "Needs review" : "All on track",
       value: stats.pastDeadline,
       icon: TriangleAlert,
@@ -66,6 +70,7 @@ export function StatCards({ stats }: StatCardsProps) {
     },
     {
       label: "My classes",
+      shortLabel: "Classes",
       hint: "Active membership",
       value: stats.classCount,
       icon: GraduationCap,
@@ -75,21 +80,24 @@ export function StatCards({ stats }: StatCardsProps) {
   ];
 
   return (
-    <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-4 gap-1.5 sm:gap-3">
       {items.map((item) => (
-        <li key={item.label}>
+        <li
+          key={item.label}
+          className="min-w-0"
+        >
           <Link
             href={item.href}
-            className="border-border bg-surface hover:border-accent/40 hover:bg-hover/40 focus-visible:outline-accent group flex h-full flex-col justify-between gap-2.5 rounded-xl border px-3.5 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3.5"
+            className="border-border bg-surface hover:border-accent/40 hover:bg-hover/40 focus-visible:outline-accent group flex h-full flex-col items-center justify-between gap-1.5 rounded-xl border px-1.5 py-2.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:items-stretch sm:gap-2.5 sm:px-4 sm:py-3.5 sm:text-left"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-muted-foreground truncate text-xs font-medium">
+            <div className="flex items-center justify-center gap-2 sm:justify-between">
+              <span className="text-muted-foreground hidden truncate text-xs font-medium sm:inline">
                 {item.label}
               </span>
               <span
                 aria-hidden="true"
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg sm:h-7 sm:w-7",
                   TONE_CLASSES[item.tone],
                 )}
               >
@@ -97,14 +105,14 @@ export function StatCards({ stats }: StatCardsProps) {
               </span>
             </div>
 
-            <div className="flex items-end justify-between gap-2">
+            <div className="flex w-full items-end justify-center gap-2 sm:justify-between">
               <div className="min-w-0">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-foreground text-2xl leading-none font-semibold tracking-tight tabular-nums">
+                <div className="flex items-baseline justify-center gap-1 sm:justify-start sm:gap-1.5">
+                  <span className="text-foreground text-xl leading-none font-semibold tracking-tight tabular-nums sm:text-2xl">
                     {formatCount(item.value)}
                   </span>
                   {item.delta && item.delta > 0 ? (
-                    <span className="text-accent inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums">
+                    <span className="text-accent hidden items-center gap-0.5 text-[11px] font-semibold tabular-nums sm:inline-flex">
                       <TrendingUp
                         aria-hidden="true"
                         className="h-3 w-3"
@@ -113,7 +121,10 @@ export function StatCards({ stats }: StatCardsProps) {
                     </span>
                   ) : null}
                 </div>
-                <span className="text-muted-foreground mt-1 block truncate text-[11px]">
+                <span className="text-muted-foreground mt-1 block truncate text-[11px] font-medium sm:hidden">
+                  {item.shortLabel}
+                </span>
+                <span className="text-muted-foreground mt-1 hidden truncate text-[11px] sm:block">
                   {item.hint}
                 </span>
               </div>

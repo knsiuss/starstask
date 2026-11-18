@@ -121,7 +121,7 @@ export function SafetyNumberDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
-        className="border-border bg-surface text-foreground w-full max-w-md rounded-2xl border p-6 shadow-xl"
+        className="border-border bg-surface text-foreground max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border p-6 shadow-xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -151,7 +151,7 @@ export function SafetyNumberDialog({
             type="button"
             onClick={onClose}
             aria-label="Close safety number dialog"
-            className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-8 sm:w-8"
           >
             <X
               aria-hidden="true"
