@@ -1077,7 +1077,9 @@ export interface Database {
             | "invitation"
             | "admin_assignment"
             | "platform_assignment"
-            | "name_match";
+            | "lecturer_assignment"
+            | "name_match"
+            | "student_created";
           joined_at: string;
         };
         Insert: {
@@ -1088,7 +1090,9 @@ export interface Database {
             | "invitation"
             | "admin_assignment"
             | "platform_assignment"
-            | "name_match";
+            | "lecturer_assignment"
+            | "name_match"
+            | "student_created";
           joined_at?: string;
         };
         Update: {
@@ -1097,7 +1101,9 @@ export interface Database {
             | "invitation"
             | "admin_assignment"
             | "platform_assignment"
-            | "name_match";
+            | "lecturer_assignment"
+            | "name_match"
+            | "student_created";
         };
         Relationships: [
           {
@@ -1125,7 +1131,22 @@ export interface Database {
         Update: {
           subject_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "class_member_courses_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_member_courses_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       class_admins: {
         Row: {
@@ -1560,6 +1581,8 @@ export interface Database {
           attendance_opened_at: string | null;
           attendance_closed_at: string | null;
           attendance_finalized_at: string | null;
+          bap_topic: string | null;
+          bap_notes: string | null;
           late_after_minutes: number;
         };
         Insert: {
@@ -1595,6 +1618,8 @@ export interface Database {
           attendance_opened_at?: string | null;
           attendance_closed_at?: string | null;
           attendance_finalized_at?: string | null;
+          bap_topic?: string | null;
+          bap_notes?: string | null;
           late_after_minutes?: number;
         };
         Update: {
@@ -1624,6 +1649,8 @@ export interface Database {
           attendance_opened_at?: string | null;
           attendance_closed_at?: string | null;
           attendance_finalized_at?: string | null;
+          bap_topic?: string | null;
+          bap_notes?: string | null;
           late_after_minutes?: number;
         };
         Relationships: [
@@ -5399,6 +5426,14 @@ export interface Database {
         Args: { p_other: string };
         Returns: string;
       };
+      create_group_dm_conversation: {
+        Args: { p_title: string; p_member_ids: string[] };
+        Returns: string;
+      };
+      toggle_dm_message_reaction: {
+        Args: { p_message_id: string; p_emoji: string };
+        Returns: Json;
+      };
       create_or_get_course: {
         Args: {
           p_name: string;
@@ -6000,7 +6035,12 @@ export interface Database {
         Returns: boolean;
       };
       close_attendance_meeting: {
-        Args: { p_session_id: string; p_finalize?: boolean };
+        Args: {
+          p_session_id: string;
+          p_finalize?: boolean;
+          p_bap_topic?: string | null;
+          p_bap_notes?: string | null;
+        };
         Returns: number;
       };
       reopen_attendance_meeting: {
