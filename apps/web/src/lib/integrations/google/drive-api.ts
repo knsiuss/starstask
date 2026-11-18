@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 import { GOOGLE_DRIVE_API_BASE } from "@/lib/integrations/google/drive-config";
 

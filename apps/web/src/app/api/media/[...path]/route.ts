@@ -6,7 +6,7 @@ import {
   enforceRateLimit,
   getClientIdentifier,
 } from "@/lib/security/rate-limit";
-import { getB2Config } from "@/lib/storage/b2";
+import { getB2Config, isValidMediaProxyKey } from "@/lib/storage/b2";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +20,8 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   jpeg: "image/jpeg",
 };
 
-const KEY_PATTERN = /^[a-z-]+\/[A-Za-z0-9-]+\/[A-Za-z0-9-]+\.(png|jpe?g)$/;
-
 /**
- * GET /api/media/{kind}/{ownerId}/{objectName}.{ext}
+ * GET /api/media/{avatars|class-media}/.../{objectName}.{ext}
  * Streams one image from B2. The key shape is validated so this route can
  * never reach attachment objects (different namespace, no dots).
  */
@@ -44,7 +42,7 @@ export async function GET(
     const extension = key.split(".").pop()?.toLowerCase() ?? "";
     const mimeType = MIME_BY_EXTENSION[extension];
 
-    if (!KEY_PATTERN.test(key) || !mimeType) {
+    if (!isValidMediaProxyKey(key) || !mimeType) {
       throw new ApiError(400, "invalid_path", "Invalid media path.");
     }
 

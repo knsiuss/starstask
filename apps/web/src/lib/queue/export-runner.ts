@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 /**
  * Async export runners. Each runner mirrors one existing sync export route
@@ -435,6 +435,52 @@ export async function storeExportResult(
   return path;
 }
 
+async function assertWorkerClassManager(
+  userId: string,
+  classId: string,
+): Promise<void> {
+  if (!userId || !classId) {
+    throw new Error("FORBIDDEN_EXPORT_JOB");
+  }
+
+  const admin = createSupabaseAdminClient();
+  const [platformAdminRes, classAdminRes, academicAdminRes] = await Promise.all(
+    [
+      admin
+        .from("platform_admins")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      admin
+        .from("class_admins")
+        .select("class_id")
+        .eq("class_id", classId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      admin
+        .from("class_admin_assignments")
+        .select("id")
+        .eq("class_id", classId)
+        .eq("user_id", userId)
+        .is("revoked_at", null)
+        .maybeSingle(),
+    ],
+  );
+
+  if (platformAdminRes.error || classAdminRes.error || academicAdminRes.error) {
+    throw new Error("EXPORT_AUTHZ_CHECK_FAILED");
+  }
+
+  const isAllowed =
+    platformAdminRes.data !== null ||
+    classAdminRes.data !== null ||
+    academicAdminRes.data !== null;
+
+  if (!isAllowed) {
+    throw new Error("FORBIDDEN_EXPORT_JOB");
+  }
+}
+
 /** Runs the matching runner; throws with a sanitized category on failure. */
 export async function runExportJob(job: ExportJob): Promise<ExportResult> {
   const runner = RUNNERS[job.kind];
@@ -442,6 +488,9 @@ export async function runExportJob(job: ExportJob): Promise<ExportResult> {
   if (!runner) {
     throw new Error(`UNKNOWN_EXPORT_KIND:${job.kind}`);
   }
+
+  const classId = String(job.params.classId ?? "");
+  await assertWorkerClassManager(job.user_id, classId);
 
   return runWithWorkerSupabaseClient(createSupabaseAdminClient(), () =>
     runner(job),

@@ -41,7 +41,14 @@ export function safeRedirectPath(
     return fallback;
   }
 
-  if (parsed.pathname === "/login" || parsed.pathname.startsWith("/auth")) {
+  if (
+    parsed.pathname === "/login" ||
+    parsed.pathname.startsWith("/auth") ||
+    parsed.pathname === "/onboarding" ||
+    parsed.pathname.startsWith("/onboarding/") ||
+    parsed.pathname === "/api" ||
+    parsed.pathname.startsWith("/api/")
+  ) {
     return fallback;
   }
 

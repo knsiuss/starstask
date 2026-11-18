@@ -50,7 +50,11 @@ export type ClassLookupMatch = {
 };
 
 function sanitizePostgrestFilterValue(value: string): string {
-  return value.replace(/[,()*\\]/g, "").trim();
+  return value.replace(/[,()*\\_%]/g, "").trim();
+}
+
+function hasMinimumAlnum(value: string): boolean {
+  return value.replace(/[^A-Za-z0-9]/g, "").length >= 2;
 }
 
 /**
@@ -80,6 +84,19 @@ export async function POST(request: Request) {
     }
 
     const admin = createSupabaseAdminClient();
+    const { data: uniMemberships, error: uniError } = await admin
+      .from("university_memberships")
+      .select("university_id")
+      .eq("user_id", session.user.id)
+      .eq("status", "active");
+
+    if (uniError) {
+      throw new ApiError(500, "internal_error", "Could not look up classes.");
+    }
+
+    const scopedUniversityIds = [
+      ...new Set((uniMemberships ?? []).map((row) => row.university_id)),
+    ];
     const matches = new Map<string, ClassRow>();
 
     if ("classCode" in parsed.data) {
@@ -88,16 +105,17 @@ export async function POST(request: Request) {
         parsed.data.classCode.trim().toUpperCase(),
       );
 
-      const [bySlug, byCode] = await Promise.all([
-        admin
-          .from("classes")
-          .select(
-            "id, slug, name, class_code, semester, academic_year, join_policy",
-          )
-          .eq("status", "active")
-          .eq("slug", identity.slug)
-          .limit(5),
-        code
+      let slugQuery = admin
+        .from("classes")
+        .select(
+          "id, slug, name, class_code, semester, academic_year, join_policy",
+        )
+        .eq("status", "active")
+        .eq("slug", identity.slug)
+        .limit(5);
+
+      let codeQuery =
+        code && hasMinimumAlnum(code)
           ? admin
               .from("classes")
               .select(
@@ -106,7 +124,18 @@ export async function POST(request: Request) {
               .eq("status", "active")
               .or(`class_code.ilike.${code},name.ilike.%${code}%`)
               .limit(10)
-          : Promise.resolve({ data: [] as ClassRow[] }),
+          : null;
+
+      if (scopedUniversityIds.length > 0) {
+        slugQuery = slugQuery.in("university_id", scopedUniversityIds);
+        if (codeQuery) {
+          codeQuery = codeQuery.in("university_id", scopedUniversityIds);
+        }
+      }
+
+      const [bySlug, byCode] = await Promise.all([
+        slugQuery,
+        codeQuery ?? Promise.resolve({ data: [] as ClassRow[] }),
       ]);
 
       for (const row of (bySlug.data ?? []) as ClassRow[]) {
@@ -119,7 +148,7 @@ export async function POST(request: Request) {
     } else {
       const term = sanitizePostgrestFilterValue(parsed.data.className.trim());
 
-      if (!term) {
+      if (!term || !hasMinimumAlnum(term)) {
         throw new ApiError(
           422,
           "validation_error",
@@ -127,7 +156,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const { data } = await admin
+      let nameQuery = admin
         .from("classes")
         .select(
           "id, slug, name, class_code, semester, academic_year, join_policy",
@@ -135,6 +164,12 @@ export async function POST(request: Request) {
         .eq("status", "active")
         .or(`slug.ilike.${term},class_code.ilike.${term},name.ilike.%${term}%`)
         .limit(10);
+
+      if (scopedUniversityIds.length > 0) {
+        nameQuery = nameQuery.in("university_id", scopedUniversityIds);
+      }
+
+      const { data } = await nameQuery;
 
       for (const row of (data ?? []) as ClassRow[]) {
         matches.set(row.id, row);
@@ -151,7 +186,7 @@ export async function POST(request: Request) {
     const [membershipsRes, subjectsRes] = await Promise.all([
       admin
         .from("class_members")
-        .select("class_id")
+        .select("class_id, course_scope")
         .eq("user_id", session.user.id)
         .in("class_id", classIds),
       admin
@@ -162,16 +197,43 @@ export async function POST(request: Request) {
         .order("name", { ascending: true }),
     ]);
 
-    const memberClassIds = new Set(
-      (membershipsRes.data ?? []).map(
-        (row) => (row as { class_id: string }).class_id,
-      ),
-    );
+    const memberClassIds = new Set<string>();
+    const selectedClassIds: string[] = [];
+
+    for (const row of membershipsRes.data ?? []) {
+      const typed = row as { class_id: string; course_scope?: string | null };
+      memberClassIds.add(typed.class_id);
+      if (typed.course_scope === "selected") {
+        selectedClassIds.push(typed.class_id);
+      }
+    }
+
+    const allowedSubjectsByClass = new Map<string, Set<string>>();
+
+    if (selectedClassIds.length > 0) {
+      const { data: enrolledRows } = await admin
+        .from("class_member_courses")
+        .select("class_id, subject_id")
+        .eq("user_id", session.user.id)
+        .in("class_id", selectedClassIds);
+
+      for (const classId of selectedClassIds) {
+        allowedSubjectsByClass.set(classId, new Set());
+      }
+
+      for (const row of enrolledRows ?? []) {
+        allowedSubjectsByClass.get(row.class_id)?.add(row.subject_id);
+      }
+    }
 
     const subjectsByClass = new Map<string, ClassLookupMatch["subjects"]>();
 
     for (const row of (subjectsRes.data ?? []) as SubjectRow[]) {
       if (row.id === row.class_id) {
+        continue;
+      }
+      const allowedSet = allowedSubjectsByClass.get(row.class_id);
+      if (allowedSet && !allowedSet.has(row.id)) {
         continue;
       }
       const list = subjectsByClass.get(row.class_id) ?? [];

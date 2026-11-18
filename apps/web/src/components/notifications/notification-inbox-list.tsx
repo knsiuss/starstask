@@ -98,10 +98,27 @@ export function NotificationInboxList({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extraItems, setExtraItems] = useState<NotificationInboxItem[]>([]);
-  const [nextCursor, setNextCursor] = useState(initialNextCursor);
-  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [hasLoadedMore, setHasLoadedMore] = useState(false);
+  const [cursorState, setCursorState] = useState(initialNextCursor);
+  const [hasMoreState, setHasMoreState] = useState(initialHasMore);
+  const [prevUnreadOnly, setPrevUnreadOnly] = useState(unreadOnly);
+
+  if (unreadOnly !== prevUnreadOnly) {
+    setPrevUnreadOnly(unreadOnly);
+    setExtraItems([]);
+    setHasLoadedMore(false);
+    setCursorState(initialNextCursor);
+    setHasMoreState(initialHasMore);
+  }
+
+  const nextCursor = hasLoadedMore ? cursorState : initialNextCursor;
+  const hasMore = hasLoadedMore ? hasMoreState : initialHasMore;
   const now = new Date(nowIso).getTime();
-  const items = [...initialItems, ...extraItems];
+  const initialIds = new Set(initialItems.map((item) => item.id));
+  const items = [
+    ...initialItems,
+    ...extraItems.filter((item) => !initialIds.has(item.id)),
+  ];
 
   async function markRead(
     body: { all: true } | { ids: string[] },
@@ -129,6 +146,11 @@ export function NotificationInboxList({
 
     try {
       await markRead({ all: true }, true);
+      const readAt = new Date().toISOString();
+
+      setExtraItems((current) =>
+        current.map((item) => (item.readAt ? item : { ...item, readAt })),
+      );
     } catch {
       setError("Could not update your notifications. Try again.");
     } finally {
@@ -141,6 +163,11 @@ export function NotificationInboxList({
 
     try {
       await markRead({ ids: [id] }, true);
+      const readAt = new Date().toISOString();
+
+      setExtraItems((current) =>
+        current.map((item) => (item.id === id ? { ...item, readAt } : item)),
+      );
     } catch {
       setError("Could not update your notifications. Try again.");
     }
@@ -173,8 +200,9 @@ export function NotificationInboxList({
       const fresh = page.items.filter((item) => !seen.has(item.id));
 
       setExtraItems((current) => [...current, ...fresh]);
-      setNextCursor(page.nextCursor);
-      setHasMore(page.hasMore);
+      setHasLoadedMore(true);
+      setCursorState(page.nextCursor);
+      setHasMoreState(page.hasMore);
     } catch {
       setError("Could not load more notifications. Try again.");
     } finally {
@@ -222,6 +250,13 @@ export function NotificationInboxList({
               now={now}
               onOpen={() => {
                 if (!item.readAt) {
+                  const readAt = new Date().toISOString();
+
+                  setExtraItems((current) =>
+                    current.map((entry) =>
+                      entry.id === item.id ? { ...entry, readAt } : entry,
+                    ),
+                  );
                   void markRead({ ids: [item.id] }).catch(() => undefined);
                 }
               }}

@@ -9,10 +9,11 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import type {
-  CourseCommentView,
-  CourseMaterialKind,
-  CourseMaterialView,
+import {
+  isSafeHttpUrl,
+  type CourseCommentView,
+  type CourseMaterialKind,
+  type CourseMaterialView,
 } from "@starstask/contracts";
 import { formatDate } from "@starstask/shared";
 
@@ -182,7 +183,8 @@ export function CourseMeetingCards({
                           </div>
 
                           <div className="flex items-center gap-1">
-                            {material.resource_url ? (
+                            {material.resource_url &&
+                            isSafeHttpUrl(material.resource_url) ? (
                               <Button
                                 asChild
                                 variant="ghost"

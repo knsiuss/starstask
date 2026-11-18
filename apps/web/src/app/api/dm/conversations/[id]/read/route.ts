@@ -1,22 +1,26 @@
 import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/api/errors";
+import { getSessionUser } from "@/lib/auth/session";
 import { markConversationRead } from "@/lib/db/dm-v2";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:read",
-      identifier: getClientIdentifier(req),
+      identifier: session.user.id,
       limit: 120,
       windowSeconds: 60,
       onBackendFailure: "closed",

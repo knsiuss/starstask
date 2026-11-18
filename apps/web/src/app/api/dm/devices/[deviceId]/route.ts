@@ -5,10 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getSessionUser } from "@/lib/auth/session";
 import { DataAccessError } from "@/lib/db/assignments";
 import { revokeOwnDevice } from "@/lib/db/dm-devices";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -16,21 +13,21 @@ type Params = { params: Promise<{ deviceId: string }> };
 
 const deviceIdSchema = z.string().trim().min(1).max(128);
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(_request: Request, { params }: Params) {
   try {
-    await enforceRateLimit({
-      action: "dm:devices:delete",
-      identifier: getClientIdentifier(request),
-      limit: 30,
-      windowSeconds: 60,
-      onBackendFailure: "closed",
-    });
-
     const session = await getSessionUser();
 
     if (!session) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
+
+    await enforceRateLimit({
+      action: "dm:devices:delete",
+      identifier: session.user.id,
+      limit: 30,
+      windowSeconds: 60,
+      onBackendFailure: "closed",
+    });
 
     const { deviceId } = await params;
     const parsedId = deviceIdSchema.safeParse(deviceId);

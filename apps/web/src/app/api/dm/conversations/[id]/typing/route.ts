@@ -1,49 +1,62 @@
 import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/api/errors";
+import { getSessionUser } from "@/lib/auth/session";
+import { DataAccessError } from "@/lib/db/assignments";
 import { getTyping, setTyping } from "@/lib/db/dm-v2";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-async function limit(request: Request, action: string) {
+async function limit(userId: string, action: string) {
   await enforceRateLimit({
     action,
-    identifier: getClientIdentifier(request),
+    identifier: userId,
     limit: 120,
     windowSeconds: 60,
     onBackendFailure: "closed",
   });
 }
 
-function limitResponse(error: unknown): NextResponse | null {
+function errorResponse(error: unknown, fallbackMessage: string): NextResponse {
   if (error instanceof ApiError) {
     return NextResponse.json(
       { error: error.message },
       { status: error.status },
     );
   }
-  return null;
+
+  if (error instanceof SyntaxError) {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 },
+    );
+  }
+
+  if (error instanceof DataAccessError && error.code === "42501") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
 }
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await limit(req, "dm:typing:get");
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
+    await limit(session.user.id, "dm:typing:get");
     const { id } = await params;
+
     return NextResponse.json({ typing: await getTyping(id) });
   } catch (error) {
-    const limited = limitResponse(error);
-    if (limited) return limited;
-    return NextResponse.json(
-      { error: "Could not load typing" },
-      { status: 500 },
-    );
+    return errorResponse(error, "Could not load typing");
   }
 }
 
@@ -52,23 +65,20 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await limit(req, "dm:typing:set");
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
+    await limit(session.user.id, "dm:typing:set");
     const { id } = await params;
     const body = await req.json();
-    await setTyping(id, Boolean(body?.isTyping));
+
+    await setTyping(id, Boolean(body?.isTyping ?? body?.is_typing));
+
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const limited = limitResponse(error);
-    if (limited) return limited;
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 },
-      );
-    }
-    return NextResponse.json(
-      { error: "Could not save typing" },
-      { status: 500 },
-    );
+    return errorResponse(error, "Could not save typing");
   }
 }

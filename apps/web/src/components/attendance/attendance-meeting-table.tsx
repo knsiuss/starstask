@@ -38,10 +38,14 @@ const STATUS_RANK: Record<AttendanceMeetingCellStatus, number> = {
   not_applicable: 5,
 };
 
-const METHOD_LABELS: Record<string, string> = {
+const METHOD_LABELS: Record<
+  Exclude<AttendanceMeetingRosterEntry["method"], null>,
+  string
+> = {
   geo: "GPS",
   manual: "Manual",
   system: "Auto absent",
+  offline_sync: "Offline sync",
 };
 
 type SortKey = "roster" | "name" | "nim" | "checkedIn" | "status";

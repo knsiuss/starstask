@@ -57,9 +57,66 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
+const INTERNAL_BRANDING_MEDIA_PATH_PATTERN =
+  /^\/api\/media\/class-media\/[A-Za-z0-9-]+\/branding\/[A-Za-z0-9-]+\.(png|jpe?g)$/;
+const SUPABASE_BRANDING_STORAGE_PREFIX =
+  "/storage/v1/object/public/class-media/";
+
 /**
- * Logo references only: an https URL, a site path ("/..."), or empty.
- * Relative paths keep stored logos portable across environments.
+ * Allows only empty values, internal branding proxy keys, safe site asset
+ * paths under `/`, or HTTPS Supabase public class-media storage URLs.
+ */
+export function isAllowedBrandingLogoUrl(value: string): boolean {
+  if (value === "") {
+    return true;
+  }
+
+  if (value.startsWith("/")) {
+    if (
+      value.startsWith("//") ||
+      value.includes("..") ||
+      value.includes("\\") ||
+      value.includes(":")
+    ) {
+      return false;
+    }
+
+    if (value.startsWith("/api/")) {
+      return INTERNAL_BRANDING_MEDIA_PATH_PATTERN.test(value);
+    }
+
+    return true;
+  }
+
+  if (value.startsWith("https://")) {
+    try {
+      const parsed = new URL(value);
+
+      if (
+        parsed.protocol !== "https:" ||
+        parsed.username !== "" ||
+        parsed.password !== ""
+      ) {
+        return false;
+      }
+
+      if (parsed.pathname.includes("..") || parsed.pathname.includes("\\")) {
+        return false;
+      }
+
+      return parsed.pathname.startsWith(SUPABASE_BRANDING_STORAGE_PREFIX);
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Logo references only: an allowed Supabase storage URL, an internal
+ * `/api/media/class-media/.../branding/...` key, a safe site path ("/..."), or
+ * empty.
  */
 const logoUrl = (label: string) =>
   z
@@ -68,11 +125,9 @@ const logoUrl = (label: string) =>
     .max(600)
     .nullish()
     .transform((value) => (value === undefined || value === null ? "" : value))
-    .refine(
-      (value) =>
-        value === "" || value.startsWith("https://") || value.startsWith("/"),
-      { message: `${label} must be an https URL or a site path` },
-    );
+    .refine((value) => isAllowedBrandingLogoUrl(value), {
+      message: `${label} must be a valid branding storage URL or site path`,
+    });
 
 /**
  * Validates the branding payload at the API boundary and applies the product

@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 
 import { Client } from "@upstash/qstash";
 

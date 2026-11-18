@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
 
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
@@ -77,14 +78,28 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const headerList = await headers();
+  const cspHeader = headerList.get("content-security-policy");
+  const nonce =
+    headerList.get("x-nonce") ||
+    cspHeader?.match(/nonce-([A-Za-z0-9+/=_-]+)/)?.[1] ||
+    undefined;
+
   return (
     <html
       lang="en"
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
+        />
       </head>
       <body className={`${inter.variable} min-h-dvh antialiased`}>
         <a

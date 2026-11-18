@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+
+import { isSafeHttpUrl } from "@starstask/contracts";
 
 import { Badge } from "@/components/ui/badge";
 import { TabStrip } from "@/components/ui/tab-strip";
@@ -44,19 +45,19 @@ const KIND_LABELS: Record<PluginEvent["kind"], string> = {
 };
 
 function SourceLink({ event }: { event: PluginEvent }) {
-  if (!event.sourceUrl) {
+  if (!event.sourceUrl || !isSafeHttpUrl(event.sourceUrl)) {
     return null;
   }
 
   return (
-    <Link
+    <a
       href={event.sourceUrl}
       target="_blank"
-      rel="noreferrer"
-      className="text-accent text-xs underline-offset-2 hover:underline"
+      rel="noopener noreferrer"
+      className="text-accent focus-visible:outline-accent rounded-sm text-xs underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       Sumber resmi
-    </Link>
+    </a>
   );
 }
 

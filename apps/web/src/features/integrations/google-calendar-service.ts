@@ -66,10 +66,12 @@ const MAX_SYNC_ATTEMPTS = 5;
 const REFRESH_MARGIN_MS = 60_000;
 
 const SESSION_COLUMNS =
-  "id, title, description, agenda, starts_at, ends_at, time_zone, location, meeting_url, status";
+  "id, class_id, subject_id, title, description, agenda, starts_at, ends_at, time_zone, location, meeting_url, status";
 
 type SessionForSync = {
   id: string;
+  class_id: string;
+  subject_id: string | null;
   title: string;
   description: string;
   agenda: string | null;
@@ -454,6 +456,104 @@ async function recordFailure(
   }
 }
 
+async function isUserAuthorizedForSession(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  userId: string,
+  session: SessionForSync,
+): Promise<boolean> {
+  const [
+    classRes,
+    platformAdminRes,
+    classAdminRes,
+    academicAdminRes,
+    memberRes,
+  ] = await Promise.all([
+    supabase
+      .from("classes")
+      .select("status")
+      .eq("id", session.class_id)
+      .maybeSingle(),
+    supabase
+      .from("platform_admins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("class_admins")
+      .select("class_id")
+      .eq("class_id", session.class_id)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("class_admin_assignments")
+      .select("id")
+      .eq("class_id", session.class_id)
+      .eq("user_id", userId)
+      .is("revoked_at", null)
+      .maybeSingle(),
+    supabase
+      .from("class_members")
+      .select("course_scope")
+      .eq("class_id", session.class_id)
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+
+  if (
+    classRes.error ||
+    platformAdminRes.error ||
+    classAdminRes.error ||
+    academicAdminRes.error ||
+    memberRes.error
+  ) {
+    throw new CalendarSyncError(
+      "transient",
+      "Could not verify session access.",
+    );
+  }
+
+  if (classRes.data?.status !== "active") {
+    return false;
+  }
+
+  if (
+    platformAdminRes.data !== null ||
+    classAdminRes.data !== null ||
+    academicAdminRes.data !== null
+  ) {
+    return true;
+  }
+
+  if (!memberRes.data) {
+    return false;
+  }
+
+  if (memberRes.data.course_scope === "selected") {
+    if (!session.subject_id) {
+      return false;
+    }
+
+    const { data: enrolled, error: enrolledError } = await supabase
+      .from("class_member_courses")
+      .select("subject_id")
+      .eq("class_id", session.class_id)
+      .eq("user_id", userId)
+      .eq("subject_id", session.subject_id)
+      .maybeSingle();
+
+    if (enrolledError) {
+      throw new CalendarSyncError(
+        "transient",
+        "Could not verify course access.",
+      );
+    }
+
+    return enrolled !== null;
+  }
+
+  return true;
+}
+
 /**
  * Creates, updates, or removes the Google event for one session.
  *
@@ -486,10 +586,15 @@ export async function syncSessionForUser(
     .maybeSingle<MappingRow>();
 
   try {
+    const isAuthorized = await isUserAuthorizedForSession(
+      supabase,
+      userId,
+      session,
+    );
     const { accessToken, calendarId } = await getValidAccessToken(userId);
 
-    // A cancelled or completed session must not leave a live event behind.
-    if (session.status !== "scheduled") {
+    // A cancelled/completed session or a removed member must not leave a live event behind.
+    if (session.status !== "scheduled" || !isAuthorized) {
       if (mapping?.google_event_id) {
         await deleteManagedEvent(
           accessToken,

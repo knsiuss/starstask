@@ -3,6 +3,7 @@ import { courseCommentCreateSchema, toFieldErrors } from "@starstask/contracts";
 import { requireClassMember } from "@/features/classes/class-access";
 import { ApiError, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
+import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { getClassSubject } from "@/lib/db/classes";
 import { canAccessCourse } from "@/lib/db/course-access";
 import {
@@ -89,6 +90,8 @@ export async function POST(
     let imageFile: File | null = null;
 
     if (contentType.includes("multipart/form-data")) {
+      assertUploadContentLength(request);
+
       const formData = await request.formData();
       const rawMeeting = formData.get("meetingNumber");
       const rawParent = formData.get("parentId");

@@ -218,9 +218,12 @@ export async function getAttendanceMeetingDetail(
     );
   }
 
-  const roster = sortAttendanceRoster(
+  const rawRoster = sortAttendanceRoster(
     (rosterResult.data ?? []).map(mapRosterRow),
   );
+  const roster = meeting.subjectId
+    ? await filterRosterByCourseAccess(classId, meeting.subjectId, rawRoster)
+    : rawRoster;
   const failures = (failuresResult.data ?? []).map(mapFailureRow);
 
   return { ...meeting, roster, failures };
@@ -644,10 +647,13 @@ function mapCorrectionAuditRow(
   };
 }
 
-function toCheckInMethod(
-  value: string | null,
-): "geo" | "manual" | "system" | null {
-  return value === "geo" || value === "manual" || value === "system"
+export type CheckInMethod = "geo" | "manual" | "system" | "offline_sync";
+
+export function toCheckInMethod(value: string | null): CheckInMethod | null {
+  return value === "geo" ||
+    value === "manual" ||
+    value === "system" ||
+    value === "offline_sync"
     ? value
     : null;
 }

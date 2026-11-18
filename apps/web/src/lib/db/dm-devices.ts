@@ -56,6 +56,95 @@ export type UpsertDeviceInput = {
 const DEVICE_COLUMNS =
   "id, user_id, device_id, device_label, identity_public_key, signed_prekey_public, one_time_prekeys, last_active_at, revoked_at, created_at";
 
+const MAX_PUBLIC_KEY_LENGTH = 1024;
+const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * Validates that a device public key is a well-formed P-256 ECDH public key
+ * (raw 65-byte uncompressed point, SPKI DER, or public-only JWK) via WebCrypto.
+ */
+export async function isValidP256PublicKey(value: string): Promise<boolean> {
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0 || trimmed.length > MAX_PUBLIC_KEY_LENGTH) {
+    return false;
+  }
+
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
+        return false;
+      }
+
+      const jwk = parsed as JsonWebKey;
+
+      if (jwk.kty !== "EC" || jwk.crv !== "P-256" || "d" in jwk) {
+        return false;
+      }
+
+      await crypto.subtle.importKey(
+        "jwk",
+        { kty: "EC", crv: "P-256", x: jwk.x, y: jwk.y },
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        [],
+      );
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  const normalized = trimmed.replace(/-/g, "+").replace(/_/g, "/");
+
+  if (!BASE64_PATTERN.test(normalized) || normalized.length % 4 !== 0) {
+    return false;
+  }
+
+  const bytes = Uint8Array.from(Buffer.from(normalized, "base64"));
+
+  if (bytes.length === 65 && bytes[0] === 0x04) {
+    try {
+      await crypto.subtle.importKey(
+        "raw",
+        bytes,
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        [],
+      );
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  if (bytes.length >= 26 && bytes.length <= 128) {
+    try {
+      await crypto.subtle.importKey(
+        "spki",
+        bytes,
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        [],
+      );
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 export async function dmTable(table: string): Promise<UntypedTableClient> {
   const client = await createSupabaseServerClient();
   const from = client.from as unknown as (name: string) => UntypedTableClient;

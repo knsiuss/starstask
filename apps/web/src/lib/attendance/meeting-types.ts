@@ -67,7 +67,7 @@ export type AttendanceMeetingRosterEntry = {
   joinedAt: string;
   eligible: boolean;
   status: AttendanceMeetingCellStatus;
-  method: "geo" | "manual" | "system" | null;
+  method: "geo" | "manual" | "system" | "offline_sync" | null;
   checkedInAt: string | null;
   distanceM: number | null;
   accuracyM: number | null;

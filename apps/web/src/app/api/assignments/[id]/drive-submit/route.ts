@@ -5,11 +5,17 @@ import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { assertUploadContentLength } from "@/lib/api/upload-limit";
 import { getSessionUser } from "@/lib/auth/session";
 import { getAssignmentDetail } from "@/lib/db/assignments";
+import { getClassRole } from "@/lib/db/classes";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 import { insertDriveSubmission } from "@/lib/db/drive-submissions";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import { validateAttachmentFile } from "@/lib/storage/attachments";
-import { deleteStoredObject, uploadToStorage } from "@/lib/storage/b2";
+import {
+  buildStoragePath,
+  validateAttachmentFile,
+} from "@/lib/storage/attachments";
+import { deleteStoredObject, uploadToStorageWithKey } from "@/lib/storage/b2";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +59,40 @@ export async function POST(
     const assignment = await getAssignmentDetail(parsed.data);
     if (!assignment) {
       throw new ApiError(404, "not_found", "Assignment not found.");
+    }
+    if (assignment.class_id) {
+      const role = await getClassRole(assignment.class_id);
+
+      if (!role.canManage) {
+        if (!role.isMember) {
+          throw new ApiError(404, "not_found", "Assignment not found.");
+        }
+
+        const supabase = await createSupabaseServerClient();
+        const [access, subjectRow] = await Promise.all([
+          getMemberCourseAccess(assignment.class_id, session.user.id),
+          supabase
+            .from("assignments")
+            .select("subject_id")
+            .eq("id", assignment.id)
+            .maybeSingle(),
+        ]);
+
+        if (
+          access.scope === "selected" &&
+          (!subjectRow.data?.subject_id ||
+            !access.allowedSubjectIds.has(subjectRow.data.subject_id))
+        ) {
+          throw new ApiError(404, "not_found", "Assignment not found.");
+        }
+      }
+    }
+    if (assignment.content_type === "class_announcement") {
+      throw new ApiError(
+        422,
+        "invalid_assignment_type",
+        "Announcements do not accept submissions.",
+      );
     }
     if (assignment.user_id === session.user.id) {
       throw new ApiError(
@@ -102,8 +142,13 @@ export async function POST(
       throw new ApiError(422, "invalid_file", validated.error);
     }
 
-    const stored = await uploadToStorage(
-      validated.value.originalFilename,
+    const storageKey = buildStoragePath(
+      session.user.id,
+      parsed.data,
+      validated.value.objectName,
+    );
+    const stored = await uploadToStorageWithKey(
+      storageKey,
       validated.value.bytes,
       validated.value.mimeType,
     );

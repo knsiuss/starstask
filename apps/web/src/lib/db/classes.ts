@@ -88,7 +88,12 @@ export type ClassMemberView = {
   /** Short self-introduction; null when the member has not written one. */
   bio: string | null;
   joined_via:
-    "invitation" | "admin_assignment" | "platform_assignment" | "name_match";
+    | "invitation"
+    | "admin_assignment"
+    | "platform_assignment"
+    | "lecturer_assignment"
+    | "name_match"
+    | "student_created";
   joined_at: string;
   is_admin: boolean;
 };

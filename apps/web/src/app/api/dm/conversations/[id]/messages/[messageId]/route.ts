@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/api/errors";
+import { getSessionUser } from "@/lib/auth/session";
 import { deleteMessage, editMessage, setMessagePinned } from "@/lib/db/dm-v2";
-import {
-  enforceRateLimit,
-  getClientIdentifier,
-} from "@/lib/security/rate-limit";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +27,7 @@ function toError(error: unknown) {
       ? String((error as { code?: unknown }).code)
       : "50000";
   if (code === "42501") {
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (code === "PGRST116") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -48,9 +46,15 @@ function toError(error: unknown) {
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:messages:edit",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 60,
       windowSeconds: 60,
       onBackendFailure: "closed",
@@ -79,11 +83,17 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const session = await getSessionUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
+
     await enforceRateLimit({
       action: "dm:messages:delete",
-      identifier: getClientIdentifier(request),
+      identifier: session.user.id,
       limit: 60,
       windowSeconds: 60,
       onBackendFailure: "closed",

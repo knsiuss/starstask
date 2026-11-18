@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin.rpc(
     "auto_cutoff_expired_attendance_meetings" as never,
-    { p_cutoff_minutes: 15 } as never,
+    { p_cutoff_minutes: 120 } as never,
   );
 
   if (error) {

@@ -1927,7 +1927,22 @@ export type Database = {
         Update: {
           subject_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "class_member_courses_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_member_courses_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "class_subjects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       class_members: {
         Row: {
@@ -3211,6 +3226,8 @@ export type Database = {
           attendance_finalized_at: string | null;
           attendance_opened_at: string | null;
           attendance_opens_at: string | null;
+          bap_notes: string | null;
+          bap_topic: string | null;
           cancelled_at: string | null;
           capacity: number | null;
           checkin_latitude: number | null;
@@ -3247,6 +3264,8 @@ export type Database = {
           attendance_finalized_at?: string | null;
           attendance_opened_at?: string | null;
           attendance_opens_at?: string | null;
+          bap_notes?: string | null;
+          bap_topic?: string | null;
           cancelled_at?: string | null;
           capacity?: number | null;
           checkin_latitude?: number | null;
@@ -3282,6 +3301,8 @@ export type Database = {
           attendance_finalized_at?: string | null;
           attendance_opened_at?: string | null;
           attendance_opens_at?: string | null;
+          bap_notes?: string | null;
+          bap_topic?: string | null;
           cancelled_at?: string | null;
           capacity?: number | null;
           checkin_latitude?: number | null;
@@ -6367,7 +6388,12 @@ export type Database = {
         Returns: boolean;
       };
       close_attendance_meeting: {
-        Args: { p_finalize?: boolean; p_session_id: string };
+        Args: {
+          p_bap_notes?: string | null;
+          p_bap_topic?: string | null;
+          p_finalize?: boolean;
+          p_session_id: string;
+        };
         Returns: number;
       };
       complete_leave_forwarding: {
@@ -6505,6 +6531,13 @@ export type Database = {
           p_time_zone: string;
           p_title: string;
           p_visibility?: string;
+        };
+        Returns: string;
+      };
+      create_group_dm_conversation: {
+        Args: {
+          p_member_ids: string[];
+          p_title: string;
         };
         Returns: string;
       };
@@ -6748,6 +6781,7 @@ export type Database = {
       grant_lecturer_membership_if_eligible: {
         Args: {
           p_email: string;
+          p_university_id?: string | null;
           p_user_id: string;
           p_verification_method?: string;
         };
@@ -7419,6 +7453,20 @@ export type Database = {
           p_nim: string;
           p_session_id: string;
           p_time_from_gnss?: boolean;
+        };
+        Returns: Json;
+      };
+      toggle_dm_message_pin: {
+        Args: {
+          p_message_id: string;
+          p_pinned: boolean;
+        };
+        Returns: undefined;
+      };
+      toggle_dm_message_reaction: {
+        Args: {
+          p_emoji: string;
+          p_message_id: string;
         };
         Returns: Json;
       };

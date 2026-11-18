@@ -1,9 +1,10 @@
 import { invitationIdSchema } from "@starstask/contracts";
 
-import { ApiError, serviceUnavailable } from "@/lib/api/errors";
+import { ApiError, notFound, serviceUnavailable } from "@/lib/api/errors";
 import { apiSuccess, handleRouteError } from "@/lib/api/responses";
 import { isSupabaseConfigured } from "@/lib/env/public";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireClassManager } from "@/features/classes/class-access";
 import { revokeClassInvitation } from "@/features/classes/class-invitation-service";
 
@@ -34,8 +35,22 @@ export async function DELETE(_request: Request, context: RouteContext) {
       windowSeconds: 3600,
     });
 
-    // `revoke_class_invitation` verifies the invitation belongs to a class the
-    // caller may manage, so the slug never becomes an authorization bypass.
+    const supabase = await createSupabaseServerClient();
+    const { data: invitation, error: lookupError } = await supabase
+      .from("class_invitations")
+      .select("id")
+      .eq("id", parsedId.data)
+      .eq("class_id", found.id)
+      .maybeSingle();
+
+    if (lookupError) {
+      throw new ApiError(500, "internal_error", "Could not verify invitation.");
+    }
+
+    if (!invitation) {
+      throw notFound();
+    }
+
     await revokeClassInvitation(parsedId.data);
 
     return apiSuccess({ id: parsedId.data });

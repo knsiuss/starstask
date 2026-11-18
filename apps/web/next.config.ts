@@ -55,10 +55,51 @@ const nextConfig: NextConfig = {
         destination: "/assignments/:id/edit",
         permanent: false,
       },
-      // The workspace home moved from /dashboard to /app.
+      // The workspace home moved from /dashboard to /app, while legacy sub-routes
+      // live at top-level workspace paths. Match specific routes before the catch-all.
       {
         source: "/dashboard",
         destination: "/app",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/review",
+        destination: "/actions",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/schedule",
+        destination: "/schedule",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/sessions",
+        destination: "/sessions",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/leave-requests",
+        destination: "/leave-requests",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/settings/:path*",
+        destination: "/settings/:path*",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/classes/:slug",
+        destination: "/classes/:slug",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/classes/:slug/:rest*",
+        destination: "/classes/:slug/:rest*",
+        permanent: true,
+      },
+      {
+        source: "/app/review",
+        destination: "/actions",
         permanent: true,
       },
       {

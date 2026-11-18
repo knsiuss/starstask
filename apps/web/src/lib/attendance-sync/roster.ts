@@ -6,6 +6,7 @@ import type {
   SyncStudentRecord,
 } from "@starstask/contracts";
 
+import { filterRosterByCourseAccess } from "@/lib/db/course-access";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -96,7 +97,7 @@ export async function getAttendanceSyncSessionPayload(
     : null;
   const startsAtMs = new Date(session.starts_at).getTime();
 
-  const eligibleUserIds = (membersResult.data ?? [])
+  const rawEligibleIds = (membersResult.data ?? [])
     .filter((member) => {
       if (enrolledSet && !enrolledSet.has(member.user_id)) {
         return false;
@@ -105,6 +106,17 @@ export async function getAttendanceSyncSessionPayload(
       return new Date(member.joined_at).getTime() <= startsAtMs;
     })
     .map((member) => member.user_id);
+
+  const filteredEligible = session.subject_id
+    ? await filterRosterByCourseAccess(
+        classId,
+        session.subject_id,
+        rawEligibleIds.map((userId) => ({ userId })),
+        supabase,
+      )
+    : rawEligibleIds.map((userId) => ({ userId }));
+
+  const eligibleUserIds = filteredEligible.map((item) => item.userId);
 
   if (eligibleUserIds.length === 0) {
     return {

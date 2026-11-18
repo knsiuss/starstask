@@ -3,30 +3,123 @@ import "server-only";
 import { DataAccessError } from "@/lib/db/assignments";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// DM tables are new (not yet in hand-written Database types) — untyped client for DM only.
-async function dmClient() {
-  const client = await createSupabaseServerClient();
-  return client as unknown as {
-    from: (table: string) => never;
-    rpc: (
-      fn: string,
-      args?: unknown,
-    ) => Promise<{ data: unknown; error: { code?: string } | null }>;
-    auth: {
-      getUser: () => Promise<{ data: { user?: { id: string } | null } }>;
-    };
+type DbError = { code?: string; message?: string } | null;
+
+type QueryResult<T> = Promise<{
+  data: T | null;
+  error: DbError;
+  count?: number | null;
+}>;
+
+export interface DmFilterBuilder<T = Array<Record<string, unknown>>> {
+  eq: (column: string, value: unknown) => DmFilterBuilder<T>;
+  neq: (column: string, value: unknown) => DmFilterBuilder<T>;
+  in: (column: string, values: readonly unknown[]) => DmFilterBuilder<T>;
+  is: (column: string, value: null) => DmFilterBuilder<T>;
+  gte: (column: string, value: unknown) => DmFilterBuilder<T>;
+  lt: (column: string, value: unknown) => DmFilterBuilder<T>;
+  ilike: (column: string, pattern: string) => DmFilterBuilder<T>;
+  order: (
+    column: string,
+    options?: { ascending?: boolean },
+  ) => DmFilterBuilder<T>;
+  limit: (count: number) => DmFilterBuilder<T>;
+  select: (columns?: string) => DmFilterBuilder<T>;
+  maybeSingle: <R = Record<string, unknown>>() => QueryResult<R>;
+  single: <R = Record<string, unknown>>() => QueryResult<R>;
+  then: QueryResult<T>["then"];
+}
+
+export interface DmTableClient {
+  select: (
+    columns?: string,
+    options?: { count?: "exact"; head?: boolean },
+  ) => DmFilterBuilder;
+  insert: (values: unknown) => DmFilterBuilder;
+  update: (values: unknown) => DmFilterBuilder;
+  upsert: (
+    values: unknown,
+    options?: { onConflict?: string },
+  ) => DmFilterBuilder;
+}
+
+export interface DmSupabaseClient {
+  from: (table: string) => DmTableClient;
+  rpc: <T = unknown>(
+    fn: string,
+    args?: Record<string, unknown>,
+  ) => Promise<{ data: T | null; error: DbError }>;
+  auth: {
+    getUser: () => Promise<{ data: { user: { id: string } | null } }>;
   };
+}
+
+export async function createDmClient(): Promise<DmSupabaseClient> {
+  const client = await createSupabaseServerClient();
+
+  return client as unknown as DmSupabaseClient;
 }
 
 export const ENCRYPTED_PREVIEW = "🔒 Encrypted";
 
-const MAX_CIPHERTEXT_LENGTH = 8000;
+export const MAX_CIPHERTEXT_LENGTH = 32000;
 const MAX_PLAINTEXT_LENGTH = 2000;
 const RATE_LIMIT_PER_MINUTE = 5;
 const RATE_WINDOW_MS = 60000;
 
-/** Wire format check: `iv:ciphertext` (v1) or `v2:iv:ciphertext` (AAD-bound). */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Wire format check:
+ * - `iv:ciphertext` (v1)
+ * - `v2:iv:ciphertext` (v2 AAD-bound)
+ * - `v2:{...}` (v2 multi-device JSON envelope: `v === 2` + non-empty `envelopes`)
+ * - `v2g:{...}` (v2 group sender-key JSON envelope: `v === 2` + non-empty `keyId`, `iv`, `ct`/`ciphertext`)
+ */
 export function isCiphertextWireFormat(wire: string): boolean {
+  if (wire.startsWith("v2g:")) {
+    try {
+      const parsed: unknown = JSON.parse(wire.slice(4));
+
+      if (!isPlainObject(parsed) || parsed.v !== 2) {
+        return false;
+      }
+
+      const cipherField =
+        typeof parsed.ct === "string" ? parsed.ct : parsed.ciphertext;
+
+      return (
+        typeof parsed.keyId === "string" &&
+        parsed.keyId.length > 0 &&
+        typeof parsed.iv === "string" &&
+        parsed.iv.length > 0 &&
+        typeof cipherField === "string" &&
+        cipherField.length > 0
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  if (wire.startsWith("v2:{")) {
+    try {
+      const parsed: unknown = JSON.parse(wire.slice(3));
+
+      if (!isPlainObject(parsed) || parsed.v !== 2) {
+        return false;
+      }
+
+      return (
+        isPlainObject(parsed.envelopes) &&
+        Object.keys(parsed.envelopes).length > 0
+      );
+    } catch {
+      return false;
+    }
+  }
+
   const parts = wire.split(":");
   const rest = parts[0] === "v2" ? parts.slice(1) : parts;
 
@@ -76,8 +169,50 @@ export type StoredMessage = {
   attachment_path: string | null;
 };
 
+type RpcConversationRow = {
+  id: string;
+  other_user_id: string | null;
+  other_name: string | null;
+  other_avatar_url: string | null;
+  is_group: boolean | null;
+  participant_names: string[] | null;
+  last_message: typeof ENCRYPTED_PREVIEW | null;
+  last_at: string | null;
+  unread: boolean | null;
+  unread_count: number | null;
+  is_pinned: boolean | null;
+  is_muted: boolean | null;
+  is_archived: boolean | null;
+};
+
+type MyParticipantRow = {
+  conversation_id: string;
+  last_read_at: string | null;
+  is_pinned: boolean | null;
+  is_muted: boolean | null;
+  is_archived: boolean | null;
+  pinned_at: string | null;
+};
+
+type ParticipantUserRow = {
+  conversation_id: string;
+  user_id: string;
+};
+
+type MessageSummaryRow = {
+  conversation_id: string;
+  created_at: string;
+  sender_id: string;
+};
+
+type ProfileSummaryRow = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
 async function requireUserId(): Promise<string> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id;
 
@@ -94,14 +229,16 @@ async function requireUserId(): Promise<string> {
  * deployed yet (rollout safety: the RPC is additive, old reads keep working).
  */
 export async function listConversations(): Promise<ConversationRow[]> {
-  const supabase = (await createSupabaseServerClient()) as any;
-  const { data, error } = await supabase.rpc("list_dm_conversations");
+  const supabase = await createDmClient();
+  const { data, error } = await supabase.rpc<RpcConversationRow[]>(
+    "list_dm_conversations",
+  );
 
   if (error || !data) {
     return listConversationsViaQueries();
   }
 
-  return (data as any[]).map((row) => ({
+  return data.map((row) => ({
     id: row.id,
     otherUserId: row.other_user_id ?? "",
     otherName: row.other_name ?? "User",
@@ -120,63 +257,57 @@ export async function listConversations(): Promise<ConversationRow[]> {
 }
 
 async function listConversationsViaQueries(): Promise<ConversationRow[]> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const me = await requireUserId();
-  const { data: myParts } = await supabase
+  const { data: myPartsRaw } = await supabase
     .from("dm_participants")
     .select(
       "conversation_id, last_read_at, is_pinned, is_muted, is_archived, pinned_at",
     )
     .eq("user_id", me)
     .is("left_at", null);
-  const ids: string[] = (myParts ?? []).map(
-    (part: any) => part.conversation_id,
-  );
+  const myParts = (myPartsRaw ?? []) as MyParticipantRow[];
+  const ids: string[] = myParts.map((part) => part.conversation_id);
 
   if (ids.length === 0) {
     return [];
   }
 
-  const { data: allParts } = await supabase
+  const { data: allPartsRaw } = await supabase
     .from("dm_participants")
     .select("conversation_id, user_id")
     .in("conversation_id", ids);
-  const { data: messages } = await supabase
+  const allParts = (allPartsRaw ?? []) as ParticipantUserRow[];
+  const { data: messagesRaw } = await supabase
     .from("dm_messages")
     .select("conversation_id, created_at, sender_id")
     .in("conversation_id", ids)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
+  const messages = (messagesRaw ?? []) as MessageSummaryRow[];
   const otherIds = [
     ...new Set(
-      (allParts ?? [])
-        .map((part: any) => part.user_id)
-        .filter((userId: any) => userId !== me),
+      allParts.map((part) => part.user_id).filter((userId) => userId !== me),
     ),
   ];
-  const { data: profiles } = otherIds.length
+  const { data: profilesRaw } = otherIds.length
     ? await supabase
         .from("profiles")
         .select("id, display_name, avatar_url")
         .in("id", otherIds)
     : { data: [] };
+  const profiles = (profilesRaw ?? []) as ProfileSummaryRow[];
   const nameById = new Map<string, string>(
-    (profiles ?? []).map((profile: any) => [
+    profiles.map((profile) => [
       String(profile.id),
       String(profile.display_name ?? "User"),
     ]),
   );
   const avatarById = new Map<string, string | null>(
-    (profiles ?? []).map((profile: any) => [
-      String(profile.id),
-      (profile.avatar_url as string | null) ?? null,
-    ]),
+    profiles.map((profile) => [String(profile.id), profile.avatar_url ?? null]),
   );
   const readAtByConversation = new Map<string, string | null>(
-    (myParts ?? []).map((part: any) => [
-      part.conversation_id,
-      part.last_read_at,
-    ]),
+    myParts.map((part) => [part.conversation_id, part.last_read_at]),
   );
   const prefByConversation = new Map<
     string,
@@ -187,7 +318,7 @@ async function listConversationsViaQueries(): Promise<ConversationRow[]> {
       pinnedAt: string | null;
     }
   >(
-    (myParts ?? []).map((part: any) => [
+    myParts.map((part) => [
       part.conversation_id,
       {
         pinned: Boolean(part.is_pinned),
@@ -200,7 +331,7 @@ async function listConversationsViaQueries(): Promise<ConversationRow[]> {
   const lastByConversation = new Map<string, { at: string; sender: string }>();
   const unreadByConversation = new Map<string, number>();
 
-  for (const message of messages ?? []) {
+  for (const message of messages) {
     if (!lastByConversation.has(message.conversation_id)) {
       lastByConversation.set(message.conversation_id, {
         at: message.created_at,
@@ -221,7 +352,7 @@ async function listConversationsViaQueries(): Promise<ConversationRow[]> {
 
   const participantsByConversation = new Map<string, string[]>();
 
-  for (const part of allParts ?? []) {
+  for (const part of allParts) {
     if (part.user_id === me) continue;
     const list = participantsByConversation.get(part.conversation_id) ?? [];
     list.push(part.user_id);
@@ -276,7 +407,7 @@ export async function listMessages(
   conversationId: string,
   options?: { before?: string; limit?: number },
 ): Promise<StoredMessage[]> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const limit = Math.min(Math.max(options?.limit ?? 50, 1), 100);
   let query = supabase
     .from("dm_messages")
@@ -298,35 +429,38 @@ export async function listMessages(
     throw new DataAccessError("Could not load messages", error.code);
   }
 
-  return ((data ?? []) as StoredMessage[]).reverse();
+  return ((data ?? []) as unknown as StoredMessage[]).reverse();
 }
 
 /** Public keys of every active participant (for group per-recipient envelopes). */
 export async function getConversationMemberKeys(
   conversationId: string,
 ): Promise<Record<string, string>> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const me = await requireUserId();
-  const { data: parts } = await supabase
+  const { data: partsRaw } = await supabase
     .from("dm_participants")
     .select("user_id")
     .eq("conversation_id", conversationId)
     .is("left_at", null);
 
-  const userIds: string[] = (parts ?? [])
-    .map((part: any) => part.user_id)
-    .filter((userId: string) => userId !== me);
+  const userIds: string[] = ((partsRaw ?? []) as Array<{ user_id: string }>)
+    .map((part) => part.user_id)
+    .filter((userId) => userId !== me);
 
   if (userIds.length === 0) return {};
 
-  const { data: keys } = await supabase
+  const { data: keysRaw } = await supabase
     .from("dm_keys")
     .select("user_id, public_key")
     .in("user_id", [...userIds, me]);
 
   const out: Record<string, string> = {};
 
-  for (const row of (keys ?? []) as any[]) {
+  for (const row of (keysRaw ?? []) as Array<{
+    user_id: string;
+    public_key: string | null;
+  }>) {
     if (row.public_key) out[String(row.user_id)] = String(row.public_key);
   }
 
@@ -335,10 +469,48 @@ export async function getConversationMemberKeys(
 
 export async function getConversationPeerId(
   conversationId: string,
-): Promise<string> {
-  const supabase = (await createSupabaseServerClient()) as any;
+): Promise<string | null> {
+  const supabase = await createDmClient();
   const me = await requireUserId();
-  const { data, error } = await supabase
+
+  const { data: membership, error: memberError } = await supabase
+    .from("dm_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", me)
+    .is("left_at", null)
+    .maybeSingle<{ user_id: string }>();
+
+  if (memberError) {
+    throw new DataAccessError("Could not load conversation", memberError.code);
+  }
+
+  if (!membership) {
+    throw new DataAccessError(
+      "You are not a participant in this conversation",
+      "42501",
+    );
+  }
+
+  const { data: conv, error: convError } = await supabase
+    .from("dm_conversations")
+    .select("is_group")
+    .eq("id", conversationId)
+    .maybeSingle<{ is_group: boolean | null }>();
+
+  if (convError) {
+    throw new DataAccessError("Could not load conversation", convError.code);
+  }
+
+  if (!conv) {
+    throw new DataAccessError("Conversation not found", "PGRST116");
+  }
+
+  if (conv.is_group) {
+    return null;
+  }
+
+  const { data: peerRows, error: peerError } = await supabase
     .from("dm_participants")
     .select("user_id")
     .eq("conversation_id", conversationId)
@@ -346,45 +518,154 @@ export async function getConversationPeerId(
     .is("left_at", null)
     .limit(1);
 
-  if (error || !data?.[0]) {
-    throw new DataAccessError("Could not load conversation", error?.code);
+  if (peerError) {
+    throw new DataAccessError("Could not load conversation", peerError.code);
   }
 
-  return data[0].user_id;
+  const rows = (peerRows ?? []) as Array<{ user_id: string }>;
+
+  return rows[0]?.user_id ?? null;
+}
+
+/**
+ * Resolves the target user ID for `/api/dm/conversations/[id]/block`.
+ *
+ * Rejects group conversations without an explicit target `userId`, and looks up
+ * 1:1 peers regardless of `left_at` so a user can still block a peer who left.
+ */
+export async function resolveBlockTargetInConversation(
+  conversationId: string,
+  requestedUserId?: string,
+): Promise<string> {
+  const supabase = await createDmClient();
+  const me = await requireUserId();
+
+  const { data: membership, error: memberError } = await supabase
+    .from("dm_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", me)
+    .is("left_at", null)
+    .maybeSingle<{ user_id: string }>();
+
+  if (memberError) {
+    throw new DataAccessError("Could not load conversation", memberError.code);
+  }
+
+  if (!membership) {
+    throw new DataAccessError(
+      "You are not a participant in this conversation",
+      "42501",
+    );
+  }
+
+  const { data: conv, error: convError } = await supabase
+    .from("dm_conversations")
+    .select("is_group")
+    .eq("id", conversationId)
+    .maybeSingle<{ is_group: boolean | null }>();
+
+  if (convError) {
+    throw new DataAccessError("Could not load conversation", convError.code);
+  }
+
+  if (!conv) {
+    throw new DataAccessError("Conversation not found", "PGRST116");
+  }
+
+  if (conv.is_group) {
+    if (!requestedUserId) {
+      throw new DataAccessError(
+        "Specify a user to block in group conversations",
+        "22023",
+      );
+    }
+
+    if (requestedUserId === me) {
+      throw new DataAccessError("Cannot block yourself", "22023");
+    }
+
+    const { data: targetMember, error: targetError } = await supabase
+      .from("dm_participants")
+      .select("user_id")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", requestedUserId)
+      .maybeSingle<{ user_id: string }>();
+
+    if (targetError) {
+      throw new DataAccessError(
+        "Could not load conversation",
+        targetError.code,
+      );
+    }
+
+    if (!targetMember) {
+      throw new DataAccessError(
+        "Target user is not in this conversation",
+        "22023",
+      );
+    }
+
+    return requestedUserId;
+  }
+
+  const { data: peerRows, error: peerError } = await supabase
+    .from("dm_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .neq("user_id", me)
+    .limit(1);
+
+  if (peerError) {
+    throw new DataAccessError("Could not load conversation", peerError.code);
+  }
+
+  const peerId = (peerRows as Array<{ user_id: string }> | null)?.[0]?.user_id;
+
+  if (!peerId) {
+    throw new DataAccessError("Conversation peer not found", "PGRST116");
+  }
+
+  if (requestedUserId && requestedUserId !== peerId) {
+    throw new DataAccessError(
+      "Target user is not the peer in this conversation",
+      "22023",
+    );
+  }
+
+  return peerId;
 }
 
 export async function getConversationParticipants(
   conversationId: string,
 ): Promise<{ userId: string; name: string; avatarUrl: string | null }[]> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const me = await requireUserId();
-  const { data: parts } = await supabase
+  const { data: partsRaw } = await supabase
     .from("dm_participants")
     .select("user_id")
     .eq("conversation_id", conversationId)
     .is("left_at", null);
-  const userIds: string[] = (parts ?? [])
-    .map((part: any) => part.user_id)
-    .filter((userId: string) => userId !== me);
+  const userIds: string[] = ((partsRaw ?? []) as Array<{ user_id: string }>)
+    .map((part) => part.user_id)
+    .filter((userId) => userId !== me);
 
   if (userIds.length === 0) return [];
 
-  const { data: profiles } = await supabase
+  const { data: profilesRaw } = await supabase
     .from("profiles")
     .select("id, display_name, avatar_url")
     .in("id", userIds);
+  const profiles = (profilesRaw ?? []) as ProfileSummaryRow[];
 
   const nameById = new Map<string, string>(
-    (profiles ?? []).map((profile: any) => [
+    profiles.map((profile) => [
       String(profile.id),
       String(profile.display_name ?? "User"),
     ]),
   );
   const avatarById = new Map<string, string | null>(
-    (profiles ?? []).map((profile: any) => [
-      String(profile.id),
-      profile.avatar_url ?? null,
-    ]),
+    profiles.map((profile) => [String(profile.id), profile.avatar_url ?? null]),
   );
 
   return userIds.map((userId) => ({
@@ -397,12 +678,12 @@ export async function getConversationParticipants(
 export async function getPeerPublicKey(
   otherUserId: string,
 ): Promise<string | null> {
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data } = await supabase
     .from("dm_keys")
     .select("public_key")
     .eq("user_id", otherUserId)
-    .single();
+    .single<{ public_key: string | null }>();
 
   return data?.public_key ?? null;
 }
@@ -420,7 +701,7 @@ export async function upsertOwnPublicKey(publicKey: string): Promise<void> {
   }
 
   const me = await requireUserId();
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
 
   // Key history: if the key changed, retain the old key before overwriting so
   // peers can detect the change (they pin fingerprints client-side).
@@ -428,9 +709,9 @@ export async function upsertOwnPublicKey(publicKey: string): Promise<void> {
     .from("dm_keys")
     .select("public_key")
     .eq("user_id", me)
-    .maybeSingle();
+    .maybeSingle<{ public_key?: string }>();
 
-  const previousKey = (previous as { public_key?: string } | null)?.public_key;
+  const previousKey = previous?.public_key;
 
   if (previousKey && previousKey !== publicKey) {
     await supabase.from("dm_key_history").insert({
@@ -465,12 +746,12 @@ function base64FirstByte(value: string): number {
 
 export async function getOwnPublicKey(): Promise<string | null> {
   const me = await requireUserId();
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { data } = await supabase
     .from("dm_keys")
     .select("public_key")
     .eq("user_id", me)
-    .single();
+    .single<{ public_key: string | null }>();
 
   return data?.public_key ?? null;
 }
@@ -503,7 +784,7 @@ export async function sendCiphertext(
     );
   }
 
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const me = await requireUserId();
   const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
   const { count } = await supabase
@@ -529,10 +810,10 @@ export async function sendCiphertext(
       group_wraps: groupWraps ?? null,
     })
     .select("id")
-    .single();
+    .single<{ id: string }>();
 
-  if (error) {
-    throw new DataAccessError("Could not send message", error.code);
+  if (error || !message) {
+    throw new DataAccessError("Could not send message", error?.code);
   }
 
   // Push notif (fire-and-forget, no plaintext)
@@ -540,7 +821,7 @@ export async function sendCiphertext(
     .then((m) => m.notifyDmRecipient(conversationId, me, message.id))
     .catch(() => {});
 
-  return message as { id: string };
+  return message;
 }
 
 /** @deprecated Plaintext path removed; use sendCiphertext. */
@@ -554,24 +835,49 @@ export async function sendMessage(
   );
 }
 
+/** Toggles the caller's emoji reaction via the `toggle_dm_message_reaction` RPC. */
+export async function toggleMessageReaction(
+  messageId: string,
+  emoji: string,
+): Promise<Record<string, string>> {
+  await requireUserId();
+  const supabase = await createDmClient();
+  const { data, error } = await supabase.rpc<Record<string, string>>(
+    "toggle_dm_message_reaction",
+    {
+      p_message_id: messageId,
+      p_emoji: emoji,
+    },
+  );
+
+  if (error) {
+    throw new DataAccessError("reaction failed", error.code);
+  }
+
+  return data ?? {};
+}
+
 export async function getOrCreateConversation(
   otherUserId: string,
 ): Promise<string> {
-  const supabase = (await createSupabaseServerClient()) as any;
-  const { data, error } = await supabase.rpc("dm_get_or_create_conversation", {
-    p_other: otherUserId,
-  });
+  const supabase = await createDmClient();
+  const { data, error } = await supabase.rpc<string>(
+    "dm_get_or_create_conversation",
+    {
+      p_other: otherUserId,
+    },
+  );
 
   if (error || !data) {
     throw new DataAccessError("Could not open chat (blocked?)", error?.code);
   }
 
-  return data as string;
+  return data;
 }
 
 export async function blockUser(blockedId: string): Promise<void> {
   const me = await requireUserId();
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const { error } = await supabase
     .from("dm_blocks")
     .insert({ blocker_id: me, blocked_id: blockedId });
@@ -592,7 +898,7 @@ export async function searchUsers(
     return [];
   }
 
-  const supabase = (await createSupabaseServerClient()) as any;
+  const supabase = await createDmClient();
   const me = await requireUserId();
   // Escape LIKE wildcards so user input matches literally.
   const escaped = normalized.replace(/[%_\\]/g, "\\$&");
@@ -603,5 +909,9 @@ export async function searchUsers(
     .neq("id", me)
     .limit(10);
 
-  return data ?? [];
+  return (data ?? []) as Array<{
+    id: string;
+    display_name: string;
+    avatar_url: string | null;
+  }>;
 }

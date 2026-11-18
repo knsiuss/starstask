@@ -3,6 +3,7 @@
 import { Download, FileText, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { sanitizePeerMediaMimeType } from "@/components/messages/safe-media-mime";
 import { decryptMediaBytes } from "@/lib/crypto/e2ee-media";
 import type { EncryptedMediaMeta } from "@/lib/crypto/e2ee-v2";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -35,6 +36,7 @@ function formatFileSize(bytes: number): string {
 
 export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const safeMime = sanitizePeerMediaMimeType(media.mimeType);
 
   const loadAndDecrypt = useCallback(async () => {
     setState({ status: "loading" });
@@ -57,7 +59,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
         media.sha256B64,
       );
       const blob = new Blob([plainBytes], {
-        type: media.mimeType || "application/octet-stream",
+        type: safeMime,
       });
       const objectUrl = URL.createObjectURL(blob);
 
@@ -68,13 +70,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
         message: "Could not decrypt attachment on this device",
       });
     }
-  }, [
-    media.ivB64,
-    media.keyB64,
-    media.mimeType,
-    media.sha256B64,
-    media.storagePath,
-  ]);
+  }, [media.ivB64, media.keyB64, media.sha256B64, media.storagePath, safeMime]);
 
   useEffect(() => {
     let active = true;
@@ -101,7 +97,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
           media.sha256B64,
         );
         const blob = new Blob([plainBytes], {
-          type: media.mimeType || "application/octet-stream",
+          type: safeMime,
         });
         const objectUrl = URL.createObjectURL(blob);
 
@@ -130,13 +126,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
         URL.revokeObjectURL(createdUrl);
       }
     };
-  }, [
-    media.ivB64,
-    media.keyB64,
-    media.mimeType,
-    media.sha256B64,
-    media.storagePath,
-  ]);
+  }, [media.ivB64, media.keyB64, media.sha256B64, media.storagePath, safeMime]);
 
   useEffect(() => {
     const url = state.status === "ready" ? state.url : null;
@@ -187,7 +177,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
     );
   }
 
-  if (media.mimeType.startsWith("image/")) {
+  if (safeMime.startsWith("image/")) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- decrypted attachment uses a local blob URL that next/image cannot optimize
       <img
@@ -198,7 +188,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
     );
   }
 
-  if (media.mimeType.startsWith("video/")) {
+  if (safeMime.startsWith("video/")) {
     return (
       <video
         src={state.url}
@@ -209,7 +199,7 @@ export function EncryptedMediaAttachment({ media, isMine = false }: Props) {
     );
   }
 
-  if (media.mimeType.startsWith("audio/")) {
+  if (safeMime.startsWith("audio/")) {
     return (
       <audio
         src={state.url}

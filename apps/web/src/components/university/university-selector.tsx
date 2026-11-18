@@ -1,7 +1,9 @@
 "use client";
 
-import * as React from "react";
 import { Building2, Globe, MapPin } from "lucide-react";
+import * as React from "react";
+
+import { isSafeHttpUrl } from "@starstask/contracts";
 
 import type { ActiveUniversityRow } from "@/lib/db/universities";
 import { cn } from "@/lib/utils/cn";
@@ -114,18 +116,28 @@ export function UniversitySelector({
               <div className="flex gap-2">
                 <dt className="text-muted-foreground w-24 shrink-0">Website</dt>
                 <dd>
-                  <a
-                    href={selected.website}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="text-accent inline-flex items-center gap-1 hover:underline"
-                  >
-                    <Globe
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5"
-                    />
-                    {selected.website}
-                  </a>
+                  {isSafeHttpUrl(selected.website) ? (
+                    <a
+                      href={selected.website}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      <Globe
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5"
+                      />
+                      {selected.website}
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      <Globe
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5"
+                      />
+                      {selected.website}
+                    </span>
+                  )}
                 </dd>
               </div>
             ) : null}

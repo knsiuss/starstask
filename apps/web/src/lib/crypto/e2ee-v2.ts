@@ -42,6 +42,7 @@ export type V2DeviceEnvelope = {
   pn: number;
   iv: string;
   ct: string;
+  senderEphemeralPublicKey?: string;
 };
 
 export type V2Envelope = { v: 2; envelopes: Record<string, V2DeviceEnvelope> };
@@ -152,11 +153,12 @@ export const deriveResponderSharedSecret = (
   localIdPriv: CryptoKey,
   localPrekeyPriv: CryptoKey,
   remoteIdPub: CryptoKey,
+  remoteEphemeralPub?: CryptoKey,
 ): Promise<Bytes> =>
   deriveInitialSharedSecret(
     localIdPriv,
     remoteIdPub,
-    remoteIdPub,
+    remoteEphemeralPub ?? remoteIdPub,
     localPrekeyPriv,
   );
 
