@@ -561,11 +561,7 @@ function mapRosterRow(row: MeetingRosterRow): AttendanceMeetingRosterEntry {
     joinedAt: row.joined_at,
     eligible: row.eligible,
     status: toAttendanceCellStatus(row.status),
-    // `AttendanceMeetingRosterEntry["method"]` lives outside T2 scope in `meeting-types.ts`;
-    // preserve `"offline_sync"` at runtime without widening files outside IN SCOPE.
-    method: toCheckInMethod(
-      row.method,
-    ) as AttendanceMeetingRosterEntry["method"],
+    method: toCheckInMethod(row.method),
     checkedInAt: row.checked_in_at,
     distanceM: row.distance_m,
     accuracyM: row.accuracy_m,

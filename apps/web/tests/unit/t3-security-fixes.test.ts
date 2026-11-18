@@ -4,12 +4,19 @@ import {
   exportRawPublicKey,
   generateEcdhKeyPair,
 } from "@/lib/crypto/e2ee-ratchet";
+import { DataAccessError } from "@/lib/db/assignments";
 import { isValidP256PublicKey } from "@/lib/db/dm-devices";
 import { buildDriveAuthorizationUrl } from "@/lib/integrations/google/drive-oauth";
 
 const backupMocks = vi.hoisted(() => ({
   userId: "user-1",
   wrapped: "",
+}));
+
+const dmServerMocks = vi.hoisted(() => ({
+  userId: "user-1" as string | null,
+  rpc: vi.fn(),
+  from: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -33,7 +40,23 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: async () => ({
+    auth: {
+      getUser: async () => ({
+        data: {
+          user: dmServerMocks.userId ? { id: dmServerMocks.userId } : null,
+        },
+        error: null,
+      }),
+    },
+    rpc: dmServerMocks.rpc,
+    from: dmServerMocks.from,
+  }),
+}));
+
 import { restorePrivateKey } from "@/lib/crypto/key-backup";
+import { setMessagePinned } from "@/lib/db/dm-v2";
 
 describe("Google Drive OAuth scope isolation", () => {
   it("sets include_granted_scopes=false so calendar scopes are not merged", () => {
@@ -102,4 +125,49 @@ describe("restorePrivateKey PBKDF2 iteration bounds", () => {
       deriveSpy.mockRestore();
     },
   );
+});
+
+describe("setMessagePinned RPC", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    dmServerMocks.userId = "user-1";
+    dmServerMocks.rpc.mockResolvedValue({ data: null, error: null });
+  });
+
+  it("calls toggle_dm_message_pin RPC without direct dm_messages table updates", async () => {
+    await setMessagePinned("msg-1", "conv-1", true);
+
+    expect(dmServerMocks.rpc).toHaveBeenCalledTimes(1);
+    expect(dmServerMocks.rpc).toHaveBeenCalledWith("toggle_dm_message_pin", {
+      p_message_id: "msg-1",
+      p_pinned: true,
+    });
+    expect(dmServerMocks.from).not.toHaveBeenCalled();
+  });
+
+  it("throws 42501 DataAccessError when caller is unauthenticated", async () => {
+    dmServerMocks.userId = null;
+
+    await expect(setMessagePinned("msg-1", "conv-1", true)).rejects.toEqual(
+      expect.objectContaining<Partial<DataAccessError>>({
+        name: "DataAccessError",
+        code: "42501",
+      }),
+    );
+    expect(dmServerMocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("propagates DataAccessError code when toggle_dm_message_pin rejects", async () => {
+    dmServerMocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "not an active participant" },
+    });
+
+    await expect(setMessagePinned("msg-1", "conv-1", false)).rejects.toEqual(
+      expect.objectContaining<Partial<DataAccessError>>({
+        name: "DataAccessError",
+        code: "42501",
+      }),
+    );
+  });
 });

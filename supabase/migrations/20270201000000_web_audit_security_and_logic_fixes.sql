@@ -1064,6 +1064,69 @@ GRANT
 EXECUTE ON FUNCTION public.create_group_dm_conversation (text, UUID[]) TO authenticated;
 
 
+CREATE OR REPLACE FUNCTION public.toggle_dm_message_pin (p_message_id uuid, p_pinned boolean) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+SET
+  search_path = public,
+  pg_temp AS $$
+DECLARE
+  v_user uuid := (SELECT auth.uid ());
+  v_msg public.dm_messages;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'authentication required' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_msg
+  FROM public.dm_messages m
+  WHERE m.id = p_message_id
+  FOR UPDATE;
+
+  IF NOT FOUND OR v_msg.deleted_at IS NOT NULL THEN
+    RAISE EXCEPTION 'message not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.dm_participants p
+    WHERE p.conversation_id = v_msg.conversation_id
+      AND p.user_id = v_user
+      AND p.left_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'not an active participant' USING ERRCODE = '42501';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.dm_conversations c
+    JOIN public.dm_participants p_other
+      ON p_other.conversation_id = c.id
+     AND p_other.user_id <> v_user
+    JOIN public.dm_blocks b
+      ON (b.blocker_id = v_user AND b.blocked_id = p_other.user_id)
+      OR (b.blocker_id = p_other.user_id AND b.blocked_id = v_user)
+    WHERE c.id = v_msg.conversation_id
+      AND c.is_group = false
+  ) THEN
+    RAISE EXCEPTION 'blocked' USING ERRCODE = '42501';
+  END IF;
+
+  UPDATE public.dm_messages
+  SET is_pinned = coalesce(p_pinned, false)
+  WHERE id = p_message_id;
+END;
+$$;
+
+
+REVOKE ALL ON FUNCTION public.toggle_dm_message_pin (uuid, boolean)
+FROM
+  PUBLIC,
+  anon;
+
+
+GRANT
+EXECUTE ON FUNCTION public.toggle_dm_message_pin (uuid, boolean) TO authenticated;
+
+
 -- ---------------------------------------------------------------------------
 -- 4. C-04: drive_submissions RLS Lockdown
 -- ---------------------------------------------------------------------------

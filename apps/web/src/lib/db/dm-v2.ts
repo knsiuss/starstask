@@ -103,9 +103,10 @@ export async function markConversationUnread(conversationId: string) {
   if (error) throw new DataAccessError("mark unread failed", error.code);
 }
 
+/** Pins or unpins a message in a conversation via `toggle_dm_message_pin`. */
 export async function setMessagePinned(
   messageId: string,
-  conversationId: string,
+  _conversationId: string,
   pinned: boolean,
 ) {
   const supabase = await createDmClient();
@@ -114,21 +115,10 @@ export async function setMessagePinned(
 
   if (!me) throw new DataAccessError("Not signed in", "42501");
 
-  const { data: part } = await supabase
-    .from("dm_participants")
-    .select("user_id")
-    .eq("conversation_id", conversationId)
-    .eq("user_id", me)
-    .is("left_at", null)
-    .maybeSingle<{ user_id: string }>();
-
-  if (!part) throw new DataAccessError("Not a participant", "42501");
-
-  const { error } = await supabase
-    .from("dm_messages")
-    .update({ is_pinned: pinned })
-    .eq("id", messageId)
-    .eq("conversation_id", conversationId);
+  const { error } = await supabase.rpc("toggle_dm_message_pin", {
+    p_message_id: messageId,
+    p_pinned: pinned,
+  });
 
   if (error) throw new DataAccessError("pin failed", error.code);
 }

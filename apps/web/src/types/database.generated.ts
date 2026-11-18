@@ -7456,6 +7456,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      toggle_dm_message_pin: {
+        Args: {
+          p_message_id: string;
+          p_pinned: boolean;
+        };
+        Returns: undefined;
+      };
       toggle_dm_message_reaction: {
         Args: {
           p_emoji: string;

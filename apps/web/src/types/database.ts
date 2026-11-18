@@ -5434,6 +5434,10 @@ export interface Database {
         Args: { p_message_id: string; p_emoji: string };
         Returns: Json;
       };
+      toggle_dm_message_pin: {
+        Args: { p_message_id: string; p_pinned: boolean };
+        Returns: undefined;
+      };
       create_or_get_course: {
         Args: {
           p_name: string;
