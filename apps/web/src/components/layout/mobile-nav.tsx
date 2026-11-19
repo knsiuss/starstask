@@ -45,7 +45,7 @@ export function MobileNav({
       </DialogTrigger>
 
       {/* Anchored to the left edge and full height so it reads as a drawer. */}
-      <DialogContent className="top-0 left-0 h-dvh max-h-none w-[86%] max-w-[300px] translate-x-0 translate-y-0 rounded-none p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      <DialogContent className="top-0 left-0 h-dvh max-h-none w-[86%] max-w-[300px] translate-x-0 translate-y-0 rounded-none border-r bg-transparent p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-none dark:border-[#33332d] dark:bg-[#1e1e1a]">
         <DialogTitle className="sr-only">Navigation</DialogTitle>
 
         <div className="flex h-full flex-col">

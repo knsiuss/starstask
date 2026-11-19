@@ -28,6 +28,9 @@ const ENDPOINT_BY_KIND: Record<CheckinOutboxKind, string> = {
 
 const BACKOFF_STEP_MS = 30_000;
 const BACKOFF_CAP_MS = 10 * 60_000;
+// A replay POST is short-lived; anything still "syncing" after this long
+// means the tab died mid-flight rather than an HTTP request in progress.
+const SYNCING_STALE_MS = 5 * 60_000;
 
 const TERMINAL_CODES = new Set([
   "checkin_closed",
@@ -103,6 +106,18 @@ function backoffDeadline(entry: CheckinOutboxEntry): number {
   const delay = Math.min(entry.attempts * BACKOFF_STEP_MS, BACKOFF_CAP_MS);
 
   return entry.createdAt + delay;
+}
+
+function isClaimable(entry: CheckinOutboxEntry, now: number): boolean {
+  if (entry.status === "pending_sync") {
+    return true;
+  }
+
+  return (
+    entry.status === "syncing" &&
+    entry.syncingAt !== undefined &&
+    entry.syncingAt + SYNCING_STALE_MS <= now
+  );
 }
 
 async function readAllEntries(): Promise<CheckinOutboxEntry[]> {
@@ -245,7 +260,12 @@ export async function list(): Promise<CheckinOutboxEntry[]> {
 export async function count(): Promise<number> {
   const entries = await readAllEntries();
 
-  return entries.filter((entry) => entry.status === "pending_sync").length;
+  // Unresolved entries include in-flight and stale `syncing` ones, so a
+  // crashed tap is never invisible to the badge. Cards reconcile the same
+  // way.
+  return entries.filter(
+    (entry) => entry.status === "pending_sync" || entry.status === "syncing",
+  ).length;
 }
 
 export async function remove(id: string): Promise<void> {
@@ -323,9 +343,9 @@ export async function flush(
   let sessionExpired = false;
 
   const snapshot = await list();
-  const pending = snapshot.filter((entry) => entry.status === "pending_sync");
+  const claimable = snapshot.filter((entry) => isClaimable(entry, now));
 
-  for (const entry of pending) {
+  for (const entry of claimable) {
     if (entry.attempts > 0 && backoffDeadline(entry) > now) {
       outcomes.push({ kind: "deferred", id: entry.id });
       continue;
@@ -369,12 +389,17 @@ async function claimEntry(
       return null;
     }
 
-    // Another tab may have claimed or sent this entry since `list()` ran.
-    if (raw.status !== "pending_sync") {
+    // Another tab may have claimed or sent this entry since the snapshot was
+    // taken; only a still-pending or stale-syncing record may be claimed.
+    if (!isClaimable(raw, Date.now())) {
       return null;
     }
 
-    const claimed: CheckinOutboxEntry = { ...raw, status: "syncing" };
+    const claimed: CheckinOutboxEntry = {
+      ...raw,
+      status: "syncing",
+      syncingAt: Date.now(),
+    };
 
     await requestToPromise(store.put(claimed));
 

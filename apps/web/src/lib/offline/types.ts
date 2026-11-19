@@ -37,6 +37,8 @@ export type CheckinOutboxEntry = {
   status: CheckinOutboxStatus;
   attempts: number;
   lastError: string | null;
+  /** Set when a claim begins; marks in-flight replay state for stale-claim recovery. */
+  syncingAt?: number;
   /** Date.now() at enqueue. FIFO is by createdAt. */
   createdAt: number;
   /** Server status returned once replay succeeds. */

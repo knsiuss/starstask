@@ -59,7 +59,7 @@ export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
   return (
     <nav
       aria-label="Primary"
-      className="border-border bg-surface fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="border-border bg-surface fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden dark:border-[#33332d] dark:bg-[#1e1e1a]"
     >
       <ul className="grid grid-cols-5 gap-1 px-2 pt-2">
         {tabs.map((tab) => {
@@ -73,8 +73,8 @@ export function MobileTabBar({ isLecturer = false }: { isLecturer?: boolean }) {
                 className={cn(
                   "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] transition-all duration-150 active:scale-95 sm:px-1 sm:text-[11px]",
                   isActive
-                    ? "bg-accent-soft text-accent font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-accent-soft text-accent font-semibold dark:bg-[#5b6b45] dark:text-[#efede7]"
+                    : "text-muted-foreground hover:text-foreground dark:text-[#a19d92] dark:hover:text-[#efede7]",
                 )}
               >
                 <TabIcon Icon={tab.icon} />

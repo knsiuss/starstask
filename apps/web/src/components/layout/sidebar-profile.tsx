@@ -37,13 +37,13 @@ export function SidebarProfile({
   compact = false,
 }: SidebarProfileProps) {
   return (
-    <div className="border-border dark:border-[#22304d] border-t p-3">
+    <div className="border-border dark:border-[#33332d] border-t p-2">
       <Link
         href="/settings/profile"
         aria-label={compact ? `${displayName} profile` : undefined}
         title={compact ? displayName : undefined}
         className={cn(
-          "hover:bg-hover dark:hover:bg-white/[0.06] focus-visible:outline-accent flex items-center gap-3 rounded-lg px-2 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+          "hover:bg-hover dark:hover:bg-white/[0.06] focus-visible:outline-accent flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
           compact && "justify-center px-1",
         )}
       >
@@ -59,26 +59,26 @@ export function SidebarProfile({
         ) : (
           <span
             aria-hidden="true"
-            className="bg-accent-soft text-accent dark:bg-[#1d2a44] dark:text-[#8fb0e8] flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+            className="bg-accent-soft text-accent dark:bg-[#2b2b26] dark:text-[#c3ccad] flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
           >
             {initialsFor(displayName)}
           </span>
         )}{" "}
         {compact ? null : (
           <>
-            <span className="min-w-0 flex-1">
-              <span className="text-foreground dark:text-[#eef2fb] block truncate text-[13px] font-semibold">
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="text-foreground dark:text-[#efede7] block truncate text-[13px] font-semibold">
                 {displayName}
               </span>
               {email ? (
-                <span className="text-muted-foreground dark:text-[#8b98b8] block truncate text-[11px]">
+                <span className="text-muted-foreground dark:text-[#a19d92] mt-0.5 block truncate text-[11px]">
                   {email}
                 </span>
               ) : null}
             </span>
             <ChevronRight
               aria-hidden="true"
-              className="text-muted-foreground/60 dark:text-[#8b98b8] h-4 w-4 shrink-0"
+              className="text-muted-foreground/60 dark:text-[#a19d92] h-4 w-4 shrink-0"
             />
           </>
         )}

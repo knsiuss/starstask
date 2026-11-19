@@ -21,8 +21,8 @@ function formatBelowTargetPace(belowTargetCount: number): string {
 }
 
 const PANEL =
-  "border-border bg-surface text-foreground dark:border-white/[0.06] dark:bg-[#131e33] dark:text-[#e6ebf5]";
-const MUTED_TEXT = "text-muted-foreground dark:text-[#93a1bd]";
+  "border-border bg-surface text-foreground dark:border-white/[0.06] dark:bg-[#23231f] dark:text-[#ece9e3]";
+const MUTED_TEXT = "text-muted-foreground dark:text-[#aaa69e]";
 
 type TeachingBapProgressProps = {
   summary: LecturerBapSummary | null;
@@ -53,14 +53,14 @@ export function TeachingBapProgress({ summary }: TeachingBapProgressProps) {
         >
           <ChartColumn
             aria-hidden="true"
-            className="h-4 w-4 text-[#2563eb] dark:text-[#60a5fa]"
+            className="h-4 w-4 text-[#5b6b45] dark:text-[#a3b07d]"
           />
           Teaching progress
         </h2>
         {summary.offerings.length > 0 ? (
           <Link
             href="/attendance"
-            className="text-accent focus-visible:outline-accent inline-flex items-center rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+            className="text-accent focus-visible:outline-accent inline-flex items-center rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#c3ccad]"
           >
             {summary.totalMeetingsWithBap}/{summary.totalMeetingsHeld} BAP
             recorded
@@ -95,12 +95,14 @@ export function TeachingBapProgress({ summary }: TeachingBapProgressProps) {
           </p>
         </div>
       ) : (
-        <ul className="mt-3 flex-1 space-y-3">
+        <ul className="mt-3 flex-1 divide-y divide-border dark:divide-white/[0.06]">
           {summary.offerings.map((item) => (
-            <BapRow
+            <li
               key={item.offeringId}
-              item={item}
-            />
+              className="py-3 first:pt-0 last:pb-0"
+            >
+              <BapRow item={item} />
+            </li>
           ))}
         </ul>
       )}
@@ -119,31 +121,35 @@ function BapRow({ item }: { item: LecturerBapSummary["offerings"][number] }) {
   const hasMissingBap = item.missingBapCount > 0;
 
   return (
-    <li>
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="min-w-0">
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-1.5 w-1.5 shrink-0 rounded-full",
+              hasMissingBap ? "bg-[#e8b84b]" : "bg-[#5cb98a]",
+            )}
+          />
           <Link
             href={`/classes/${item.classSlug}/attendance`}
-            className="focus-visible:outline-accent block truncate rounded-sm text-sm font-semibold hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#e6ebf5] dark:hover:text-[#8fb0e8]"
+            className="text-foreground focus-visible:outline-accent truncate rounded-sm text-sm font-semibold hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#ece9e3] dark:hover:text-[#c3ccad]"
           >
             {item.className}
           </Link>
-          <p className={cn("truncate text-xs", MUTED_TEXT)}>
+          <span className={cn("shrink-0 truncate text-[11px]", MUTED_TEXT)}>
             {item.courseName}
-          </p>
-        </div>
-
-        <div className="shrink-0 text-right">
-          <span className="text-foreground text-xs font-semibold tabular-nums dark:text-[#e6ebf5]">
-            {percent}%
           </span>
         </div>
+        <span className="text-foreground shrink-0 text-xs font-semibold tabular-nums dark:text-[#ece9e3]">
+          {percent}%
+        </span>
       </div>
 
       <div className="mt-1.5 flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="text-muted-foreground w-14 shrink-0 font-mono text-[11px] tabular-nums dark:text-[#aeb9d6]"
+          className="text-muted-foreground w-16 shrink-0 font-mono text-[11px] tabular-nums dark:text-[#b6b2a7]"
         >
           {item.meetingsHeld}/{item.targetMeetings}
         </span>
@@ -156,7 +162,7 @@ function BapRow({ item }: { item: LecturerBapSummary["offerings"][number] }) {
           aria-valuenow={percent}
         >
           <div
-            className="h-full rounded-full bg-[#2563eb] transition-[width] dark:bg-[#3b82f6]"
+            className="h-full rounded-full bg-[#5b6b45] transition-[width] dark:bg-[#6f7f52]"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -164,16 +170,17 @@ function BapRow({ item }: { item: LecturerBapSummary["offerings"][number] }) {
 
       <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[11px]">
         <span className={MUTED_TEXT}>
-          {item.meetingsHeld}/{item.targetMeetings} meetings · BAP:{" "}
-          {hasMissingBap ? (
-            <span className="text-warning font-medium dark:text-[#e8b84b]">
-              {item.missingBapCount} missing
-            </span>
-          ) : (
-            <span className="text-success font-medium dark:text-[#5cb98a]">
-              Complete
-            </span>
-          )}
+          <span
+            className={cn(
+              "font-medium",
+              hasMissingBap ? "dark:text-[#e8b84b]" : "dark:text-[#5cb98a]",
+            )}
+          >
+            BAP:{" "}
+            {hasMissingBap ? `${item.missingBapCount} missing` : "Complete"}
+          </span>
+          <span aria-hidden="true"> · </span>
+          {item.meetingsHeld}/{item.targetMeetings} meetings held
         </span>
         {item.isBelowTarget ? (
           <span className={MUTED_TEXT}>
@@ -181,6 +188,6 @@ function BapRow({ item }: { item: LecturerBapSummary["offerings"][number] }) {
           </span>
         ) : null}
       </div>
-    </li>
+    </div>
   );
 }

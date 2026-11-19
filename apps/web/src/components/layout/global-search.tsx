@@ -46,7 +46,7 @@ export function GlobalSearch() {
       </label>
       <Search
         aria-hidden="true"
-        className="text-muted-foreground dark:text-[#8b98b8] pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        className="text-muted-foreground dark:text-[#a19d92] pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
       />
       <Input
         ref={inputRef}
@@ -56,11 +56,11 @@ export function GlobalSearch() {
         maxLength={100}
         autoComplete="off"
         placeholder="Search assignments, classes, or keywords..."
-        className="bg-background h-10 rounded-full border-transparent pr-20 pl-9 dark:bg-[#0d1526] dark:border-[#22304d] dark:text-[#eef2fb] dark:placeholder:text-[#8b98b8] dark:focus-visible:border-[#3b82f6]"
+        className="bg-background h-10 rounded-full border-transparent pr-20 pl-9 dark:bg-[#1a1a17] dark:border-[#33332d] dark:text-[#efede7] dark:placeholder:text-[#a19d92] dark:focus-visible:border-[#6f7f52]"
       />
       <kbd
         aria-hidden="true"
-        className="border-border bg-surface text-muted-foreground dark:border-[#2a3752] dark:bg-white/[0.06] dark:text-[#8b98b8] pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 items-center rounded border px-1.5 py-0.5 font-sans text-[11px] sm:flex"
+        className="border-border bg-surface text-muted-foreground dark:border-[#3b3b34] dark:bg-white/[0.06] dark:text-[#a19d92] pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 items-center rounded border px-1.5 py-0.5 font-sans text-[11px] sm:flex"
       >
         Ctrl K
       </kbd>

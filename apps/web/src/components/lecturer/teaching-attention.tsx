@@ -20,8 +20,8 @@ import { pluralize } from "@starstask/shared";
 
 /** Light tokens remap to existing theme variables; dark tokens are the lecturer navy. */
 const PANEL =
-  "border-border bg-surface text-foreground dark:border-white/[0.06] dark:bg-[#131e33] dark:text-[#e6ebf5]";
-const MUTED_TEXT = "text-muted-foreground dark:text-[#93a1bd]";
+  "border-border bg-surface text-foreground dark:border-white/[0.06] dark:bg-[#23231f] dark:text-[#ece9e3]";
+const MUTED_TEXT = "text-muted-foreground dark:text-[#aaa69e]";
 const DIVIDER = "divide-border dark:divide-white/[0.06]";
 
 type AttentionMetric = {
@@ -93,7 +93,7 @@ export function TeachingAttention({ totals }: TeachingAttentionProps) {
         </h2>
         <Link
           href="/actions"
-          className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+          className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#c3ccad]"
         >
           {waitingTotal === 0
             ? "All clear"
@@ -157,8 +157,8 @@ function AttentionRow({
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
             hasItems
-              ? "bg-[#2563eb] text-white"
-              : "bg-muted text-muted-foreground dark:bg-white/[0.06] dark:text-[#8b98b8]",
+              ? "bg-[#5b6b45] text-white"
+              : "bg-muted text-muted-foreground dark:bg-white/[0.06] dark:text-[#a19d92]",
           )}
         >
           <Icon
@@ -168,7 +168,7 @@ function AttentionRow({
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="text-foreground block truncate text-sm font-medium dark:text-[#e6ebf5]">
+          <span className="text-foreground block truncate text-sm font-medium dark:text-[#ece9e3]">
             {label}
           </span>
           <span className={cn("mt-0.5 block truncate text-xs", MUTED_TEXT)}>
@@ -181,14 +181,14 @@ function AttentionRow({
             "shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums",
             hasItems
               ? "border-[#f5c15d]/30 bg-[#f5c15d]/15 text-[#92600f] dark:border-[#f5c15d]/25 dark:bg-[#f5c15d]/10 dark:text-[#e8b84b]"
-              : "border-border bg-muted text-muted-foreground dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#8b98b8]",
+              : "border-border bg-muted text-muted-foreground dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#a19d92]",
           )}
         >
           {count}
         </span>
         <ChevronRight
           aria-hidden="true"
-          className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 dark:text-[#8b98b8]"
+          className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 dark:text-[#a19d92]"
         />
       </Link>
     </li>
@@ -227,13 +227,13 @@ export function TeachingToday({ today }: { today: LecturerToday | null }) {
         >
           <CalendarClock
             aria-hidden="true"
-            className="h-4 w-4 text-[#2563eb] dark:text-[#60a5fa]"
+            className="h-4 w-4 text-[#5b6b45] dark:text-[#a3b07d]"
           />
           Today&rsquo;s teaching
         </h2>
         <Link
           href="/schedule"
-          className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+          className="text-accent focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#c3ccad]"
         >
           View schedule
           <ArrowRight
@@ -301,10 +301,10 @@ function TodayTimelineRow({
           isCompleted &&
             "border-success bg-success dark:border-[#5cb98a] dark:bg-[#5cb98a]",
           isCancelled &&
-            "border-muted-foreground/40 bg-transparent dark:border-[#4b5878]",
+            "border-muted-foreground/40 bg-transparent dark:border-[#4e4e45]",
           !isCompleted &&
             !isCancelled &&
-            "border-[#2563eb] bg-[#2563eb] dark:border-[#3b82f6] dark:bg-[#3b82f6]",
+            "border-[#5b6b45] bg-[#5b6b45] dark:border-[#6f7f52] dark:bg-[#6f7f52]",
         )}
       />
 
@@ -315,13 +315,13 @@ function TodayTimelineRow({
               {formatTimeRange(session.startsAtIso, session.endsAtIso)}
             </span>
             {code ? (
-              <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-mono text-[10px] dark:bg-white/[0.06] dark:text-[#aeb9d6]">
+              <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-mono text-[10px] dark:bg-white/[0.06] dark:text-[#b6b2a7]">
                 {code}
               </span>
             ) : null}
           </div>
 
-          <p className="text-foreground mt-1 truncate text-sm font-semibold dark:text-[#e6ebf5]">
+          <p className="text-foreground mt-1 truncate text-sm font-semibold dark:text-[#ece9e3]">
             {session.className}
           </p>
           <p className={cn("truncate text-xs", MUTED_TEXT)}>{session.title}</p>
@@ -345,7 +345,7 @@ function TodayTimelineRow({
               href={session.meetingUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-accent focus-visible:outline-accent mt-1 inline-flex max-w-full items-center gap-1 rounded-sm text-[11px] font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#8fb0e8]"
+              className="text-accent focus-visible:outline-accent mt-1 inline-flex max-w-full items-center gap-1 rounded-sm text-[11px] font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-[#c3ccad]"
             >
               <ExternalLink
                 aria-hidden="true"
@@ -373,7 +373,7 @@ function SessionAction({ session }: { session: LecturerTodaySession }) {
 
   if (session.status === "cancelled") {
     return (
-      <span className="border-border bg-muted text-muted-foreground inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-medium dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#8b98b8]">
+      <span className="border-border bg-muted text-muted-foreground inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-medium dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#a19d92]">
         Cancelled
       </span>
     );
@@ -382,7 +382,7 @@ function SessionAction({ session }: { session: LecturerTodaySession }) {
   return (
     <Link
       href={`/sessions/${session.id}`}
-      className="focus-visible:outline-accent inline-flex shrink-0 items-center rounded-full border border-transparent bg-[#2563eb] px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-[#1d4ed8] focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="focus-visible:outline-accent inline-flex shrink-0 items-center rounded-full border border-transparent bg-[#5b6b45] px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-[#4a5838] focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       Open class
     </Link>

@@ -668,3 +668,72 @@ describe("count", () => {
     expect(await count()).toBe(0);
   });
 });
+
+describe("stale syncing entries", () => {
+  function forceSyncing(
+    sessionId: string,
+    status: "syncing" | "pending_sync",
+    syncingAt: number,
+  ): void {
+    const record = harness.stores.get("checkin_outbox");
+
+    if (!record) {
+      throw new Error("checkin_outbox store missing");
+    }
+
+    for (const [key, value] of record.values) {
+      const entry = value as { sessionId?: string; id: string };
+
+      if (entry.sessionId === sessionId) {
+        record.values.set(key, {
+          ...(value as Record<string, unknown>),
+          status,
+          syncingAt,
+        });
+      }
+    }
+  }
+
+  it("re-claims a stale syncing entry on the next flush", async () => {
+    const { enqueue, flush, list } = await loadOutbox();
+
+    await enqueue("session", "stale-1", SESSION_BODY);
+    forceSyncing("stale-1", "syncing", Date.now() - 10 * 60_000);
+
+    let replayCalls = 0;
+    const fetchImpl: typeof fetch = (async () => {
+      replayCalls += 1;
+
+      return okSessionResponse();
+    }) as typeof fetch;
+
+    const result = await flush(fetchImpl);
+
+    expect(replayCalls).toBe(1);
+    expect(result.sent).toBe(1);
+
+    const [entry] = await list();
+
+    expect(entry?.status).toBe("sent");
+  });
+
+  it("does not re-claim a fresh syncing entry and counts it as pending", async () => {
+    const { enqueue, flush, count } = await loadOutbox();
+
+    await enqueue("session", "fresh-1", SESSION_BODY);
+    forceSyncing("fresh-1", "syncing", Date.now());
+
+    let replayCalls = 0;
+    const fetchImpl: typeof fetch = (async () => {
+      replayCalls += 1;
+
+      return okSessionResponse();
+    }) as typeof fetch;
+
+    const result = await flush(fetchImpl);
+
+    expect(replayCalls).toBe(0);
+    expect(result.sent).toBe(0);
+    expect(await count()).toBe(1);
+  });
+});

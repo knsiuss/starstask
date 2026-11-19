@@ -92,6 +92,21 @@ const TAB_VALUES = [
 ] as const;
 type ActionTab = (typeof TAB_VALUES)[number];
 
+/**
+ * Charcoal + sage dark palette, scoped to this page. Light mode keeps the
+ * shared theme tokens untouched; dark mode re-points the same surfaces at the
+ * lecturer console's charcoal panel so this page reads as one with it.
+ */
+const PANEL =
+  "border-border bg-surface text-foreground dark:border-white/[0.06] dark:bg-[#23231f] dark:text-[#ece9e3]";
+const PANEL_SUBTLE =
+  "border-border bg-subtle dark:border-white/[0.08] dark:bg-white/[0.03]";
+const SAGE_TEXT = "dark:text-[#a3b07d]";
+const SAGE_LINK =
+  "text-accent hover:text-accent-hover dark:text-[#c3ccad] dark:hover:text-[#dde3cd]";
+const SECONDARY_BUTTON_DARK =
+  "dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#ece9e3] dark:hover:bg-white/[0.08]";
+
 type MetricKey = keyof ActionCounts;
 
 type Metric = {
@@ -237,11 +252,13 @@ function buildRecentItems(
 
 function ClassActionsCard({ row }: { row: ActionCenterRow }) {
   return (
-    <Card>
+    <Card className={cn(PANEL, "p-4 sm:p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold">{row.className}</h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
+          <h2 className="truncate text-base font-semibold dark:text-[#ece9e3]">
+            {row.className}
+          </h2>
+          <p className="text-muted-foreground mt-0.5 text-xs dark:text-[#a19d92]">
             {row.semester} · {row.academicYear}
           </p>
         </div>
@@ -249,8 +266,8 @@ function ClassActionsCard({ row }: { row: ActionCenterRow }) {
           className={cn(
             "rounded-full px-2.5 py-0.5 text-[11px] font-medium",
             row.total > 0
-              ? "bg-warning-soft text-warning"
-              : "bg-muted text-muted-foreground",
+              ? "bg-warning-soft text-warning dark:border dark:border-[#f5c15d]/25 dark:bg-[#f5c15d]/10 dark:text-[#e8b84b]"
+              : "bg-muted text-muted-foreground dark:border dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#a19d92]",
           )}
         >
           {row.total} {row.total === 1 ? "action" : "actions"}
@@ -266,19 +283,21 @@ function ClassActionsCard({ row }: { row: ActionCenterRow }) {
             <li key={metric.key}>
               <Link
                 href={metric.path(row.classSlug)}
-                className="border-border hover:bg-muted flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors"
+                className="border-border hover:bg-muted focus-visible:outline-accent flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
               >
                 <Icon
                   aria-hidden="true"
-                  className="text-muted-foreground h-4 w-4 shrink-0"
+                  className="text-muted-foreground h-4 w-4 shrink-0 dark:text-[#a3b07d]"
                 />
-                <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm">
+                <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm dark:text-[#aaa69e]">
                   {metric.label}
                 </span>
                 <span
                   className={cn(
                     "shrink-0 text-sm font-semibold tabular-nums",
-                    value > 0 ? "text-foreground" : "text-muted-foreground",
+                    value > 0
+                      ? "text-foreground dark:text-[#ece9e3]"
+                      : "text-muted-foreground dark:text-[#6f6f64]",
                   )}
                 >
                   {value}
@@ -291,7 +310,10 @@ function ClassActionsCard({ row }: { row: ActionCenterRow }) {
 
       <Link
         href={`/classes/${row.classSlug}/manage`}
-        className="text-accent hover:text-accent-hover mt-3 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+        className={cn(
+          "mt-3 inline-flex items-center gap-1 rounded-sm text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          SAGE_LINK,
+        )}
       >
         Manage this class
         <ArrowRight
@@ -318,8 +340,14 @@ function getParam(
 export default async function ActionCenterPage({ searchParams }: PageProps) {
   if (!isSupabaseConfigured()) {
     return (
-      <PageShell width="wide">
-        <PageHeader title="Action center" />
+      <PageShell
+        width="wide"
+        className="dark:bg-[#1a1a17] dark:text-[#ece9e3]"
+      >
+        <PageHeader
+          title="Action center"
+          className="dark:[&_h1]:text-[#ece9e3]"
+        />
         <div className="mt-6">
           <SetupNotice />
         </div>
@@ -529,6 +557,7 @@ export default async function ActionCenterPage({ searchParams }: PageProps) {
               asChild
               size="sm"
               variant="secondary"
+              className={SECONDARY_BUTTON_DARK}
             >
               <Link
                 href={`/classes/${selectedClass.slug}/academic/announcements`}
@@ -544,6 +573,7 @@ export default async function ActionCenterPage({ searchParams }: PageProps) {
               asChild
               size="sm"
               variant="secondary"
+              className={SECONDARY_BUTTON_DARK}
             >
               <Link href={`/settings/branding?class=${selectedClass.slug}`}>
                 <FileSpreadsheet
@@ -557,6 +587,7 @@ export default async function ActionCenterPage({ searchParams }: PageProps) {
               asChild
               size="sm"
               variant="secondary"
+              className={SECONDARY_BUTTON_DARK}
             >
               <Link href={`/classes/${selectedClass.slug}/manage`}>
                 <Settings
@@ -572,12 +603,16 @@ export default async function ActionCenterPage({ searchParams }: PageProps) {
     ) : null;
 
   return (
-    <PageShell width="wide">
-      <p className="text-muted-foreground mb-1 text-xs font-medium tracking-[0.08em] uppercase">
+    <PageShell
+      width="wide"
+      className="dark:bg-[#1a1a17] dark:text-[#ece9e3]"
+    >
+      <p className="text-muted-foreground mb-1 text-xs font-medium tracking-[0.08em] uppercase dark:text-[#a19d92]">
         Class leader
       </p>
       <PageHeader
         title="Action center"
+        className="dark:[&_h1]:text-[#ece9e3] dark:[&_p]:text-[#aaa69e]"
         description={
           <>
             {center === null
@@ -773,19 +808,29 @@ function OverviewTab({
 
   if (center.rows.length === 0) {
     return (
-      <div className="border-border bg-subtle mt-5 rounded-xl border border-dashed px-5 py-8 text-center sm:mt-6 sm:px-6 sm:py-10">
+      <div
+        className={cn(
+          "mt-5 rounded-xl border border-dashed px-5 py-8 text-center sm:mt-6 sm:px-6 sm:py-10",
+          PANEL_SUBTLE,
+        )}
+      >
         <ListChecks
           aria-hidden="true"
-          className="text-muted-foreground mx-auto h-6 w-6"
+          className="text-muted-foreground mx-auto h-6 w-6 dark:text-[#a3b07d]"
         />
-        <p className="mt-2 text-sm font-medium">No classes to lead yet</p>
-        <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed">
+        <p className="mt-2 text-sm font-medium dark:text-[#ece9e3]">
+          No classes to lead yet
+        </p>
+        <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed dark:text-[#aaa69e]">
           This page collects review queues for class leaders. Once you
           administer an active class, its pending work appears here.
         </p>
         <Link
           href="/classes"
-          className="text-accent hover:text-accent-hover mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+          className={cn(
+            "mt-4 inline-flex items-center gap-1 rounded-sm text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+            SAGE_LINK,
+          )}
         >
           Go to my classes
           <ArrowRight
@@ -806,20 +851,26 @@ function OverviewTab({
           return (
             <Card
               key={item.label}
-              className="min-w-0 px-1.5 py-2.5 text-center sm:p-4 sm:text-left"
+              className={cn(
+                PANEL,
+                "min-w-0 px-1.5 py-2.5 text-center sm:p-4 sm:text-left",
+              )}
             >
-              <dd className="text-lg leading-none font-semibold tabular-nums sm:hidden">
+              <dd className="text-lg leading-none font-semibold tabular-nums sm:hidden dark:text-[#ece9e3]">
                 {item.value}
               </dd>
-              <dt className="text-muted-foreground mt-1 flex items-center justify-center gap-1.5 text-[11px] sm:mt-0 sm:justify-start sm:gap-2 sm:text-xs">
+              <dt className="text-muted-foreground mt-1 flex items-center justify-center gap-1.5 text-[11px] sm:mt-0 sm:justify-start sm:gap-2 sm:text-xs dark:text-[#aaa69e]">
                 <Icon
                   aria-hidden="true"
-                  className="hidden h-3.5 w-3.5 shrink-0 sm:inline"
+                  className={cn(
+                    "hidden h-3.5 w-3.5 shrink-0 sm:inline",
+                    SAGE_TEXT,
+                  )}
                 />
                 <span className="truncate sm:hidden">{item.shortLabel}</span>
                 <span className="hidden truncate sm:inline">{item.label}</span>
               </dt>
-              <dd className="mt-1 hidden text-2xl font-semibold tabular-nums sm:block">
+              <dd className="mt-1 hidden text-2xl font-semibold tabular-nums sm:block dark:text-[#ece9e3]">
                 {item.value}
               </dd>
             </Card>
@@ -830,27 +881,30 @@ function OverviewTab({
       <div className="mt-4 grid gap-4 sm:mt-6 lg:grid-cols-3">
         <section
           aria-labelledby="recent-requests"
-          className="border-border bg-surface rounded-xl border p-4 sm:p-5 lg:col-span-2"
+          className={cn("rounded-xl border p-4 sm:p-5 lg:col-span-2", PANEL)}
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h2
                 id="recent-requests"
-                className="flex items-center gap-2 text-sm font-semibold"
+                className="flex items-center gap-2 text-sm font-semibold dark:text-[#ece9e3]"
               >
                 <Clock3
                   aria-hidden="true"
-                  className="h-4 w-4"
+                  className={cn("h-4 w-4", SAGE_TEXT)}
                 />
                 Recent requests
               </h2>
-              <p className="text-muted-foreground mt-0.5 text-xs">
+              <p className="text-muted-foreground mt-0.5 text-xs dark:text-[#a19d92]">
                 Latest requests that need your attention.
               </p>
             </div>
             <Link
               href="/actions?tab=assignments"
-              className="text-accent hover:text-accent-hover inline-flex items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-sm text-xs font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                SAGE_LINK,
+              )}
             >
               View all requests
               <ArrowRight
@@ -861,41 +915,46 @@ function OverviewTab({
           </div>
 
           {recent.length === 0 ? (
-            <div className="border-border bg-subtle mt-4 rounded-lg border border-dashed px-4 py-8 text-center">
+            <div
+              className={cn(
+                "mt-4 rounded-lg border border-dashed px-4 py-8 text-center",
+                PANEL_SUBTLE,
+              )}
+            >
               <ListChecks
                 aria-hidden="true"
-                className="text-muted-foreground mx-auto h-5 w-5"
+                className="text-muted-foreground mx-auto h-5 w-5 dark:text-[#a3b07d]"
               />
-              <p className="mt-2 text-sm font-medium">
+              <p className="mt-2 text-sm font-medium dark:text-[#ece9e3]">
                 {center.totals.actions === 0
                   ? "All caught up"
                   : "No recent requests"}
               </p>
-              <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed">
+              <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed dark:text-[#aaa69e]">
                 {center.totals.actions === 0
                   ? "No submissions, absence requests, or reader reports need you right now."
                   : "New submissions and absence requests appear here as they arrive."}
               </p>
             </div>
           ) : (
-            <ul className="mt-3 divide-y divide-border">
+            <ul className="mt-3 divide-y divide-border dark:divide-white/[0.06]">
               {recent.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="hover:bg-muted -mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors"
+                    className="hover:bg-muted focus-visible:outline-accent -mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:bg-white/[0.04]"
                   >
                     <span
                       aria-hidden="true"
-                      className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                      className="bg-accent-soft text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold dark:bg-[#5b6b45] dark:text-[#ece9e3]"
                     >
                       {item.studentName.slice(0, 1).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">
+                      <span className="block truncate text-sm font-semibold dark:text-[#ece9e3]">
                         {item.studentName}
                       </span>
-                      <span className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                      <span className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] dark:text-[#a19d92]">
                         <span>{item.type}</span>
                         <span>
                           {item.course} · {item.className}
@@ -910,7 +969,7 @@ function OverviewTab({
                     </Badge>
                     <ArrowRight
                       aria-hidden="true"
-                      className="text-muted-foreground h-4 w-4 shrink-0"
+                      className="text-muted-foreground h-4 w-4 shrink-0 dark:text-[#a19d92]"
                     />
                   </Link>
                 </li>
@@ -922,15 +981,15 @@ function OverviewTab({
         <aside className="space-y-4">
           <section
             aria-labelledby="your-classes"
-            className="border-border bg-surface rounded-xl border p-4 sm:p-5"
+            className={cn("rounded-xl border p-4 sm:p-5", PANEL)}
           >
             <h2
               id="your-classes"
-              className="flex items-center gap-2 text-sm font-semibold"
+              className="flex items-center gap-2 text-sm font-semibold dark:text-[#ece9e3]"
             >
               <Users
                 aria-hidden="true"
-                className="h-4 w-4"
+                className={cn("h-4 w-4", SAGE_TEXT)}
               />
               Your classes
             </h2>
@@ -951,6 +1010,7 @@ function OverviewTab({
                     name="class"
                     defaultValue={selectedClass.id}
                     ariaLabel="Choose class"
+                    className="mt-3 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#ece9e3]"
                   >
                     {classes.map((item) => (
                       <option
@@ -972,46 +1032,49 @@ function OverviewTab({
                 </form>
                 <dl className="mt-3 grid gap-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground flex items-center gap-2 text-xs">
+                    <dt className="text-muted-foreground dark:text-[#a19d92] flex items-center gap-2 text-xs">
                       <Users
                         aria-hidden="true"
                         className="h-3.5 w-3.5"
                       />
                       Total students
                     </dt>
-                    <dd className="font-semibold tabular-nums">
+                    <dd className="font-semibold tabular-nums dark:text-[#ece9e3]">
                       {totalStudents}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground flex items-center gap-2 text-xs">
+                    <dt className="text-muted-foreground dark:text-[#a19d92] flex items-center gap-2 text-xs">
                       <Clock3
                         aria-hidden="true"
                         className="h-3.5 w-3.5"
                       />
                       Pending requests
                     </dt>
-                    <dd className="font-semibold tabular-nums">
+                    <dd className="font-semibold tabular-nums dark:text-[#ece9e3]">
                       {pendingForClass}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground flex items-center gap-2 text-xs">
+                    <dt className="text-muted-foreground dark:text-[#a19d92] flex items-center gap-2 text-xs">
                       <CalendarClock
                         aria-hidden="true"
                         className="h-3.5 w-3.5"
                       />
                       Attendance sessions
                     </dt>
-                    <dd className="font-semibold tabular-nums">
+                    <dd className="font-semibold tabular-nums dark:text-[#ece9e3]">
                       {recordedSessions}
                     </dd>
                   </div>
                 </dl>
-                <div className="border-border mt-4 flex flex-wrap gap-2 border-t pt-3">
+                <div className="border-border mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-3 dark:border-white/[0.06]">
                   <Link
                     href={`/classes/${selectedClass.slug}/attendance`}
-                    className="text-accent hover:text-accent-hover inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-sm text-xs font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      SAGE_LINK,
+                    )}
                   >
                     Attendance workspace
                     <ArrowRight
@@ -1021,13 +1084,16 @@ function OverviewTab({
                   </Link>
                   <span
                     aria-hidden="true"
-                    className="text-border text-xs"
+                    className="text-border text-xs dark:text-[#4e4e45]"
                   >
                     ·
                   </span>
                   <Link
                     href={`/classes/${selectedClass.slug}/reports`}
-                    className="text-accent hover:text-accent-hover inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-sm text-xs font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      SAGE_LINK,
+                    )}
                   >
                     Reader reports
                     <ArrowRight
@@ -1038,7 +1104,7 @@ function OverviewTab({
                 </div>
               </>
             ) : (
-              <p className="text-muted-foreground mt-3 text-sm">
+              <p className="text-muted-foreground mt-3 text-sm dark:text-[#a19d92]">
                 No managed classes.
               </p>
             )}
@@ -1119,7 +1185,10 @@ function AssignmentsTab({
       <form
         action="/actions"
         method="get"
-        className="border-border bg-surface grid grid-cols-1 gap-3 rounded-xl border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_auto] lg:items-end"
+        className={cn(
+          "grid grid-cols-1 gap-3 rounded-xl border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_auto] lg:items-end",
+          PANEL,
+        )}
       >
         <input
           type="hidden"
@@ -1127,23 +1196,23 @@ function AssignmentsTab({
           value="assignments"
         />
         <div className="min-w-0 sm:col-span-2 lg:col-span-1">
-          <Label htmlFor="assignment-q">Search</Label>
+          <Label htmlFor="assignment-q" className="dark:text-[#aaa69e]">Search</Label>
           <Input
             id="assignment-q"
             name="aq"
             type="search"
             defaultValue={values.q ?? ""}
             placeholder="Student or title…"
-            className="mt-1"
+            className="mt-1 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#ece9e3] dark:placeholder:text-[#6f6f64] dark:focus-visible:border-[#6f7f52]"
           />
         </div>
         <div className="min-w-0">
-          <Label htmlFor="assignment-class">Class</Label>
+          <Label htmlFor="assignment-class" className="dark:text-[#aaa69e]">Class</Label>
           <Select
             id="assignment-class"
             name="aclass"
             defaultValue={values.class ?? "all"}
-            className="mt-1"
+            className="mt-1 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#ece9e3]"
           >
             <option value="all">All classes</option>
             {classes.map((item) => (
@@ -1157,13 +1226,13 @@ function AssignmentsTab({
           </Select>
         </div>
         <div className="min-w-0">
-          <Label htmlFor="assignment-course">Course</Label>
+          <Label htmlFor="assignment-course" className="dark:text-[#aaa69e]">Course</Label>
           <Select
             id="assignment-course"
             name="acourse"
             defaultValue={values.course ?? "all"}
             disabled={courses.length === 0}
-            className="mt-1"
+            className="mt-1 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#ece9e3]"
           >
             <option value="all">All courses</option>
             {courses.map((item) => (
@@ -1177,12 +1246,12 @@ function AssignmentsTab({
           </Select>
         </div>
         <div className="min-w-0">
-          <Label htmlFor="assignment-status">Status</Label>
+          <Label htmlFor="assignment-status" className="dark:text-[#aaa69e]">Status</Label>
           <Select
             id="assignment-status"
             name="astatus"
             defaultValue={values.status ?? "all"}
-            className="mt-1"
+            className="mt-1 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#ece9e3]"
           >
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
@@ -1194,7 +1263,10 @@ function AssignmentsTab({
         <Button
           type="submit"
           variant="secondary"
-          className="h-10 w-full sm:col-span-2 lg:col-span-1 lg:w-auto"
+          className={cn(
+            "h-10 w-full sm:col-span-2 lg:col-span-1 lg:w-auto",
+            SECONDARY_BUTTON_DARK,
+          )}
         >
           Filter
         </Button>
@@ -1203,12 +1275,12 @@ function AssignmentsTab({
       <section aria-labelledby="assignment-pending">
         <h2
           id="assignment-pending"
-          className="text-sm font-semibold"
+          className="text-sm font-semibold dark:text-[#ece9e3]"
         >
           Waiting for review ({pending.length})
         </h2>
         {pending.length === 0 ? (
-          <p className="text-muted-foreground mt-2 text-sm">
+          <p className="text-muted-foreground mt-2 text-sm dark:text-[#a19d92]">
             No publication requests are waiting for review.
           </p>
         ) : (
@@ -1235,7 +1307,7 @@ function AssignmentsTab({
         <section aria-labelledby="assignment-decided">
           <h2
             id="assignment-decided"
-            className="text-sm font-semibold"
+            className="text-sm font-semibold dark:text-[#ece9e3]"
           >
             Recently decided
           </h2>

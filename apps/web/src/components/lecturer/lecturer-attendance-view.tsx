@@ -70,7 +70,8 @@ export async function LecturerAttendanceView({
     meetingCounts = null;
   }
 
-  const sessionByClassId = meetingCounts ?? new Map<string, ClassSessionSummary>();
+  const sessionByClassId =
+    meetingCounts ?? new Map<string, ClassSessionSummary>();
   const actionByClassId = new Map<string, ActionCenterRow>(
     (actionCenter?.rows ?? []).map((row) => [row.classId, row]),
   );
@@ -89,19 +90,28 @@ export async function LecturerAttendanceView({
         title="Attendance"
         description="Monitor attendance sessions and jump straight into class attendance rosters."
         actions={
-          <Button
-            asChild
-            size="sm"
-            variant="secondary"
-          >
-            <Link href="/actions?tab=attendance">
-              <ListChecks
-                aria-hidden="true"
-                className="h-4 w-4"
-              />
-              Action center
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              asChild
+              size="sm"
+              variant="secondary"
+            >
+              <Link href="/attendance?view=student">Student view</Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="secondary"
+            >
+              <Link href="/actions?tab=attendance">
+                <ListChecks
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
+                Action center
+              </Link>
+            </Button>
+          </div>
         }
       />
 
