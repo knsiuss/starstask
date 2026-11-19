@@ -14,6 +14,7 @@ import {
   type CourseComponentGrades,
 } from "@/lib/db/course-grades";
 import { listCourseMaterials } from "@/lib/db/course-materials";
+import { getMemberCourseAccess } from "@/lib/db/course-access";
 
 export const metadata: Metadata = {
   title: "Course overview",
@@ -40,6 +41,16 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
     role,
     course,
   } = await requireCourseContext(slug, courseId);
+
+  // Admins manage the course and leave the class instead; only `selected`
+  // members may leave an individual course, so we only resolve scope for
+  // non-managers.
+  const memberAccess = role.canManage
+    ? null
+    : await getMemberCourseAccess(found.id, session.user.id).catch(() => null);
+  const canLeaveCourse =
+    memberAccess?.scope === "selected" &&
+    memberAccess.allowedSubjectIds.has(course.id);
 
   const [
     assignments,
@@ -99,6 +110,7 @@ export default async function CourseOverviewPage({ params }: CoursePageProps) {
         activeTab="overview"
         canManage={role.canManage}
         classActive={found.status === "active"}
+        canLeaveCourse={canLeaveCourse}
       />
 
       {course.status === "archived" ? (

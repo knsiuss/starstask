@@ -371,6 +371,7 @@ export default async function ClassDashboardPage({
       <div className="mt-4">
         <ClassWorkspaceActions
           classSlug={found.slug}
+          className={found.name}
           canManage={role.canManage}
           isActive={found.status === "active"}
         />

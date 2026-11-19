@@ -7,6 +7,7 @@ import {
   ExternalLink,
   GraduationCap,
   Info,
+  LogOut,
   Mail,
   MoreHorizontal,
   PlusCircle,
@@ -18,6 +19,7 @@ import Link from "next/link";
 import * as React from "react";
 
 import { DeleteClassDialog } from "@/components/classes/delete-class-dialog";
+import { LeaveClassDialog } from "@/components/classes/leave-class-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +32,8 @@ import {
 
 type ClassWorkspaceActionsProps = {
   classSlug: string;
+  /** Display name used for the typed confirmation in the leave dialog. Falls back to the slug when omitted. */
+  className?: string;
   canManage: boolean;
   isActive: boolean;
 };
@@ -41,11 +45,14 @@ type ClassWorkspaceActionsProps = {
  */
 export function ClassWorkspaceActions({
   classSlug,
+  className,
   canManage,
   isActive,
 }: ClassWorkspaceActionsProps) {
   const base = `/classes/${classSlug}`;
   const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [leaveOpen, setLeaveOpen] = React.useState(false);
+  const leaveLabel = className ?? classSlug;
 
   return (
     <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
@@ -261,6 +268,18 @@ export function ClassWorkspaceActions({
               </DropdownMenuItem>
             </>
           ) : null}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => setLeaveOpen(true)}
+            className="text-danger focus:text-danger flex items-center gap-2"
+            aria-label="Keluar kelas"
+          >
+            <LogOut
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            />
+            Keluar kelas…
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -271,6 +290,12 @@ export function ClassWorkspaceActions({
           onOpenChange={setDeleteOpen}
         />
       ) : null}
+      <LeaveClassDialog
+        classSlug={classSlug}
+        className={leaveLabel}
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+      />
     </div>
   );
 }

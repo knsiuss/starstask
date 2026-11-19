@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ClassSubjectView } from "@starstask/contracts";
 
 import { CourseAdminMenu } from "@/components/classes/course-admin-menu";
+import { LeaveCourseButton } from "@/components/classes/leave-course-dialog";
 import { ShareCourseButton } from "@/components/classes/share-course-dialog";
 import {
   CourseWorkspaceTabs,
@@ -21,6 +22,12 @@ type CourseWorkspaceHeaderProps = {
   activeTab?: CourseTab;
   canManage: boolean;
   classActive: boolean;
+  /**
+   * True only for members whose `course_scope` is `selected`. Admins
+   * (`canManage === true`) never see the leave-course entry; they leave the
+   * class instead.
+   */
+  canLeaveCourse?: boolean;
 };
 
 /**
@@ -38,6 +45,7 @@ export function CourseWorkspaceHeader({
   activeTab,
   canManage,
   classActive,
+  canLeaveCourse,
 }: CourseWorkspaceHeaderProps) {
   const base = `/classes/${classSlug}`;
 
@@ -135,6 +143,15 @@ export function CourseWorkspaceHeader({
               courseId={course.id}
               courseStatus={course.status}
               classActive={classActive}
+            />
+          </div>
+        ) : canLeaveCourse ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <LeaveCourseButton
+              classSlug={classSlug}
+              courseId={course.id}
+              courseName={course.name}
+              className="min-h-9"
             />
           </div>
         ) : null}
