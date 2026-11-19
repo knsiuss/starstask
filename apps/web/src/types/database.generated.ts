@@ -2113,6 +2113,7 @@ export type Database = {
           description: string | null;
           id: string;
           lecturer_name: string | null;
+          lecturer_user_id: string | null;
           name: string;
           status: string;
           updated_at: string;
@@ -2127,6 +2128,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           lecturer_name?: string | null;
+          lecturer_user_id?: string | null;
           name: string;
           status?: string;
           updated_at?: string;
@@ -2140,6 +2142,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           lecturer_name?: string | null;
+          lecturer_user_id?: string | null;
           name?: string;
           status?: string;
           updated_at?: string;
@@ -6186,6 +6189,10 @@ export type Database = {
         Returns: boolean;
       };
       can_manage_class: { Args: { p_class_id: string }; Returns: boolean };
+      can_manage_subject: {
+        Args: { p_class_id: string; p_subject_id: string };
+        Returns: boolean;
+      };
       can_organize_class_sessions: {
         Args: { p_class_id: string };
         Returns: boolean;

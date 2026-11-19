@@ -19,6 +19,8 @@ import type {
   ClassSubjectWithTaskCount,
 } from "@starstask/contracts";
 
+import { isLecturer } from "@/lib/auth/lecturer";
+import { getSessionUser } from "@/lib/auth/session";
 import { DataAccessError, type PaginatedResult } from "@/lib/db/assignments";
 import { fetchAllRows } from "@/lib/db/fetch-all";
 import { getCached } from "@/lib/cache/redis-cache";
@@ -1159,6 +1161,15 @@ export async function listClassSubjectsByIds(
   }));
 }
 
+/** Lecturers only see courses they teach; other callers keep the full list. */
+async function getLecturerSubjectFilter(): Promise<string | null | undefined> {
+  if (!(await isLecturer())) {
+    return undefined;
+  }
+
+  return (await getSessionUser())?.user.id ?? null;
+}
+
 /**
  * Active courses of several classes in a single query.
  *
@@ -1169,18 +1180,24 @@ export async function listActiveCoursesByClass(
   classIds: string[],
 ): Promise<Map<string, ClassCourseSummary[]>> {
   const courses = new Map<string, ClassCourseSummary[]>();
+  const lecturerUserId = await getLecturerSubjectFilter();
 
-  if (classIds.length === 0) {
+  if (classIds.length === 0 || lecturerUserId === null) {
     return courses;
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("class_subjects")
     .select("id, class_id, name, code")
     .in("class_id", classIds)
-    .eq("status", "active")
-    .order("created_at", { ascending: true });
+    .eq("status", "active");
+
+  if (lecturerUserId) {
+    query = query.eq("lecturer_user_id", lecturerUserId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: true });
 
   if (error) {
     throw new DataAccessError("Could not load class courses", error.code);
@@ -1199,6 +1216,11 @@ export async function listClassSubjects(
   classId: string,
   options?: { includeArchived?: boolean },
 ): Promise<ClassSubjectWithTaskCount[]> {
+  const lecturerUserId = await getLecturerSubjectFilter();
+  if (lecturerUserId === null) {
+    return [];
+  }
+
   const supabase = await createSupabaseServerClient();
 
   let query = supabase
@@ -1207,6 +1229,10 @@ export async function listClassSubjects(
       "id, class_id, course_id, name, code, description, lecturer_name, status, created_at, updated_at",
     )
     .eq("class_id", classId);
+
+  if (lecturerUserId) {
+    query = query.eq("lecturer_user_id", lecturerUserId);
+  }
 
   if (!options?.includeArchived) {
     query = query.eq("status", "active");
@@ -1220,7 +1246,9 @@ export async function listClassSubjects(
 
   const subjects = data ?? [];
 
-  if (subjects.length === 0) {
+  // The class-row fallback would expose a catalogue nobody assigned to this
+  // lecturer, so it only applies to callers without a subject filter.
+  if (subjects.length === 0 && !lecturerUserId) {
     const classRow = await getClassById(classId);
     if (classRow) {
       const taskCount = await countPublishedAssignmentsByClass([classId]);

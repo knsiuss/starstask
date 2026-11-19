@@ -2374,6 +2374,7 @@ export interface Database {
           code: string | null;
           description: string | null;
           lecturer_name: string | null;
+          lecturer_user_id: string | null;
           status: "active" | "archived";
           created_by: string | null;
           created_at: string;
@@ -2387,6 +2388,7 @@ export interface Database {
           code?: string | null;
           description?: string | null;
           lecturer_name?: string | null;
+          lecturer_user_id?: string | null;
           status?: "active" | "archived";
           created_by?: string | null;
           created_at?: string;
@@ -2397,6 +2399,7 @@ export interface Database {
           code?: string | null;
           description?: string | null;
           lecturer_name?: string | null;
+          lecturer_user_id?: string | null;
           status?: "active" | "archived";
           updated_at?: string;
         };
@@ -5725,6 +5728,10 @@ export interface Database {
       };
       can_manage_class: {
         Args: { p_class_id: string };
+        Returns: boolean;
+      };
+      can_manage_subject: {
+        Args: { p_class_id: string; p_subject_id: string };
         Returns: boolean;
       };
       apply_for_class: {
