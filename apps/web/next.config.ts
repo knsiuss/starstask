@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Tree-shake icon imports so a page only ships the icons it renders.
     optimizePackageImports: ["lucide-react"],
+    // Lets `next upgrade` carry future security patches across the same major.
+    agentUpgrade: "security",
   },
   // A running dev server locks `.next`, and the sandboxed environment blocks
   // bulk deletes, so a verification build can be pointed at a scratch dir via
