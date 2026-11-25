@@ -1,6 +1,7 @@
 {
   "name": "starstask",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "description": "StarsTask - academic assignment discovery and contribution platform",
   "packageManager": "pnpm@11.10.0",
